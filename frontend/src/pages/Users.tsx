@@ -1,0 +1,252 @@
+import React, { useState } from 'react';
+import {
+  Box,
+  Typography,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  IconButton,
+  Chip,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  MenuItem,
+  CircularProgress,
+  Alert,
+} from '@mui/material';
+import {
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Add as AddIcon,
+  AdminPanelSettings as AdminIcon,
+  EditNote as EditorIcon,
+  Visibility as ViewerIcon,
+} from '@mui/icons-material';
+import { useSnackbar } from 'notistack';
+import {
+  useGetUsersQuery,
+  useDeleteUserMutation,
+  useCreateUserMutation,
+  useUpdateUserMutation,
+  useChangeUserRoleMutation,
+} from '../redux/api/apiSlice';
+
+const roleColors = {
+  Admin: 'error',
+  Editor: 'warning',
+  Viewer: 'info',
+};
+
+const roleIcons = {
+  Admin: <AdminIcon fontSize="small" />,
+  Editor: <EditorIcon fontSize="small" />,
+  Viewer: <ViewerIcon fontSize="small" />,
+};
+
+export const Users: React.FC = () => {
+  const { enqueueSnackbar } = useSnackbar();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'Viewer',
+  });
+
+  const { data, isLoading, refetch } = useGetUsersQuery(undefined);
+  const [deleteUser] = useDeleteUserMutation();
+  const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
+  const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
+  const [changeRole] = useChangeUserRoleMutation();
+
+  const users = data?.data || [];
+
+  const handleOpenDialog = (user?: any) => {
+    if (user) {
+      setEditingUser(user);
+      setFormData({
+        name: user.name,
+        email: user.email,
+        password: '',
+        role: user.role,
+      });
+    } else {
+      setEditingUser(null);
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        role: 'Viewer',
+      });
+    }
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setEditingUser(null);
+    setFormData({ name: '', email: '', password: '', role: 'Viewer' });
+  };
+
+  const handleSubmit = async () => {
+    try {
+      if (editingUser) {
+        await updateUser({ id: editingUser.id, ...formData }).unwrap();
+        enqueueSnackbar('Utilisateur mis à jour', { variant: 'success' });
+      } else {
+        await createUser(formData).unwrap();
+        enqueueSnackbar('Utilisateur créé', { variant: 'success' });
+      }
+      handleCloseDialog();
+      refetch();
+    } catch (error: any) {
+      enqueueSnackbar(error?.data?.message || 'Erreur', { variant: 'error' });
+    }
+  };
+
+  const handleDelete = async (id: number, name: string) => {
+    if (window.confirm(`Supprimer l'utilisateur "${name}" ?`)) {
+      try {
+        await deleteUser(id).unwrap();
+        enqueueSnackbar('Utilisateur supprimé', { variant: 'success' });
+        refetch();
+      } catch (error) {
+        enqueueSnackbar('Erreur lors de la suppression', { variant: 'error' });
+      }
+    }
+  };
+
+  const handleChangeRole = async (id: number, currentRole: string) => {
+    const roles = ['Admin', 'Editor', 'Viewer'];
+    const currentIndex = roles.indexOf(currentRole);
+    const nextRole = roles[(currentIndex + 1) % roles.length];
+    
+    try {
+      await changeRole({ id, role: nextRole }).unwrap();
+      enqueueSnackbar(`Rôle changé en ${nextRole}`, { variant: 'success' });
+      refetch();
+    } catch (error) {
+      enqueueSnackbar('Erreur lors du changement de rôle', { variant: 'error' });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return (
+    <Box>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+        <Typography variant="h4">Utilisateurs</Typography>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenDialog()}>
+          Ajouter un utilisateur
+        </Button>
+      </Box>
+
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow sx={{ bgcolor: 'primary.main' }}>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Nom</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Email</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Rôle</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Sites</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Membre depuis</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {users.map((user: any) => (
+              <TableRow key={user.id} hover>
+                <TableCell>{user.name}</TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>
+                  <Chip
+                    icon={roleIcons[user.role as keyof typeof roleIcons]}
+                    label={user.role}
+                    color={roleColors[user.role as keyof typeof roleColors] as any}
+                    size="small"
+                    onClick={() => handleChangeRole(user.id, user.role)}
+                    sx={{ cursor: 'pointer' }}
+                  />
+                </TableCell>
+                <TableCell>{user.sites?.length || 0}</TableCell>
+                <TableCell>{new Date(user.createdAt).toLocaleDateString('fr-FR')}</TableCell>
+                <TableCell align="center">
+                  <IconButton size="small" onClick={() => handleOpenDialog(user)}>
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton size="small" color="error" onClick={() => handleDelete(user.id, user.name)}>
+                    <DeleteIcon />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>{editingUser ? 'Modifier l\'utilisateur' : 'Ajouter un utilisateur'}</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="Nom"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            margin="normal"
+            required
+          />
+          <TextField
+            fullWidth
+            label="Email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            margin="normal"
+            required
+          />
+          <TextField
+            fullWidth
+            label={editingUser ? 'Nouveau mot de passe (laisser vide pour inchangé)' : 'Mot de passe'}
+            type="password"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            margin="normal"
+            required={!editingUser}
+          />
+          <TextField
+            fullWidth
+            select
+            label="Rôle"
+            value={formData.role}
+            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+            margin="normal"
+          >
+            <MenuItem value="Admin">Administrateur</MenuItem>
+            <MenuItem value="Editor">Éditeur</MenuItem>
+            <MenuItem value="Viewer">Visiteur</MenuItem>
+          </TextField>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Annuler</Button>
+          <Button onClick={handleSubmit} variant="contained" disabled={isCreating || isUpdating}>
+            {isCreating || isUpdating ? 'Enregistrement...' : 'Enregistrer'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+};
