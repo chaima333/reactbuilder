@@ -19,7 +19,10 @@ export const sequelize = new Sequelize(databaseUrl, {
   logging: false,
   models: [User, Token, Page, Site, ActivityLog, Media, Seo],
   dialectOptions: {
-    ssl: false  // ← Désactive SSL complètement
+    ssl: process.env.NODE_ENV === "production" ? {
+      require: true,
+      rejectUnauthorized: false
+    } : false
   },
 });
 
