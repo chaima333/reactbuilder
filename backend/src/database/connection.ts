@@ -18,8 +18,8 @@ export const sequelize = new Sequelize({
   models: [User, Token, Page, Site, ActivityLog, Media, Seo],
   dialectOptions: {
     ssl: {
-      require: true,          // ✅ Obligatoire pour Supabase
-      rejectUnauthorized: false, // ✅ Ignore les certificats auto-signés
+      require: true,         
+      rejectUnauthorized: false, 
     },
   },
 });
