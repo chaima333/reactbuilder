@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_util_1 = require("../shared/auth.util");
+const role_middleware_1 = require("../middlewares/role.middleware");
+const admin_controller_1 = require("../controllers/admin.controller");
+const router = (0, express_1.Router)();
+router.use(auth_util_1.authenticateJWT);
+router.use((0, role_middleware_1.authorizeRoles)('Admin'));
+router.get('/pending-users', admin_controller_1.getPendingUsers);
+router.post('/approve-user/:id', admin_controller_1.approveUser);
+router.delete('/reject-user/:id', admin_controller_1.rejectUser);
+exports.default = router;
