@@ -14,18 +14,21 @@ if (!databaseUrl) {
   process.exit(1);
 }
 
+console.log("DATABASE_URL:", databaseUrl);
+
+
 export const sequelize = new Sequelize(databaseUrl, {
   dialect: "postgres",
   logging: false,
   models: [User, Token, Page, Site, ActivityLog, Media, Seo],
+
   dialectOptions: {
-    ssl: process.env.NODE_ENV === "production" ? {
+    ssl: {
       require: true,
-      rejectUnauthorized: false
-    } : false
+      rejectUnauthorized: false,
+    },
   },
 });
-
 export const initializeDB = async () => {
   try {
     await sequelize.authenticate();

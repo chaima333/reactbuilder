@@ -4,24 +4,28 @@ exports.initializeDB = exports.sequelize = void 0;
 const sequelize_typescript_1 = require("sequelize-typescript");
 const User_1 = require("../models/User");
 const token_1 = require("../models/token");
-const models_1 = require("../models");
+const page_1 = require("../models/page");
+const site_1 = require("../models/site");
+const activityLog_1 = require("../models/activityLog");
+const media_1 = require("../models/media");
+const Seo_1 = require("../models/Seo");
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
     console.error("❌ Erreur : DATABASE_URL manquante !");
     process.exit(1);
 }
-// Forcer Sequelize à utiliser l'IPv4 (évite les timeouts sur IPv6)
-const modifiedDatabaseUrl = databaseUrl.replace(/\[.*\]/, "197.11.135.47");
-exports.sequelize = new sequelize_typescript_1.Sequelize(modifiedDatabaseUrl, {
+console.log("DATABASE_URL:", databaseUrl);
+exports.sequelize = new sequelize_typescript_1.Sequelize(databaseUrl, {
     dialect: "postgres",
     logging: false,
-    models: [User_1.User, token_1.Token, models_1.Page, models_1.Site, models_1.ActivityLog, models_1.Media, models_1.Seo],
+    models: [User_1.User, token_1.Token, page_1.Page, site_1.Site, activityLog_1.ActivityLog, media_1.Media, Seo_1.Seo],
     dialectOptions: {
         ssl: {
             require: true,
             rejectUnauthorized: false,
         },
     },
+    ssl: true,
 });
 const initializeDB = async () => {
     try {
