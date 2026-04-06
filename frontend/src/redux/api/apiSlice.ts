@@ -1,11 +1,9 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../store';
+const API_URL = 'https://backend-rmfq.onrender.com/api';
+
 
 // URL de l'API - à modifier selon l'environnement
-const API_URL = import.meta.env.PROD 
-  ? 'https://backend-rmfq.onrender.com/api'
-  : 'http://localhost:5000/api';
-
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({
