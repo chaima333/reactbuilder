@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
-import { User, Site, Page, ActivityLog, sequelize } from '../models';
+import { User, Site, Page, ActivityLog } from '../models';
 import { AuthRequest } from '../shared/auth.util';
+import { sequelize } from '../database/connection';
 
 // Fonction pour calculer le stockage utilisé
 const calculateStorageUsed = async (userId: number) => {

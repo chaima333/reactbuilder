@@ -23,11 +23,11 @@ export const sequelize = new Sequelize(databaseUrl, {
   models: [User, Token, Page, Site, ActivityLog, Media, Seo],
 
   dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false,
-    },
-  },
+  ssl: process.env.NODE_ENV === "production" ? {
+    require: true,
+    rejectUnauthorized: false, // هذي تسمح بقبول self-signed
+  } : false
+},
 });
 export const initializeDB = async () => {
   try {
