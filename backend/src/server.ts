@@ -13,9 +13,11 @@ import mediaRoutes from "./routes/media.routes";
 import userRoutes from "./routes/user.routes";
 import seoRoutes from "./routes/seo.routes";
 import adminRoutes from "./routes/admin.routes";
-import { initializeDB } from "./database/connection"; // correct
+import { initializeDB } from "./database/connection";
+
 const app = express();
-const PORT = process.env.PORT || 5000;
+// Convertir PORT en nombre
+const PORT = parseInt(process.env.PORT || "10000", 10);
 
 // Middleware
 app.use(cors());
@@ -42,10 +44,13 @@ app.get("/api/health", (req, res) => {
 // Démarrage serveur après initialisation DB
 const startServer = async () => {
   try {
-    await initializeDB(); // ✅ Init DB avant tout
-    app.listen(PORT, () => {
-      console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
-      console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
+    console.log("📡 Tentative de connexion à la base de données...");
+    await initializeDB();
+    console.log("✅ Base de données initialisée");
+    
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Serveur démarré sur http://0.0.0.0:${PORT}`);
+      console.log(`🔗 Health check: http://0.0.0.0:${PORT}/api/health`);
     });
   } catch (error) {
     console.error("❌ Échec du démarrage :", error);
