@@ -1,17 +1,33 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
-import { Grid, Paper, Typography, Box, Button } from '@mui/material';
+import { Grid, Paper, Typography, Box, Button, CircularProgress } from '@mui/material';
 import { Link } from 'react-router-dom';
+import { useGetDashboardStatsQuery, useGetActivityLogQuery } from '../redux/api/apiSlice';
 import { StatsCards } from '../components/Dashboard/StatsCards';
 import { ActivityFeed } from '../components/Dashboard/ActivityFeed';
 import { MonthlyChart } from '../components/Dashboard/MonthlyChart';
-import { useGetDashboardStatsQuery, useGetActivityLogQuery } from '../redux/api/apiSlice';
 
 export const Dashboard: React.FC = () => {
   const userRole = useSelector((state: RootState) => state.auth.user?.role);
-  const { data: statsData, isLoading: statsLoading } = useGetDashboardStatsQuery(undefined);
+  const { data: statsData, isLoading: statsLoading, error: statsError } = useGetDashboardStatsQuery(undefined);
   const { data: activityData } = useGetActivityLogQuery({ limit: 10 });
+
+  if (statsLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (statsError) {
+    return (
+      <Box p={3}>
+        <Typography color="error">Erreur lors du chargement des données</Typography>
+      </Box>
+    );
+  }
 
   // 👑 ADMIN : voit tout
   if (userRole === 'Admin') {
@@ -48,7 +64,6 @@ export const Dashboard: React.FC = () => {
       <Box>
         <Typography variant="h4" gutterBottom>Tableau de bord Éditeur</Typography>
         
-        {/* Stats personnelles */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid item xs={12} sm={4}>
             <Paper sx={{ p: 3, textAlign: 'center' }}>
@@ -70,7 +85,6 @@ export const Dashboard: React.FC = () => {
           </Grid>
         </Grid>
 
-        {/* Actions rapides */}
         <Box sx={{ mt: 2 }}>
           <Button variant="contained" component={Link} to="/sites" sx={{ mr: 2 }}>
             ➕ Créer un site

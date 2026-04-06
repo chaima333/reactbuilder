@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../store';
 
@@ -6,7 +7,7 @@ export const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({
     // Utilise la variable d'environnement ou l'URL de production
-    baseUrl: (import.meta.env.VITE_API_URL as string) || 'http://localhost:5000/api',
+    baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).auth.accessToken;
       if (token) {
