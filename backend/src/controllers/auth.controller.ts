@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { z } from "zod";
 import { addUser, getUserByEmail } from "../services/user.service";
 import bcrypt from "bcrypt";
@@ -30,16 +30,11 @@ const refreshTokenSchema = z.object({
   refreshToken: z.string()
 });
 
-/**
- * Inscription d'un utilisateur avec rôle optionnel
- * Rôle par défaut: Viewer
- */
-export const registerController = async (req: Request, res: Response) => {
+export const registerController = async (req: AuthRequest, res: Response) => {
   const parsedData = registerSchema.safeParse(req.body);
   if (!parsedData.success) {
-    // ✅ Correction : utiliser parsedData.error.format() ou parsedData.error.issues
-    return res.status(400).json({ 
-      success: false, 
+    return res.status(400).json({
+      success: false,
       message: "Validation error",
       errors: parsedData.error.issues.map(issue => ({
         field: issue.path.join('.'),
@@ -50,41 +45,32 @@ export const registerController = async (req: Request, res: Response) => {
 
   const { name, email, password, role } = parsedData.data;
 
-  // Vérifier si l'utilisateur existe déjà
   const existingUser = await getUserByEmail(email);
   if (existingUser) {
-    return res.status(400).json({ 
-      success: false, 
-      message: "User already exists!" 
+    return res.status(400).json({
+      success: false,
+      message: "User already exists!"
     });
   }
 
-  // Hasher le mot de passe
   const hashedPassword = bcrypt.hashSync(password, 10);
-
-  // Créer l'utilisateur avec le rôle (Viewer par défaut)
   const newUser = await addUser(name, email, hashedPassword, role || 'Viewer', false);
 
-  // Préparer la réponse sans le mot de passe
   const userJson = newUser.toJSON() as any;
   delete userJson.password;
 
   return res.status(201).json({
     success: true,
-    message: "User registered successfully Waiting for admin approval.",
+    message: "User registered successfully. Waiting for admin approval.",
     user: userJson
   });
 };
 
-/**
- * Connexion d'un utilisateur
- */
-export const loginController = async (req: Request, res: Response) => {
+export const loginController = async (req: AuthRequest, res: Response) => {
   const parsedData = loginSchema.safeParse(req.body);
   if (!parsedData.success) {
-    // ✅ Correction
-    return res.status(400).json({ 
-      success: false, 
+    return res.status(400).json({
+      success: false,
       message: "Validation error",
       errors: parsedData.error.issues.map(issue => ({
         field: issue.path.join('.'),
@@ -94,33 +80,27 @@ export const loginController = async (req: Request, res: Response) => {
   }
 
   const { email, password } = parsedData.data;
-  
-  // Vérifier l'utilisateur
+
   const user = await getUserByEmail(email);
   if (!user) {
-    return res.status(400).json({ 
-      success: false, 
-      message: "User not found." 
+    return res.status(400).json({
+      success: false,
+      message: "User not found."
     });
   }
 
-  // Vérifier le mot de passe
   const isPasswordValid = bcrypt.compareSync(password, user.password);
   if (!isPasswordValid) {
-    return res.status(400).json({ 
-      success: false, 
-      message: "Invalid password." 
+    return res.status(400).json({
+      success: false,
+      message: "Invalid password."
     });
   }
 
-  // Générer les tokens
   const accessToken = generateToken({ userId: user.id, type: "access" });
   const refreshToken = generateToken({ userId: user.id, type: "refresh" });
 
-  // Supprimer les anciens tokens
   await deleteToken(user.id);
-
-  // Sauvegarder les nouveaux tokens
   await addToken(accessToken, "access", user.id);
   await addToken(refreshToken, "refresh", user.id);
 
@@ -129,24 +109,20 @@ export const loginController = async (req: Request, res: Response) => {
     message: "Login successful",
     accessToken,
     refreshToken,
-    user: { 
-      id: user.id, 
-      name: user.name, 
-      email: user.email, 
-      role: user.role 
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role
     }
   });
 };
 
-/**
- * Rafraîchir le token d'accès
- */
-export const refreshTokenController = async (req: Request, res: Response) => {
+export const refreshTokenController = async (req: AuthRequest, res: Response) => {
   const parsedData = refreshTokenSchema.safeParse(req.body);
   if (!parsedData.success) {
-    // ✅ Correction
-    return res.status(400).json({ 
-      success: false, 
+    return res.status(400).json({
+      success: false,
       message: "Validation error",
       errors: parsedData.error.issues.map(issue => ({
         field: issue.path.join('.'),
@@ -157,25 +133,20 @@ export const refreshTokenController = async (req: Request, res: Response) => {
 
   const { refreshToken } = parsedData.data;
 
-  // Vérifier le token en base de données
   const dbRefreshToken = await getToken(refreshToken);
   if (!dbRefreshToken || dbRefreshToken.type !== "refresh") {
-    return res.status(400).json({ 
-      success: false, 
-      message: "Invalid token or expired." 
+    return res.status(400).json({
+      success: false,
+      message: "Invalid token or expired."
     });
   }
 
   const userId = dbRefreshToken.userId;
 
-  // Générer de nouveaux tokens
   const accessToken = generateToken({ userId, type: "access" });
   const newRefreshToken = generateToken({ userId, type: "refresh" });
 
-  // Supprimer les anciens tokens
   await deleteToken(userId);
-
-  // Sauvegarder le nouveau refresh token
   await addToken(newRefreshToken, "refresh", userId);
 
   return res.status(200).json({
@@ -185,15 +156,11 @@ export const refreshTokenController = async (req: Request, res: Response) => {
   });
 };
 
-/**
- * Déconnexion
- */
-export const logoutController = async (req: Request, res: Response) => {
+export const logoutController = async (req: AuthRequest, res: Response) => {
   const parsedData = refreshTokenSchema.safeParse(req.body);
   if (!parsedData.success) {
-    // ✅ Correction
-    return res.status(400).json({ 
-      success: false, 
+    return res.status(400).json({
+      success: false,
       message: "Validation error",
       errors: parsedData.error.issues.map(issue => ({
         field: issue.path.join('.'),
@@ -203,35 +170,32 @@ export const logoutController = async (req: Request, res: Response) => {
   }
 
   const { refreshToken } = parsedData.data;
-  
-  // Vérifier la validité du token
+
   const isTokenValid = verifyToken(refreshToken);
   if (!isTokenValid) {
-    return res.status(400).json({ 
-      success: false, 
-      message: "Invalid token or expired." 
+    return res.status(400).json({
+      success: false,
+      message: "Invalid token or expired."
     });
   }
 
-  // Vérifier le token en base de données
   const dbRefreshToken = await getToken(refreshToken);
   if (!dbRefreshToken || dbRefreshToken.type !== "refresh") {
-    return res.status(400).json({ 
-      success: false, 
-      message: "Invalid token." 
+    return res.status(400).json({
+      success: false,
+      message: "Invalid token."
     });
   }
 
   const userId = dbRefreshToken.userId;
-  
-  // Supprimer tous les tokens de l'utilisateur
   await deleteToken(userId);
-  
-  return res.status(200).json({ 
-    success: true, 
-    message: "Logged out successfully." 
+
+  return res.status(200).json({
+    success: true,
+    message: "Logged out successfully."
   });
 };
+
 export const updateProfile = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;
@@ -242,7 +206,6 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, message: 'Utilisateur non trouvé' });
     }
 
-    // Vérifier si l'email est déjà utilisé par un autre utilisateur
     if (email && email !== user.email) {
       const existingUser = await User.findOne({ where: { email } });
       if (existingUser) {
