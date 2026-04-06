@@ -14,21 +14,15 @@ if (!databaseUrl) {
   process.exit(1);
 }
 
-console.log("DATABASE_URL:", databaseUrl);
-
-
 export const sequelize = new Sequelize(databaseUrl, {
   dialect: "postgres",
   logging: false,
   models: [User, Token, Page, Site, ActivityLog, Media, Seo],
-
   dialectOptions: {
-  ssl: process.env.NODE_ENV === "production" ? {
-    require: true,
-    rejectUnauthorized: false, // هذي تسمح بقبول self-signed
-  } : false
-},
+    ssl: false  // ← Désactive SSL pour Railway
+  },
 });
+
 export const initializeDB = async () => {
   try {
     await sequelize.authenticate();
