@@ -6,6 +6,14 @@ import { AuthRequest, generateToken, verifyToken } from "../shared/auth.util";
 import { addToken, deleteToken, getToken } from "../services/token.service";
 import { User } from "../models";
 
+// Au lieu de (req: Request), utilise (req: AuthRequest)
+export const myController = async (req: AuthRequest, res: Response) => {
+ const { id } = req.params;   // ✅ Maintenant reconnu
+  const { name } = req.body;   // ✅ Maintenant reconnu
+  const { page } = req.query;  // ✅ Maintenant reconnu
+  const authHeader = req.headers.authorization;
+}
+
 // Schéma de validation pour l'inscription
 const registerSchema = z.object({
   name: z.string().min(1, "Name is required"),

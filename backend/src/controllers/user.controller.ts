@@ -3,6 +3,12 @@ import { User, ActivityLog } from '../models';
 import { AuthRequest } from '../shared/auth.util';
 import bcrypt from 'bcrypt';
 
+// Au lieu de (req: Request), utilise (req: AuthRequest)
+export const myController = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;  // Maintenant reconnu
+  const { name } = req.body;  // Maintenant reconnu
+}
+
 // Récupérer tous les utilisateurs (admin seulement)
 export const getUsers = async (req: AuthRequest, res: Response) => {
   try {

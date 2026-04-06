@@ -2,6 +2,13 @@ import { Request, Response } from 'express';
 import { Site, Page, ActivityLog } from '../models';
 import { AuthRequest } from '../shared/auth.util';
 
+// Au lieu de (req: Request), utilise (req: AuthRequest)
+export const myController = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;   // ✅ Maintenant reconnu
+  const { name } = req.body;   // ✅ Maintenant reconnu
+  const { page } = req.query;  // ✅ Maintenant reconnu
+  const authHeader = req.headers.authorization;
+}
 export const createSite = async (req: AuthRequest, res: Response) => {
   try {
     const { name, subdomain, title, description, language = 'fr', timezone = 'Europe/Paris' } = req.body;

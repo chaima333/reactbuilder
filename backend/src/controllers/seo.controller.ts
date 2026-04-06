@@ -3,6 +3,13 @@ import { Page, Site } from '../models';
 import { Seo } from '../models/Seo';
 import { AuthRequest } from '../shared/auth.util';
 
+// Au lieu de (req: Request), utilise (req: AuthRequest)
+export const myController = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;   // ✅ Maintenant reconnu
+  const { name } = req.body;   // ✅ Maintenant reconnu
+  const { page } = req.query;  // ✅ Maintenant reconnu
+  const authHeader = req.headers.authorization;
+}
 
 // Récupérer le SEO d'une page
 export const getPageSeo = async (req: AuthRequest, res: Response) => {

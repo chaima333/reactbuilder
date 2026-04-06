@@ -19,6 +19,10 @@ export const generateToken = (payload: JwtPayload): string => {
 // Interface qui étend correctement Request
 export interface AuthRequest extends Request {
   user: User;
+  params: any
+  query: any
+  body: any
+  headers: any
 }
 
 export const authenticateJWT = async (

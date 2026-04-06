@@ -5,6 +5,12 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
+// Au lieu de (req: Request), utilise (req: AuthRequest)
+export const myController = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;  // Maintenant reconnu
+  const { name } = req.body;  // Maintenant reconnu
+}
+
 // Configuration multer pour l'upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
