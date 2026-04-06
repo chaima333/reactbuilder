@@ -16,7 +16,7 @@ export const generateToken = (payload: JwtPayload): string => {
   return jwt.sign(payload, secretkey, { expiresIn });
 };
 
-// Interface étendue pour les requêtes authentifiées
+// Interface qui étend correctement Request
 export interface AuthRequest extends Request {
   user: User;
 }
@@ -28,11 +28,11 @@ export const authenticateJWT = async (
 ): Promise<void> => {
   try {
     const authHeader = req.header('Authorization');
-
+    
     if (!authHeader) {
-      res.status(401).json({
-        success: false,
-        message: 'Access Denied: Token is not provided.'
+      res.status(401).json({ 
+        success: false, 
+        message: 'Access Denied: Token is not provided.' 
       });
       return;
     }
@@ -40,24 +40,23 @@ export const authenticateJWT = async (
     const token = authHeader.replace('Bearer ', '');
     const verified = jwt.verify(token, secretkey) as JwtPayload;
     const user = await User.findByPk(verified.userId);
-
+    
     if (!user) {
-      res.status(401).json({
-        success: false,
-        message: 'User not found'
+      res.status(401).json({ 
+        success: false, 
+        message: 'User not found' 
       });
       return;
     }
-
-    // Vérifier si l'utilisateur est approuvé
+    
     if (!user.isApproved && user.role !== 'Admin') {
-      res.status(403).json({
-        success: false,
-        message: 'Your account is pending admin approval.'
+      res.status(403).json({ 
+        success: false, 
+        message: 'Your account is pending admin approval.' 
       });
       return;
     }
-
+    
     (req as AuthRequest).user = user;
     next();
   } catch (error) {
