@@ -1,13 +1,15 @@
-/// <reference types="vite/client" />
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../store';
 
+// URL de l'API - à modifier selon l'environnement
+const API_URL = import.meta.env.PROD 
+  ? 'https://backend-rmfq.onrender.com/api'
+  : 'http://localhost:5000/api';
 
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({
-    // Utilise la variable d'environnement ou l'URL de production
-    baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+    baseUrl: API_URL,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).auth.accessToken;
       if (token) {
@@ -16,9 +18,7 @@ export const api = createApi({
       return headers;
     },
   }),
-
   tagTypes: ['Stats', 'Activity', 'Sites', 'Pages', 'User', 'Media', 'Users', 'PendingUsers'],
-
   
   endpoints: (builder) => ({
     // Dashboard
@@ -101,7 +101,8 @@ export const api = createApi({
       }),
       invalidatesTags: ['Pages', 'Sites'],
     }),
-      // Media
+    
+    // Media
     getMedia: builder.query({
       query: () => '/media',
       providesTags: ['Media'],
@@ -129,46 +130,47 @@ export const api = createApi({
       }),
       invalidatesTags: ['Media'],
     }),
+    
     // Users
-getUsers: builder.query({
-  query: () => '/users',
-  providesTags: ['Users'],
-}),
-getUserById: builder.query({
-  query: (id: number) => `/users/${id}`,
-  providesTags: ['Users'],
-}),
-createUser: builder.mutation({
-  query: (data) => ({
-    url: '/users',
-    method: 'POST',
-    body: data,
-  }),
-  invalidatesTags: ['Users'],
-}),
-updateUser: builder.mutation({
-  query: ({ id, ...data }) => ({
-    url: `/users/${id}`,
-    method: 'PUT',
-    body: data,
-  }),
-  invalidatesTags: ['Users'],
-}),
-deleteUser: builder.mutation({
-  query: (id: number) => ({
-    url: `/users/${id}`,
-    method: 'DELETE',
-  }),
-  invalidatesTags: ['Users'],
-}),
-changeUserRole: builder.mutation({
-  query: ({ id, role }) => ({
-    url: `/users/${id}/role`,
-    method: 'PATCH',
-    body: { role },
-  }),
-  invalidatesTags: ['Users'],
-}),
+    getUsers: builder.query({
+      query: () => '/users',
+      providesTags: ['Users'],
+    }),
+    getUserById: builder.query({
+      query: (id: number) => `/users/${id}`,
+      providesTags: ['Users'],
+    }),
+    createUser: builder.mutation({
+      query: (data) => ({
+        url: '/users',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Users'],
+    }),
+    updateUser: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/users/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Users'],
+    }),
+    deleteUser: builder.mutation({
+      query: (id: number) => ({
+        url: `/users/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Users'],
+    }),
+    changeUserRole: builder.mutation({
+      query: ({ id, role }) => ({
+        url: `/users/${id}/role`,
+        method: 'PATCH',
+        body: { role },
+      }),
+      invalidatesTags: ['Users'],
+    }),
     
     // Auth
     login: builder.mutation({
@@ -197,7 +199,8 @@ changeUserRole: builder.mutation({
       }),
       invalidatesTags: ['User'],
     }),
-     // NOUVEAUX ENDPOINTS POUR L'APPROBATION
+    
+    // Approbation
     getPendingUsers: builder.query({
       query: () => '/admin/pending-users',
       providesTags: ['PendingUsers'],
@@ -217,7 +220,6 @@ changeUserRole: builder.mutation({
       invalidatesTags: ['PendingUsers', 'Users'],
     }),
   }),
-  
 });
 
 // Export all hooks
@@ -238,12 +240,19 @@ export const {
   useCreatePageMutation,
   useUpdatePageMutation,
   useDeletePageMutation,
-   // Media
+  // Media
   useGetMediaQuery,
   useUploadMediaMutation,
   useDeleteMediaMutation,
   useUpdateMediaAltMutation,
-  // NOUVEAUX HOOKS
+  // Users
+  useGetUsersQuery,
+  useGetUserByIdQuery,
+  useCreateUserMutation,
+  useUpdateUserMutation,
+  useDeleteUserMutation,
+  useChangeUserRoleMutation,
+  // Approbation
   useGetPendingUsersQuery,
   useApproveUserMutation,
   useRejectUserMutation,
@@ -252,11 +261,4 @@ export const {
   useRegisterMutation,
   useGetProfileQuery,
   useUpdateProfileMutation,
-  // Exports
-useGetUsersQuery,
-useGetUserByIdQuery,
-useCreateUserMutation,
-useUpdateUserMutation,
-useDeleteUserMutation,
-useChangeUserRoleMutation,
 } = api;
