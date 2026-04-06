@@ -20,12 +20,11 @@ exports.sequelize = new sequelize_typescript_1.Sequelize(databaseUrl, {
     logging: false,
     models: [User_1.User, token_1.Token, page_1.Page, site_1.Site, activityLog_1.ActivityLog, media_1.Media, Seo_1.Seo],
     dialectOptions: {
-        ssl: {
+        ssl: process.env.NODE_ENV === "production" ? {
             require: true,
-            rejectUnauthorized: false,
-        },
+            rejectUnauthorized: false, // هذي تسمح بقبول self-signed
+        } : false
     },
-    ssl: true,
 });
 const initializeDB = async () => {
     try {

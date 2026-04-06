@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getActivityLog = exports.getSiteStats = exports.getDashboardStats = void 0;
 const models_1 = require("../models");
+const connection_1 = require("../database/connection");
 // Fonction pour calculer le stockage utilisé
 const calculateStorageUsed = async (userId) => {
     try {
@@ -59,7 +60,7 @@ const getDashboardStats = async (req, res) => {
             calculateStorageUsed(userId)
         ]);
         // Statistiques par mois
-        const monthlyStats = await models_1.sequelize.query(`
+        const monthlyStats = await connection_1.sequelize.query(`
       SELECT 
         DATE_TRUNC('month', created_at) as month,
         COUNT(*) as count
