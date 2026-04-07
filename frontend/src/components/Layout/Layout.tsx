@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Box, Toolbar } from '@mui/material';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import { Outlet } from 'react-router-dom';
 interface LayoutProps {
   children: React.ReactNode;
 }
@@ -33,6 +34,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       >
         <Toolbar />
         {children}
+        <Outlet />
       </Box>
     </Box>
   );
