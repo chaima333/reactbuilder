@@ -1,206 +1,196 @@
-import { Response } from 'express';
-import { Page, ActivityLog } from '../models';
-import { AuthRequest } from '../shared/auth.util';
+import { Response } from "express";
+import { Page, ActivityLog, Site } from "../models";
+import { AuthRequest } from "../shared/auth.util";
+import { Op } from "sequelize";
 
-// Au lieu de (req: Request), utilise (req: AuthRequest)
-export const myController = async (req: AuthRequest, res: Response) => {
-const { id } = req.params;   // ✅ Maintenant reconnu
-  const { name } = req.body;   // ✅ Maintenant reconnu
-  const { page } = req.query;  // ✅ Maintenant reconnu
-  const authHeader = req.headers.authorization;
+// Types
+export type PageStatus = "draft" | "published" | "scheduled" | "deleted";
+export interface PageBlock {
+  type: string;
+  content: string;
 }
+
+interface PageCreateInput {
+  title: string;
+  content?: string;
+  blocks?: PageBlock[];
+  status?: PageStatus;
+}
+
+interface PageUpdateInput {
+  title?: string;
+  content?: string;
+  blocks?: PageBlock[];
+  status?: PageStatus;
+}
+
+// Helper: generate slug unique par site
+const generateSlug = async (
+  title: string,
+  siteId: number,
+  excludeId?: number
+) => {
+  let baseSlug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (
+    await Page.findOne({
+      where: {
+        slug,
+        siteId,
+        status: { [Op.ne]: "deleted" },
+        ...(excludeId ? { id: { [Op.ne]: excludeId } } : {}),
+      },
+    })
+  ) {
+    slug = `${baseSlug}-${counter++}`;
+  }
+
+  return slug;
+};
+
+// ------------------------
+// GET all pages
+// ------------------------
 export const getPages = async (req: AuthRequest, res: Response) => {
   try {
     const { siteId } = req.params;
     const userId = req.user.id;
 
-    console.log('🔍 getPages - siteId:', siteId, 'userId:', userId);
+    const site = await Site.findOne({ where: { id: Number(siteId), ownerId: userId } });
+    if (!site) return res.status(404).json({ success: false, message: "Site non trouvé ou accès refusé" });
 
     const pages = await Page.findAll({
-      where: { siteId: Number(siteId), userId },
-      order: [['createdAt', 'ASC']],
+      where: { siteId: Number(siteId), userId, status: { [Op.ne]: "deleted" } },
+      order: [["createdAt", "ASC"]],
     });
 
-    res.json({
-      success: true,
-      data: pages,
-    });
+    return res.json({ success: true, data: pages });
   } catch (error) {
-    console.error('❌ Get pages error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la récupération des pages',
-      error: error instanceof Error ? error.message : String(error)
-    });
+    console.error("❌ Get pages error:", error);
+    return res.status(500).json({ success: false, message: "Erreur lors de la récupération des pages" });
   }
 };
 
+// ------------------------
+// GET single page by ID
+// ------------------------
 export const getPageById = async (req: AuthRequest, res: Response) => {
   try {
     const { siteId, pageId } = req.params;
     const userId = req.user.id;
 
     const page = await Page.findOne({
-      where: { id: Number(pageId), siteId: Number(siteId), userId },
+      where: { id: Number(pageId), siteId: Number(siteId), userId, status: { [Op.ne]: "deleted" } },
     });
 
-    if (!page) {
-      return res.status(404).json({
-        success: false,
-        message: 'Page non trouvée',
-      });
-    }
+    if (!page) return res.status(404).json({ success: false, message: "Page non trouvée" });
 
-    res.json({
-      success: true,
-      data: page,
-    });
+    return res.json({ success: true, data: page });
   } catch (error) {
-    console.error('Get page error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la récupération de la page',
-    });
+    console.error("❌ Get page error:", error);
+    return res.status(500).json({ success: false, message: "Erreur lors de la récupération de la page" });
   }
 };
 
+// ------------------------
+// CREATE page
+// ------------------------
 export const createPage = async (req: AuthRequest, res: Response) => {
   try {
     const { siteId } = req.params;
     const userId = req.user.id;
-    const { title, content, blocks, status = 'draft' } = req.body;
+    const { title, content = "", blocks = [], status = "draft" } = req.body as PageCreateInput;
 
-    console.log('📝 createPage - siteId:', siteId, 'title:', title);
+    // Validation simple des blocs
+    if (!Array.isArray(blocks) || blocks.some(b => !b.type || !b.content)) {
+      return res.status(400).json({ success: false, message: "Blocs invalides" });
+    }
 
-    // Générer un slug à partir du titre
-    const slug = title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
+    const site = await Site.findOne({ where: { id: Number(siteId), ownerId: userId } });
+    if (!site) return res.status(404).json({ success: false, message: "Site non trouvé ou accès refusé" });
 
-    const pageData: any = {
-      title,
-      slug,
-      content: content || '',
-      blocks: blocks || [],
-      status,
-      userId,
-      siteId: Number(siteId),
-    };
+    const slug = await generateSlug(title, Number(siteId));
 
-    const page = await Page.create(pageData);
+    const page = await Page.create({ title, slug, content, blocks, status, userId, siteId: Number(siteId) });
 
-    // Journaliser l'activité
-    await ActivityLog.create({
-      userId,
-      siteId: Number(siteId),
-      action: 'page_created',
-      entityType: 'page',
-      entityId: page.id,
-      details: { title: page.title },
-    });
+    // Log séparé pour fiabilité
+    try {
+      await ActivityLog.create({ userId, siteId: Number(siteId), action: "page_created", entityType: "page", entityId: page.id, details: { title: page.title } });
+    } catch (e) {
+      console.warn("⚠️ ActivityLog failed:", e);
+    }
 
-    res.status(201).json({
-      success: true,
-      message: 'Page créée avec succès',
-      data: page,
-    });
+    return res.status(201).json({ success: true, message: "Page créée avec succès", data: page });
   } catch (error) {
-    console.error('❌ Create page error DETAIL:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la création de la page',
-      error: error instanceof Error ? error.message : String(error)
-    });
+    console.error("❌ Create page error:", error);
+    return res.status(500).json({ success: false, message: "Erreur lors de la création de la page" });
   }
 };
 
+// ------------------------
+// UPDATE page
+// ------------------------
 export const updatePage = async (req: AuthRequest, res: Response) => {
   try {
     const { siteId, pageId } = req.params;
     const userId = req.user.id;
-    const { title, content, blocks, status } = req.body;
+    const { title, content, blocks, status } = req.body as PageUpdateInput;
 
-    const page = await Page.findOne({
-      where: { id: Number(pageId), siteId: Number(siteId), userId },
-    });
+    const page = await Page.findOne({ where: { id: Number(pageId), siteId: Number(siteId), userId } });
+    if (!page || page.status === "deleted") return res.status(404).json({ success: false, message: "Page non trouvée" });
 
-    if (!page) {
-      return res.status(404).json({
-        success: false,
-        message: 'Page non trouvée',
-      });
-    }
-
-    const updateData: any = { title, content, blocks, status };
+    const updateData: Partial<PageUpdateInput & { slug?: string }> = {};
     if (title && title !== page.title) {
-      updateData.slug = title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
+      updateData.title = title;
+      updateData.slug = await generateSlug(title, Number(siteId), page.id);
     }
+    if (content !== undefined) updateData.content = content;
+    if (blocks !== undefined) {
+      if (!Array.isArray(blocks) || blocks.some(b => !b.type || !b.content)) {
+        return res.status(400).json({ success: false, message: "Blocs invalides" });
+      }
+      updateData.blocks = blocks;
+    }
+    if (status !== undefined) updateData.status = status;
 
     await page.update(updateData);
 
-    await ActivityLog.create({
-      userId,
-      siteId: Number(siteId),
-      action: 'page_updated',
-      entityType: 'page',
-      entityId: page.id,
-      details: { title: page.title },
-    });
+    try {
+      await ActivityLog.create({ userId, siteId: Number(siteId), action: "page_updated", entityType: "page", entityId: page.id, details: { title: page.title } });
+    } catch (e) { console.warn("⚠️ ActivityLog failed:", e); }
 
-    res.json({
-      success: true,
-      message: 'Page mise à jour avec succès',
-      data: page,
-    });
+    return res.json({ success: true, message: "Page mise à jour avec succès", data: page });
   } catch (error) {
-    console.error('Update page error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la mise à jour de la page',
-    });
+    console.error("❌ Update page error:", error);
+    return res.status(500).json({ success: false, message: "Erreur lors de la mise à jour de la page" });
   }
 };
 
+// ------------------------
+// DELETE page (soft)
+// ------------------------
 export const deletePage = async (req: AuthRequest, res: Response) => {
   try {
     const { siteId, pageId } = req.params;
     const userId = req.user.id;
 
-    const page = await Page.findOne({
-      where: { id: Number(pageId), siteId: Number(siteId), userId },
-    });
+    const page = await Page.findOne({ where: { id: Number(pageId), siteId: Number(siteId), userId } });
+    if (!page || page.status === "deleted") return res.status(404).json({ success: false, message: "Page non trouvée" });
 
-    if (!page) {
-      return res.status(404).json({
-        success: false,
-        message: 'Page non trouvée',
-      });
-    }
+    await page.update({ status: "deleted" });
 
-    await page.destroy();
+    try {
+      await ActivityLog.create({ userId, siteId: Number(siteId), action: "page_deleted", entityType: "page", entityId: page.id, details: { title: page.title } });
+    } catch (e) { console.warn("⚠️ ActivityLog failed:", e); }
 
-    await ActivityLog.create({
-      userId,
-      siteId: Number(siteId),
-      action: 'page_deleted',
-      entityType: 'page',
-      entityId: page.id,
-      details: { title: page.title },
-    });
-
-    res.json({
-      success: true,
-      message: 'Page supprimée avec succès',
-    });
+    return res.json({ success: true, message: "Page supprimée avec succès" });
   } catch (error) {
-    console.error('Delete page error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la suppression de la page',
-    });
+    console.error("❌ Delete page error:", error);
+    return res.status(500).json({ success: false, message: "Erreur lors de la suppression de la page" });
   }
 };

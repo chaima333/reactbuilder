@@ -13,10 +13,17 @@ import { User } from "./User";
 import { Site } from "./site";
 import { Seo } from "./Seo";
 
+// Type pour les blocs de l'éditeur
+export type Block = { type: string; content: string };
+
+// Statuts possibles d'une page
+export type PageStatus = 'draft' | 'published' | 'scheduled' | 'deleted';
+
 @Table({
   tableName: "pages",
   timestamps: true,
   underscored: true,
+  indexes: [{ unique: true, fields: ['site_id', 'slug'] }],
 })
 export class Page extends Model {
   @Column({
@@ -35,7 +42,6 @@ export class Page extends Model {
   @Column({
     type: DataType.STRING(255),
     allowNull: false,
-    unique: true,
   })
   slug!: string;
 
@@ -48,8 +54,9 @@ export class Page extends Model {
   @Column({
     type: DataType.JSONB,
     allowNull: true,
+    defaultValue: [],
   })
-  blocks!: any; // Pour stocker les blocs de l'éditeur
+  blocks!: Block[];
 
   @Column({
     type: DataType.STRING(255),
@@ -73,10 +80,10 @@ export class Page extends Model {
   metaKeywords!: string;
 
   @Column({
-    type: DataType.ENUM('draft', 'published', 'scheduled'),
+    type: DataType.ENUM('draft', 'published', 'scheduled', 'deleted'),
     defaultValue: 'draft',
   })
-  status!: 'draft' | 'published' | 'scheduled';
+  status!: PageStatus;
 
   @Column({
     type: DataType.DATE,
@@ -120,6 +127,9 @@ export class Page extends Model {
   @BelongsTo(() => Site)
   site!: Site;
 
+  @HasOne(() => Seo)
+  seo!: Seo;
+
   @CreatedAt
   @Column({
     type: DataType.DATE,
@@ -133,7 +143,4 @@ export class Page extends Model {
     field: 'updated_at',
   })
   updatedAt!: Date;
-  @HasOne(() => Seo)
-seo!: Seo;
-
 }

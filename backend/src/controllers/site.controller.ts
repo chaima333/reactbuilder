@@ -4,9 +4,9 @@ import { AuthRequest } from '../shared/auth.util';
 
 // Au lieu de (req: Request), utilise (req: AuthRequest)
 export const myController = async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;   // ✅ Maintenant reconnu
-  const { name } = req.body;   // ✅ Maintenant reconnu
-  const { page } = req.query;  // ✅ Maintenant reconnu
+  const { id } = req.params;   
+  const { name } = req.body;   
+  const { page } = req.query;  
   const authHeader = req.headers.authorization;
 }
 export const createSite = async (req: AuthRequest, res: Response) => {
@@ -14,16 +14,11 @@ export const createSite = async (req: AuthRequest, res: Response) => {
     const { name, subdomain, title, description, language = 'fr', timezone = 'Europe/Paris' } = req.body;
     const userId = req.user.id;
 
-    // Vérifier si le sous-domaine existe déjà
     const existingSite = await Site.findOne({ where: { subdomain } });
     if (existingSite) {
-      return res.status(400).json({
-        success: false,
-        message: 'Ce sous-domaine est déjà utilisé'
-      });
+      return res.status(400).json({ success: false, message: 'Ce sous-domaine est déjà utilisé' });
     }
 
-    // Créer le site
     const site = await Site.create({
       name,
       subdomain,
@@ -35,27 +30,38 @@ export const createSite = async (req: AuthRequest, res: Response) => {
       status: 'active'
     });
 
-    // Journaliser l'activité
-    await ActivityLog.create({
-      userId,
+    // Créer page d'accueil correctement
+    await Page.create({
+      title: "Home",
+      slug: "home",
+      content: "<p>Bienvenue sur ce site !</p>",
+      blocks: [
+        { type: "title", content: "Bienvenue !" },
+        { type: "text", content: "Voici une page exemple." }
+      ],
       siteId: site.id,
-      action: 'site_created',
-      entityType: 'site',
-      entityId: site.id,
-      details: { name: site.name, subdomain: site.subdomain }
+      userId: userId,
+      status: 'published'
     });
 
-    res.status(201).json({
-      success: true,
-      message: 'Site créé avec succès',
-      data: site
-    });
+    // Journalisation safe
+    try {
+      await ActivityLog.create({
+        userId,
+        siteId: site.id,
+        action: 'site_created',
+        entityType: 'site',
+        entityId: site.id,
+        details: { name: site.name, subdomain: site.subdomain }
+      });
+    } catch (logErr) {
+      console.warn('⚠️ Activity log failed:', logErr);
+    }
+
+    return res.status(201).json({ success: true, message: 'Site créé avec succès', data: site });
   } catch (error) {
     console.error('Create site error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la création du site'
-    });
+    return res.status(500).json({ success: false, message: 'Erreur lors de la création du site' });
   }
 };
 
