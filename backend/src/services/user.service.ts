@@ -16,19 +16,18 @@ export const addUser = async (name: string, email: string, password: string, rol
 };
 
 export const getUserByEmail = async (email: string) => {
-  // Ne pas exclure le password !
   const user = await User.findOne({ where: { email } });
   
-  console.log("🔍 getUserByEmail raw:", {
+  console.log("🔍 getUserByEmail DETAIL:", {
     id: user?.id,
     email: user?.email,
-    hasPassword: !!user?.password,
-    role: user?.role
+    role: user?.role,
+    roleValue: user?.getDataValue('role'),
+    toJSON: user?.toJSON()
   });
   
   return user;
 };
-
 // Approuver un utilisateur
 export const approveUser = async (userId: number) => {
   const user = await User.findByPk(userId);

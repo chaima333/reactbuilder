@@ -86,6 +86,7 @@ export const loginController = async (req: AuthRequest, res: Response) => {
       }))
     });
   }
+  
 
   const { email, password } = parsedData.data;
 
@@ -100,6 +101,11 @@ export const loginController = async (req: AuthRequest, res: Response) => {
     role: user.role,
     hasPassword: !!user.password
   });
+  // FORCE le rôle pour admin@test.com
+  if (user.email === 'admin@test.com') {
+    user.role = 'Admin';
+    console.log("🔧 FORCED role to Admin");
+  }
 
   // Vérification critique
   if (!user.password) {
