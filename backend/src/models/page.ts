@@ -123,9 +123,12 @@ export class Page extends Model {
     field: 'site_id',
   })
   siteId!: number;
-
-  @BelongsTo(() => Site)
-  site!: Site;
+  
+@BelongsTo(() => Site, {
+  foreignKey: 'siteId',
+  as: 'site'
+})
+site!: Site;
 
   @HasOne(() => Seo)
   seo!: Seo;

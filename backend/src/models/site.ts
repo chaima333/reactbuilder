@@ -113,8 +113,11 @@ export class Site extends Model {
   updatedAt!: Date;
 
   // Associations
-  @HasMany(() => Page)
-  pages!: Page[];
+ @HasMany(() => Page, {
+  foreignKey: 'siteId',
+  as: 'pages'
+})
+pages!: Page[];
 
   @HasMany(() => ActivityLog)
   activities!: ActivityLog[];

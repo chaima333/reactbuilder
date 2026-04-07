@@ -74,21 +74,26 @@ export const getSites = async (req: AuthRequest, res: Response) => {
       include: [
         {
           model: Page,
-          as: 'pages',
-          attributes: ['id', 'title', 'views', 'status']
+          as: 'pages', // لازم نفس الاسم في association
+          attributes: ['id', 'title', 'views', 'status'],
+          required: false // 🔥 مهم: باش يرجّع site حتى لو ما فيهش pages
         }
       ],
       order: [['createdAt', 'DESC']]
     });
 
-    // Calculer les statistiques pour chaque site
-    const sitesWithStats = sites.map(site => {
+    const sitesWithStats = sites.map((site: any) => {
       const siteJson = site.toJSON();
-      const pages = site.pages || [];
+
+      const pages = siteJson.pages || [];
+
       return {
         ...siteJson,
         pagesCount: pages.length,
-        totalViews: pages.reduce((sum: number, page: any) => sum + (page.views || 0), 0)
+        totalViews: pages.reduce(
+          (sum: number, page: any) => sum + (page.views || 0),
+          0
+        )
       };
     });
 
@@ -96,8 +101,9 @@ export const getSites = async (req: AuthRequest, res: Response) => {
       success: true,
       data: sitesWithStats
     });
+
   } catch (error) {
-    console.error('Get sites error:', error);
+    console.error('❌ Get sites error:', error);
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des sites'
