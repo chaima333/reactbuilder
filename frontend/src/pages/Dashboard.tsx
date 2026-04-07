@@ -10,6 +10,7 @@ import { MonthlyChart } from '../components/Dashboard/MonthlyChart';
 
 export const Dashboard: React.FC = () => {
   const userRole = useSelector((state: RootState) => state.auth.user?.role);
+  console.log(" userRole actuel:", userRole);  
   const { data: statsData, isLoading: statsLoading, error: statsError } = useGetDashboardStatsQuery(undefined);
   const { data: activityData } = useGetActivityLogQuery({ limit: 10 });
 
