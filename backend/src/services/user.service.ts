@@ -16,16 +16,14 @@ export const addUser = async (name: string, email: string, password: string, rol
 };
 
 export const getUserByEmail = async (email: string) => {
-  const user = await User.findOne({ 
-    where: { email },
-    attributes: { exclude: ['password'] }
-  });
+  // Ne pas exclure le password !
+  const user = await User.findOne({ where: { email } });
   
-  console.log('🔍 getUserByEmail result:', {
+  console.log("🔍 getUserByEmail raw:", {
     id: user?.id,
     email: user?.email,
-    role: user?.role,
-    isApproved: user?.isApproved
+    hasPassword: !!user?.password,
+    role: user?.role
   });
   
   return user;
