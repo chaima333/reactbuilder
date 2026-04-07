@@ -1,20 +1,23 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteSite = exports.updateSite = exports.getSiteById = exports.getSites = exports.createSite = void 0;
+exports.deleteSite = exports.updateSite = exports.getSiteById = exports.getSites = exports.createSite = exports.myController = void 0;
 const models_1 = require("../models");
+// Au lieu de (req: Request), utilise (req: AuthRequest)
+const myController = async (req, res) => {
+    const { id } = req.params;
+    const { name } = req.body;
+    const { page } = req.query;
+    const authHeader = req.headers.authorization;
+};
+exports.myController = myController;
 const createSite = async (req, res) => {
     try {
         const { name, subdomain, title, description, language = 'fr', timezone = 'Europe/Paris' } = req.body;
         const userId = req.user.id;
-        // Vérifier si le sous-domaine existe déjà
         const existingSite = await models_1.Site.findOne({ where: { subdomain } });
         if (existingSite) {
-            return res.status(400).json({
-                success: false,
-                message: 'Ce sous-domaine est déjà utilisé'
-            });
+            return res.status(400).json({ success: false, message: 'Ce sous-domaine est déjà utilisé' });
         }
-        // Créer le site
         const site = await models_1.Site.create({
             name,
             subdomain,
@@ -25,27 +28,38 @@ const createSite = async (req, res) => {
             ownerId: userId,
             status: 'active'
         });
-        // Journaliser l'activité
-        await models_1.ActivityLog.create({
-            userId,
+        // Créer page d'accueil correctement
+        await models_1.Page.create({
+            title: "Home",
+            slug: "home",
+            content: "<p>Bienvenue sur ce site !</p>",
+            blocks: [
+                { type: "title", content: "Bienvenue !" },
+                { type: "text", content: "Voici une page exemple." }
+            ],
             siteId: site.id,
-            action: 'site_created',
-            entityType: 'site',
-            entityId: site.id,
-            details: { name: site.name, subdomain: site.subdomain }
+            userId: userId,
+            status: 'published'
         });
-        res.status(201).json({
-            success: true,
-            message: 'Site créé avec succès',
-            data: site
-        });
+        // Journalisation safe
+        try {
+            await models_1.ActivityLog.create({
+                userId,
+                siteId: site.id,
+                action: 'site_created',
+                entityType: 'site',
+                entityId: site.id,
+                details: { name: site.name, subdomain: site.subdomain }
+            });
+        }
+        catch (logErr) {
+            console.warn('⚠️ Activity log failed:', logErr);
+        }
+        return res.status(201).json({ success: true, message: 'Site créé avec succès', data: site });
     }
     catch (error) {
         console.error('Create site error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur lors de la création du site'
-        });
+        return res.status(500).json({ success: false, message: 'Erreur lors de la création du site' });
     }
 };
 exports.createSite = createSite;

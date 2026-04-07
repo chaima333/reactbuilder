@@ -3,11 +3,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateMediaAlt = exports.deleteMedia = exports.getMedia = exports.uploadImage = exports.upload = void 0;
+exports.updateMediaAlt = exports.deleteMedia = exports.getMedia = exports.uploadImage = exports.upload = exports.myController = void 0;
 const models_1 = require("../models");
 const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
+// Au lieu de (req: Request), utilise (req: AuthRequest)
+const myController = async (req, res) => {
+    const { id } = req.params; // Maintenant reconnu
+    const { name } = req.body; // Maintenant reconnu
+};
+exports.myController = myController;
 // Configuration multer pour l'upload
 const storage = multer_1.default.diskStorage({
     destination: (req, file, cb) => {

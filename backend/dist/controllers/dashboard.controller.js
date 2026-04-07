@@ -1,8 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getActivityLog = exports.getSiteStats = exports.getDashboardStats = void 0;
+exports.getActivityLog = exports.getSiteStats = exports.getDashboardStats = exports.myController = void 0;
 const models_1 = require("../models");
 const connection_1 = require("../database/connection");
+// Au lieu de (req: Request), utilise (req: AuthRequest)
+const myController = async (req, res) => {
+    const { id } = req.params; // ✅ Maintenant reconnu
+    const { name } = req.body; // ✅ Maintenant reconnu
+    const { page } = req.query; // ✅ Maintenant reconnu
+    const authHeader = req.headers.authorization;
+};
+exports.myController = myController;
 // Fonction pour calculer le stockage utilisé
 const calculateStorageUsed = async (userId) => {
     try {

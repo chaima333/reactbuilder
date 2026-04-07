@@ -32,7 +32,6 @@ const authenticateJWT = async (req, res, next) => {
             });
             return;
         }
-        // Vérifier si l'utilisateur est approuvé
         if (!user.isApproved && user.role !== 'Admin') {
             res.status(403).json({
                 success: false,
@@ -51,6 +50,7 @@ const authenticateJWT = async (req, res, next) => {
             res.status(403).json({ success: false, message: 'Invalid token' });
         }
         else {
+            console.error('Auth error:', error);
             res.status(500).json({ success: false, message: 'Internal server error' });
         }
     }

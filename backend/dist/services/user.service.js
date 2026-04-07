@@ -1,25 +1,31 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPendingUsers = exports.approveUser = exports.addUser = exports.getUserByEmail = void 0;
+exports.getPendingUsers = exports.approveUser = exports.getUserByEmail = exports.addUser = void 0;
 // user.service.ts
 const models_1 = require("../models");
-// Récupérer utilisateur par email
-const getUserByEmail = async (email) => {
-    return models_1.User.findOne({ where: { email } });
-};
-exports.getUserByEmail = getUserByEmail;
 // Ajouter un utilisateur
-const addUser = async (name, email, password, role = "Viewer", // valeur par défaut
-isApproved = false) => {
-    const user = new models_1.User();
-    user.name = name;
-    user.email = email;
-    user.password = password; // déjà hashé avec bcrypt
-    user.role = role;
-    user.isApproved = isApproved;
-    return await user.save(); // Sequelize crée id, createdAt, updatedAt automatiquement
+const addUser = async (name, email, password, role, isApproved = false) => {
+    return await models_1.User.create({
+        name,
+        email,
+        password,
+        role: role,
+        isApproved
+    });
 };
 exports.addUser = addUser;
+const getUserByEmail = async (email) => {
+    const user = await models_1.User.findOne({ where: { email } });
+    console.log("🔍 getUserByEmail DETAIL:", {
+        id: user?.id,
+        email: user?.email,
+        role: user?.role,
+        roleValue: user?.getDataValue('role'),
+        toJSON: user?.toJSON()
+    });
+    return user;
+};
+exports.getUserByEmail = getUserByEmail;
 // Approuver un utilisateur
 const approveUser = async (userId) => {
     const user = await models_1.User.findByPk(userId);

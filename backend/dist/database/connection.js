@@ -14,16 +14,12 @@ if (!databaseUrl) {
     console.error("❌ Erreur : DATABASE_URL manquante !");
     process.exit(1);
 }
-console.log("DATABASE_URL:", databaseUrl);
 exports.sequelize = new sequelize_typescript_1.Sequelize(databaseUrl, {
     dialect: "postgres",
-    logging: false,
+    logging: console.log,
     models: [User_1.User, token_1.Token, page_1.Page, site_1.Site, activityLog_1.ActivityLog, media_1.Media, Seo_1.Seo],
     dialectOptions: {
-        ssl: process.env.NODE_ENV === "production" ? {
-            require: true,
-            rejectUnauthorized: false, // هذي تسمح بقبول self-signed
-        } : false
+        ssl: false // ← Désactive SSL pour Railway
     },
 });
 const initializeDB = async () => {

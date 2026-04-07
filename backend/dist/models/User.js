@@ -17,7 +17,7 @@ let User = class User extends sequelize_typescript_1.Model {
         return this.role === 'Admin';
     }
     isEditor() {
-        return this.role === 'Editor' || this.role === 'Admin';
+        return this.role === 'Editor';
     }
     canEditPage(pageUserId) {
         if (this.isAdmin())
@@ -71,6 +71,7 @@ __decorate([
 __decorate([
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.ENUM('Admin', 'Editor', 'Viewer'),
+        allowNull: false,
         defaultValue: 'Viewer'
     }),
     __metadata("design:type", String)
@@ -84,28 +85,28 @@ __decorate([
 ], User.prototype, "avatar", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)({
+        type: sequelize_typescript_1.DataType.BOOLEAN,
+        defaultValue: false,
+        field: 'is_approved'
+    }),
+    __metadata("design:type", Boolean)
+], User.prototype, "isApproved", void 0);
+__decorate([
+    sequelize_typescript_1.CreatedAt,
+    (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.DATE,
-        defaultValue: sequelize_typescript_1.DataType.NOW,
         field: 'created_at'
     }),
     __metadata("design:type", Date)
 ], User.prototype, "createdAt", void 0);
 __decorate([
+    sequelize_typescript_1.UpdatedAt,
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.DATE,
-        defaultValue: sequelize_typescript_1.DataType.NOW,
         field: 'updated_at'
     }),
     __metadata("design:type", Date)
 ], User.prototype, "updatedAt", void 0);
-__decorate([
-    (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.BOOLEAN,
-        defaultValue: false,
-        field: 'is_approved',
-    }),
-    __metadata("design:type", Boolean)
-], User.prototype, "isApproved", void 0);
 exports.User = User = __decorate([
     (0, sequelize_typescript_1.Table)({
         tableName: "users",

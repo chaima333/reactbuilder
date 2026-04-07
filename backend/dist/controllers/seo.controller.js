@@ -1,8 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getRobotsTxt = exports.generateSitemap = exports.updatePageSeo = exports.getPageSeo = void 0;
+exports.getRobotsTxt = exports.generateSitemap = exports.updatePageSeo = exports.getPageSeo = exports.myController = void 0;
 const models_1 = require("../models");
 const Seo_1 = require("../models/Seo");
+// Au lieu de (req: Request), utilise (req: AuthRequest)
+const myController = async (req, res) => {
+    const { id } = req.params; // ✅ Maintenant reconnu
+    const { name } = req.body; // ✅ Maintenant reconnu
+    const { page } = req.query; // ✅ Maintenant reconnu
+    const authHeader = req.headers.authorization;
+};
+exports.myController = myController;
 // Récupérer le SEO d'une page
 const getPageSeo = async (req, res) => {
     try {

@@ -3,9 +3,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.changeUserRole = exports.deleteUser = exports.updateUser = exports.createUser = exports.getUserById = exports.getUsers = void 0;
+exports.changeUserRole = exports.deleteUser = exports.updateUser = exports.createUser = exports.getUserById = exports.getUsers = exports.myController = void 0;
 const models_1 = require("../models");
 const bcrypt_1 = __importDefault(require("bcrypt"));
+// Au lieu de (req: Request), utilise (req: AuthRequest)
+const myController = async (req, res) => {
+    const { id } = req.params; // ✅ Maintenant reconnu
+    const { name } = req.body; // ✅ Maintenant reconnu
+    const { page } = req.query; // ✅ Maintenant reconnu
+    const authHeader = req.headers.authorization;
+};
+exports.myController = myController;
 // Récupérer tous les utilisateurs (admin seulement)
 const getUsers = async (req, res) => {
     try {

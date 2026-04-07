@@ -36,7 +36,6 @@ __decorate([
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.STRING(255),
         allowNull: false,
-        unique: true,
     }),
     __metadata("design:type", String)
 ], Page.prototype, "slug", void 0);
@@ -51,8 +50,9 @@ __decorate([
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.JSONB,
         allowNull: true,
+        defaultValue: [],
     }),
-    __metadata("design:type", Object)
+    __metadata("design:type", Array)
 ], Page.prototype, "blocks", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)({
@@ -80,7 +80,7 @@ __decorate([
 ], Page.prototype, "metaKeywords", void 0);
 __decorate([
     (0, sequelize_typescript_1.Column)({
-        type: sequelize_typescript_1.DataType.ENUM('draft', 'published', 'scheduled'),
+        type: sequelize_typescript_1.DataType.ENUM('draft', 'published', 'scheduled', 'deleted'),
         defaultValue: 'draft',
     }),
     __metadata("design:type", String)
@@ -135,6 +135,10 @@ __decorate([
     __metadata("design:type", site_1.Site)
 ], Page.prototype, "site", void 0);
 __decorate([
+    (0, sequelize_typescript_1.HasOne)(() => Seo_1.Seo),
+    __metadata("design:type", Seo_1.Seo)
+], Page.prototype, "seo", void 0);
+__decorate([
     sequelize_typescript_1.CreatedAt,
     (0, sequelize_typescript_1.Column)({
         type: sequelize_typescript_1.DataType.DATE,
@@ -150,14 +154,11 @@ __decorate([
     }),
     __metadata("design:type", Date)
 ], Page.prototype, "updatedAt", void 0);
-__decorate([
-    (0, sequelize_typescript_1.HasOne)(() => Seo_1.Seo),
-    __metadata("design:type", Seo_1.Seo)
-], Page.prototype, "seo", void 0);
 exports.Page = Page = __decorate([
     (0, sequelize_typescript_1.Table)({
         tableName: "pages",
         timestamps: true,
         underscored: true,
+        indexes: [{ unique: true, fields: ['site_id', 'slug'] }],
     })
 ], Page);

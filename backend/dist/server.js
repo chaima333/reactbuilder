@@ -50,9 +50,10 @@ const media_routes_1 = __importDefault(require("./routes/media.routes"));
 const user_routes_1 = __importDefault(require("./routes/user.routes"));
 const seo_routes_1 = __importDefault(require("./routes/seo.routes"));
 const admin_routes_1 = __importDefault(require("./routes/admin.routes"));
-const connection_1 = require("./database/connection"); // correct
+const connection_1 = require("./database/connection");
 const app = (0, express_1.default)();
-const PORT = process.env.PORT || 5000;
+// Convertir PORT en nombre
+const PORT = parseInt(process.env.PORT || "10000", 10);
 // Middleware
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
@@ -75,10 +76,12 @@ app.get("/api/health", (req, res) => {
 // Démarrage serveur après initialisation DB
 const startServer = async () => {
     try {
-        await (0, connection_1.initializeDB)(); // ✅ Init DB avant tout
-        app.listen(PORT, () => {
-            console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
-            console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
+        console.log("📡 Tentative de connexion à la base de données...");
+        await (0, connection_1.initializeDB)();
+        console.log("✅ Base de données initialisée");
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`🚀 Serveur démarré sur http://0.0.0.0:${PORT}`);
+            console.log(`🔗 Health check: http://0.0.0.0:${PORT}/api/health`);
         });
     }
     catch (error) {
