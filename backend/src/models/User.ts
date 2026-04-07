@@ -1,4 +1,4 @@
-import { Table, Column, Model, DataType, HasMany } from "sequelize-typescript";
+import { Table, Column, Model, DataType, HasMany, CreatedAt, UpdatedAt } from "sequelize-typescript";
 
 @Table({ 
   tableName: "users",
@@ -35,9 +35,10 @@ export class User extends Model<User> {
 
   @Column({
     type: DataType.ENUM('Admin', 'Editor', 'Viewer'),
+    allowNull: false,
     defaultValue: 'Viewer'
   })
-  role!: string;
+  role!: 'Admin' | 'Editor' | 'Viewer';  
 
   @Column({
     type: DataType.STRING(500),
@@ -46,20 +47,25 @@ export class User extends Model<User> {
   avatar!: string;
 
   @Column({
+    type: DataType.BOOLEAN,
+    defaultValue: false,
+    field: 'is_approved'
+  })
+  isApproved!: boolean;
+
+  @CreatedAt
+  @Column({
     type: DataType.DATE,
-    defaultValue: DataType.NOW,
     field: 'created_at'
   })
   createdAt!: Date;
 
+  @UpdatedAt
   @Column({
     type: DataType.DATE,
-    defaultValue: DataType.NOW,
     field: 'updated_at'
   })
   updatedAt!: Date;
-
-
 
   // Méthodes utilitaires
   isAdmin(): boolean {
@@ -67,7 +73,7 @@ export class User extends Model<User> {
   }
 
   isEditor(): boolean {
-    return this.role === 'Editor' || this.role === 'Admin';
+    return this.role === 'Editor';
   }
 
   canEditPage(pageUserId: number): boolean {
@@ -86,10 +92,4 @@ export class User extends Model<User> {
       createdAt: this.createdAt
     };
   }
-  @Column({
-  type: DataType.BOOLEAN,
-  defaultValue: false,
-  field: 'is_approved',
-})
-isApproved!: boolean;
 }

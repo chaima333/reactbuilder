@@ -83,19 +83,24 @@ export const loginController = async (req: AuthRequest, res: Response) => {
       errors: parsedData.error.issues.map(issue => ({
         field: issue.path.join('.'),
         message: issue.message
+        
       }))
+      
     });
+    
   }
 
   const { email, password } = parsedData.data;
 
   const user = await getUserByEmail(email);
   if (!user) {
+    
     return res.status(400).json({
       success: false,
       message: "User not found."
     });
   }
+  console.log("ROLE AVANT TOKEN:", user.role);
 
   const isPasswordValid = bcrypt.compareSync(password, user.password);
   if (!isPasswordValid) {
@@ -105,9 +110,8 @@ export const loginController = async (req: AuthRequest, res: Response) => {
     });
   }
 
-  const accessToken = generateToken({ userId: user.id, type: "access" });
-  const refreshToken = generateToken({ userId: user.id, type: "refresh" });
-
+  const accessToken = generateToken({ userId: user.id, type: "access", role: user.role });
+const refreshToken = generateToken({ userId: user.id, type: "refresh", role: user.role });
   await deleteToken(user.id);
   await addToken(accessToken, "access", user.id);
   await addToken(refreshToken, "refresh", user.id);
@@ -151,7 +155,13 @@ export const refreshTokenController = async (req: AuthRequest, res: Response) =>
 
   const userId = dbRefreshToken.userId;
 
-  const accessToken = generateToken({ userId, type: "access" });
+const user = await User.findByPk(userId);
+
+const accessToken = generateToken({ 
+  userId, 
+  type: "access", 
+  role: user?.role 
+});
   const newRefreshToken = generateToken({ userId, type: "refresh" });
 
   await deleteToken(userId);

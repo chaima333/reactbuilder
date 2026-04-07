@@ -1,27 +1,34 @@
 // user.service.ts
 import { User } from "../models";
 
-// Récupérer utilisateur par email
-export const getUserByEmail = async (email: string) => {
-  return User.findOne({ where: { email } });
-};
+
 
 // Ajouter un utilisateur
-export const addUser = async (
-  name: string,
-  email: string,
-  password: string,
-  role: "Admin" | "Editor" | "Viewer" = "Viewer", // valeur par défaut
-  isApproved: boolean = false
-) => {
-  const user = new User();
-  user.name = name;
-  user.email = email;
-  user.password = password; // déjà hashé avec bcrypt
-  user.role = role;
-  user.isApproved = isApproved;
 
-  return await user.save(); // Sequelize crée id, createdAt, updatedAt automatiquement
+export const addUser = async (name: string, email: string, password: string, role: string, isApproved: boolean = false) => {
+  return await User.create({ 
+    name, 
+    email, 
+    password, 
+    role: role as 'Admin' | 'Editor' | 'Viewer',
+    isApproved 
+  });
+};
+
+export const getUserByEmail = async (email: string) => {
+  const user = await User.findOne({ 
+    where: { email },
+    attributes: { exclude: ['password'] }
+  });
+  
+  console.log('🔍 getUserByEmail result:', {
+    id: user?.id,
+    email: user?.email,
+    role: user?.role,
+    isApproved: user?.isApproved
+  });
+  
+  return user;
 };
 
 // Approuver un utilisateur

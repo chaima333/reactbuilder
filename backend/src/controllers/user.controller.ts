@@ -5,8 +5,10 @@ import bcrypt from 'bcrypt';
 
 // Au lieu de (req: Request), utilise (req: AuthRequest)
 export const myController = async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;  // Maintenant reconnu
-  const { name } = req.body;  // Maintenant reconnu
+const { id } = req.params;   // ✅ Maintenant reconnu
+  const { name } = req.body;   // ✅ Maintenant reconnu
+  const { page } = req.query;  // ✅ Maintenant reconnu
+  const authHeader = req.headers.authorization;
 }
 
 // Récupérer tous les utilisateurs (admin seulement)

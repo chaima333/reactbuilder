@@ -2,19 +2,10 @@ import { Response } from 'express';
 import { User, ActivityLog } from '../models';
 import { AuthRequest } from '../shared/auth.util';
 
-
-// Au lieu de (req: Request), utilise (req: AuthRequest)
-export const myController = async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;   // ✅ Maintenant reconnu
-  const { name } = req.body;   // ✅ Maintenant reconnu
-  const { page } = req.query;  // ✅ Maintenant reconnu
-  const authHeader = req.headers.authorization;
-}
-// Récupérer les utilisateurs en attente
 export const getPendingUsers = async (req: AuthRequest, res: Response) => {
   try {
     const users = await User.findAll({
-      where: { isApproved: false },
+      where: { isApproved: false },  // ← isApproved, pas is_approved
       attributes: { exclude: ['password'] },
       order: [['createdAt', 'DESC']]
     });
@@ -26,16 +17,12 @@ export const getPendingUsers = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Approuver un utilisateur
-// Approuver un utilisateur
 export const approveUser = async (req: AuthRequest, res: Response) => {
   try {
     let { id } = req.params;
-
-    // Si id est un tableau, prendre le premier élément
     if (Array.isArray(id)) id = id[0];
 
-    const userId = parseInt(id, 10); // base 10
+    const userId = parseInt(id, 10);
     if (isNaN(userId)) {
       return res.status(400).json({ success: false, message: 'ID invalide' });
     }
@@ -45,7 +32,7 @@ export const approveUser = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, message: 'Utilisateur non trouvé' });
     }
 
-    await user.update({ isApproved: true });
+    await user.update({ isApproved: true });  // ← isApproved
 
     await ActivityLog.create({
       userId: req.user.id,
@@ -62,7 +49,6 @@ export const approveUser = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Même correction pour rejectUser
 export const rejectUser = async (req: AuthRequest, res: Response) => {
   try {
     let { id } = req.params;
