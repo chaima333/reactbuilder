@@ -6,16 +6,20 @@ const API_URL = 'https://backend-rmfq.onrender.com/api';
 // URL de l'API - à modifier selon l'environnement
 export const api = createApi({
   reducerPath: 'api',
-  baseQuery: fetchBaseQuery({
-    baseUrl: API_URL,
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.accessToken;
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+ baseQuery: fetchBaseQuery({
+  baseUrl: 'https://backend-rmfq.onrender.com/api',
+  prepareHeaders: (headers, { getState }) => {
+    const token = (getState() as RootState).auth.accessToken;
+    console.log("🔍 [apiSlice] Token from state:", token ? token.substring(0, 50) + "..." : "NO TOKEN");
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+      console.log("✅ [apiSlice] Authorization header set");
+    } else {
+      console.log("❌ [apiSlice] No token found");
+    }
+    return headers;
+  },
+}),
   tagTypes: ['Stats', 'Activity', 'Sites', 'Pages', 'User', 'Media', 'Users', 'PendingUsers'],
   
   endpoints: (builder) => ({
