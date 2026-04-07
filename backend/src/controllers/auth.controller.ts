@@ -82,14 +82,10 @@ export const loginController = async (req: AuthRequest, res: Response) => {
       message: "Validation error",
       errors: parsedData.error.issues.map(issue => ({
         field: issue.path.join('.'),
-        message: issue.message
-        
+        message: issue.message 
       }))
-      
     });
-    
   }
-
   const { email, password } = parsedData.data;
 
   const user = await getUserByEmail(email);
@@ -100,7 +96,17 @@ export const loginController = async (req: AuthRequest, res: Response) => {
       message: "User not found."
     });
   }
-  console.log("ROLE AVANT TOKEN:", user.role);
+
+  console.log("🔍 User from DB:", {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    isApproved: user.isApproved
+  });
+  // Vérifie que le mot de passe existe
+  if (!user.password) {
+    return res.status(400).json({ success: false, message: "Invalid user data." });
+  }
 
   const isPasswordValid = bcrypt.compareSync(password, user.password);
   if (!isPasswordValid) {
