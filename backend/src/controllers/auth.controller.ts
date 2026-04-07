@@ -90,10 +90,8 @@ export const loginController = async (req: AuthRequest, res: Response) => {
 
   const { email, password } = parsedData.data;
 
-  const user = await getUserByEmail(email);
-  if (!user) {
-    return res.status(400).json({ success: false, message: "User not found." });
-  }
+ const user = await getUserByEmail(email);
+console.log("🔍 RAW user data:", user?.get({ plain: true }));
 
   console.log("🔍 User from DB:", {
     id: user.id,

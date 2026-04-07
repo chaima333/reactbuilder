@@ -16,7 +16,7 @@ if (!databaseUrl) {
 
 export const sequelize = new Sequelize(databaseUrl, {
   dialect: "postgres",
-  logging: false,
+  logging: console.log,
   models: [User, Token, Page, Site, ActivityLog, Media, Seo],
   dialectOptions: {
     ssl: false  // ← Désactive SSL pour Railway
