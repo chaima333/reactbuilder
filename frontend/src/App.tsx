@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Provider, useSelector } from 'react-redux';
@@ -22,27 +22,26 @@ import { Register } from './pages/Register';
 import { Home } from './pages/Home';
 import { PendingUsers } from './pages/PendingUsers';
 
-// Composant pour protéger les routes admin
+// Route pour protéger les pages admin
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
   const userRole = useSelector((state: RootState) => state.auth.user?.role);
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/login" />;
-  }
-  
-  if (userRole !== 'Admin') {
-    return <Navigate to="/dashboard" />;
-  }
-  
+
+  if (!isAuthenticated) return <Navigate to="/login" />;
+  if (userRole !== 'Admin') return <Navigate to="/dashboard" />;
+
+  return <>{children}</>;
+};
+
+// Route pour protéger les pages utilisateur connecté
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  if (!isAuthenticated) return <Navigate to="/" />;
   return <>{children}</>;
 };
 
 const AppContent: React.FC = () => {
   const themeMode = useSelector((state: RootState) => state.theme.mode);
-  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
-
-  console.log('AppContent - isAuthenticated:', isAuthenticated);
 
   return (
     <ThemeProvider theme={themeMode === 'light' ? lightTheme : darkTheme}>
@@ -50,53 +49,61 @@ const AppContent: React.FC = () => {
       <SnackbarProvider maxSnack={3}>
         <BrowserRouter>
           <Routes>
-            {/* Routes publiques (pas de Layout) */}
+            {/* Routes publiques */}
             <Route path="/" element={<Home />} />
-            <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} />
-            <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/dashboard" />} />
+            <Route path="/login" element={<LoginRedirect />} />
+            <Route path="/register" element={<RegisterRedirect />} />
             <Route path="/s/:subdomain" element={<PublicSite />} />
-            
-            {/* Routes admin protégées */}
-            <Route 
-              path="/pending-users" 
+
+            {/* Routes admin */}
+            <Route
+              path="/pending-users"
               element={
                 <AdminRoute>
                   <Layout>
                     <PendingUsers />
                   </Layout>
                 </AdminRoute>
-              } 
-            />
-            
-            {/* Routes protégées (avec Layout) */}
-            <Route
-              path="/*"
-              element={
-                isAuthenticated ? (
-                  <Layout>
-                    <Routes>
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/sites" element={<Sites />} />
-                      <Route path="/sites/:siteId/edit" element={<SiteEditor />} />
-                      <Route path="/sites/:siteId/pages/new" element={<PageEditor />} />
-                      <Route path="/sites/:siteId/pages/:pageId/edit" element={<PageEditor />} />
-                      <Route path="/profile" element={<Profile />} />
-                      <Route path="/media" element={<Media />} />
-                      <Route path="/users" element={<Users />} />
-                      <Route path="/settings" element={<Settings />} />
-                    </Routes>
-                  </Layout>
-                ) : (
-                  <Navigate to="/" />
-                )
               }
             />
+
+            {/* Routes protégées avec Layout */}
+            <Route element={<ProtectedLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/sites" element={<Sites />} />
+              <Route path="/sites/:siteId/edit" element={<SiteEditor />} />
+              <Route path="/sites/:siteId/pages/new" element={<PageEditor />} />
+              <Route path="/sites/:siteId/pages/:pageId/edit" element={<PageEditor />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/media" element={<Media />} />
+              <Route path="/users" element={<Users />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </SnackbarProvider>
     </ThemeProvider>
   );
 };
+
+// Composants pour redirect si déjà connecté
+const LoginRedirect = () => {
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  return !isAuthenticated ? <Login /> : <Navigate to="/dashboard" />;
+};
+const RegisterRedirect = () => {
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  return !isAuthenticated ? <Register /> : <Navigate to="/dashboard" />;
+};
+
+// Layout + ProtectedRoute + Outlet
+const ProtectedLayout = () => (
+  <ProtectedRoute>
+    <Layout>
+      <Outlet />
+    </Layout>
+  </ProtectedRoute>
+);
 
 function App() {
   return (
