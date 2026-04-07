@@ -82,38 +82,34 @@ export const loginController = async (req: AuthRequest, res: Response) => {
       message: "Validation error",
       errors: parsedData.error.issues.map(issue => ({
         field: issue.path.join('.'),
-        message: issue.message 
+        message: issue.message
       }))
     });
   }
+
   const { email, password } = parsedData.data;
 
   const user = await getUserByEmail(email);
   if (!user) {
-    
-    return res.status(400).json({
-      success: false,
-      message: "User not found."
-    });
+    return res.status(400).json({ success: false, message: "User not found." });
   }
 
   console.log("🔍 User from DB:", {
     id: user.id,
     email: user.email,
     role: user.role,
-    isApproved: user.isApproved
+    hasPassword: !!user.password
   });
-  // Vérifie que le mot de passe existe
+
+  // Vérification critique
   if (!user.password) {
-    return res.status(400).json({ success: false, message: "Invalid user data." });
+    console.error("❌ User password is missing in database!");
+    return res.status(500).json({ success: false, message: "Internal server error: missing password" });
   }
 
   const isPasswordValid = bcrypt.compareSync(password, user.password);
   if (!isPasswordValid) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid password."
-    });
+    return res.status(400).json({ success: false, message: "Invalid password." });
   }
 
   const accessToken = generateToken({ userId: user.id, type: "access", role: user.role });
