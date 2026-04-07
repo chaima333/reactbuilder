@@ -35,7 +35,8 @@ app.use("/uploads", express.static("uploads"));
 app.use("/api/users", userRoutes);
 app.use("/api/seo", seoRoutes);
 app.use("/api/admin", adminRoutes);
-
+// server.ts
+app.use("/api/pages", pageRoutes);
 // Health check
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
