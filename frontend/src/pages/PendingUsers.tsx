@@ -1,4 +1,3 @@
-// frontend/src/pages/PendingUsers.tsx
 import React, { useEffect, useState } from 'react';
 import {
   Box,
@@ -22,21 +21,35 @@ export const PendingUsers: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { enqueueSnackbar } = useSnackbar();
 
+  // Charger les utilisateurs au montage du composant
   useEffect(() => {
-    fetchPendingUsers();
+    loadPendingUsers();
   }, []);
 
-  const fetchPendingUsers = async () => {
+  const loadPendingUsers = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
+      console.log('🔍 Token:', token);
+      
       const response = await fetch('https://backend-rmfq.onrender.com/api/admin/pending-users', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
-      const data = await response.json();
-      console.log('📋 Données reçues:', data);
-      setUsers(data.data || []);
+      
+      const result = await response.json();
+      console.log('📋 API Response:', result);
+      
+      if (result.success) {
+        setUsers(result.data || []);
+      } else {
+        setError(result.message || 'Erreur de chargement');
+      }
     } catch (err) {
-      setError('Erreur de chargement');
+      console.error('❌ Error:', err);
+      setError('Impossible de charger les utilisateurs');
     } finally {
       setLoading(false);
     }
@@ -45,12 +58,21 @@ export const PendingUsers: React.FC = () => {
   const handleApprove = async (userId: number) => {
     try {
       const token = localStorage.getItem('accessToken');
-      await fetch(`https://backend-rmfq.onrender.com/api/admin/approve-user/${userId}`, {
+      const response = await fetch(`https://backend-rmfq.onrender.com/api/admin/approve-user/${userId}`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
-      enqueueSnackbar('Utilisateur approuvé avec succès!', { variant: 'success' });
-      fetchPendingUsers(); // Rafraîchir la liste
+      
+      const result = await response.json();
+      if (result.success) {
+        enqueueSnackbar('Utilisateur approuvé avec succès!', { variant: 'success' });
+        loadPendingUsers(); // Recharger la liste
+      } else {
+        enqueueSnackbar(result.message || 'Erreur', { variant: 'error' });
+      }
     } catch (err) {
       enqueueSnackbar('Erreur lors de l\'approbation', { variant: 'error' });
     }
@@ -59,12 +81,21 @@ export const PendingUsers: React.FC = () => {
   const handleReject = async (userId: number) => {
     try {
       const token = localStorage.getItem('accessToken');
-      await fetch(`https://backend-rmfq.onrender.com/api/admin/reject-user/${userId}`, {
+      const response = await fetch(`https://backend-rmfq.onrender.com/api/admin/reject-user/${userId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
-      enqueueSnackbar('Utilisateur rejeté', { variant: 'success' });
-      fetchPendingUsers(); // Rafraîchir la liste
+      
+      const result = await response.json();
+      if (result.success) {
+        enqueueSnackbar('Utilisateur rejeté', { variant: 'success' });
+        loadPendingUsers(); // Recharger la liste
+      } else {
+        enqueueSnackbar(result.message || 'Erreur', { variant: 'error' });
+      }
     } catch (err) {
       enqueueSnackbar('Erreur lors du rejet', { variant: 'error' });
     }
@@ -82,6 +113,7 @@ export const PendingUsers: React.FC = () => {
     return (
       <Box p={3}>
         <Alert severity="error">{error}</Alert>
+        <Button sx={{ mt: 2 }} onClick={loadPendingUsers}>Réessayer</Button>
       </Box>
     );
   }
@@ -102,12 +134,12 @@ export const PendingUsers: React.FC = () => {
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
-              <TableRow>
-                <TableCell>Nom</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Rôle</TableCell>
-                <TableCell>Date d'inscription</TableCell>
-                <TableCell>Actions</TableCell>
+              <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                <TableCell><strong>Nom</strong></TableCell>
+                <TableCell><strong>Email</strong></TableCell>
+                <TableCell><strong>Rôle</strong></TableCell>
+                <TableCell><strong>Date d'inscription</strong></TableCell>
+                <TableCell><strong>Actions</strong></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
