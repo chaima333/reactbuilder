@@ -71,6 +71,7 @@ const AppContent: React.FC = () => {
             <Route element={<ProtectedLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/sites" element={<Sites />} />
+                <Route path="/sites/:siteId" element={<PublicSite />} /> 
               <Route path="/sites/:siteId/edit" element={<SiteEditor />} />
               <Route path="/sites/:siteId/pages/new" element={<PageEditor />} />
               <Route path="/sites/:siteId/pages/:pageId/edit" element={<PageEditor />} />

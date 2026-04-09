@@ -32,12 +32,15 @@ export const Sites: React.FC = () => {
   const [selectedSite, setSelectedSite] = useState<any>(null);
   
   const { data, isLoading, error, refetch } = useGetSitesQuery(undefined);
+
   const [createSite, { isLoading: isCreating }] = useCreateSiteMutation();
   const [deleteSite, { isLoading: isDeleting }] = useDeleteSiteMutation();
   const [deletePage] = useDeletePageMutation();
   const { enqueueSnackbar } = useSnackbar();
 
   const sites = data?.data || [];
+  console.log("RAW API DATA:", data);
+  console.log("SITES ARRAY:", sites);
 
   const handleCreateSite = async (siteData: any) => {
     try {
