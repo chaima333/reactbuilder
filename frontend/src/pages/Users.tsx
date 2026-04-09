@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -28,6 +28,7 @@ import {
   AdminPanelSettings as AdminIcon,
   EditNote as EditorIcon,
   Visibility as ViewerIcon,
+  CheckCircle as CheckIcon,
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import {
@@ -54,6 +55,7 @@ export const Users: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [pendingUsers, setPendingUsers] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -68,6 +70,46 @@ export const Users: React.FC = () => {
   const [changeRole] = useChangeUserRoleMutation();
 
   const users = data?.data || [];
+
+  // Charger les utilisateurs en attente
+  const fetchPendingUsers = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch('https://backend-rmfq.onrender.com/api/admin/pending-users', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const result = await response.json();
+      if (result.success) {
+        setPendingUsers(result.data || []);
+      }
+    } catch (err) {
+      console.error('Erreur chargement pending users:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingUsers();
+  }, []);
+
+  const handleApprove = async (userId: number) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`https://backend-rmfq.onrender.com/api/admin/approve-user/${userId}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const result = await response.json();
+      if (result.success) {
+        enqueueSnackbar('Utilisateur approuvé avec succès!', { variant: 'success' });
+        fetchPendingUsers();
+        refetch();
+      } else {
+        enqueueSnackbar(result.message || 'Erreur', { variant: 'error' });
+      }
+    } catch (err) {
+      enqueueSnackbar('Erreur lors de l\'approbation', { variant: 'error' });
+    }
+  };
 
   const handleOpenDialog = (user?: any) => {
     if (user) {
@@ -118,6 +160,7 @@ export const Users: React.FC = () => {
         await deleteUser(id).unwrap();
         enqueueSnackbar('Utilisateur supprimé', { variant: 'success' });
         refetch();
+        fetchPendingUsers();
       } catch (error) {
         enqueueSnackbar('Erreur lors de la suppression', { variant: 'error' });
       }
@@ -155,6 +198,53 @@ export const Users: React.FC = () => {
         </Button>
       </Box>
 
+      {/* 🔥 SECTION UTILISATEURS EN ATTENTE */}
+      {pendingUsers.length > 0 && (
+        <Paper sx={{ p: 2, mb: 4, bgcolor: '#fff8e1', border: '1px solid #ffcc02' }}>
+          <Typography variant="h6" sx={{ color: '#ed6c02', display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <CheckIcon /> En attente d'approbation ({pendingUsers.length})
+          </Typography>
+          <TableContainer>
+            <Table size="medium">
+              <TableHead>
+                <TableRow>
+                  <TableCell><strong>Nom</strong></TableCell>
+                  <TableCell><strong>Email</strong></TableCell>
+                  <TableCell><strong>Rôle</strong></TableCell>
+                  <TableCell><strong>Date d'inscription</strong></TableCell>
+                  <TableCell><strong>Action</strong></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {pendingUsers.map((user: any) => (
+                  <TableRow key={user.id}>
+                    <TableCell>{user.name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      <Chip label={user.role} size="small" color="warning" />
+                    </TableCell>
+                    <TableCell>{new Date(user.createdAt).toLocaleDateString('fr-FR')}</TableCell>
+                    <TableCell>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="success"
+                        onClick={() => handleApprove(user.id)}
+                        startIcon={<CheckIcon />}
+                      >
+                        Approuver
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+      )}
+
+      {/* SECTION UTILISATEURS APPROUVÉS */}
+      <Typography variant="h5" gutterBottom>📋 Liste des utilisateurs</Typography>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
