@@ -22,7 +22,6 @@ import {
 } from '@mui/material';
 import { Menu as MenuIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 
-// 🔥 CONSTANTE API - CORRECTION ICI
 const API_URL = 'https://backend-rmfq.onrender.com/api';
 
 function HideOnScroll(props: { children: React.ReactElement }) {
@@ -52,45 +51,34 @@ export const PublicSite: React.FC = () => {
         let response;
         
         if (siteId) {
-          url = `${API_URL}/sites/id/${siteId}`;
+          url = `${API_URL}/public/sites/id/${siteId}`;
           console.log('📡 Chargement par ID:', siteId, 'URL:', url);
-          
-          const token = localStorage.getItem('token');
-          response = await fetch(url, {
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token && { 'Authorization': `Bearer ${token}` })
-            }
-          });
-          
-          if (!response.ok) {
-            throw new Error(`Erreur HTTP: ${response.status}`);
-          }
-          
-          const result = await response.json();
-          console.log('✅ Données reçues par ID:', result);
-          
-          const site = result.data || result;
-          setSiteData(site);
+          response = await fetch(url);
         } 
         else if (subdomain) {
           url = `${API_URL}/public/sites/${subdomain}`;
           console.log('📡 Chargement par sous-domaine:', subdomain, 'URL:', url);
-          
           response = await fetch(url);
-          
-          if (!response.ok) {
-            throw new Error(`Erreur HTTP: ${response.status}`);
-          }
-          
-          const result = await response.json();
-          console.log('✅ Données reçues par sous-domaine:', result);
-          
-          const site = result.data || result;
-          setSiteData(site);
         } else {
           throw new Error('Aucun identifiant de site fourni');
         }
+        
+        if (!response || !response.ok) {
+          throw new Error(`Erreur HTTP: ${response?.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('✅ Données reçues:', result);
+        
+        // 🔥 CORRECTION ICI - L'API retourne directement les données
+        let site = result;
+        
+        // Si la réponse a une structure { success: true, data: {...} }
+        if (result.success && result.data) {
+          site = result.data;
+        }
+        
+        setSiteData(site);
         
       } catch (err: any) {
         console.error('❌ Erreur fetchSite:', err);
@@ -211,22 +199,6 @@ export const PublicSite: React.FC = () => {
           </Fade>
         );
       
-      case 'gallery':
-        return (
-          <Box sx={{ my: 4 }}>
-            <Typography variant="h5" gutterBottom>Galerie</Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <img 
-                  src={block.content} 
-                  alt="Galerie" 
-                  style={{ width: '100%', borderRadius: '16px' }}
-                />
-              </Grid>
-            </Grid>
-          </Box>
-        );
-      
       default:
         return (
           <Typography variant="body1" paragraph sx={{ fontSize: '1.1rem', lineHeight: 1.8 }}>
@@ -239,6 +211,7 @@ export const PublicSite: React.FC = () => {
   const getPublishedPages = () => {
     if (!siteData?.pages) return [];
     
+    // Filtrer les pages publiées et avec du contenu
     const publishedPages = siteData.pages.filter((page: any) => {
       return page.status !== 'draft';
     });
@@ -409,7 +382,9 @@ export const PublicSite: React.FC = () => {
       <Container maxWidth="lg" sx={{ py: 8 }}>
         {publishedPages.length > 0 ? (
           publishedPages.map((page: any) => {
+            // Parser les blocks
             let pageBlocks = page.blocks;
+            
             if (typeof pageBlocks === 'string') {
               try {
                 pageBlocks = JSON.parse(pageBlocks);
@@ -480,15 +455,6 @@ export const PublicSite: React.FC = () => {
             <Typography variant="body1" color="text.secondary">
               Ce site n'a pas encore de pages publiées.
             </Typography>
-            {typeof window !== 'undefined' && localStorage.getItem('token') && (
-              <Button 
-                variant="contained" 
-                sx={{ mt: 3 }}
-                onClick={() => window.location.href = `/sites/${siteId}/pages/new`}
-              >
-                Créer une page
-              </Button>
-            )}
           </Box>
         )}
       </Container>
