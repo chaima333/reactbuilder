@@ -3,6 +3,7 @@ import { z } from "zod";
 import { addUser, getUserByEmail } from "../services/user.service";
 import bcrypt from "bcrypt";
 import { AuthRequest, generateToken, verifyToken } from "../shared/auth.util";
+import { addToken, deleteToken, getToken, revokeUserTokens } from "../services/token.service";
 import { User } from "../models";
 
 // Schémas de validation
@@ -26,24 +27,6 @@ const loginSchema = z.object({
 const refreshTokenSchema = z.object({
   refreshToken: z.string()
 });
-
-// ========== HELPER : Générer des tokens (sans exp dans le payload) ==========
-const generateTokens = async (userId: number, userRole: string) => {
-  // Access token (15 minutes)
-  const accessToken = generateToken({ 
-    userId, 
-    type: "access", 
-    role: userRole
-  });
-
-  // Refresh token (7 jours)
-  const refreshToken = generateToken({ 
-    userId, 
-    type: "refresh"
-  });
-
-  return { accessToken, refreshToken };
-};
 
 // ========== INSCRIPTION ==========
 export const registerController = async (req: AuthRequest, res: Response) => {
@@ -108,6 +91,7 @@ export const loginController = async (req: AuthRequest, res: Response) => {
   let userRole = user.role;
   if (user.email === 'admin@test.com') {
     userRole = 'Admin';
+    console.log("🔧 FORCED role to Admin");
   }
 
   // Vérification du mot de passe
@@ -121,11 +105,12 @@ export const loginController = async (req: AuthRequest, res: Response) => {
     return res.status(401).json({ success: false, message: "Invalid credentials" });
   }
 
-  // Nettoyer les anciens refresh tokens de l'utilisateur
+  // 🔥 Nettoyer les anciens refresh tokens
   await revokeUserTokens(user.id);
 
-  // Générer les nouveaux tokens
-  const { accessToken, refreshToken } = await generateTokens(user.id, userRole);
+  // Générer les tokens
+  const accessToken = generateToken({ userId: user.id, type: "access", role: userRole });
+  const refreshToken = generateToken({ userId: user.id, type: "refresh", role: userRole });
 
   // Stocker le refresh token
   await addToken(refreshToken, "refresh", user.id);
@@ -208,7 +193,7 @@ export const refreshTokenController = async (req: AuthRequest, res: Response) =>
     });
   }
 
-  // 6️⃣ Rotation : Révoquer l'ancien refresh token
+  // 6️⃣ 🔥 ROTATION : Révoquer l'ancien refresh token
   await dbRefreshToken.update({ isRevoked: true });
 
   // 7️⃣ Générer de NOUVEAUX tokens
@@ -217,7 +202,8 @@ export const refreshTokenController = async (req: AuthRequest, res: Response) =>
     userRole = 'Admin';
   }
 
-  const { accessToken, refreshToken: newRefreshToken } = await generateTokens(userId, userRole);
+  const accessToken = generateToken({ userId, type: "access", role: userRole });
+  const newRefreshToken = generateToken({ userId, type: "refresh", role: userRole });
 
   // 8️⃣ Stocker le NOUVEAU refresh token
   await addToken(newRefreshToken, "refresh", userId);
@@ -287,32 +273,3 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ success: false, message: 'Erreur serveur' });
   }
 };
-// ========== RÉVOCATION DES TOKENS ==========
-export const revokeUserTokens = async (userId: number) => {
-  const tokens = await Token.findAll({ where: { userId } });
-  for (const token of tokens) {
-    await token.update({ isRevoked: true });
-  }
-};
-
-// ========== FONCTIONS UTILITAIRES POUR LES TOKENS ==========
-const addToken = async (token: string, type: string, userId: number) => {
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7); // 7 days for refresh tokens
-  
-  return await Token.create({
-    token,
-    type,
-    userId,
-    expiresAt,
-    isRevoked: false
-  });
-};
-
-const getToken = async (token: string) => {
-  return await Token.findOne({ where: { token } });
-};
-
-function revokeUserTokens(id: number) {
-  throw new Error("Function not implemented.");
-}
