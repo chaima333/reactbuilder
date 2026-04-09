@@ -18,6 +18,7 @@ import {
   IconButton, 
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
+// ↑ Supprimez la ligne du bas - un seul import suffit
 import { useGetSitesQuery, useCreateSiteMutation, useDeleteSiteMutation, useDeletePageMutation } from '../redux/api/apiSlice';
 import { CreateSiteModal } from '../components/Sites/CreateSiteModal';
 import { useSnackbar } from 'notistack';
@@ -175,7 +176,6 @@ export const Sites: React.FC = () => {
                   <Button size="small" startIcon={<EditIcon />} onClick={() => navigate(`/sites/${site.id}/edit`)}>
                     {t.edit}
                   </Button>
-                  {/* 🔥 BOUTON VOIR AJOUTÉ ICI 🔥 */}
                   <Button 
                     size="small" 
                     variant="outlined"
