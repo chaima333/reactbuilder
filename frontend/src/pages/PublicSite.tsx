@@ -32,7 +32,7 @@ function HideOnScroll(props: { children: React.ReactElement }) {
 }
 
 export const PublicSite: React.FC = () => {
-  const { subdomain } = useParams();
+  const { subdomain, siteId } = useParams(); // ← Récupère les deux paramètres
   const [siteData, setSiteData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -40,18 +40,39 @@ export const PublicSite: React.FC = () => {
   useEffect(() => {
     const fetchSite = async () => {
       try {
-        let url = `http://localhost:5000/api/public/sites/id/${subdomain}`;
-        let response = await fetch(url);
+        let url = '';
+        let response;
         
-        if (!response.ok) {
-          url = `http://localhost:5000/api/public/sites/${subdomain}`;
+        // 🔥 CAS 1: On a un siteId (route /sites/4)
+        if (siteId) {
+          console.log('Chargement par ID:', siteId);
+          url = `http://localhost:5000/api/sites/${siteId}`;
           response = await fetch(url);
+          
+          if (!response.ok) {
+            // Essayer l'API publique
+            url = `http://localhost:5000/api/public/sites/id/${siteId}`;
+            response = await fetch(url);
+          }
+        } 
+        // 🔥 CAS 2: On a un subdomain (route /s/monsite)
+        else if (subdomain) {
+          console.log('Chargement par sous-domaine:', subdomain);
+          url = `http://localhost:5000/api/public/sites/id/${subdomain}`;
+          response = await fetch(url);
+          
+          if (!response.ok) {
+            url = `http://localhost:5000/api/public/sites/${subdomain}`;
+            response = await fetch(url);
+          }
         }
         
-        if (!response.ok) throw new Error('Site non trouvé');
+        if (!response || !response.ok) throw new Error('Site non trouvé');
         
         const data = await response.json();
+        console.log('Données reçues:', data);
         
+        // Traiter les blocks JSON des pages
         if (data.pages) {
           data.pages = data.pages.map((page: any) => {
             if (page.blocks && typeof page.blocks === 'string') {
@@ -73,9 +94,10 @@ export const PublicSite: React.FC = () => {
       }
     };
 
-    if (subdomain) fetchSite();
-  }, [subdomain]);
+    if (subdomain || siteId) fetchSite();
+  }, [subdomain, siteId]); // ← Dépendance aux deux paramètres
 
+  // Le reste du code reste identique...
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -210,14 +232,11 @@ export const PublicSite: React.FC = () => {
     for (const page of siteData.pages) {
       const normalizedTitle = normalizeTitle(page.title);
       
-      // Ignorer les titres vides ou trop courts
       if (normalizedTitle.length < 2) continue;
       
-      // Ignorer les titres problématiques
       const excludedTitles = ['test', 'temp', 'draft', 'acceuil', 'acceille'];
       if (excludedTitles.includes(normalizedTitle)) continue;
       
-      // Si on n'a pas encore vu ce titre, on l'ajoute
       if (!seen.has(normalizedTitle)) {
         seen.set(normalizedTitle, page);
         uniquePages.push(page);
@@ -241,11 +260,14 @@ export const PublicSite: React.FC = () => {
     return (
       <Box textAlign="center" py={10}>
         <Typography variant="h4" gutterBottom>Site non trouvé</Typography>
-        <Typography variant="body1">Le site "{subdomain}" n'existe pas</Typography>
+        <Typography variant="body1">
+          {subdomain ? `Le site "${subdomain}" n'existe pas` : `Le site avec l'ID ${siteId} n'existe pas`}
+        </Typography>
       </Box>
     );
   }
 
+  // Le reste du rendu reste identique...
   return (
     <Box sx={{ bgcolor: '#f8f9fa', minHeight: '100vh' }}>
       {/* Navigation */}
@@ -277,7 +299,6 @@ export const PublicSite: React.FC = () => {
               {siteData.name}
             </Typography>
             
-            {/* Menu desktop */}
             <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
               <Button color="inherit" onClick={scrollToTop} sx={{ fontWeight: 500 }}>
                 Accueil
@@ -297,7 +318,6 @@ export const PublicSite: React.FC = () => {
               </Button>
             </Box>
             
-            {/* Menu mobile */}
             <IconButton sx={{ display: { xs: 'flex', md: 'none' } }} onClick={handleMenuOpen}>
               <MenuIcon />
             </IconButton>
@@ -305,7 +325,6 @@ export const PublicSite: React.FC = () => {
         </AppBar>
       </HideOnScroll>
 
-      {/* Menu mobile déroulant */}
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
         <MenuItem onClick={scrollToTop}>Accueil</MenuItem>
         {uniquePages.map((page: any) => (
@@ -340,7 +359,7 @@ export const PublicSite: React.FC = () => {
                   textShadow: '2px 2px 4px rgba(136, 16, 16, 0.1)',
                 }}
               >
-                {siteData.title}
+                {siteData.title || siteData.name}
               </Typography>
               <Typography 
                 variant="h5" 
@@ -382,7 +401,7 @@ export const PublicSite: React.FC = () => {
       {/* Pages */}
       <Container maxWidth="lg" sx={{ py: 8 }}>
         {uniquePages.length > 0 ? (
-          uniquePages.map((page: any, idx: number) => (
+          uniquePages.map((page: any) => (
             <Box key={page.id} id={`page-${page.id}`} sx={{ mb: 8 }}>
               <Fade in timeout={800}>
                 <Card 
@@ -477,7 +496,7 @@ export const PublicSite: React.FC = () => {
             <Grid item xs={12} md={4}>
               <Typography variant="h6" gutterBottom>Contact</Typography>
               <Typography variant="body2" sx={{ opacity: 0.7 }}>
-                {siteData.subdomain}@reactbuilder.com
+                {siteData.subdomain || `site-${siteData.id}`}@reactbuilder.com
               </Typography>
             </Grid>
           </Grid>
