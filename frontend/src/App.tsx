@@ -22,7 +22,6 @@ import { Register } from './pages/Register';
 import { Home } from './pages/Home';
 import { PendingUsers } from './pages/PendingUsers';
 
-// Route pour protéger les pages admin
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
   const userRole = useSelector((state: RootState) => state.auth.user?.role);
@@ -33,7 +32,6 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
-// Route pour protéger les pages utilisateur connecté
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
   if (!isAuthenticated) return <Navigate to="/" />;
@@ -49,13 +47,12 @@ const AppContent: React.FC = () => {
       <SnackbarProvider maxSnack={3}>
         <BrowserRouter>
           <Routes>
-            {/* Routes publiques */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<LoginRedirect />} />
             <Route path="/register" element={<RegisterRedirect />} />
             <Route path="/s/:subdomain" element={<PublicSite />} />
+            <Route path="/site/:siteId" element={<PublicSite />} />
 
-            {/* Routes admin */}
             <Route
               path="/pending-users"
               element={
@@ -67,12 +64,9 @@ const AppContent: React.FC = () => {
               }
             />
 
-            {/* Routes protégées avec Layout */}
             <Route element={<ProtectedLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/sites" element={<Sites />} />
-                <Route path="/sites/:siteId" element={<PublicSite />} />  // ← NOUVEAU
-
               <Route path="/sites/:siteId/edit" element={<SiteEditor />} />
               <Route path="/sites/:siteId/pages/new" element={<PageEditor />} />
               <Route path="/sites/:siteId/pages/:pageId/edit" element={<PageEditor />} />
@@ -88,17 +82,16 @@ const AppContent: React.FC = () => {
   );
 };
 
-// Composants pour redirect si déjà connecté
 const LoginRedirect = () => {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
   return !isAuthenticated ? <Login /> : <Navigate to="/dashboard" />;
 };
+
 const RegisterRedirect = () => {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
   return !isAuthenticated ? <Register /> : <Navigate to="/dashboard" />;
 };
 
-// Layout + ProtectedRoute + Outlet
 const ProtectedLayout = () => (
   <ProtectedRoute>
     <Layout>

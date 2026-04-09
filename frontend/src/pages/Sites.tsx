@@ -17,15 +17,15 @@ import {
   Chip,
   IconButton, 
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
 import { useGetSitesQuery, useCreateSiteMutation, useDeleteSiteMutation, useDeletePageMutation } from '../redux/api/apiSlice';
 import { CreateSiteModal } from '../components/Sites/CreateSiteModal';
 import { useSnackbar } from 'notistack';
 import { useNavigate } from 'react-router-dom';
-import { useLanguage } from '../context/LanguageContext';  // ← AJOUTER
+import { useLanguage } from '../context/LanguageContext';
 
 export const Sites: React.FC = () => {
-  const { t } = useLanguage();  // ← AJOUTER
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -45,11 +45,11 @@ export const Sites: React.FC = () => {
   const handleCreateSite = async (siteData: any) => {
     try {
       await createSite(siteData).unwrap();
-      enqueueSnackbar(t.saveSuccess, { variant: 'success' });  // ← t.
+      enqueueSnackbar(t.saveSuccess, { variant: 'success' });
       setModalOpen(false);
       refetch();
     } catch (err: any) {
-      enqueueSnackbar(err?.data?.message || t.error, { variant: 'error' });  // ← t.
+      enqueueSnackbar(err?.data?.message || t.error, { variant: 'error' });
     }
   };
 
@@ -57,23 +57,23 @@ export const Sites: React.FC = () => {
     if (!selectedSite) return;
     try {
       await deleteSite(selectedSite.id).unwrap();
-      enqueueSnackbar(t.deleteSuccess, { variant: 'success' });  // ← t.
+      enqueueSnackbar(t.deleteSuccess, { variant: 'success' });
       setDeleteDialogOpen(false);
       setSelectedSite(null);
       refetch();
     } catch (err: any) {
-      enqueueSnackbar(err?.data?.message || t.error, { variant: 'error' });  // ← t.
+      enqueueSnackbar(err?.data?.message || t.error, { variant: 'error' });
     }
   };
 
   const handleDeletePage = async (siteId: number, pageId: number, pageTitle: string) => {
-    if (window.confirm(`${t.confirmDelete} "${pageTitle}" ?`)) {  // ← t.
+    if (window.confirm(`${t.confirmDelete} "${pageTitle}" ?`)) {
       try {
         await deletePage({ siteId, pageId }).unwrap();
-        enqueueSnackbar(t.deleteSuccess, { variant: 'success' });  // ← t.
+        enqueueSnackbar(t.deleteSuccess, { variant: 'success' });
         refetch();
       } catch (err: any) {
-        enqueueSnackbar(err?.data?.message || t.error, { variant: 'error' });  // ← t.
+        enqueueSnackbar(err?.data?.message || t.error, { variant: 'error' });
       }
     }
   };
@@ -89,7 +89,7 @@ export const Sites: React.FC = () => {
   if (error) {
     return (
       <Box p={3}>
-        <Alert severity="error">{t.error}</Alert>  {/* ← t. */}
+        <Alert severity="error">{t.error}</Alert>
       </Box>
     );
   }
@@ -97,19 +97,19 @@ export const Sites: React.FC = () => {
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-        <Typography variant="h4">{t.mySites}</Typography>  {/* ← t. */}
+        <Typography variant="h4">{t.mySites}</Typography>
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setModalOpen(true)}>
-          {t.createSite}  {/* ← t. */}
+          {t.createSite}
         </Button>
       </Box>
 
       {sites.length === 0 ? (
         <Box textAlign="center" py={8}>
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            {t.youHaveNoSites}  {/* ← t. */}
+            {t.youHaveNoSites}
           </Typography>
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setModalOpen(true)} sx={{ mt: 2 }}>
-            {t.createFirstSite}  {/* ← t. */}
+            {t.createFirstSite}
           </Button>
         </Box>
       ) : (
@@ -123,23 +123,23 @@ export const Sites: React.FC = () => {
                     {site.subdomain}.reactbuilder.com
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    {site.description || t.noDescription}  {/* ← t. */}
+                    {site.description || t.noDescription}
                   </Typography>
                   <Box sx={{ mt: 2, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
                     <Typography variant="body2">
-                      📄 {site.pagesCount || site.pages?.length || 0} {t.pages}  {/* ← t. */}
+                      📄 {site.pagesCount || site.pages?.length || 0} {t.pages}
                     </Typography>
                     <Typography variant="body2">
-                      👁️ {site.totalViews || 0} {t.views}  {/* ← t. */}
+                      👁️ {site.totalViews || 0} {t.views}
                     </Typography>
                     <Typography variant="body2">
-                      📅 {t.created} {new Date(site.createdAt).toLocaleDateString('fr-FR')}  {/* ← t. */}
+                      📅 {t.created} {new Date(site.createdAt).toLocaleDateString('fr-FR')}
                     </Typography>
                   </Box>
 
                   <Box sx={{ mt: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>
-                      {t.pages}:  {/* ← t. */}
+                      {t.pages}:
                     </Typography>
                     
                     {site.pages && site.pages.length > 0 && (
@@ -162,21 +162,24 @@ export const Sites: React.FC = () => {
                     
                     {(!site.pages || site.pages.length === 0) && (
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        {t.noPages}  {/* ← t. */}
+                        {t.noPages}
                       </Typography>
                     )}
                     
                     <Button size="small" startIcon={<AddIcon />} onClick={() => navigate(`/sites/${site.id}/pages/new`)} sx={{ mt: 1 }}>
-                      {t.addPage}  {/* ← t. */}
+                      {t.addPage}
                     </Button>
                   </Box>
                 </CardContent>
                 <CardActions>
                   <Button size="small" startIcon={<EditIcon />} onClick={() => navigate(`/sites/${site.id}/edit`)}>
-                    {t.edit}  {/* ← t. */}
+                    {t.edit}
+                  </Button>
+                  <Button size="small" startIcon={<VisibilityIcon />} onClick={() => window.open(`/site/${site.id}`, '_blank')}>
+                    Voir
                   </Button>
                   <Button size="small" color="error" startIcon={<DeleteIcon />} onClick={() => { setSelectedSite(site); setDeleteDialogOpen(true); }}>
-                    {t.delete}  {/* ← t. */}
+                    {t.delete}
                   </Button>
                 </CardActions>
               </Card>
@@ -188,16 +191,16 @@ export const Sites: React.FC = () => {
       <CreateSiteModal open={modalOpen} onClose={() => setModalOpen(false)} onCreate={handleCreateSite} isLoading={isCreating} />
 
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>{t.confirm}</DialogTitle>  {/* ← t. */}
+        <DialogTitle>{t.confirm}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            {t.confirmDelete} "{selectedSite?.name}" ?  {/* ← t. */}
+            {t.confirmDelete} "{selectedSite?.name}" ?
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>{t.cancel}</Button>  {/* ← t. */}
+          <Button onClick={() => setDeleteDialogOpen(false)}>{t.cancel}</Button>
           <Button onClick={handleDeleteSite} color="error" disabled={isDeleting}>
-            {isDeleting ? t.loading : t.delete}  {/* ← t. */}
+            {isDeleting ? t.loading : t.delete}
           </Button>
         </DialogActions>
       </Dialog>
