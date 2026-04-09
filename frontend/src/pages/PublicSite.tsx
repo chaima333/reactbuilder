@@ -52,7 +52,7 @@ export const PublicSite: React.FC = () => {
         let response;
         
         if (siteId) {
-          url = `${API_URL}/sites/${siteId}`;
+          url = `${API_URL}/sites/id/${siteId}`;
           console.log('📡 Chargement par ID:', siteId, 'URL:', url);
           
           const token = localStorage.getItem('token');
