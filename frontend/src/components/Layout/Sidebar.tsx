@@ -18,7 +18,6 @@ import {
   Image as MediaIcon,
   Settings as SettingsIcon,
   People as UsersIcon,
-  PendingActions as PendingIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -36,22 +35,15 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onDrawerToggle }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
   const location = useLocation();
-  const userRole = useSelector((state: RootState) => state.auth.user?.role);
-  const isAdmin = userRole === 'Admin';
 
-  // ✅ Définir tous les items ici, sans duplication
-  const allMenuItems = [
+  // Menu items (sans Approbations)
+  const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
     { text: 'Mes Sites', icon: <SitesIcon />, path: '/sites' },
     { text: 'Médiathèque', icon: <MediaIcon />, path: '/media' },
     { text: 'Utilisateurs', icon: <UsersIcon />, path: '/users' },
     { text: 'Paramètres', icon: <SettingsIcon />, path: '/settings' },
   ];
-
-  // ✅ Ajouter "Approbations" uniquement pour admin
-  if (isAdmin) {
-    allMenuItems.push({ text: 'Approbations', icon: <PendingIcon />, path: '/pending-users' });
-  }
 
   const drawer = (
     <div>
@@ -62,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onDrawerToggle }) => {
       </Toolbar>
       <Box sx={{ overflow: 'auto' }}>
         <List>
-          {allMenuItems.map((item) => (
+          {menuItems.map((item) => (
             <ListItem key={item.text} disablePadding>
               <ListItemButton
                 selected={location.pathname === item.path}
