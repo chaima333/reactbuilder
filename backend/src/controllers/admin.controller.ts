@@ -1,11 +1,15 @@
 import { Response } from 'express';
 import { User, ActivityLog } from '../models';
 import { AuthRequest } from '../shared/auth.util';
+import { Op } from 'sequelize/types/operators';
 
 export const getPendingUsers = async (req: AuthRequest, res: Response) => {
   try {
     const users = await User.findAll({
-      where: { isApproved: false },  // ← isApproved, pas is_approved
+      where: {
+        isApproved: false,
+        id: { [Op.not]: req.user.id }
+      },
       attributes: { exclude: ['password'] },
       order: [['createdAt', 'DESC']]
     });
