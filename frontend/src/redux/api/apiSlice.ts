@@ -1,13 +1,12 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../store';
+import { logout, setCredentials } from '../features/authSlice';
+
 const API_URL = 'https://backend-rmfq.onrender.com/api';
 
-
-// URL de l'API - à modifier selon l'environnement
-export const api = createApi({
-  reducerPath: 'api',
- baseQuery: fetchBaseQuery({
-  baseUrl: 'https://backend-rmfq.onrender.com/api',
+// 1️⃣ BaseQuery standard
+const baseQuery = fetchBaseQuery({
+  baseUrl: API_URL,
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState).auth.accessToken;
     console.log("🔍 [apiSlice] Token from state:", token ? token.substring(0, 50) + "..." : "NO TOKEN");
@@ -19,7 +18,68 @@ export const api = createApi({
     }
     return headers;
   },
-}),
+});
+
+// 2️⃣ BaseQuery avec gestion automatique du refresh token 🔥
+const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
+  let result = await baseQuery(args, api, extraOptions);
+
+  // Gérer 401 (Unauthorized) ET 403 (Forbidden - token invalide)
+  if (result.error && (result.error.status === 401 || result.error.status === 403)) {
+    console.log('🔄 [apiSlice] Token invalide (401/403), tentative de rafraîchissement...');
+    
+    const refreshToken = (api.getState() as RootState).auth.refreshToken;
+    
+    if (refreshToken) {
+      const refreshResult = await baseQuery(
+        {
+          url: '/auth/refresh_token',
+          method: 'POST',
+          body: { refreshToken },
+        },
+        api,
+        extraOptions
+      );
+
+      if (refreshResult.data) {
+        const { accessToken, refreshToken: newRefreshToken } = refreshResult.data as {
+          accessToken: string;
+          refreshToken: string;
+        };
+        
+        console.log('✅ [apiSlice] Token rafraîchi avec succès');
+        
+        const currentUser = (api.getState() as RootState).auth.user;
+        
+        if (currentUser) {
+          api.dispatch(setCredentials({
+            user: currentUser,
+            accessToken,
+            refreshToken: newRefreshToken,
+          }));
+        }
+        
+        // Réessayer la requête originale avec le nouveau token
+        result = await baseQuery(args, api, extraOptions);
+      } else {
+        console.log('❌ [apiSlice] Refresh token invalide, déconnexion');
+        api.dispatch(logout());
+        window.location.href = '/login';
+      }
+    } else {
+      console.log('❌ [apiSlice] Pas de refresh token, déconnexion');
+      api.dispatch(logout());
+      window.location.href = '/login';
+    }
+  }
+
+  return result;
+};
+
+// 3️⃣ Création de l'API avec le wrapper
+export const api = createApi({
+  reducerPath: 'api',
+  baseQuery: baseQueryWithReauth,  // 🔥 Utilisation du wrapper avec refresh
   tagTypes: ['Stats', 'Activity', 'Sites', 'Pages', 'User', 'Media', 'Users', 'PendingUsers'],
   
   endpoints: (builder) => ({
