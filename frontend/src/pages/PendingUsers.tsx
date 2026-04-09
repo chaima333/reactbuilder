@@ -1,7 +1,7 @@
+// frontend/src/pages/PendingUsers.tsx
 import React from 'react';
 import {
   Box,
-  Typography,
   Paper,
   Table,
   TableBody,
@@ -10,43 +10,41 @@ import {
   TableHead,
   TableRow,
   Button,
-  Chip,
+  Typography,
   CircularProgress,
   Alert,
 } from '@mui/material';
-import { CheckCircle, Cancel } from '@mui/icons-material';
-import { useSnackbar } from 'notistack';
 import { useGetPendingUsersQuery, useApproveUserMutation, useRejectUserMutation } from '../redux/api/apiSlice';
+import { useSnackbar } from 'notistack';
 
 export const PendingUsers: React.FC = () => {
+  const { data, isLoading, error, refetch } = useGetPendingUsersQuery(undefined);
+  const [approveUser, { isLoading: isApproving }] = useApproveUserMutation();
+  const [rejectUser, { isLoading: isRejecting }] = useRejectUserMutation();
   const { enqueueSnackbar } = useSnackbar();
-  const { data, isLoading, refetch } = useGetPendingUsersQuery(undefined);
-  const [approveUser] = useApproveUserMutation();
-  const [rejectUser] = useRejectUserMutation();
-  
+
   const pendingUsers = data?.data || [];
 
-  const handleApprove = async (id: number, name: string) => {
+  console.log('🔍 PendingUsers data:', data);
+  console.log('🔍 PendingUsers list:', pendingUsers);
+
+  const handleApprove = async (userId: number) => {
     try {
-      await approveUser(id).unwrap();
-      enqueueSnackbar(`Utilisateur "${name}" approuvé`, { variant: 'success' });
+      await approveUser(userId).unwrap();
+      enqueueSnackbar('Utilisateur approuvé avec succès!', { variant: 'success' });
       refetch();
-    } catch (error) {
-      console.error('Approve error:', error);
-      enqueueSnackbar('Erreur lors de l\'approbation', { variant: 'error' });
+    } catch (err: any) {
+      enqueueSnackbar(err?.data?.message || 'Erreur lors de l\'approbation', { variant: 'error' });
     }
   };
 
-  const handleReject = async (id: number, name: string) => {
-    if (window.confirm(`Refuser l'utilisateur "${name}" ?`)) {
-      try {
-        await rejectUser(id).unwrap();
-        enqueueSnackbar(`Utilisateur "${name}" refusé`, { variant: 'success' });
-        refetch();
-      } catch (error) {
-        console.error('Reject error:', error);
-        enqueueSnackbar('Erreur lors du refus', { variant: 'error' });
-      }
+  const handleReject = async (userId: number) => {
+    try {
+      await rejectUser(userId).unwrap();
+      enqueueSnackbar('Utilisateur rejeté', { variant: 'success' });
+      refetch();
+    } catch (err: any) {
+      enqueueSnackbar(err?.data?.message || 'Erreur lors du rejet', { variant: 'error' });
     }
   };
 
@@ -58,22 +56,36 @@ export const PendingUsers: React.FC = () => {
     );
   }
 
+  if (error) {
+    return (
+      <Box p={3}>
+        <Alert severity="error">Erreur lors du chargement des utilisateurs en attente</Alert>
+      </Box>
+    );
+  }
+
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>Approbation des utilisateurs</Typography>
+      <Typography variant="h4" gutterBottom>
+        Utilisateurs en attente d'approbation
+      </Typography>
       
       {pendingUsers.length === 0 ? (
-        <Alert severity="info">Aucun utilisateur en attente d'approbation</Alert>
+        <Paper sx={{ p: 4, textAlign: 'center' }}>
+          <Typography variant="body1" color="text.secondary">
+            Aucun utilisateur en attente d'approbation
+          </Typography>
+        </Paper>
       ) : (
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
-              <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+              <TableRow>
                 <TableCell>Nom</TableCell>
                 <TableCell>Email</TableCell>
-                <TableCell>Rôle demandé</TableCell>
+                <TableCell>Rôle</TableCell>
                 <TableCell>Date d'inscription</TableCell>
-                <TableCell align="center">Actions</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -81,31 +93,27 @@ export const PendingUsers: React.FC = () => {
                 <TableRow key={user.id}>
                   <TableCell>{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.role}</TableCell>
+                  <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    <Chip 
-                      label={user.role} 
-                      size="small" 
-                      color={user.role === 'Admin' ? 'error' : user.role === 'Editor' ? 'warning' : 'info'}
-                    />
-                  </TableCell>
-                  <TableCell>{new Date(user.createdAt).toLocaleDateString('fr-FR')}</TableCell>
-                  <TableCell align="center">
                     <Button
                       size="small"
+                      variant="contained"
                       color="success"
-                      startIcon={<CheckCircle />}
-                      onClick={() => handleApprove(user.id, user.name)}
+                      onClick={() => handleApprove(user.id)}
+                      disabled={isApproving}
                       sx={{ mr: 1 }}
                     >
                       Approuver
                     </Button>
                     <Button
                       size="small"
+                      variant="outlined"
                       color="error"
-                      startIcon={<Cancel />}
-                      onClick={() => handleReject(user.id, user.name)}
+                      onClick={() => handleReject(user.id)}
+                      disabled={isRejecting}
                     >
-                      Refuser
+                      Rejeter
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -117,5 +125,3 @@ export const PendingUsers: React.FC = () => {
     </Box>
   );
 };
-
-export default PendingUsers;
