@@ -1,3 +1,4 @@
+// routes/site.routes.ts
 import { Router } from 'express';
 import { authenticateJWT } from '../shared/auth.util';
 import {
@@ -10,7 +11,7 @@ import {
 
 const router = Router();
 
-// Toutes les routes nécessitent une authentification
+// ✅ Appliquer l'authentification à TOUTES les routes
 router.use(authenticateJWT);
 
 router.post('/', createSite);
