@@ -3,11 +3,11 @@ import { Site, Page } from '../models';
 
 const router = Router();
 
-// Route pour récupérer un site par son sous-domaine (ex: monsite)
+// ✅ Route publique - Récupérer un site par sous-domaine
 router.get('/sites/:subdomain', async (req, res) => {
   try {
     const { subdomain } = req.params;
-    console.log('Recherche par sous-domaine:', subdomain);
+    console.log('🔍 Route publique - Recherche par sous-domaine:', subdomain);
     
     const site = await Site.findOne({
       where: { subdomain, status: 'active' },
@@ -17,58 +17,74 @@ router.get('/sites/:subdomain', async (req, res) => {
           as: 'pages',
           where: { status: 'published' },
           required: false,
+          attributes: ['id', 'title', 'slug', 'content', 'blocks', 'status', 'createdAt']
         }
       ]
     });
 
     if (!site) {
-      return res.status(404).json({ error: 'Site non trouvé' });
+      return res.status(404).json({ success: false, message: 'Site non trouvé' });
     }
 
-    res.json({
-      id: site.id,
-      name: site.name,
-      title: site.title,
-      description: site.description,
-      pages: site.pages || []
+    console.log('✅ Site trouvé:', site.name);
+    
+    res.json({ 
+      success: true, 
+      data: {
+        id: site.id,
+        name: site.name,
+        subdomain: site.subdomain,
+        title: site.title,
+        description: site.description,
+        pages: site.pages || []
+      }
     });
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    console.error('❌ Erreur publique:', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur' });
   }
 });
 
-// Route pour récupérer un site par son ID (ex: 1)
-router.get('/sites/id/:id', async (req, res) => {
+// ✅ Route publique - Récupérer un site par ID (CORRIGÉE)
+router.get('/sites/id/:siteId', async (req, res) => {
   try {
-    const { id } = req.params;
-    console.log('Recherche par ID:', id);
+    const { siteId } = req.params;
+    console.log('🔍 Route publique - Recherche par ID:', siteId);
     
-    const site = await Site.findByPk(id, {
+    // CORRECTION: Utiliser findOne avec where au lieu de findByPk
+    const site = await Site.findOne({
+      where: { id: siteId, status: 'active' },
       include: [
         {
           model: Page,
           as: 'pages',
           where: { status: 'published' },
           required: false,
+          attributes: ['id', 'title', 'slug', 'content', 'blocks', 'status', 'createdAt']
         }
       ]
     });
     
     if (!site) {
-      return res.status(404).json({ error: 'Site non trouvé' });
+      return res.status(404).json({ success: false, message: 'Site non trouvé' });
     }
     
-    res.json({
-      id: site.id,
-      name: site.name,
-      title: site.title,
-      description: site.description,
-      pages: site.pages || []
+    console.log('✅ Site trouvé par ID:', site.name);
+    
+    res.json({ 
+      success: true, 
+      data: {
+        id: site.id,
+        name: site.name,
+        subdomain: site.subdomain,
+        title: site.title,
+        description: site.description,
+        pages: site.pages || []
+      }
     });
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    console.error('❌ Erreur publique:', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur' });
   }
 });
 
