@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { User, ActivityLog } from '../models';
 import { AuthRequest } from '../shared/auth.util';
-import { Op } from 'sequelize/types/operators';
+import { Op } from 'sequelize';
 
 export const getPendingUsers = async (req: AuthRequest, res: Response) => {
   try {
