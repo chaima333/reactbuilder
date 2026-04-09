@@ -60,8 +60,17 @@ const AppContent: React.FC = () => {
               <Route path="/sites/:siteId/pages/:pageId/edit" element={<PageEditor />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/media" element={<Media />} />
-              <Route path="/users" element={<Users />} />
-              <Route path="/settings" element={<Settings />} />
+// Dans App.tsx, modifiez la route /users
+<Route
+  path="/users"
+  element={
+    <AdminRoute>  {/* ← Seuls les admins peuvent accéder */}
+      <Layout>
+        <Users />
+      </Layout>
+    </AdminRoute>
+  }
+/>              <Route path="/settings" element={<Settings />} />
             </Route>
           </Routes>
         </BrowserRouter>

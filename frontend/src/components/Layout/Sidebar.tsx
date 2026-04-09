@@ -32,18 +32,22 @@ const drawerWidth = 260;
 
 const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onDrawerToggle }) => { 
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
   const location = useLocation();
+  const userRole = useSelector((state: RootState) => state.auth.user?.role);
+  const isAdmin = userRole === 'Admin';
 
-  // Menu items (sans Approbations)
-  const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { text: 'Mes Sites', icon: <SitesIcon />, path: '/sites' },
-    { text: 'Médiathèque', icon: <MediaIcon />, path: '/media' },
-    { text: 'Utilisateurs', icon: <UsersIcon />, path: '/users' },
-    { text: 'Paramètres', icon: <SettingsIcon />, path: '/settings' },
+  // Menu items - certains visibles uniquement pour Admin
+  const allMenuItems = [
+    { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', adminOnly: false },
+    { text: 'Mes Sites', icon: <SitesIcon />, path: '/sites', adminOnly: false },
+    { text: 'Médiathèque', icon: <MediaIcon />, path: '/media', adminOnly: false },
+    { text: 'Utilisateurs', icon: <UsersIcon />, path: '/users', adminOnly: true }, // 🔒 Admin seulement
+    { text: 'Paramètres', icon: <SettingsIcon />, path: '/settings', adminOnly: false },
   ];
+
+  // Filtrer les items selon le rôle
+  const menuItems = allMenuItems.filter(item => !item.adminOnly || isAdmin);
 
   const drawer = (
     <div>
