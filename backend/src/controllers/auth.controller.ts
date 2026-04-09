@@ -3,18 +3,9 @@ import { z } from "zod";
 import { addUser, getUserByEmail } from "../services/user.service";
 import bcrypt from "bcrypt";
 import { AuthRequest, generateToken, verifyToken } from "../shared/auth.util";
-import { addToken, deleteToken, getToken } from "../services/token.service";
 import { User } from "../models";
 
-// Au lieu de (req: Request), utilise (req: AuthRequest)
-export const myController = async (req: AuthRequest, res: Response) => {
- const { id } = req.params;   // ✅ Maintenant reconnu
-  const { name } = req.body;   // ✅ Maintenant reconnu
-  const { page } = req.query;  // ✅ Maintenant reconnu
-  const authHeader = req.headers.authorization;
-}
-
-// Schéma de validation pour l'inscription
+// Schémas de validation
 const registerSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email(),
@@ -27,17 +18,34 @@ const registerSchema = z.object({
   role: z.enum(['Admin', 'Editor', 'Viewer']).optional().default('Viewer')
 });
 
-// Schéma de validation pour la connexion
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6).max(100)
 });
 
-// Schéma pour le refresh token
 const refreshTokenSchema = z.object({
   refreshToken: z.string()
 });
 
+// ========== HELPER : Générer des tokens (sans exp dans le payload) ==========
+const generateTokens = async (userId: number, userRole: string) => {
+  // Access token (15 minutes)
+  const accessToken = generateToken({ 
+    userId, 
+    type: "access", 
+    role: userRole
+  });
+
+  // Refresh token (7 jours)
+  const refreshToken = generateToken({ 
+    userId, 
+    type: "refresh"
+  });
+
+  return { accessToken, refreshToken };
+};
+
+// ========== INSCRIPTION ==========
 export const registerController = async (req: AuthRequest, res: Response) => {
   const parsedData = registerSchema.safeParse(req.body);
   if (!parsedData.success) {
@@ -74,6 +82,7 @@ export const registerController = async (req: AuthRequest, res: Response) => {
   });
 };
 
+// ========== CONNEXION ==========
 export const loginController = async (req: AuthRequest, res: Response) => {
   const parsedData = loginSchema.safeParse(req.body);
   if (!parsedData.success) {
@@ -86,40 +95,39 @@ export const loginController = async (req: AuthRequest, res: Response) => {
       }))
     });
   }
-  
 
   const { email, password } = parsedData.data;
 
- const user = await getUserByEmail(email);
-console.log("🔍 RAW user data:", user?.get({ plain: true }));
-
-  console.log("🔍 User from DB:", {
-    id: user.id,
-    email: user.email,
-    role: user.role,
-    hasPassword: !!user.password
-  });
-  // FORCE le rôle pour admin@test.com
-  if (user.email === 'admin@test.com') {
-    user.role = 'Admin';
-    console.log("🔧 FORCED role to Admin");
+  const user = await getUserByEmail(email);
+  
+  if (!user) {
+    return res.status(401).json({ success: false, message: "Invalid credentials" });
   }
 
-  // Vérification critique
+  // Force le rôle pour admin@test.com
+  let userRole = user.role;
+  if (user.email === 'admin@test.com') {
+    userRole = 'Admin';
+  }
+
+  // Vérification du mot de passe
   if (!user.password) {
     console.error("❌ User password is missing in database!");
-    return res.status(500).json({ success: false, message: "Internal server error: missing password" });
+    return res.status(500).json({ success: false, message: "Internal server error" });
   }
 
   const isPasswordValid = bcrypt.compareSync(password, user.password);
   if (!isPasswordValid) {
-    return res.status(400).json({ success: false, message: "Invalid password." });
+    return res.status(401).json({ success: false, message: "Invalid credentials" });
   }
 
-  const accessToken = generateToken({ userId: user.id, type: "access", role: user.role });
-const refreshToken = generateToken({ userId: user.id, type: "refresh", role: user.role });
-  await deleteToken(user.id);
-  await addToken(accessToken, "access", user.id);
+  // Nettoyer les anciens refresh tokens de l'utilisateur
+  await revokeUserTokens(user.id);
+
+  // Générer les nouveaux tokens
+  const { accessToken, refreshToken } = await generateTokens(user.id, userRole);
+
+  // Stocker le refresh token
   await addToken(refreshToken, "refresh", user.id);
 
   return res.status(200).json({
@@ -131,11 +139,12 @@ const refreshToken = generateToken({ userId: user.id, type: "refresh", role: use
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role
+      role: userRole
     }
   });
 };
 
+// ========== REFRESH TOKEN ==========
 export const refreshTokenController = async (req: AuthRequest, res: Response) => {
   const parsedData = refreshTokenSchema.safeParse(req.body);
   if (!parsedData.success) {
@@ -151,26 +160,66 @@ export const refreshTokenController = async (req: AuthRequest, res: Response) =>
 
   const { refreshToken } = parsedData.data;
 
+  // 1️⃣ Vérifier si le token existe en base
   const dbRefreshToken = await getToken(refreshToken);
+  
   if (!dbRefreshToken || dbRefreshToken.type !== "refresh") {
-    return res.status(400).json({
+    return res.status(401).json({
       success: false,
-      message: "Invalid token or expired."
+      message: "Invalid or expired refresh token"
+    });
+  }
+
+  // 2️⃣ Vérifier si le token est révoqué
+  if (dbRefreshToken.isRevoked) {
+    return res.status(401).json({
+      success: false,
+      message: "Token has been revoked"
+    });
+  }
+
+  // 3️⃣ Vérifier l'expiration en base
+  if (dbRefreshToken.expiresAt && new Date(dbRefreshToken.expiresAt) < new Date()) {
+    await dbRefreshToken.update({ isRevoked: true });
+    return res.status(401).json({
+      success: false,
+      message: "Refresh token expired"
+    });
+  }
+
+  // 4️⃣ Vérifier et décoder le JWT
+  const decoded = verifyToken(refreshToken);
+  if (!decoded) {
+    await dbRefreshToken.update({ isRevoked: true });
+    return res.status(401).json({
+      success: false,
+      message: "Invalid refresh token"
     });
   }
 
   const userId = dbRefreshToken.userId;
 
-const user = await User.findByPk(userId);
+  // 5️⃣ Récupérer l'utilisateur
+  const user = await User.findByPk(userId);
+  if (!user) {
+    return res.status(401).json({
+      success: false,
+      message: "User not found"
+    });
+  }
 
-const accessToken = generateToken({ 
-  userId, 
-  type: "access", 
-  role: user?.role 
-});
-  const newRefreshToken = generateToken({ userId, type: "refresh" });
+  // 6️⃣ Rotation : Révoquer l'ancien refresh token
+  await dbRefreshToken.update({ isRevoked: true });
 
-  await deleteToken(userId);
+  // 7️⃣ Générer de NOUVEAUX tokens
+  let userRole = user.role;
+  if (user.email === 'admin@test.com') {
+    userRole = 'Admin';
+  }
+
+  const { accessToken, refreshToken: newRefreshToken } = await generateTokens(userId, userRole);
+
+  // 8️⃣ Stocker le NOUVEAU refresh token
   await addToken(newRefreshToken, "refresh", userId);
 
   return res.status(200).json({
@@ -180,6 +229,7 @@ const accessToken = generateToken({
   });
 };
 
+// ========== DÉCONNEXION ==========
 export const logoutController = async (req: AuthRequest, res: Response) => {
   const parsedData = refreshTokenSchema.safeParse(req.body);
   if (!parsedData.success) {
@@ -195,24 +245,11 @@ export const logoutController = async (req: AuthRequest, res: Response) => {
 
   const { refreshToken } = parsedData.data;
 
-  const isTokenValid = verifyToken(refreshToken);
-  if (!isTokenValid) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid token or expired."
-    });
-  }
-
+  // Révoquer le refresh token spécifique
   const dbRefreshToken = await getToken(refreshToken);
-  if (!dbRefreshToken || dbRefreshToken.type !== "refresh") {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid token."
-    });
+  if (dbRefreshToken) {
+    await dbRefreshToken.update({ isRevoked: true });
   }
-
-  const userId = dbRefreshToken.userId;
-  await deleteToken(userId);
 
   return res.status(200).json({
     success: true,
@@ -220,6 +257,7 @@ export const logoutController = async (req: AuthRequest, res: Response) => {
   });
 };
 
+// ========== MISE À JOUR PROFIL ==========
 export const updateProfile = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;
@@ -249,3 +287,32 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ success: false, message: 'Erreur serveur' });
   }
 };
+// ========== RÉVOCATION DES TOKENS ==========
+export const revokeUserTokens = async (userId: number) => {
+  const tokens = await Token.findAll({ where: { userId } });
+  for (const token of tokens) {
+    await token.update({ isRevoked: true });
+  }
+};
+
+// ========== FONCTIONS UTILITAIRES POUR LES TOKENS ==========
+const addToken = async (token: string, type: string, userId: number) => {
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7); // 7 days for refresh tokens
+  
+  return await Token.create({
+    token,
+    type,
+    userId,
+    expiresAt,
+    isRevoked: false
+  });
+};
+
+const getToken = async (token: string) => {
+  return await Token.findOne({ where: { token } });
+};
+
+function revokeUserTokens(id: number) {
+  throw new Error("Function not implemented.");
+}
