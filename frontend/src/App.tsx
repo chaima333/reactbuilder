@@ -51,27 +51,24 @@ const AppContent: React.FC = () => {
             <Route path="/register" element={<RegisterRedirect />} />
             <Route path="/s/:subdomain" element={<PublicSite />} />
             <Route path="/site/:siteId" element={<PublicSite />} />
-
             <Route element={<ProtectedLayout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/sites" element={<Sites />} />
-              <Route path="/sites/:siteId/edit" element={<SiteEditor />} />
-              <Route path="/sites/:siteId/pages/new" element={<PageEditor />} />
-              <Route path="/sites/:siteId/pages/:pageId/edit" element={<PageEditor />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/media" element={<Media />} />
-// Dans App.tsx, modifiez la route /users
-<Route
-  path="/users"
-  element={
-    <AdminRoute>  {/* ← Seuls les admins peuvent accéder */}
+  <Route path="/dashboard" element={<Dashboard />} />
+  <Route path="/sites" element={<Sites />} />
+  <Route path="/sites/:siteId/edit" element={<SiteEditor />} />
+  <Route path="/sites/:siteId/pages/new" element={<PageEditor />} />
+  <Route path="/sites/:siteId/pages/:pageId/edit" element={<PageEditor />} />
+  <Route path="/profile" element={<Profile />} />
+  <Route path="/media" element={<Media />} />
+  <Route path="/users" element={
+    <AdminRoute>
       <Layout>
         <Users />
       </Layout>
     </AdminRoute>
-  }
-/>              <Route path="/settings" element={<Settings />} />
-            </Route>
+  } />
+  <Route path="/settings" element={<Settings />} />
+</Route>
+ 
           </Routes>
         </BrowserRouter>
       </SnackbarProvider>
