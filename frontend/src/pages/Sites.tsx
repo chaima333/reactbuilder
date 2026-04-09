@@ -175,7 +175,13 @@ export const Sites: React.FC = () => {
                   <Button size="small" startIcon={<EditIcon />} onClick={() => navigate(`/sites/${site.id}/edit`)}>
                     {t.edit}
                   </Button>
-                  <Button size="small" startIcon={<VisibilityIcon />} onClick={() => window.open(`/site/${site.id}`, '_blank')}>
+                  {/* 🔥 BOUTON VOIR AJOUTÉ ICI 🔥 */}
+                  <Button 
+                    size="small" 
+                    variant="outlined"
+                    startIcon={<VisibilityIcon />}
+                    onClick={() => window.open(`/site/${site.id}`, '_blank')}
+                  >
                     Voir
                   </Button>
                   <Button size="small" color="error" startIcon={<DeleteIcon />} onClick={() => { setSelectedSite(site); setDeleteDialogOpen(true); }}>
