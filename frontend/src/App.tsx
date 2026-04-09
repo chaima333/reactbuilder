@@ -20,7 +20,6 @@ import { Settings } from './pages/Settings';
 import { LanguageProvider } from './context/LanguageContext';
 import { Register } from './pages/Register';
 import { Home } from './pages/Home';
-import { PendingUsers } from './pages/PendingUsers';
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
@@ -52,17 +51,6 @@ const AppContent: React.FC = () => {
             <Route path="/register" element={<RegisterRedirect />} />
             <Route path="/s/:subdomain" element={<PublicSite />} />
             <Route path="/site/:siteId" element={<PublicSite />} />
-
-            <Route
-              path="/pending-users"
-              element={
-                <AdminRoute>
-                  <Layout>
-                    <PendingUsers />
-                  </Layout>
-                </AdminRoute>
-              }
-            />
 
             <Route element={<ProtectedLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
