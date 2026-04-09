@@ -25,6 +25,25 @@ import {
   useDeletePageMutation,
 } from '../redux/api/apiSlice';
 
+// Import DnD Kit
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
 const blockTypes = [
   { type: 'title', label: 'Titre', icon: '📌' },
   { type: 'text', label: 'Texte', icon: '📝' },
@@ -32,6 +51,107 @@ const blockTypes = [
   { type: 'button', label: 'Bouton', icon: '🔘' },
   { type: 'gallery', label: 'Galerie', icon: '📸' },
 ];
+
+// Composant pour un bloc déplaçable
+const SortableBlockItem = ({ block, updateBlock, deleteBlock }: any) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: block.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    marginBottom: '16px',
+  };
+
+  const renderBlockContent = () => {
+    switch (block.type) {
+      case 'title':
+        return (
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Titre de la section"
+            value={block.content}
+            onChange={(e) => updateBlock(block.id, e.target.value)}
+          />
+        );
+      case 'text':
+        return (
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            variant="outlined"
+            placeholder="Votre texte ici..."
+            value={block.content}
+            onChange={(e) => updateBlock(block.id, e.target.value)}
+          />
+        );
+      case 'image':
+        return (
+          <Box sx={{ p: 2, border: '1px dashed #ccc', textAlign: 'center' }}>
+            <Typography color="text.secondary">🖼️ URL de l'image</Typography>
+            <TextField
+              fullWidth
+              placeholder="https://exemple.com/image.jpg"
+              value={block.content}
+              onChange={(e) => updateBlock(block.id, e.target.value)}
+              sx={{ mt: 1 }}
+            />
+          </Box>
+        );
+      case 'button':
+        return (
+          <TextField
+            fullWidth
+            placeholder="Texte du bouton"
+            value={block.content}
+            onChange={(e) => updateBlock(block.id, e.target.value)}
+          />
+        );
+      case 'gallery':
+        return (
+          <Box sx={{ p: 2, border: '1px dashed #ccc', textAlign: 'center' }}>
+            <Typography color="text.secondary">📸 Galerie d'images</Typography>
+            <TextField
+              fullWidth
+              placeholder="URLs des images (séparées par des virgules)"
+              value={block.content}
+              onChange={(e) => updateBlock(block.id, e.target.value)}
+              sx={{ mt: 1 }}
+            />
+          </Box>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      <Paper sx={{ p: 2, position: 'relative' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+          <IconButton size="small" {...listeners} sx={{ cursor: 'grab' }}>
+            <DragIcon />
+          </IconButton>
+          <Chip label={block.type} size="small" sx={{ ml: 1 }} />
+          <Box sx={{ flexGrow: 1 }} />
+          <IconButton size="small" onClick={() => deleteBlock(block.id)} color="error">
+            🗑️
+          </IconButton>
+        </Box>
+        {renderBlockContent()}
+      </Paper>
+    </div>
+  );
+};
 
 export const PageEditor: React.FC = () => {
   const { siteId, pageId } = useParams();
@@ -42,10 +162,21 @@ export const PageEditor: React.FC = () => {
   const [blocks, setBlocks] = useState<any[]>([]);
   const [isPreview, setIsPreview] = useState(false);
 
-  // Charger la page depuis l'API - CORRECTION ICI
+  // Configurer les capteurs pour DnD
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // Déclencher après 5px de mouvement
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const { data: pageData, isLoading: isLoadingPage, error: pageError } = useGetPageByIdQuery(
     { siteId: Number(siteId), pageId: Number(pageId) },
-    { skip: !pageId || pageId === 'new' } // Ne pas exécuter si nouvelle page
+    { skip: !pageId || pageId === 'new' }
   );
 
   const [createPage, { isLoading: isCreating }] = useCreatePageMutation();
@@ -54,14 +185,12 @@ export const PageEditor: React.FC = () => {
 
   const isNewPage = !pageId || pageId === 'new';
 
-  // CORRECTION : Charger les données de la page quand pageData change
   useEffect(() => {
     if (pageData?.data && !isNewPage) {
       const page = pageData.data;
-      console.log('Page chargée:', page); // Pour déboguer
+      console.log('Page chargée:', page);
       setPageTitle(page.title || '');
       
-      // Parser les blocks si nécessaire
       let parsedBlocks = page.blocks;
       if (typeof parsedBlocks === 'string') {
         try {
@@ -74,7 +203,6 @@ export const PageEditor: React.FC = () => {
     }
   }, [pageData, isNewPage]);
 
-  // Réinitialiser pour une nouvelle page
   useEffect(() => {
     if (isNewPage) {
       setPageTitle('');
@@ -99,6 +227,17 @@ export const PageEditor: React.FC = () => {
 
   const deleteBlock = (id: number) => {
     setBlocks(blocks.filter(block => block.id !== id));
+  };
+
+  // Gestion du drag & drop
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const oldIndex = blocks.findIndex((block) => block.id === active.id);
+      const newIndex = blocks.findIndex((block) => block.id === over.id);
+      setBlocks(arrayMove(blocks, oldIndex, newIndex));
+    }
   };
 
   const handleDeletePage = async () => {
@@ -150,62 +289,6 @@ export const PageEditor: React.FC = () => {
     } catch (error) {
       console.error('Save error:', error);
       enqueueSnackbar('Erreur lors de la sauvegarde', { variant: 'error' });
-    }
-  };
-
-  const renderBlock = (block: any) => {
-    switch (block.type) {
-      case 'title':
-        return (
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Titre de la section"
-            value={block.content}
-            onChange={(e) => updateBlock(block.id, e.target.value)}
-            sx={{ mb: 2 }}
-          />
-        );
-      case 'text':
-        return (
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            variant="outlined"
-            placeholder="Votre texte ici..."
-            value={block.content}
-            onChange={(e) => updateBlock(block.id, e.target.value)}
-            sx={{ mb: 2 }}
-          />
-        );
-      case 'image':
-        return (
-          <Box sx={{ mb: 2, p: 2, border: '1px dashed #ccc', textAlign: 'center' }}>
-            <Typography color="text.secondary">🖼️ URL de l'image</Typography>
-            <TextField
-              fullWidth
-              placeholder="https://exemple.com/image.jpg"
-              value={block.content}
-              onChange={(e) => updateBlock(block.id, e.target.value)}
-              sx={{ mt: 1 }}
-            />
-          </Box>
-        );
-      case 'button':
-        return (
-          <Box sx={{ mb: 2 }}>
-            <TextField
-              fullWidth
-              placeholder="Texte du bouton"
-              value={block.content}
-              onChange={(e) => updateBlock(block.id, e.target.value)}
-              sx={{ mb: 1 }}
-            />
-          </Box>
-        );
-      default:
-        return null;
     }
   };
 
@@ -312,19 +395,25 @@ export const PageEditor: React.FC = () => {
                 </Typography>
               </Box>
             ) : (
-              blocks.map((block) => (
-                <Paper key={block.id} sx={{ p: 2, mb: 2, position: 'relative' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <DragIcon sx={{ cursor: 'move', mr: 1, color: 'text.secondary' }} />
-                    <Chip label={block.type} size="small" />
-                    <Box sx={{ flexGrow: 1 }} />
-                    <IconButton size="small" onClick={() => deleteBlock(block.id)}>
-                      🗑️
-                    </IconButton>
-                  </Box>
-                  {renderBlock(block)}
-                </Paper>
-              ))
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={blocks.map(b => b.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {blocks.map((block) => (
+                    <SortableBlockItem
+                      key={block.id}
+                      block={block}
+                      updateBlock={updateBlock}
+                      deleteBlock={deleteBlock}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
             )}
           </Paper>
         </Grid>
