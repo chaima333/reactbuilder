@@ -1,5 +1,5 @@
 // frontend/src/pages/PendingUsers.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Paper,
@@ -14,41 +14,63 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import { useGetPendingUsersQuery, useApproveUserMutation, useRejectUserMutation } from '../redux/api/apiSlice';
 import { useSnackbar } from 'notistack';
 
 export const PendingUsers: React.FC = () => {
-  const { data, isLoading, error, refetch } = useGetPendingUsersQuery(undefined);
-  const [approveUser, { isLoading: isApproving }] = useApproveUserMutation();
-  const [rejectUser, { isLoading: isRejecting }] = useRejectUserMutation();
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { enqueueSnackbar } = useSnackbar();
 
-  const pendingUsers = data?.data || [];
+  useEffect(() => {
+    fetchPendingUsers();
+  }, []);
 
-  console.log('🔍 PendingUsers data:', data);
-  console.log('🔍 PendingUsers list:', pendingUsers);
+  const fetchPendingUsers = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch('https://backend-rmfq.onrender.com/api/admin/pending-users', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      console.log('📋 Données reçues:', data);
+      setUsers(data.data || []);
+    } catch (err) {
+      setError('Erreur de chargement');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleApprove = async (userId: number) => {
     try {
-      await approveUser(userId).unwrap();
+      const token = localStorage.getItem('accessToken');
+      await fetch(`https://backend-rmfq.onrender.com/api/admin/approve-user/${userId}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       enqueueSnackbar('Utilisateur approuvé avec succès!', { variant: 'success' });
-      refetch();
-    } catch (err: any) {
-      enqueueSnackbar(err?.data?.message || 'Erreur lors de l\'approbation', { variant: 'error' });
+      fetchPendingUsers(); // Rafraîchir la liste
+    } catch (err) {
+      enqueueSnackbar('Erreur lors de l\'approbation', { variant: 'error' });
     }
   };
 
   const handleReject = async (userId: number) => {
     try {
-      await rejectUser(userId).unwrap();
+      const token = localStorage.getItem('accessToken');
+      await fetch(`https://backend-rmfq.onrender.com/api/admin/reject-user/${userId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       enqueueSnackbar('Utilisateur rejeté', { variant: 'success' });
-      refetch();
-    } catch (err: any) {
-      enqueueSnackbar(err?.data?.message || 'Erreur lors du rejet', { variant: 'error' });
+      fetchPendingUsers(); // Rafraîchir la liste
+    } catch (err) {
+      enqueueSnackbar('Erreur lors du rejet', { variant: 'error' });
     }
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
         <CircularProgress />
@@ -59,7 +81,7 @@ export const PendingUsers: React.FC = () => {
   if (error) {
     return (
       <Box p={3}>
-        <Alert severity="error">Erreur lors du chargement des utilisateurs en attente</Alert>
+        <Alert severity="error">{error}</Alert>
       </Box>
     );
   }
@@ -70,7 +92,7 @@ export const PendingUsers: React.FC = () => {
         Utilisateurs en attente d'approbation
       </Typography>
       
-      {pendingUsers.length === 0 ? (
+      {users.length === 0 ? (
         <Paper sx={{ p: 4, textAlign: 'center' }}>
           <Typography variant="body1" color="text.secondary">
             Aucun utilisateur en attente d'approbation
@@ -89,7 +111,7 @@ export const PendingUsers: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {pendingUsers.map((user: any) => (
+              {users.map((user: any) => (
                 <TableRow key={user.id}>
                   <TableCell>{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
@@ -101,7 +123,6 @@ export const PendingUsers: React.FC = () => {
                       variant="contained"
                       color="success"
                       onClick={() => handleApprove(user.id)}
-                      disabled={isApproving}
                       sx={{ mr: 1 }}
                     >
                       Approuver
@@ -111,7 +132,6 @@ export const PendingUsers: React.FC = () => {
                       variant="outlined"
                       color="error"
                       onClick={() => handleReject(user.id)}
-                      disabled={isRejecting}
                     >
                       Rejeter
                     </Button>
