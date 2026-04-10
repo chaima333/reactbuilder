@@ -273,14 +273,14 @@ export const Users: React.FC = () => {
 
       {/* --- SECTION LISTE PRINCIPALE --- */}
       <Typography variant="h5" gutterBottom sx={{ mt: 2 }}>📋 Utilisateurs actifs</Typography>
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
         <Table>
           <TableHead>
             <TableRow sx={{ bgcolor: 'primary.main' }}>
               <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Nom</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Email</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Rôle</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Sites</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Sites</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Inscription</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Actions</TableCell>
             </TableRow>
@@ -288,7 +288,7 @@ export const Users: React.FC = () => {
           <TableBody>
             {users.map((user: any) => (
               <TableRow key={user.id} hover>
-                <TableCell>{user.name}</TableCell>
+                <TableCell sx={{ fontWeight: 500 }}>{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
                   <Chip
@@ -297,18 +297,31 @@ export const Users: React.FC = () => {
                     color={roleColors[user.role as keyof typeof roleColors] as any}
                     size="small"
                     onClick={() => handleChangeRole(user.id, user.role)}
-                    sx={{ cursor: 'pointer' }}
+                    sx={{ cursor: 'pointer', fontWeight: 'bold' }}
                   />
                 </TableCell>
-                <TableCell>{user.sites?.length || 0}</TableCell>
+                
+                {/* ✅ Correction : Utilisation de siteCount renvoyé par le backend */}
+                <TableCell align="center">
+                  <Chip 
+                    label={user.siteCount || 0} 
+                    size="small" 
+                    variant="outlined" 
+                    color={user.siteCount > 0 ? "secondary" : "default"}
+                    sx={{ minWidth: 40, fontWeight: 'bold' }}
+                  />
+                </TableCell>
+
                 <TableCell>{new Date(user.createdAt).toLocaleDateString('fr-FR')}</TableCell>
                 <TableCell align="center">
-                  <IconButton size="small" color="primary" onClick={() => handleOpenDialog(user)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton size="small" color="error" onClick={() => handleDelete(user.id, user.name)}>
-                    <DeleteIcon />
-                  </IconButton>
+                  <Box display="flex" justifyContent="center">
+                    <IconButton size="small" color="primary" onClick={() => handleOpenDialog(user)}>
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton size="small" color="error" onClick={() => handleDelete(user.id, user.name)}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}
@@ -318,7 +331,9 @@ export const Users: React.FC = () => {
 
       {/* --- DIALOGUE AJOUT/MODIFICATION --- */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>{editingUser ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}</DialogTitle>
+        <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white' }}>
+          {editingUser ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}
+        </DialogTitle>
         <DialogContent dividers>
           <TextField
             fullWidth label="Nom" margin="normal"
@@ -348,9 +363,9 @@ export const Users: React.FC = () => {
           </TextField>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleCloseDialog}>Annuler</Button>
+          <Button onClick={handleCloseDialog} color="inherit">Annuler</Button>
           <Button onClick={handleSubmit} variant="contained" disabled={isCreating || isUpdating}>
-            {isCreating || isUpdating ? 'Enregistrement...' : 'Enregistrer'}
+            {isCreating || isUpdating ? <CircularProgress size={24} /> : 'Enregistrer'}
           </Button>
         </DialogActions>
       </Dialog>
