@@ -20,6 +20,9 @@ import {
   InsertDriveFile as FileIcon,
 } from '@mui/icons-material';
 
+// ✅ Correction : URL de ton backend sur Render
+const API_BASE_URL = "https://backend-rmfq.onrender.com";
+
 interface MediaGridProps {
   media: any[];
   isLoading: boolean;
@@ -28,30 +31,34 @@ interface MediaGridProps {
 }
 
 const getFileIcon = (type: string, url: string) => {
+  // ✅ Correction : On utilise l'URL absolue vers Render
   if (type === 'image') {
-    return <img src={`http://localhost:5000${url}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />;
+    return (
+      <img
+        src={`${API_BASE_URL}${url}`}
+        alt=""
+        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        onError={(e) => {
+          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200?text=Image+Introuvable';
+        }}
+      />
+    );
   }
-  
+
   const ext = url.split('.').pop()?.toLowerCase();
-  
+
   switch (ext) {
-    case 'pdf':
-      return <PdfIcon sx={{ fontSize: 60, color: '#f40f02' }} />;
+    case 'pdf': return <PdfIcon sx={{ fontSize: 60, color: '#f40f02' }} />;
     case 'doc':
-    case 'docx':
-      return <DocIcon sx={{ fontSize: 60, color: '#2b579a' }} />;
+    case 'docx': return <DocIcon sx={{ fontSize: 60, color: '#2b579a' }} />;
     case 'mp4':
     case 'webm':
-    case 'mov':
-      return <VideoIcon sx={{ fontSize: 60, color: '#ff0000' }} />;
+    case 'mov': return <VideoIcon sx={{ fontSize: 60, color: '#ff0000' }} />;
     case 'mp3':
-    case 'wav':
-      return <AudioIcon sx={{ fontSize: 60, color: '#1db954' }} />;
+    case 'wav': return <AudioIcon sx={{ fontSize: 60, color: '#1db954' }} />;
     case 'zip':
-    case 'rar':
-      return <ArchiveIcon sx={{ fontSize: 60, color: '#ff8c00' }} />;
-    default:
-      return <FileIcon sx={{ fontSize: 60, color: '#666' }} />;
+    case 'rar': return <ArchiveIcon sx={{ fontSize: 60, color: '#ff8c00' }} />;
+    default: return <FileIcon sx={{ fontSize: 60, color: '#666' }} />;
   }
 };
 
@@ -78,12 +85,8 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ media, isLoading, onDelete
   if (media.length === 0) {
     return (
       <Box textAlign="center" py={8}>
-        <Typography variant="h6" color="text.secondary" gutterBottom>
-          Aucun fichier
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Uploader votre premier fichier (images, PDF, vidéos, etc.)
-        </Typography>
+        <Typography variant="h6" color="text.secondary" gutterBottom>Aucun fichier</Typography>
+        <Typography variant="body2" color="text.secondary">Uploader votre premier fichier.</Typography>
       </Box>
     );
   }
@@ -93,7 +96,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ media, isLoading, onDelete
       {media.map((item) => {
         const badge = getFileBadge(item.type);
         return (
-          <ImageListItem key={item.id}>
+          <ImageListItem key={item.id} sx={{ border: '1px solid #eee', borderRadius: 2, overflow: 'hidden' }}>
             <Box
               sx={{
                 height: 200,
@@ -103,31 +106,34 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ media, isLoading, onDelete
                 justifyContent: 'center',
                 cursor: 'pointer',
               }}
-              onClick={() => window.open(`http://localhost:5000${item.url}`, '_blank')}
+              // ✅ Correction : URL absolue pour l'ouverture
+              onClick={() => window.open(`${API_BASE_URL}${item.url}`, '_blank')}
             >
               {getFileIcon(item.type, item.url)}
             </Box>
             <ImageListItemBar
-              title={item.filename.length > 30 ? item.filename.substring(0, 30) + '...' : item.filename}
+              title={item.filename}
               subtitle={
-                <Box display="flex" alignItems="center" gap={1}>
-                  <Chip label={badge.label} size="small" color={badge.color} />
-                  <span>{Math.round(item.size / 1024)} KB</span>
+                <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+                  <Chip label={badge.label} size="small" color={badge.color} sx={{ height: 20, fontSize: '0.65rem' }} />
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                    {Math.round(item.size / 1024)} KB
+                  </Typography>
                 </Box>
               }
               actionIcon={
-                <Box>
+                <Box display="flex" mr={1}>
                   <IconButton
                     size="small"
-                    color="primary"
-                    onClick={() => onEditAlt(item.id, item.alt || '')}
+                    sx={{ color: 'white' }}
+                    onClick={(e) => { e.stopPropagation(); onEditAlt(item.id, item.alt || ''); }}
                   >
                     <EditIcon fontSize="small" />
                   </IconButton>
                   <IconButton
                     size="small"
-                    color="error"
-                    onClick={() => onDelete(item.id)}
+                    sx={{ color: '#ff5252' }}
+                    onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
                   >
                     <DeleteIcon fontSize="small" />
                   </IconButton>

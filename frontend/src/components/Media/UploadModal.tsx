@@ -20,13 +20,6 @@ interface UploadModalProps {
   isLoading: boolean;
 }
 
-const ACCEPTED_TYPES = {
-  images: 'image/jpeg,image/png,image/gif,image/webp,image/svg+xml',
-  documents: 'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  videos: 'video/mp4,video/webm,video/quicktime',
-  archives: 'application/zip,application/x-rar-compressed',
-};
-
 export const UploadModal: React.FC<UploadModalProps> = ({ open, onClose, onUpload, isLoading }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [altText, setAltText] = useState('');
@@ -36,7 +29,6 @@ export const UploadModal: React.FC<UploadModalProps> = ({ open, onClose, onUploa
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Vérifier la taille (50MB max)
       if (file.size > 50 * 1024 * 1024) {
         setError('Le fichier est trop volumineux (max 50MB)');
         return;
@@ -45,7 +37,6 @@ export const UploadModal: React.FC<UploadModalProps> = ({ open, onClose, onUploa
       setError('');
       setSelectedFile(file);
       
-      // Preview pour les images seulement
       if (file.type.startsWith('image/')) {
         setPreview(URL.createObjectURL(file));
       } else {
@@ -56,37 +47,28 @@ export const UploadModal: React.FC<UploadModalProps> = ({ open, onClose, onUploa
 
   const handleUpload = async () => {
     if (!selectedFile) return;
-    await onUpload(selectedFile, altText);
-    setSelectedFile(null);
-    setAltText('');
-    setPreview('');
-    setError('');
-    onClose();
-  };
-
-  const getFileTypeLabel = (file: File) => {
-    if (file.type.startsWith('image/')) return 'Image';
-    if (file.type === 'application/pdf') return 'PDF';
-    if (file.type.startsWith('video/')) return 'Vidéo';
-    if (file.type.startsWith('audio/')) return 'Audio';
-    if (file.type.includes('word') || file.type.includes('document')) return 'Document';
-    if (file.type.includes('zip') || file.type.includes('rar')) return 'Archive';
-    return 'Fichier';
+    try {
+      await onUpload(selectedFile, altText);
+      // Reset après succès
+      setSelectedFile(null);
+      setAltText('');
+      setPreview('');
+      setError('');
+      onClose();
+    } catch (err) {
+      setError("Une erreur est survenue lors de l'envoi.");
+    }
   };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Uploader un fichier</DialogTitle>
-      <DialogContent>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
+      <DialogContent dividers>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         
         {preview && (
-          <Box textAlign="center" mb={2}>
-            <img src={preview} alt="Preview" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8 }} />
+          <Box textAlign="center" mb={2} sx={{ bgcolor: '#f0f0f0', p: 1, borderRadius: 2 }}>
+            <img src={preview} alt="Preview" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 4 }} />
           </Box>
         )}
         
@@ -94,46 +76,45 @@ export const UploadModal: React.FC<UploadModalProps> = ({ open, onClose, onUploa
           variant="outlined"
           component="label"
           fullWidth
-          startIcon={<UploadIcon />}
-          sx={{ mb: 2, py: 2 }}
+          startIcon={isLoading ? <CircularProgress size={20} /> : <UploadIcon />}
+          disabled={isLoading}
+          sx={{ mb: 2, py: 3, borderStyle: 'dashed', borderWidth: 2 }}
         >
-          Choisir un fichier
+          {selectedFile ? 'Changer de fichier' : 'Choisir un fichier (Images, PDF, Vidéos...)'}
           <input
             type="file"
             hidden
-            accept="image/*,application/pdf,application/msword,video/mp4,audio/mp3,application/zip"
             onChange={handleFileSelect}
           />
         </Button>
 
         {selectedFile && (
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              Fichier: {selectedFile.name} ({Math.round(selectedFile.size / 1024)} KB)
-            </Typography>
-            <Typography variant="body2" color="primary">
-              Type: {getFileTypeLabel(selectedFile)}
-            </Typography>
+          <Box sx={{ mb: 2, p: 2, bgcolor: 'primary.light', borderRadius: 1, color: 'white' }}>
+            <Typography variant="subtitle2" noWrap>📄 {selectedFile.name}</Typography>
+            <Typography variant="caption">Taille : {(selectedFile.size / 1024).toFixed(0)} KB</Typography>
           </Box>
         )}
 
         <TextField
           fullWidth
-          label="Description / Texte ALT"
+          label="Texte Alternatif / Nom SEO"
+          placeholder="Ex: Logo entreprise, Capture tableau de bord..."
           value={altText}
           onChange={(e) => setAltText(e.target.value)}
           margin="normal"
-          helperText="Description du fichier (important pour le SEO)"
+          disabled={isLoading}
+          helperText="Le texte ALT aide au référencement et à l'accessibilité."
         />
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Annuler</Button>
+      <DialogActions sx={{ p: 2 }}>
+        <Button onClick={onClose} disabled={isLoading}>Annuler</Button>
         <Button
           onClick={handleUpload}
           variant="contained"
           disabled={!selectedFile || isLoading}
+          startIcon={isLoading && <CircularProgress size={16} color="inherit" />}
         >
-          {isLoading ? <CircularProgress size={24} /> : 'Uploader'}
+          {isLoading ? 'Envoi en cours...' : 'Lancer l\'upload'}
         </Button>
       </DialogActions>
     </Dialog>

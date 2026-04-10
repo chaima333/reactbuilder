@@ -37,6 +37,7 @@ export const Media: React.FC = () => {
 
   const mediaList = data?.data || [];
 
+  // ✅ Gestion de l'upload
   const handleUpload = async (file: File, alt: string) => {
     const formData = new FormData();
     formData.append('image', file);
@@ -45,15 +46,15 @@ export const Media: React.FC = () => {
     try {
       await uploadMedia(formData).unwrap();
       enqueueSnackbar('Image uploadée avec succès!', { variant: 'success' });
+      setUploadModalOpen(false); // Fermer le modal après succès
       refetch();
     } catch (error) {
-      console.error('Upload error:', error);
-      enqueueSnackbar('Erreur lors de l\'upload', { variant: 'error' });
+      enqueueSnackbar("Erreur lors de l'upload", { variant: 'error' });
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Supprimer cette image ?')) {
+    if (window.confirm('Supprimer cette image définitivement ?')) {
       try {
         await deleteMedia(id).unwrap();
         enqueueSnackbar('Image supprimée!', { variant: 'success' });
@@ -66,7 +67,7 @@ export const Media: React.FC = () => {
 
   const handleEditAlt = (id: number, currentAlt: string) => {
     setSelectedMedia({ id, alt: currentAlt });
-    setNewAlt(currentAlt);
+    setNewAlt(currentAlt || '');
     setAltDialogOpen(true);
   };
 
@@ -86,7 +87,7 @@ export const Media: React.FC = () => {
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-        <Typography variant="h4">Médiathèque</Typography>
+        <Typography variant="h4" fontWeight="bold">Médiathèque</Typography>
         <Box>
           <Button
             variant="outlined"
@@ -101,11 +102,14 @@ export const Media: React.FC = () => {
             startIcon={<AddIcon />}
             onClick={() => setUploadModalOpen(true)}
           >
-            Uploader
+            Nouveau Fichier
           </Button>
         </Box>
       </Box>
 
+      {/* IMPORTANT : La correction du lien http://localhost:5000 
+          se passe à l'intérieur de MediaGrid ! 
+      */}
       <MediaGrid
         media={mediaList}
         isLoading={isLoading}
@@ -121,25 +125,27 @@ export const Media: React.FC = () => {
       />
 
       <Dialog open={altDialogOpen} onClose={() => setAltDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Modifier le texte ALT</DialogTitle>
-        <DialogContent>
+        <DialogTitle>SEO & Accessibilité</DialogTitle>
+        <DialogContent dividers>
           <TextField
             fullWidth
-            label="Texte ALT"
+            label="Texte alternatif (Alt)"
             value={newAlt}
             onChange={(e) => setNewAlt(e.target.value)}
             margin="normal"
-            helperText="Description de l'image pour le SEO et l'accessibilité"
+            variant="outlined"
+            helperText="Décrivez l'image pour les malvoyants et les moteurs de recherche."
           />
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setAltDialogOpen(false)}>Annuler</Button>
-          <Button onClick={handleUpdateAlt} variant="contained">
-            Enregistrer
+          <Button onClick={handleUpdateAlt} variant="contained" color="primary">
+            Sauvegarder
           </Button>
         </DialogActions>
       </Dialog>
     </Box>
   );
 };
+
 export default Media;
