@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { User, ActivityLog } from '../models';
 import { AuthRequest } from '../shared/auth.util';
 import bcrypt from 'bcrypt';
+import { Sequelize } from 'sequelize-typescript/dist/sequelize/sequelize/sequelize';
 
 // Au lieu de (req: Request), utilise (req: AuthRequest)
 export const myController = async (req: AuthRequest, res: Response) => {
@@ -16,7 +17,19 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
   try {
     // Version sans les associations Site pour l'instant
     const users = await User.findAll({
-      attributes: { exclude: ['password'] },
+      attributes: { exclude: ['password'],
+        include: [
+          // ✅ Cette partie ajoute dynamiquement le compte des sites pour chaque utilisateur
+          [
+            Sequelize.literal(`(
+              SELECT COUNT(*)
+              FROM Sites AS site
+              WHERE site.ownerId = User.id
+            )`),
+            'siteCount' // C'est le nom de la propriété que tu recevras dans le frontend
+          ]
+        ]
+       },
       order: [['createdAt', 'DESC']]
     });
 
