@@ -37,7 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onDrawerToggle }) => {
   const userRole = useSelector((state: RootState) => state.auth.user?.role);
   const isAdmin = userRole === 'Admin';
 
-  // Menu items - certains visibles uniquement pour Admin
+  // 🔥 Menu items avec restriction adminOnly
   const allMenuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', adminOnly: false },
     { text: 'Mes Sites', icon: <SitesIcon />, path: '/sites', adminOnly: false },
@@ -46,7 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onDrawerToggle }) => {
     { text: 'Paramètres', icon: <SettingsIcon />, path: '/settings', adminOnly: false },
   ];
 
-  // Filtrer les items selon le rôle
+  // 🔥 Filtrer selon le rôle
   const menuItems = allMenuItems.filter(item => !item.adminOnly || isAdmin);
 
   const drawer = (

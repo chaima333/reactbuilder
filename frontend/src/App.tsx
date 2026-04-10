@@ -15,11 +15,12 @@ import { SiteEditor } from './pages/SiteEditor';
 import { PublicSite } from './pages/PublicSite';
 import { Profile } from './pages/Profile';
 import { Media } from './pages/Media';
-import { Users } from './pages/Users';
 import { Settings } from './pages/Settings';
+
 import { LanguageProvider } from './context/LanguageContext';
 import { Register } from './pages/Register';
 import { Home } from './pages/Home';
+import Users from './pages/Users';
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
@@ -39,36 +40,36 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const AppContent: React.FC = () => {
   const themeMode = useSelector((state: RootState) => state.theme.mode);
-
+console.log('🔍 AppContent - rendering routes');
   return (
     <ThemeProvider theme={themeMode === 'light' ? lightTheme : darkTheme}>
       <CssBaseline />
       <SnackbarProvider maxSnack={3}>
         <BrowserRouter>
+        
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<LoginRedirect />} />
             <Route path="/register" element={<RegisterRedirect />} />
             <Route path="/s/:subdomain" element={<PublicSite />} />
             <Route path="/site/:siteId" element={<PublicSite />} />
+
             <Route element={<ProtectedLayout />}>
-  <Route path="/dashboard" element={<Dashboard />} />
-  <Route path="/sites" element={<Sites />} />
-  <Route path="/sites/:siteId/edit" element={<SiteEditor />} />
-  <Route path="/sites/:siteId/pages/new" element={<PageEditor />} />
-  <Route path="/sites/:siteId/pages/:pageId/edit" element={<PageEditor />} />
-  <Route path="/profile" element={<Profile />} />
-  <Route path="/media" element={<Media />} />
-  <Route path="/users" element={
-    <AdminRoute>
-      <Layout>
-        <Users />
-      </Layout>
-    </AdminRoute>
-  } />
-  <Route path="/settings" element={<Settings />} />
-</Route>
- 
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/sites" element={<Sites />} />
+              <Route path="/sites/:siteId/edit" element={<SiteEditor />} />
+              <Route path="/sites/:siteId/pages/new" element={<PageEditor />} />
+              <Route path="/sites/:siteId/pages/:pageId/edit" element={<PageEditor />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/media" element={<Media />} />
+              {/* 🔥 Route Users - CORRECTE */}
+              <Route path="/users" element={
+                <AdminRoute>
+                    <Users />
+                </AdminRoute>
+              } />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </SnackbarProvider>
