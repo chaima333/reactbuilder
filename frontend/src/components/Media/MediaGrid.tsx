@@ -30,16 +30,24 @@ interface MediaGridProps {
   onEditAlt: (id: number, alt: string) => void;
 }
 
+
 const getFileIcon = (type: string, url: string) => {
-  // ✅ Correction : On utilise l'URL absolue vers Render
+  const fullUrl = url.startsWith("http")
+    ? url
+    : `${API_BASE_URL}${url}`;
   if (type === 'image') {
     return (
       <img
-        src={`${API_BASE_URL}${url}`}
+        src={fullUrl}
         alt=""
         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        onError={(e) => {
-          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200?text=Image+Introuvable';
+         onError={(e) => {
+         const img = e.currentTarget as HTMLImageElement & {
+          dataset: DOMStringMap & { fallback?: string };
+         };
+        if (img.dataset.fallback === "true") return;
+        img.dataset.fallback = "true";
+         img.src = "/fallback.png";
         }}
       />
     );
