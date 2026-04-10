@@ -107,23 +107,6 @@ export const Register: React.FC = () => {
               helperText="Minimum 6 caractères"
             />
 
-            <TextField
-              fullWidth
-              select
-              label="Rôle"
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              margin="normal"
-              helperText="Ce rôle détermine vos permissions"
-            >
-              {roles.map((role) => (
-                <MenuItem key={role.value} value={role.value}>
-                  {role.label}
-                </MenuItem>
-              ))}
-            </TextField>
-
             <Button
               fullWidth
               type="submit"
