@@ -19,7 +19,6 @@ import {
   TextField,
   MenuItem,
   CircularProgress,
-  Alert,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -29,6 +28,7 @@ import {
   EditNote as EditorIcon,
   Visibility as ViewerIcon,
   CheckCircle as CheckIcon,
+  DoDisturbOn as RejectIcon,
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
 import {
@@ -63,6 +63,7 @@ export const Users: React.FC = () => {
     role: 'Viewer',
   });
 
+  // RTK Query hooks
   const { data, isLoading, refetch } = useGetUsersQuery(undefined);
   const [deleteUser] = useDeleteUserMutation();
   const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
@@ -71,7 +72,8 @@ export const Users: React.FC = () => {
 
   const users = data?.data || [];
 
-  // Charger les utilisateurs en attente
+  // --- API CALLS MANUELS (PENDING USERS) ---
+  
   const fetchPendingUsers = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -111,6 +113,27 @@ export const Users: React.FC = () => {
     }
   };
 
+  const handleReject = async (userId: number) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`https://backend-rmfq.onrender.com/api/admin/reject-user/${userId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const result = await response.json();
+      if (result.success) {
+        enqueueSnackbar('Utilisateur refusé et supprimé', { variant: 'success' });
+        fetchPendingUsers();
+      } else {
+        enqueueSnackbar(result.message || 'Erreur', { variant: 'error' });
+      }
+    } catch (err) {
+      enqueueSnackbar('Erreur lors du refus', { variant: 'error' });
+    }
+  };
+
+  // --- GESTION DES DIALOGUES ET ACTIONS CLASSIQUES ---
+
   const handleOpenDialog = (user?: any) => {
     if (user) {
       setEditingUser(user);
@@ -122,12 +145,7 @@ export const Users: React.FC = () => {
       });
     } else {
       setEditingUser(null);
-      setFormData({
-        name: '',
-        email: '',
-        password: '',
-        role: 'Viewer',
-      });
+      setFormData({ name: '', email: '', password: '', role: 'Viewer' });
     }
     setDialogOpen(true);
   };
@@ -135,7 +153,6 @@ export const Users: React.FC = () => {
   const handleCloseDialog = () => {
     setDialogOpen(false);
     setEditingUser(null);
-    setFormData({ name: '', email: '', password: '', role: 'Viewer' });
   };
 
   const handleSubmit = async () => {
@@ -155,7 +172,7 @@ export const Users: React.FC = () => {
   };
 
   const handleDelete = async (id: number, name: string) => {
-    if (window.confirm(`Supprimer l'utilisateur "${name}" ?`)) {
+    if (window.confirm(`Supprimer définitivement l'utilisateur "${name}" ?`)) {
       try {
         await deleteUser(id).unwrap();
         enqueueSnackbar('Utilisateur supprimé', { variant: 'success' });
@@ -192,27 +209,26 @@ export const Users: React.FC = () => {
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-        <Typography variant="h4">Utilisateurs</Typography>
+        <Typography variant="h4">Gestion des Utilisateurs</Typography>
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenDialog()}>
           Ajouter un utilisateur
         </Button>
       </Box>
 
-      {/* 🔥 SECTION UTILISATEURS EN ATTENTE */}
+      {/* --- SECTION EN ATTENTE --- */}
       {pendingUsers.length > 0 && (
         <Paper sx={{ p: 2, mb: 4, bgcolor: '#fff8e1', border: '1px solid #ffcc02' }}>
           <Typography variant="h6" sx={{ color: '#ed6c02', display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <CheckIcon /> En attente d'approbation ({pendingUsers.length})
+            <CheckIcon /> Demandes en attente ({pendingUsers.length})
           </Typography>
           <TableContainer>
-            <Table size="medium">
+            <Table size="small">
               <TableHead>
                 <TableRow>
                   <TableCell><strong>Nom</strong></TableCell>
                   <TableCell><strong>Email</strong></TableCell>
-                  <TableCell><strong>Rôle</strong></TableCell>
-                  <TableCell><strong>Date d'inscription</strong></TableCell>
-                  <TableCell><strong>Action</strong></TableCell>
+                  <TableCell><strong>Date</strong></TableCell>
+                  <TableCell align="right"><strong>Actions</strong></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -220,20 +236,32 @@ export const Users: React.FC = () => {
                   <TableRow key={user.id}>
                     <TableCell>{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Chip label={user.role} size="small" color="warning" />
-                    </TableCell>
-                    <TableCell>{new Date(user.createdAt).toLocaleDateString('fr-FR')}</TableCell>
-                    <TableCell>
-                      <Button
-                        size="small"
-                        variant="contained"
-                        color="success"
-                        onClick={() => handleApprove(user.id)}
-                        startIcon={<CheckIcon />}
-                      >
-                        Approuver
-                      </Button>
+                    <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell align="right">
+                      <Box display="flex" justifyContent="flex-end" gap={1}>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color="success"
+                          startIcon={<CheckIcon />}
+                          onClick={() => handleApprove(user.id)}
+                        >
+                          Approuver
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="error"
+                          startIcon={<RejectIcon />}
+                          onClick={() => {
+                            if (window.confirm(`Refuser l'accès à ${user.name} ?`)) {
+                              handleReject(user.id);
+                            }
+                          }}
+                        >
+                          Refuser
+                        </Button>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -243,8 +271,8 @@ export const Users: React.FC = () => {
         </Paper>
       )}
 
-      {/* SECTION UTILISATEURS APPROUVÉS */}
-      <Typography variant="h5" gutterBottom>📋 Liste des utilisateurs</Typography>
+      {/* --- SECTION LISTE PRINCIPALE --- */}
+      <Typography variant="h5" gutterBottom sx={{ mt: 2 }}>📋 Utilisateurs actifs</Typography>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -253,7 +281,7 @@ export const Users: React.FC = () => {
               <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Email</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Rôle</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Sites</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Membre depuis</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Inscription</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -275,7 +303,7 @@ export const Users: React.FC = () => {
                 <TableCell>{user.sites?.length || 0}</TableCell>
                 <TableCell>{new Date(user.createdAt).toLocaleDateString('fr-FR')}</TableCell>
                 <TableCell align="center">
-                  <IconButton size="small" onClick={() => handleOpenDialog(user)}>
+                  <IconButton size="small" color="primary" onClick={() => handleOpenDialog(user)}>
                     <EditIcon />
                   </IconButton>
                   <IconButton size="small" color="error" onClick={() => handleDelete(user.id, user.name)}>
@@ -288,49 +316,38 @@ export const Users: React.FC = () => {
         </Table>
       </TableContainer>
 
+      {/* --- DIALOGUE AJOUT/MODIFICATION --- */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>{editingUser ? 'Modifier l\'utilisateur' : 'Ajouter un utilisateur'}</DialogTitle>
-        <DialogContent>
+        <DialogTitle>{editingUser ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}</DialogTitle>
+        <DialogContent dividers>
           <TextField
-            fullWidth
-            label="Nom"
+            fullWidth label="Nom" margin="normal"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            margin="normal"
-            required
           />
           <TextField
-            fullWidth
-            label="Email"
-            type="email"
+            fullWidth label="Email" type="email" margin="normal"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            margin="normal"
-            required
           />
           <TextField
-            fullWidth
-            label={editingUser ? 'Nouveau mot de passe (laisser vide pour inchangé)' : 'Mot de passe'}
+            fullWidth margin="normal"
+            label={editingUser ? 'Changer mot de passe (optionnel)' : 'Mot de passe'}
             type="password"
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            margin="normal"
-            required={!editingUser}
           />
           <TextField
-            fullWidth
-            select
-            label="Rôle"
+            fullWidth select label="Rôle" margin="normal"
             value={formData.role}
             onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-            margin="normal"
           >
             <MenuItem value="Admin">Administrateur</MenuItem>
             <MenuItem value="Editor">Éditeur</MenuItem>
             <MenuItem value="Viewer">Visiteur</MenuItem>
           </TextField>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ p: 2 }}>
           <Button onClick={handleCloseDialog}>Annuler</Button>
           <Button onClick={handleSubmit} variant="contained" disabled={isCreating || isUpdating}>
             {isCreating || isUpdating ? 'Enregistrement...' : 'Enregistrer'}
@@ -340,3 +357,5 @@ export const Users: React.FC = () => {
     </Box>
   );
 };
+
+export default Users;
