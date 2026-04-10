@@ -6,9 +6,9 @@ import { Sequelize } from 'sequelize-typescript/dist/sequelize/sequelize/sequeli
 
 // Au lieu de (req: Request), utilise (req: AuthRequest)
 export const myController = async (req: AuthRequest, res: Response) => {
-const { id } = req.params;   // ✅ Maintenant reconnu
-  const { name } = req.body;   // ✅ Maintenant reconnu
-  const { page } = req.query;  // ✅ Maintenant reconnu
+const { id } = req.params;   
+  const { name } = req.body; 
+  const { page } = req.query;  
   const authHeader = req.headers.authorization;
 }
 
@@ -152,7 +152,6 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Supprimer un utilisateur
 // Supprimer un utilisateur
 export const deleteUser = async (req: AuthRequest, res: Response) => {
   try {
