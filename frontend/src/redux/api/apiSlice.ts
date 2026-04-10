@@ -11,11 +11,9 @@ const baseQuery = fetchBaseQuery({
   baseUrl: API_URL,
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState).auth.accessToken;
-
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
     }
-
     return headers;
   },
 });
@@ -26,6 +24,7 @@ const baseQuery = fetchBaseQuery({
 const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
   let result = await baseQuery(args, api, extraOptions);
 
+  // Détection d'expiration de session (401 ou 403)
   if (result.error && (result.error.status === 401 || result.error.status === 403)) {
     const refreshToken = (api.getState() as RootState).auth.refreshToken;
 
@@ -34,6 +33,7 @@ const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
       return result;
     }
 
+    // Tentative de rafraîchissement
     const refreshResult = await baseQuery(
       {
         url: '/auth/refresh_token',
@@ -45,29 +45,24 @@ const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
     );
 
     if (refreshResult.data) {
-      const { accessToken, refreshToken: newRefreshToken } =
-        refreshResult.data as {
-          accessToken: string;
-          refreshToken: string;
-        };
-
+      const { accessToken, refreshToken: newRefreshToken } = refreshResult.data as any;
       const currentUser = (api.getState() as RootState).auth.user;
 
-      if (!currentUser) {
+      // FIX: Protection contre "User | null"
+      // On ne dispatch setCredentials que si l'utilisateur existe dans le store
+      if (currentUser) {
+        api.dispatch(
+          setCredentials({
+            user: currentUser, // Ici, TypeScript sait que currentUser n'est pas null
+            accessToken,
+            refreshToken: newRefreshToken ?? refreshToken,
+          })
+        );
+        // On rejoue la requête initiale
+        result = await baseQuery(args, api, extraOptions);
+      } else {
         api.dispatch(logout());
-        return result;
       }
-
-      api.dispatch(
-        setCredentials({
-          user: currentUser,
-          accessToken,
-          refreshToken: newRefreshToken,
-        })
-      );
-
-      // retry original request AFTER update
-      result = await baseQuery(args, api, extraOptions);
     } else {
       api.dispatch(logout());
     }
@@ -77,12 +72,11 @@ const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
 };
 
 /* =========================
-   API
+   API DEFINITION
 ========================= */
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
-
   tagTypes: [
     'Stats',
     'Activity',
@@ -92,10 +86,8 @@ export const api = createApi({
     'Media',
     'Users',
     'PendingUsers',
-  ] as const,
-
+  ],
   endpoints: (builder) => ({
-
     /* ================= DASHBOARD ================= */
     getDashboardStats: builder.query<any, void>({
       query: () => '/dashboard/stats',
@@ -156,8 +148,7 @@ export const api = createApi({
     }),
 
     getPageById: builder.query<any, { siteId: number; pageId: number }>({
-      query: ({ siteId, pageId }) =>
-        `/sites/${siteId}/pages/${pageId}`,
+      query: ({ siteId, pageId }) => `/sites/${siteId}/pages/${pageId}`,
       providesTags: ['Pages'],
     }),
 
@@ -219,10 +210,37 @@ export const api = createApi({
       invalidatesTags: ['Media'],
     }),
 
-    /* ================= USERS ================= */
+    /* ================= USERS MANAGEMENT ================= */
     getUsers: builder.query<any, void>({
       query: () => '/users',
       providesTags: ['Users'],
+    }),
+
+    createUser: builder.mutation<any, any>({
+      query: (data) => ({
+        url: "/users",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ['Users', 'Stats'],
+    }),
+
+    updateUser: builder.mutation<any, { id: number; [key: string]: any }>({
+      query: ({ id, ...data }) => ({
+        url: `/users/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ['Users'],
+    }),
+
+    changeUserRole: builder.mutation<any, { id: number; role: string }>({
+      query: ({ id, role }) => ({
+        url: `/users/${id}/role`,
+        method: "PATCH",
+        body: { role },
+      }),
+      invalidatesTags: ['Users'],
     }),
 
     deleteUser: builder.mutation<any, number>({
@@ -230,10 +248,10 @@ export const api = createApi({
         url: `/users/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['Users'],
+      invalidatesTags: ['Users', 'Stats'],
     }),
 
-    /* ================= AUTH ================= */
+    /* ================= AUTH & PROFILE ================= */
     login: builder.mutation<any, any>({
       query: (credentials) => ({
         url: '/auth/login',
@@ -261,10 +279,10 @@ export const api = createApi({
         method: 'PUT',
         body: data,
       }),
-      invalidatesTags: ['User'],
+      invalidatesTags: ['User', 'Users'],
     }),
 
-    /* ================= ADMIN ================= */
+    /* ================= ADMIN ACTIONS ================= */
     getPendingUsers: builder.query<any, void>({
       query: () => '/admin/pending-users',
       providesTags: ['PendingUsers'],
@@ -275,7 +293,7 @@ export const api = createApi({
         url: `/admin/approve-user/${id}`,
         method: 'POST',
       }),
-      invalidatesTags: ['PendingUsers', 'Users'],
+      invalidatesTags: ['PendingUsers', 'Users', 'Stats'],
     }),
 
     rejectUser: builder.mutation<any, number>({
@@ -288,7 +306,6 @@ export const api = createApi({
   }),
 });
 
-/* ================= EXPORT HOOKS ================= */
 export const {
   useGetDashboardStatsQuery,
   useGetActivityLogQuery,
@@ -308,6 +325,9 @@ export const {
   useDeleteMediaMutation,
   useUpdateMediaAltMutation,
   useGetUsersQuery,
+  useCreateUserMutation,
+  useUpdateUserMutation,
+  useChangeUserRoleMutation,
   useDeleteUserMutation,
   useLoginMutation,
   useRegisterMutation,
