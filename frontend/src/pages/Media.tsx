@@ -47,7 +47,7 @@ export const Media: React.FC = () => {
       await uploadMedia(formData).unwrap();
       enqueueSnackbar('Image uploadée avec succès!', { variant: 'success' });
       setUploadModalOpen(false); // Fermer le modal après succès
-      refetch();
+      
     } catch (error) {
       enqueueSnackbar("Erreur lors de l'upload", { variant: 'error' });
     }
@@ -58,7 +58,7 @@ export const Media: React.FC = () => {
       try {
         await deleteMedia(id).unwrap();
         enqueueSnackbar('Image supprimée!', { variant: 'success' });
-        refetch();
+      
       } catch (error) {
         enqueueSnackbar('Erreur lors de la suppression', { variant: 'error' });
       }
@@ -76,7 +76,6 @@ export const Media: React.FC = () => {
     try {
       await updateAlt({ id: selectedMedia.id, alt: newAlt }).unwrap();
       enqueueSnackbar('Texte ALT mis à jour!', { variant: 'success' });
-      refetch();
       setAltDialogOpen(false);
       setSelectedMedia(null);
     } catch (error) {

@@ -1,112 +1,129 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { RootState } from '../store';
+import type { RootState } from '../store';
 import { logout, setCredentials } from '../features/authSlice';
 
 const API_URL = 'https://backend-rmfq.onrender.com/api';
 
-// 1️⃣ BaseQuery standard
+/* =========================
+   BASE QUERY
+========================= */
 const baseQuery = fetchBaseQuery({
   baseUrl: API_URL,
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState).auth.accessToken;
-    console.log("🔍 [apiSlice] Token from state:", token ? token.substring(0, 50) + "..." : "NO TOKEN");
+
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
-      console.log("✅ [apiSlice] Authorization header set");
-    } else {
-      console.log("❌ [apiSlice] No token found");
     }
+
     return headers;
   },
 });
 
-// 2️⃣ BaseQuery avec gestion automatique du refresh token 🔥
+/* =========================
+   REFRESH TOKEN LOGIC
+========================= */
 const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
   let result = await baseQuery(args, api, extraOptions);
 
-  // Gérer 401 (Unauthorized) ET 403 (Forbidden - token invalide)
   if (result.error && (result.error.status === 401 || result.error.status === 403)) {
-    console.log('🔄 [apiSlice] Token invalide (401/403), tentative de rafraîchissement...');
-    
     const refreshToken = (api.getState() as RootState).auth.refreshToken;
-    
-    if (refreshToken) {
-      const refreshResult = await baseQuery(
-        {
-          url: '/auth/refresh_token',
-          method: 'POST',
-          body: { refreshToken },
-        },
-        api,
-        extraOptions
-      );
 
-      if (refreshResult.data) {
-        const { accessToken, refreshToken: newRefreshToken } = refreshResult.data as {
+    if (!refreshToken) {
+      api.dispatch(logout());
+      return result;
+    }
+
+    const refreshResult = await baseQuery(
+      {
+        url: '/auth/refresh_token',
+        method: 'POST',
+        body: { refreshToken },
+      },
+      api,
+      extraOptions
+    );
+
+    if (refreshResult.data) {
+      const { accessToken, refreshToken: newRefreshToken } =
+        refreshResult.data as {
           accessToken: string;
           refreshToken: string;
         };
-        
-        console.log('✅ [apiSlice] Token rafraîchi avec succès');
-        
-        const currentUser = (api.getState() as RootState).auth.user;
-        
-        if (currentUser) {
-          api.dispatch(setCredentials({
-            user: currentUser,
-            accessToken,
-            refreshToken: newRefreshToken,
-          }));
-        }
-        
-        // Réessayer la requête originale avec le nouveau token
-        result = await baseQuery(args, api, extraOptions);
-      } else {
-        console.log('❌ [apiSlice] Refresh token invalide, déconnexion');
+
+      const currentUser = (api.getState() as RootState).auth.user;
+
+      if (!currentUser) {
         api.dispatch(logout());
-        window.location.href = '/login';
+        return result;
       }
+
+      api.dispatch(
+        setCredentials({
+          user: currentUser,
+          accessToken,
+          refreshToken: newRefreshToken,
+        })
+      );
+
+      // retry original request AFTER update
+      result = await baseQuery(args, api, extraOptions);
     } else {
-      console.log('❌ [apiSlice] Pas de refresh token, déconnexion');
       api.dispatch(logout());
-      window.location.href = '/login';
     }
   }
 
   return result;
 };
 
-// 3️⃣ Création de l'API avec le wrapper
+/* =========================
+   API
+========================= */
 export const api = createApi({
   reducerPath: 'api',
-  baseQuery: baseQueryWithReauth,  // 🔥 Utilisation du wrapper avec refresh
-  tagTypes: ['Stats', 'Activity', 'Sites', 'Pages', 'User', 'Media', 'Users', 'PendingUsers'],
-  
+  baseQuery: baseQueryWithReauth,
+
+  tagTypes: [
+    'Stats',
+    'Activity',
+    'Sites',
+    'Pages',
+    'User',
+    'Media',
+    'Users',
+    'PendingUsers',
+  ] as const,
+
   endpoints: (builder) => ({
-    // Dashboard
-    getDashboardStats: builder.query({
+
+    /* ================= DASHBOARD ================= */
+    getDashboardStats: builder.query<any, void>({
       query: () => '/dashboard/stats',
       providesTags: ['Stats'],
     }),
-    getActivityLog: builder.query({
-      query: (params?: { limit?: number }) => `/dashboard/activity?limit=${params?.limit || 50}`,
+
+    getActivityLog: builder.query<any, { limit?: number } | void>({
+      query: (params) => `/dashboard/activity?limit=${params?.limit || 50}`,
       providesTags: ['Activity'],
     }),
-    getSiteStats: builder.query({
-      query: (siteId: number) => `/dashboard/sites/${siteId}/stats`,
+
+    getSiteStats: builder.query<any, number>({
+      query: (siteId) => `/dashboard/sites/${siteId}/stats`,
       providesTags: ['Sites'],
     }),
-    
-    // Sites CRUD
-    getSites: builder.query({
+
+    /* ================= SITES ================= */
+    getSites: builder.query<any, void>({
       query: () => '/sites',
       providesTags: ['Sites'],
     }),
-    getSiteById: builder.query({
-      query: (id: number) => `/sites/${id}`,
+
+    getSiteById: builder.query<any, number>({
+      query: (id) => `/sites/${id}`,
       providesTags: ['Sites'],
     }),
-    createSite: builder.mutation({
+
+    createSite: builder.mutation<any, any>({
       query: (data) => ({
         url: '/sites',
         method: 'POST',
@@ -114,7 +131,8 @@ export const api = createApi({
       }),
       invalidatesTags: ['Sites', 'Stats'],
     }),
-    updateSite: builder.mutation({
+
+    updateSite: builder.mutation<any, { id: number; [key: string]: any }>({
       query: ({ id, ...data }) => ({
         url: `/sites/${id}`,
         method: 'PUT',
@@ -122,54 +140,60 @@ export const api = createApi({
       }),
       invalidatesTags: ['Sites', 'Stats'],
     }),
-    deleteSite: builder.mutation({
-      query: (id: number) => ({
+
+    deleteSite: builder.mutation<any, number>({
+      query: (id) => ({
         url: `/sites/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['Sites', 'Stats'],
     }),
-    
-    // Pages CRUD
-    getPages: builder.query({
-      query: (siteId: number) => `/sites/${siteId}/pages`,
+
+    /* ================= PAGES ================= */
+    getPages: builder.query<any, number>({
+      query: (siteId) => `/sites/${siteId}/pages`,
       providesTags: ['Pages'],
     }),
-    getPageById: builder.query({
-      query: ({ siteId, pageId }: { siteId: number; pageId: number }) => 
+
+    getPageById: builder.query<any, { siteId: number; pageId: number }>({
+      query: ({ siteId, pageId }) =>
         `/sites/${siteId}/pages/${pageId}`,
       providesTags: ['Pages'],
     }),
-    createPage: builder.mutation({
-      query: ({ siteId, ...data }: { siteId: number; title: string; content: string; blocks: any[]; status: string }) => ({
+
+    createPage: builder.mutation<any, any>({
+      query: ({ siteId, ...data }) => ({
         url: `/sites/${siteId}/pages`,
         method: 'POST',
         body: data,
       }),
       invalidatesTags: ['Pages', 'Sites'],
     }),
-    updatePage: builder.mutation({
-      query: ({ siteId, pageId, ...data }: { siteId: number; pageId: number; title: string; content: string; blocks: any[]; status: string }) => ({
+
+    updatePage: builder.mutation<any, any>({
+      query: ({ siteId, pageId, ...data }) => ({
         url: `/sites/${siteId}/pages/${pageId}`,
         method: 'PUT',
         body: data,
       }),
       invalidatesTags: ['Pages', 'Sites'],
     }),
-    deletePage: builder.mutation({
-      query: ({ siteId, pageId }: { siteId: number; pageId: number }) => ({
+
+    deletePage: builder.mutation<any, { siteId: number; pageId: number }>({
+      query: ({ siteId, pageId }) => ({
         url: `/sites/${siteId}/pages/${pageId}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['Pages', 'Sites'],
     }),
-    
-    // Media
-    getMedia: builder.query({
+
+    /* ================= MEDIA ================= */
+    getMedia: builder.query<any, void>({
       query: () => '/media',
       providesTags: ['Media'],
     }),
-    uploadMedia: builder.mutation({
+
+    uploadMedia: builder.mutation<any, FormData>({
       query: (formData) => ({
         url: '/media/upload',
         method: 'POST',
@@ -177,83 +201,61 @@ export const api = createApi({
       }),
       invalidatesTags: ['Media'],
     }),
-    deleteMedia: builder.mutation({
-      query: (id: number) => ({
+
+    deleteMedia: builder.mutation<any, number>({
+      query: (id) => ({
         url: `/media/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['Media'],
     }),
-    updateMediaAlt: builder.mutation({
-      query: ({ id, alt }: { id: number; alt: string }) => ({
+
+    updateMediaAlt: builder.mutation<any, { id: number; alt: string }>({
+      query: ({ id, alt }) => ({
         url: `/media/${id}/alt`,
         method: 'PUT',
         body: { alt },
       }),
       invalidatesTags: ['Media'],
     }),
-    
-    // Users
-    getUsers: builder.query({
+
+    /* ================= USERS ================= */
+    getUsers: builder.query<any, void>({
       query: () => '/users',
       providesTags: ['Users'],
     }),
-    getUserById: builder.query({
-      query: (id: number) => `/users/${id}`,
-      providesTags: ['Users'],
-    }),
-    createUser: builder.mutation({
-      query: (data) => ({
-        url: '/users',
-        method: 'POST',
-        body: data,
-      }),
-      invalidatesTags: ['Users'],
-    }),
-    updateUser: builder.mutation({
-      query: ({ id, ...data }) => ({
-        url: `/users/${id}`,
-        method: 'PUT',
-        body: data,
-      }),
-      invalidatesTags: ['Users'],
-    }),
-    deleteUser: builder.mutation({
-      query: (id: number) => ({
+
+    deleteUser: builder.mutation<any, number>({
+      query: (id) => ({
         url: `/users/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['Users'],
     }),
-    changeUserRole: builder.mutation({
-      query: ({ id, role }) => ({
-        url: `/users/${id}/role`,
-        method: 'PATCH',
-        body: { role },
-      }),
-      invalidatesTags: ['Users'],
-    }),
-    
-    // Auth
-    login: builder.mutation({
+
+    /* ================= AUTH ================= */
+    login: builder.mutation<any, any>({
       query: (credentials) => ({
         url: '/auth/login',
         method: 'POST',
         body: credentials,
       }),
     }),
-    register: builder.mutation({
-      query: (userData) => ({
+
+    register: builder.mutation<any, any>({
+      query: (data) => ({
         url: '/auth/register',
         method: 'POST',
-        body: userData,
+        body: data,
       }),
     }),
-    getProfile: builder.query({
+
+    getProfile: builder.query<any, void>({
       query: () => '/auth/profile',
       providesTags: ['User'],
     }),
-    updateProfile: builder.mutation({
+
+    updateProfile: builder.mutation<any, any>({
       query: (data) => ({
         url: '/auth/profile',
         method: 'PUT',
@@ -261,21 +263,23 @@ export const api = createApi({
       }),
       invalidatesTags: ['User'],
     }),
-    
-    // Approbation
-    getPendingUsers: builder.query({
+
+    /* ================= ADMIN ================= */
+    getPendingUsers: builder.query<any, void>({
       query: () => '/admin/pending-users',
       providesTags: ['PendingUsers'],
     }),
-    approveUser: builder.mutation({
-      query: (id: number) => ({
+
+    approveUser: builder.mutation<any, number>({
+      query: (id) => ({
         url: `/admin/approve-user/${id}`,
         method: 'POST',
       }),
       invalidatesTags: ['PendingUsers', 'Users'],
     }),
-    rejectUser: builder.mutation({
-      query: (id: number) => ({
+
+    rejectUser: builder.mutation<any, number>({
+      query: (id) => ({
         url: `/admin/reject-user/${id}`,
         method: 'DELETE',
       }),
@@ -284,43 +288,32 @@ export const api = createApi({
   }),
 });
 
-// Export all hooks
+/* ================= EXPORT HOOKS ================= */
 export const {
-  // Dashboard
   useGetDashboardStatsQuery,
   useGetActivityLogQuery,
   useGetSiteStatsQuery,
-  // Sites
   useGetSitesQuery,
   useGetSiteByIdQuery,
   useCreateSiteMutation,
   useUpdateSiteMutation,
   useDeleteSiteMutation,
-  // Pages
   useGetPagesQuery,
   useGetPageByIdQuery,
   useCreatePageMutation,
   useUpdatePageMutation,
   useDeletePageMutation,
-  // Media
   useGetMediaQuery,
   useUploadMediaMutation,
   useDeleteMediaMutation,
   useUpdateMediaAltMutation,
-  // Users
   useGetUsersQuery,
-  useGetUserByIdQuery,
-  useCreateUserMutation,
-  useUpdateUserMutation,
   useDeleteUserMutation,
-  useChangeUserRoleMutation,
-  // Approbation
-  useGetPendingUsersQuery,
-  useApproveUserMutation,
-  useRejectUserMutation,
-  // Auth
   useLoginMutation,
   useRegisterMutation,
   useGetProfileQuery,
   useUpdateProfileMutation,
+  useGetPendingUsersQuery,
+  useApproveUserMutation,
+  useRejectUserMutation,
 } = api;

@@ -96,7 +96,7 @@ export const MediaGrid: React.FC<MediaGridProps> = ({ media, isLoading, onDelete
       {media.map((item) => {
         const badge = getFileBadge(item.type);
         return (
-          <ImageListItem key={item.id} sx={{ border: '1px solid #eee', borderRadius: 2, overflow: 'hidden' }}>
+          <ImageListItem key={`${item.id}-${item.url}`} sx={{ border: '1px solid #eee', borderRadius: 2, overflow: 'hidden' }}>
             <Box
               sx={{
                 height: 200,
