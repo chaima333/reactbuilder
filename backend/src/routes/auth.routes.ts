@@ -4,7 +4,8 @@ import {
   logoutController,
   refreshTokenController,
   registerController,
-  updateProfile
+  updateProfile,
+  googleAuthController
 } from "../controllers/auth.controller";
 import { authenticateJWT } from "../shared/auth.util";
 import { authorizeRoles } from "../middlewares/role.middleware";
@@ -18,6 +19,8 @@ router.post("/refresh_token", refreshTokenController);
 router.post("/logout", logoutController);
 router.put('/profile', authenticateJWT, updateProfile);
 
+// 🔥 ROUTE GOOGLE AUTH (AJOUTER CETTE LIGNE)
+router.post("/google", googleAuthController);
 
 // ========== ROUTES PROTÉGÉES ==========
 router.get("/profile", authenticateJWT, async (req, res) => {
