@@ -207,7 +207,7 @@ const SortableBlockItem = ({ block, index, totalBlocks, updateBlock, deleteBlock
 
          <Tooltip title="Déplacer vers le haut">
   <span>
-    <IconButton size="small" onClick={() => moveUp(index)} disabled={index === 0}>
+    <IconButton size="small" onClick={() => moveUp(block.id)} disabled={index === 0}>
       <ArrowUpIcon fontSize="small" />
     </IconButton>
   </span>
@@ -216,7 +216,7 @@ const SortableBlockItem = ({ block, index, totalBlocks, updateBlock, deleteBlock
 
           <Tooltip title="Déplacer vers le bas">
               <span>
-            <IconButton size="small" onClick={() => moveDown(index)} disabled={index === totalBlocks - 1}>
+            <IconButton size="small" onClick={() => moveDown(block.id)} disabled={index === totalBlocks - 1}>
               <ArrowDownIcon fontSize="small" />
             </IconButton>
               </span>
@@ -350,23 +350,32 @@ export const PageEditor: React.FC = () => {
     enqueueSnackbar('Bloc dupliqué', { variant: 'success' });
   };
 
-  const moveBlockUp = (index: number) => {
-    setBlocks(prev => {
-      if (index === 0) return prev;
-      const newBlocks = [...prev];
-      [newBlocks[index - 1], newBlocks[index]] = [newBlocks[index], newBlocks[index - 1]];
-      return newBlocks;
-    });
-  };
+const moveBlockUp = (id: string) => {
+  setBlocks(prev => {
+    const index = prev.findIndex(b => b.id === id);
+    if (index === 0) return prev;
 
-  const moveBlockDown = (index: number) => {
-    setBlocks(prev => {
-      if (index === prev.length - 1) return prev;
-      const newBlocks = [...prev];
-      [newBlocks[index], newBlocks[index + 1]] = [newBlocks[index + 1], newBlocks[index]];
-      return newBlocks;
-    });
-  };
+    const newBlocks = [...prev];
+    [newBlocks[index - 1], newBlocks[index]] =
+      [newBlocks[index], newBlocks[index - 1]];
+
+    return newBlocks;
+  });
+};
+
+const moveBlockDown = (id: string) => {
+  setBlocks(prev => {
+    const index = prev.findIndex(b => b.id === id);
+    if (index === prev.length - 1) return prev;
+
+    const newBlocks = [...prev];
+    [newBlocks[index], newBlocks[index + 1]] =
+      [newBlocks[index + 1], newBlocks[index]];
+
+    return newBlocks;
+  });
+};
+
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
