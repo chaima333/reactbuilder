@@ -21,6 +21,8 @@ import { Media } from './pages/Media';
 import { Settings } from './pages/Settings';
 import { Register } from './pages/Register';
 import { Home } from './pages/Home';
+import { ForgotPassword } from './pages/ForgotPassword'; 
+import { ResetPassword } from './pages/ResetPassword';   // À créer
 import Users from './pages/Users';
 
 import { LanguageProvider } from './context/LanguageContext';
@@ -31,6 +33,7 @@ import { LanguageProvider } from './context/LanguageContext';
 const ProtectedRoute = () => {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
 
+  // Si non connecté, on redirige vers la home (ou login)
   if (!isAuthenticated) return <Navigate to="/" replace />;
 
   return <Outlet />;
@@ -63,17 +66,21 @@ const AppContent: React.FC = () => {
           <Routes>
 
             {/* ===================== */}
-            {/* 🌍 PUBLIC ROUTES */}
+            {/* 🌍 PUBLIC ROUTES       */}
             {/* ===================== */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            
+            {/* ✅ AJOUT DES ROUTES DE RÉCUPÉRATION */}
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
-            {/* 👇 IMPORTANT: Public Site */}
+            {/* 👇 IMPORTANT: Public Site View */}
             <Route path="/site/:siteId" element={<PublicSite />} />
 
             {/* ===================== */}
-            {/* 🔒 PROTECTED ROUTES */}
+            {/* 🔒 PROTECTED ROUTES   */}
             {/* ===================== */}
             <Route element={<ProtectedRoute />}>
               <Route element={<Layout><Outlet /></Layout>}>
@@ -84,17 +91,16 @@ const AppContent: React.FC = () => {
                 {/* Editor */}
                 <Route path="/sites/:siteId/edit" element={<SiteEditor />} />
 
-                {/* Pages */}
+                {/* Pages Management */}
                 <Route path="/sites/:siteId/pages/new" element={<PageEditor />} />
                 <Route path="/sites/:siteId/pages/:pageId/edit" element={<PageEditor />} />
-                {/*<Route path="/sites/:siteId/pages/:pageId" element={<PageEditor />} />*/}
 
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/media" element={<Media />} />
                 <Route path="/settings" element={<Settings />} />
 
                 {/* ===================== */}
-                {/* 🔥 ADMIN ONLY */}
+                {/* 🔥 ADMIN ONLY         */}
                 {/* ===================== */}
                 <Route element={<AdminRoute />}>
                   <Route path="/users" element={<Users />} />
@@ -103,7 +109,7 @@ const AppContent: React.FC = () => {
               </Route>
             </Route>
 
-            {/* fallback */}
+            {/* Fallback : Redirige vers Home si la route n'existe pas */}
             <Route path="*" element={<Navigate to="/" replace />} />
 
           </Routes>

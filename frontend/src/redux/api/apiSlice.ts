@@ -303,6 +303,25 @@ export const api = createApi({
       }),
       invalidatesTags: ['PendingUsers', 'Users'],
     }),
+
+
+// Mot de passe oublié
+forgotPassword: builder.mutation<any, { email: string }>({
+  query: (data) => ({
+    url: '/auth/forgot-password',
+    method: 'POST',
+    body: data,
+  }),
+}),
+
+// Login avec Google
+googleLogin: builder.mutation<any, { token: string }>({
+  query: (data) => ({
+    url: '/auth/google-login',
+    method: 'POST',
+    body: data,
+  }),
+}),
   }),
 });
 

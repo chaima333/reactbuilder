@@ -9,7 +9,7 @@ import {
   Alert,
   CircularProgress,
   Link,
-  MenuItem,
+  Divider,
 } from '@mui/material';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useRegisterMutation } from '../redux/api/apiSlice';
@@ -22,7 +22,6 @@ export const Register: React.FC = () => {
     name: '',
     email: '',
     password: '',
-    role: 'Viewer',
   });
   const [error, setError] = useState('');
 
@@ -41,29 +40,21 @@ export const Register: React.FC = () => {
 
     try {
       const result = await register(formData).unwrap();
-
       if (result.success) {
         navigate('/login');
       } else {
-        setError(result.message || 'Erreur lors de l\'inscription');
+        setError(result.message || "Erreur lors de l'inscription");
       }
     } catch (err: any) {
-      console.error('Register error:', err);
-      setError(err?.data?.message || 'Erreur lors de l\'inscription');
+      setError(err?.data?.message || "Erreur lors de l'inscription");
     }
   };
-
-  const roles = [
-    { value: 'Viewer', label: 'Visiteur' },
-    { value: 'Editor', label: 'Éditeur' },
-    { value: 'Admin', label: 'Administrateur' },
-  ];
 
   return (
     <Container maxWidth="sm">
       <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4 }}>
-        <Paper sx={{ p: 4, width: '100%', borderRadius: 3 }}>
-          <Typography variant="h4" align="center" gutterBottom sx={{ fontWeight: 700 }}>
+        <Paper sx={{ p: 4, width: '100%', borderRadius: 3, boxShadow: 3 }}>
+          <Typography variant="h4" align="center" gutterBottom sx={{ fontWeight: 700, color: '#1a1a1a' }}>
             ReactBuilder
           </Typography>
           <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 4 }}>
@@ -113,16 +104,36 @@ export const Register: React.FC = () => {
               variant="contained"
               size="large"
               disabled={isLoading}
-              sx={{ mt: 3 }}
+              sx={{ mt: 3, py: 1.5, fontWeight: 'bold', textTransform: 'none', borderRadius: 2 }}
             >
-              {isLoading ? <CircularProgress size={24} /> : "S'inscrire"}
+              {isLoading ? <CircularProgress size={24} color="inherit" /> : "S'inscrire"}
             </Button>
           </form>
+
+          <Divider sx={{ my: 3 }}>
+            <Typography variant="body2" color="text.secondary">OU</Typography>
+          </Divider>
+
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="G" />}
+            sx={{ 
+              py: 1.2, 
+              textTransform: 'none', 
+              borderColor: '#e0e0e0', 
+              color: '#444', 
+              borderRadius: 2,
+              '&:hover': { borderColor: '#bdbdbd', bgcolor: '#f5f5f5' }
+            }}
+          >
+            S'inscrire avec Google
+          </Button>
 
           <Box sx={{ mt: 3, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
               Vous avez déjà un compte ?{' '}
-              <Link component={RouterLink} to="/login" style={{ color: '#6366f1', textDecoration: 'none' }}>
+              <Link component={RouterLink} to="/login" sx={{ color: '#6366f1', textDecoration: 'none', fontWeight: 600 }}>
                 Se connecter
               </Link>
             </Typography>
@@ -133,5 +144,4 @@ export const Register: React.FC = () => {
   );
 };
 
-// ✅ AJOUTER L'EXPORT DEFAULT À LA FIN
 export default Register;

@@ -8,7 +8,8 @@ import {
   Container,
   Alert,
   CircularProgress,
-  Link
+  Link,
+  Divider
 } from '@mui/material';
 import { useDispatch } from 'react-redux';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
@@ -40,18 +41,23 @@ export const Login: React.FC = () => {
         }));
         navigate('/dashboard');
       } else {
-        setError(t.error);
+        setError(t.error || 'Erreur de connexion');
       }
     } catch (err: any) {
-      setError(err?.data?.message || t.error);
+      setError(err?.data?.message || t.error || 'Identifiants invalides');
     }
+  };
+
+  const handleGoogleLogin = () => {
+    // Logique à connecter plus tard avec @react-oauth/google
+    console.log("Tentative de connexion Google...");
   };
 
   return (
     <Container maxWidth="sm">
       <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Paper sx={{ p: 4, width: '100%' }}>
-          <Typography variant="h4" align="center" gutterBottom>
+        <Paper sx={{ p: 4, width: '100%', borderRadius: 3, boxShadow: 3 }}>
+          <Typography variant="h4" align="center" gutterBottom sx={{ fontWeight: 700, color: '#1a1a1a' }}>
             ReactBuilder
           </Typography>
           <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 3 }}>
@@ -81,16 +87,54 @@ export const Login: React.FC = () => {
               required
               disabled={isLoading}
             />
-            <Button fullWidth type="submit" variant="contained" size="large" disabled={isLoading} sx={{ mt: 3 }}>
-              {isLoading ? <CircularProgress size={24} /> : t.login}
+
+            <Box sx={{ textAlign: 'right', mt: 0.5 }}>
+              <Link 
+                component={RouterLink} 
+                to="/forgot-password" 
+                sx={{ fontSize: '0.85rem', textDecoration: 'none', color: '#6366f1', fontWeight: 500 }}
+              >
+                Mot de passe oublié ?
+              </Link>
+            </Box>
+
+            <Button 
+              fullWidth 
+              type="submit" 
+              variant="contained" 
+              size="large" 
+              disabled={isLoading} 
+              sx={{ mt: 3, py: 1.5, fontWeight: 'bold', textTransform: 'none', borderRadius: 2 }}
+            >
+              {isLoading ? <CircularProgress size={24} color="inherit" /> : t.login}
             </Button>
           </form>
 
-          {/* Lien vers l'inscription - À L'INTÉRIEUR du return */}
-          <Box sx={{ mt: 2, textAlign: 'center' }}>
+          <Divider sx={{ my: 3 }}>
+            <Typography variant="body2" color="text.secondary">OU</Typography>
+          </Divider>
+
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={handleGoogleLogin}
+            startIcon={<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="G" />}
+            sx={{ 
+              py: 1.2, 
+              textTransform: 'none', 
+              borderColor: '#e0e0e0', 
+              color: '#444', 
+              borderRadius: 2,
+              '&:hover': { borderColor: '#bdbdbd', bgcolor: '#f5f5f5' }
+            }}
+          >
+            Continuer avec Google
+          </Button>
+
+          <Box sx={{ mt: 3, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
               Pas encore de compte ?{' '}
-              <Link component={RouterLink} to="/register" style={{ color: '#6366f1', textDecoration: 'none' }}>
+              <Link component={RouterLink} to="/register" sx={{ color: '#6366f1', textDecoration: 'none', fontWeight: 600 }}>
                 S'inscrire
               </Link>
             </Typography>
