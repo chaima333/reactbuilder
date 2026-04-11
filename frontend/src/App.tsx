@@ -22,10 +22,15 @@ import { Settings } from './pages/Settings';
 import { Register } from './pages/Register';
 import { Home } from './pages/Home';
 import { ForgotPassword } from './pages/ForgotPassword'; 
-import { ResetPassword } from './pages/ResetPassword';   // À créer
+import { ResetPassword } from './pages/ResetPassword';
 import Users from './pages/Users';
 
 import { LanguageProvider } from './context/LanguageContext';
+
+import { GoogleOAuthProvider } from '@react-oauth/google';
+
+// 🔥 VOTRE CLIENT ID GOOGLE
+const GOOGLE_CLIENT_ID = '386973697348-lm5v1bvoupl2l7t7kfqe89irlif6oo37.apps.googleusercontent.com';
 
 // =====================
 // 🔒 PROTECTED ROUTE
@@ -33,7 +38,6 @@ import { LanguageProvider } from './context/LanguageContext';
 const ProtectedRoute = () => {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
 
-  // Si non connecté, on redirige vers la home (ou login)
   if (!isAuthenticated) return <Navigate to="/" replace />;
 
   return <Outlet />;
@@ -64,54 +68,35 @@ const AppContent: React.FC = () => {
       <SnackbarProvider maxSnack={3}>
         <BrowserRouter>
           <Routes>
-
-            {/* ===================== */}
-            {/* 🌍 PUBLIC ROUTES       */}
-            {/* ===================== */}
+            {/* 🌍 PUBLIC ROUTES */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            
-            {/* ✅ AJOUT DES ROUTES DE RÉCUPÉRATION */}
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-
-            {/* 👇 IMPORTANT: Public Site View */}
             <Route path="/site/:siteId" element={<PublicSite />} />
 
-            {/* ===================== */}
-            {/* 🔒 PROTECTED ROUTES   */}
-            {/* ===================== */}
+            {/* 🔒 PROTECTED ROUTES */}
             <Route element={<ProtectedRoute />}>
               <Route element={<Layout><Outlet /></Layout>}>
-
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/sites" element={<Sites />} />
-
-                {/* Editor */}
                 <Route path="/sites/:siteId/edit" element={<SiteEditor />} />
-
-                {/* Pages Management */}
                 <Route path="/sites/:siteId/pages/new" element={<PageEditor />} />
                 <Route path="/sites/:siteId/pages/:pageId/edit" element={<PageEditor />} />
-
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/media" element={<Media />} />
                 <Route path="/settings" element={<Settings />} />
 
-                {/* ===================== */}
-                {/* 🔥 ADMIN ONLY         */}
-                {/* ===================== */}
+                {/* 🔥 ADMIN ONLY */}
                 <Route element={<AdminRoute />}>
                   <Route path="/users" element={<Users />} />
                 </Route>
-
               </Route>
             </Route>
 
-            {/* Fallback : Redirige vers Home si la route n'existe pas */}
+            {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
-
           </Routes>
         </BrowserRouter>
       </SnackbarProvider>
@@ -124,11 +109,13 @@ const AppContent: React.FC = () => {
 // =====================
 function App() {
   return (
-    <Provider store={store}>
-      <LanguageProvider>
-        <AppContent />
-      </LanguageProvider>
-    </Provider>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <Provider store={store}>
+        <LanguageProvider>
+          <AppContent />
+        </LanguageProvider>
+      </Provider>
+    </GoogleOAuthProvider>
   );
 }
 

@@ -12,10 +12,15 @@ import {
   Divider,
 } from '@mui/material';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { useRegisterMutation } from '../redux/api/apiSlice';
+import { setCredentials } from '../redux/features/authSlice';
+import { useGoogleLogin } from '@react-oauth/google';
+import axios from 'axios';
 
 export const Register: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [register, { isLoading }] = useRegisterMutation();
 
   const [formData, setFormData] = useState({
@@ -49,6 +54,55 @@ export const Register: React.FC = () => {
       setError(err?.data?.message || "Erreur lors de l'inscription");
     }
   };
+
+  // 🔥 Inscription avec Google
+  const googleRegister = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setError('');
+      try {
+        // Récupérer les infos utilisateur depuis Google
+        const userInfo = await axios.get(
+          'https://www.googleapis.com/oauth2/v3/userinfo',
+          {
+            headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+          }
+        );
+
+        console.log('Google User Info:', userInfo.data);
+
+        // Envoyer au backend pour création de compte
+        const response = await axios.post(
+          'https://backend-rmfq.onrender.com/api/auth/google',
+          {
+            email: userInfo.data.email,
+            name: userInfo.data.name,
+            googleId: userInfo.data.sub,
+            avatar: userInfo.data.picture,
+          }
+        );
+
+        console.log('Backend response:', response.data);
+
+        if (response.data.success) {
+          // Connexion automatique après inscription Google
+          dispatch(setCredentials({
+            user: response.data.user,
+            accessToken: response.data.accessToken,
+            refreshToken: response.data.refreshToken
+          }));
+          navigate('/dashboard');
+        } else {
+          setError(response.data.message || 'Erreur lors de l\'inscription Google');
+        }
+      } catch (err: any) {
+        console.error('Google register error:', err);
+        setError(err?.response?.data?.message || 'Erreur lors de l\'inscription Google');
+      }
+    },
+    onError: () => {
+      setError('L\'inscription avec Google a échoué');
+    },
+  });
 
   return (
     <Container maxWidth="sm">
@@ -117,6 +171,7 @@ export const Register: React.FC = () => {
           <Button
             fullWidth
             variant="outlined"
+            onClick={() => googleRegister()}
             startIcon={<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="G" />}
             sx={{ 
               py: 1.2, 
@@ -141,7 +196,7 @@ export const Register: React.FC = () => {
         </Paper>
       </Box>
     </Container>
-  );
+  );    
 };
 
 export default Register;

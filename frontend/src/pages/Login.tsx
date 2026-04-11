@@ -16,11 +16,13 @@ import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useLoginMutation } from '../redux/api/apiSlice';
 import { setCredentials } from '../redux/features/authSlice';
 import { useLanguage } from '../context/LanguageContext';
+import { useGoogleLogin } from '@react-oauth/google';
+import axios from 'axios';
 
 export const Login: React.FC = () => {
   const { t } = useLanguage();
-  const [email, setEmail] = useState('mouna@test.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [login, { isLoading }] = useLoginMutation();
   const dispatch = useDispatch();
@@ -48,10 +50,53 @@ export const Login: React.FC = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Logique à connecter plus tard avec @react-oauth/google
-    console.log("Tentative de connexion Google...");
-  };
+  // 🔥 Connexion avec Google
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setError('');
+      try {
+        // Récupérer les infos utilisateur depuis Google
+        const userInfo = await axios.get(
+          'https://www.googleapis.com/oauth2/v3/userinfo',
+          {
+            headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+          }
+        );
+
+        console.log('Google User Info:', userInfo.data);
+
+        // Envoyer au backend
+        const response = await axios.post(
+          'https://backend-rmfq.onrender.com/api/auth/google',
+          {
+            email: userInfo.data.email,
+            name: userInfo.data.name,
+            googleId: userInfo.data.sub,
+            avatar: userInfo.data.picture,
+          }
+        );
+
+        console.log('Backend response:', response.data);
+
+        if (response.data.success) {
+          dispatch(setCredentials({
+            user: response.data.user,
+            accessToken: response.data.accessToken,
+            refreshToken: response.data.refreshToken
+          }));
+          navigate('/dashboard');
+        } else {
+          setError(response.data.message || 'Erreur lors de la connexion Google');
+        }
+      } catch (err: any) {
+        console.error('Google login error:', err);
+        setError(err?.response?.data?.message || 'Erreur lors de la connexion Google');
+      }
+    },
+    onError: () => {
+      setError('La connexion Google a échoué');
+    },
+  });
 
   return (
     <Container maxWidth="sm">
@@ -117,7 +162,7 @@ export const Login: React.FC = () => {
           <Button
             fullWidth
             variant="outlined"
-            onClick={handleGoogleLogin}
+            onClick={() => googleLogin()}
             startIcon={<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="G" />}
             sx={{ 
               py: 1.2, 
