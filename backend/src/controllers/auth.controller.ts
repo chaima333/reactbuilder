@@ -243,6 +243,8 @@ export const logoutController = async (req: AuthRequest, res: Response) => {
   });
 };
 
+
+
 // ========== MISE À JOUR PROFIL ==========
 export const updateProfile = async (req: AuthRequest, res: Response) => {
   try {
@@ -271,5 +273,78 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({ success: false, message: 'Erreur serveur' });
+  }
+  
+};
+// backend/src/controllers/auth.controller.ts
+// ... (tout votre code existant)
+
+// 🔥 AJOUTER CE CONTROLLER GOOGLE À LA FIN DU FICHIER
+export const googleAuthController = async (req: AuthRequest, res: Response) => {
+  try {
+    const { email, name, googleId, avatar } = req.body;
+
+    console.log('📡 Google auth request:', { email, name, googleId });
+
+    // Vérifier si l'utilisateur existe déjà
+    let user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      // Créer un nouvel utilisateur
+      console.log('👤 Création nouvel utilisateur Google');
+      user = await User.create({
+        email,
+        name: name || email.split('@')[0],
+        googleId,
+        avatar: avatar || null,
+        isApproved: true, // Auto-approuvé pour Google
+        role: 'Viewer',
+        password: '', // Pas de mot de passe pour Google
+      } as any);
+    } else if (!user.googleId) {
+      // Lier le compte existant à Google
+      console.log('🔗 Liaison compte existant à Google');
+      await user.update({ googleId, avatar });
+    } else {
+      console.log('✅ Utilisateur existe déjà avec Google');
+    }
+
+    // Nettoyer les anciens refresh tokens
+    await revokeUserTokens(user.id);
+
+    // Générer les tokens
+    const accessToken = generateToken({ 
+      userId: user.id, 
+      type: "access", 
+      role: user.role 
+    });
+    
+    const refreshToken = generateToken({ 
+      userId: user.id, 
+      type: "refresh", 
+      role: user.role 
+    });
+
+    // Stocker le refresh token
+    await addToken(refreshToken, "refresh", user.id);
+
+    res.json({
+      success: true,
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Google auth error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur lors de l\'authentification Google' 
+    });
   }
 };

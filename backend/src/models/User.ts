@@ -6,6 +6,7 @@ import { Table, Column, Model, DataType, HasMany, CreatedAt, UpdatedAt } from "s
   underscored: true
 })
 export class User extends Model<User> {
+  [x: string]: any;
 
   @Column({
     type: DataType.INTEGER,
@@ -29,7 +30,7 @@ export class User extends Model<User> {
 
   @Column({
     type: DataType.STRING(255),
-    allowNull: false
+    allowNull: true
   })
   password!: string;
 
@@ -53,6 +54,7 @@ export class User extends Model<User> {
   })
   isApproved!: boolean;
 
+  
   @CreatedAt
   @Column({
     type: DataType.DATE,
@@ -66,6 +68,17 @@ export class User extends Model<User> {
     field: 'updated_at'
   })
   updatedAt!: Date;
+
+  // backend/src/models/User.ts
+// Ajoutez cette ligne avec les autres colonnes
+
+@Column({
+  type: DataType.STRING(255),
+  allowNull: true,
+  field: 'google_id',
+  unique: true
+})
+googleId!: string;
 
   // Méthodes utilitaires
   isAdmin(): boolean {
