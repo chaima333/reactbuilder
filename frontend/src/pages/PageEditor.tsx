@@ -325,8 +325,8 @@ export const PageEditor: React.FC = () => {
       } else {
         await createPage({ siteId: Number(siteId), ...payload }).unwrap();
       }
-      enqueueSnackbar('Enregistré !', { variant: 'success' });
-      navigate(`/sites/${siteId}`);
+      enqueueSnackbar('Enregistré avec succès !', { variant: 'success' });
+      navigate('/sites');
     } catch (err) {
       enqueueSnackbar('Erreur de sauvegarde', { variant: 'error' });
     } finally {
