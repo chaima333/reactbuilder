@@ -87,14 +87,12 @@ export const loginController = async (req: AuthRequest, res: Response) => {
     return res.status(401).json({ success: false, message: "Invalid credentials" });
   }
 
-  // Force le rôle pour admin@test.com
   let userRole = user.role;
   if (user.email === 'admin@test.com') {
     userRole = 'Admin';
     console.log("🔧 FORCED role to Admin");
   }
 
-  // Vérification du mot de passe
   if (!user.password) {
     console.error("❌ User password is missing in database!");
     return res.status(500).json({ success: false, message: "Internal server error" });
@@ -105,14 +103,11 @@ export const loginController = async (req: AuthRequest, res: Response) => {
     return res.status(401).json({ success: false, message: "Invalid credentials" });
   }
 
-  // 🔥 Nettoyer les anciens refresh tokens
   await revokeUserTokens(user.id);
 
-  // Générer les tokens
   const accessToken = generateToken({ userId: user.id, type: "access", role: userRole });
   const refreshToken = generateToken({ userId: user.id, type: "refresh", role: userRole });
 
-  // Stocker le refresh token
   await addToken(refreshToken, "refresh", user.id);
 
   return res.status(200).json({
@@ -145,7 +140,6 @@ export const refreshTokenController = async (req: AuthRequest, res: Response) =>
 
   const { refreshToken } = parsedData.data;
 
-  // 1️⃣ Vérifier si le token existe en base
   const dbRefreshToken = await getToken(refreshToken);
   
   if (!dbRefreshToken || dbRefreshToken.type !== "refresh") {
@@ -155,7 +149,6 @@ export const refreshTokenController = async (req: AuthRequest, res: Response) =>
     });
   }
 
-  // 2️⃣ Vérifier si le token est révoqué
   if (dbRefreshToken.isRevoked) {
     return res.status(401).json({
       success: false,
@@ -163,7 +156,6 @@ export const refreshTokenController = async (req: AuthRequest, res: Response) =>
     });
   }
 
-  // 3️⃣ Vérifier l'expiration en base
   if (dbRefreshToken.expiresAt && new Date(dbRefreshToken.expiresAt) < new Date()) {
     await dbRefreshToken.update({ isRevoked: true });
     return res.status(401).json({
@@ -172,7 +164,6 @@ export const refreshTokenController = async (req: AuthRequest, res: Response) =>
     });
   }
 
-  // 4️⃣ Vérifier et décoder le JWT
   const decoded = verifyToken(refreshToken);
   if (!decoded) {
     await dbRefreshToken.update({ isRevoked: true });
@@ -184,7 +175,6 @@ export const refreshTokenController = async (req: AuthRequest, res: Response) =>
 
   const userId = dbRefreshToken.userId;
 
-  // 5️⃣ Récupérer l'utilisateur
   const user = await User.findByPk(userId);
   if (!user) {
     return res.status(401).json({
@@ -193,10 +183,8 @@ export const refreshTokenController = async (req: AuthRequest, res: Response) =>
     });
   }
 
-  // 6️⃣ 🔥 ROTATION : Révoquer l'ancien refresh token
   await dbRefreshToken.update({ isRevoked: true });
 
-  // 7️⃣ Générer de NOUVEAUX tokens
   let userRole = user.role;
   if (user.email === 'admin@test.com') {
     userRole = 'Admin';
@@ -205,7 +193,6 @@ export const refreshTokenController = async (req: AuthRequest, res: Response) =>
   const accessToken = generateToken({ userId, type: "access", role: userRole });
   const newRefreshToken = generateToken({ userId, type: "refresh", role: userRole });
 
-  // 8️⃣ Stocker le NOUVEAU refresh token
   await addToken(newRefreshToken, "refresh", userId);
 
   return res.status(200).json({
@@ -231,7 +218,6 @@ export const logoutController = async (req: AuthRequest, res: Response) => {
 
   const { refreshToken } = parsedData.data;
 
-  // Révoquer le refresh token spécifique
   const dbRefreshToken = await getToken(refreshToken);
   if (dbRefreshToken) {
     await dbRefreshToken.update({ isRevoked: true });
@@ -242,8 +228,6 @@ export const logoutController = async (req: AuthRequest, res: Response) => {
     message: "Logged out successfully."
   });
 };
-
-
 
 // ========== MISE À JOUR PROFIL ==========
 export const updateProfile = async (req: AuthRequest, res: Response) => {
@@ -274,45 +258,37 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     console.error('Update profile error:', error);
     res.status(500).json({ success: false, message: 'Erreur serveur' });
   }
-  
 };
-// backend/src/controllers/auth.controller.ts
-// ... (tout votre code existant)
 
-// 🔥 AJOUTER CE CONTROLLER GOOGLE À LA FIN DU FICHIER
+// ========== GOOGLE AUTH ==========
 export const googleAuthController = async (req: AuthRequest, res: Response) => {
   try {
     const { email, name, googleId, avatar } = req.body;
 
     console.log('📡 Google auth request:', { email, name, googleId });
 
-    // Vérifier si l'utilisateur existe déjà
     let user = await User.findOne({ where: { email } });
 
     if (!user) {
-      // Créer un nouvel utilisateur
       console.log('👤 Création nouvel utilisateur Google');
       user = await User.create({
         email,
         name: name || email.split('@')[0],
         googleId,
         avatar: avatar || null,
-        isApproved: true, // Auto-approuvé pour Google
+        isApproved: true,
         role: 'Viewer',
-        password: '', // Pas de mot de passe pour Google
+        password: '',
       } as any);
     } else if (!user.googleId) {
-      // Lier le compte existant à Google
       console.log('🔗 Liaison compte existant à Google');
       await user.update({ googleId, avatar });
     } else {
       console.log('✅ Utilisateur existe déjà avec Google');
     }
 
-    // Nettoyer les anciens refresh tokens
     await revokeUserTokens(user.id);
 
-    // Générer les tokens
     const accessToken = generateToken({ 
       userId: user.id, 
       type: "access", 
@@ -325,7 +301,6 @@ export const googleAuthController = async (req: AuthRequest, res: Response) => {
       role: user.role 
     });
 
-    // Stocker le refresh token
     await addToken(refreshToken, "refresh", user.id);
 
     res.json({
