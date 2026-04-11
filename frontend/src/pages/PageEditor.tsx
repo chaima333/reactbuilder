@@ -437,8 +437,8 @@ export const PageEditor: React.FC = () => {
     return (
       <Box sx={{ p: 3 }}>
         <Typography variant="h4" gutterBottom>{pageTitle || 'Titre de la page'}</Typography>
-        {blocks.map((block, idx) => (
-          <Box key={idx} sx={{ my: 2 }}>
+        {blocks.map((block) => (
+          <Box key={block.id} sx={{ my: 2 }}>
             {block.type === 'title' && <Typography variant="h5">{block.content || 'Titre'}</Typography>}
             {block.type === 'text' && <Typography variant="body1">{block.content || 'Texte...'}</Typography>}
             {block.type === 'image' && block.content && (

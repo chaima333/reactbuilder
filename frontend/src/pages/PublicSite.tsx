@@ -27,6 +27,7 @@ import {
   Twitter as TwitterIcon,
   Instagram as InstagramIcon,
   LinkedIn as LinkedInIcon,
+  Block,
 } from '@mui/icons-material';
 
 const API_URL = 'https://backend-rmfq.onrender.com/api';
@@ -109,16 +110,18 @@ const renderContentWithUrls = (content: string) => {
         </a>
       );
     }
-    return (
-      <span key={index}>
-        {part.split('\n').map((line, i) => (
-          <React.Fragment key={i}>
-            {line}
-            {i < part.split('\n').length - 1 && <br />}
-          </React.Fragment>
-        ))}
-      </span>
-    );
+  const lines = part.split('\n');
+
+return (
+  <span key={index}>
+    {lines.map((line, i) => (
+      <React.Fragment key={i}>
+        {line}
+        {i < lines.length - 1 && <br />}
+      </React.Fragment>
+    ))}
+  </span>
+);
   });
 };
 
