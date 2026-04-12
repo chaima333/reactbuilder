@@ -367,6 +367,7 @@ const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 587,
   secure: false, // true pour le port 465, false pour le port 587
+  service: false, // Désactive le service intégré pour utiliser les paramètres personnalisés
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS, // Assure-toi que c'est un "App Password" de 16 caractères
@@ -374,6 +375,7 @@ const transporter = nodemailer.createTransport({
   tls: {
     rejectUnauthorized: false, // Aide à éviter les erreurs de certificat sur certains serveurs
   },
+  family: 4, // Force l'utilisation d'IPv4
 });
 
     const mailOptions = {
