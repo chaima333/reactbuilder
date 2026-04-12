@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box, Paper, TextField, Button, Typography,
   Container, Alert, CircularProgress, Divider, Link,
@@ -284,6 +284,27 @@ export const Login: React.FC = () => {
                 }}
               />
 
+              {/* Forgot Password Link */}
+              <Box sx={{ textAlign: 'right', mt: 1 }}>
+                <Link
+                  component={RouterLink}
+                  to="/forgot-password"
+                  sx={{
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    textDecoration: 'none',
+                    color: theme.palette.primary.main,
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      textDecoration: 'underline',
+                      color: theme.palette.primary.dark,
+                    },
+                  }}
+                >
+                  Forgot password?
+                </Link>
+              </Box>
+
               <Button
                 fullWidth
                 type="submit"
@@ -291,7 +312,7 @@ export const Login: React.FC = () => {
                 disabled={loading}
                 startIcon={!loading && <LoginIcon />}
                 sx={{
-                  mt: 4,
+                  mt: 3,
                   mb: 2,
                   py: 1.5,
                   borderRadius: 2,

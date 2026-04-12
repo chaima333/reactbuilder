@@ -75,7 +75,7 @@ const AppContent: React.FC = () => {
             <Route path="/register" element={<Register />} />
             <Route path="/waiting-approval" element={<WaitingPage />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/site/:siteId" element={<PublicSite />} />
 
             {/* 🔒 PROTECTED ROUTES */}

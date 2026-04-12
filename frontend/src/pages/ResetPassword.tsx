@@ -1,28 +1,15 @@
 import React, { useState } from 'react';
 import { 
-  Box, 
-  Paper, 
-  TextField, 
-  Button, 
-  Typography, 
-  Container, 
-  Alert, 
-  CircularProgress,
-  IconButton,
-  InputAdornment
+  Box, Paper, TextField, Button, Typography, Container, 
+  Alert, CircularProgress, IconButton, InputAdornment 
 } from '@mui/material';
-import { 
-  Visibility, 
-  VisibilityOff, 
-  CheckCircleOutline 
-} from '@mui/icons-material';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useUpdateProfileMutation } from '../redux/api/apiSlice'; // Ou un endpoint spécifique resetPassword si tu l'as créé
+import { Visibility, VisibilityOff, CheckCircleOutline } from '@mui/icons-material';
+import { useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
 
 export const ResetPassword = () => {
-  const [searchParams] = useSearchParams();
+  const { token } = useParams(); // 🔥 Récupère le :token depuis la route App.tsx
   const navigate = useNavigate();
-  const token = searchParams.get('token'); // Récupère le ?token=XYZ de l'URL
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -30,9 +17,9 @@ export const ResetPassword = () => {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Simulation ou appel API (Remplace par ton endpoint resetPassword réel si existant)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (password !== confirmPassword) {
       setErrorMsg('Les mots de passe ne correspondent pas');
       return;
@@ -46,19 +33,14 @@ export const ResetPassword = () => {
     setErrorMsg('');
 
     try {
-      // Remplace ceci par ton appel API réel :
-      // await resetPassword({ token, password }).unwrap();
-      
-      console.log("Token utilisé:", token);
-      console.log("Nouveau mot de passe:", password);
-
-      // Simulation de succès
-      setTimeout(() => {
-        setStatus('success');
-      }, 1500);
+      // 🚀 Appel API avec le token dans l'URL
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/reset-password/${token}`, { 
+        password 
+      });
+      setStatus('success');
     } catch (err: any) {
       setStatus('error');
-      setErrorMsg(err?.data?.message || 'Le lien est invalide ou a expiré');
+      setErrorMsg(err.response?.data?.message || 'Le lien est invalide ou a expiré');
     }
   };
 
@@ -68,9 +50,9 @@ export const ResetPassword = () => {
         <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
           <Paper sx={{ p: 4, width: '100%', textAlign: 'center', borderRadius: 3 }}>
             <CheckCircleOutline sx={{ fontSize: 60, color: 'success.main', mb: 2 }} />
-            <Typography variant="h5" gutterBottom>Réussi !</Typography>
+            <Typography variant="h5" gutterBottom>Mot de passe mis à jour !</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Votre mot de passe a été réinitialisé avec succès.
+              Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.
             </Typography>
             <Button fullWidth variant="contained" onClick={() => navigate('/login')}>
               Se connecter
@@ -88,13 +70,10 @@ export const ResetPassword = () => {
           <Typography variant="h5" align="center" gutterBottom sx={{ fontWeight: 700 }}>
             Nouveau mot de passe
           </Typography>
-          <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
-            Choisissez un mot de passe robuste pour votre compte.
-          </Typography>
 
           {!token && (
-            <Alert severity="warning" sx={{ mb: 2 }}>
-              Token manquant. Veuillez utiliser le lien reçu par email.
+            <Alert severity="error" sx={{ mb: 2 }}>
+              Lien invalide (token manquant).
             </Alert>
           )}
 
@@ -140,7 +119,7 @@ export const ResetPassword = () => {
               disabled={status === 'loading' || !token}
               sx={{ py: 1.5, fontWeight: 'bold' }}
             >
-              {status === 'loading' ? <CircularProgress size={24} /> : "Réinitialiser"}
+              {status === 'loading' ? <CircularProgress size={24} /> : "Changer le mot de passe"}
             </Button>
           </form>
         </Paper>
