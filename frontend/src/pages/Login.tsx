@@ -42,7 +42,7 @@ export const Login: React.FC = () => {
     }
   };
 
-     const googleLogin = useGoogleLogin({
+      const googleLogin = useGoogleLogin({
   onSuccess: async (tokenResponse) => {
     try {
       const userInfo = await axios.get(
@@ -57,13 +57,13 @@ export const Login: React.FC = () => {
         avatar: userInfo.data.picture
       });
 
-      const { state, accessToken, user } = res.data;
+      console.log("LOGIN GOOGLE:", res.data);
 
-      // 🟢 APPROVED
-      if (state === "APPROVED") {
+      // 🔥 APPROVED
+      if (res.data.state === "APPROVED") {
         dispatch(setCredentials({
-          user,
-          accessToken,
+          user: res.data.user,
+          accessToken: res.data.accessToken,
           refreshToken: res.data.refreshToken
         }));
 
@@ -71,16 +71,19 @@ export const Login: React.FC = () => {
         return;
       }
 
-      // 🟡 PENDING
-      if (state === "PENDING") {
-        setError("Waiting admin approval");
+      // 🔥 PENDING → GO TO WAITING PAGE (IMPORTANT FIX)
+      if (res.data.state === "PENDING") {
+        navigate('/waiting-approval', {
+          state: { message: res.data.message }
+        });
+        return;
       }
 
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Google login error");
+    } catch (err) {
+      console.log(err);
     }
   }
-});  
+});
 
   return (
     <Container maxWidth="sm">

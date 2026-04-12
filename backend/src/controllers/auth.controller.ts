@@ -287,10 +287,10 @@ export const googleAuthController = async (req: AuthRequest, res: Response) => {
 
     // 🟡 EXISTS BUT NOT APPROVED
     if (!user.isApproved) {
-      return res.json({
-        state: "PENDING",
-        message: "Waiting admin approval"
-      });
+         return res.status(200).json({
+  state: "PENDING",
+  message: "Waiting admin approval"
+});
     }
 
     // 🟢 APPROVED USER → LOGIN

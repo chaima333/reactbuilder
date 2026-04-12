@@ -37,7 +37,7 @@ export const Register: React.FC = () => {
     setLoading(false);
   }
 };
-    const googleRegister = useGoogleLogin({
+        const googleRegister = useGoogleLogin({
   onSuccess: async (tokenResponse) => {
     try {
       const userInfo = await axios.get(
@@ -52,32 +52,32 @@ export const Register: React.FC = () => {
         avatar: userInfo.data.picture
       });
 
-      const { state, accessToken, user, message } = res.data;
+      console.log("REGISTER GOOGLE:", res.data);
 
-      // 🟡 PENDING → WAITING PAGE
-     if (res.data.status === "PENDING") {
-  navigate('/waiting-approval', {
-    state: { message: res.data.message }
-  });
-  return;
-}
+      // 🔥 PENDING → ALWAYS GO WAITING PAGE
+      if (res.data.state === "PENDING") {
+        navigate('/waiting-approval', {
+          state: { message: res.data.message }
+        });
+        return;
+      }
 
-      // 🟢 APPROVED → LOGIN
-      if (state === "APPROVED") {
+      // 🔥 APPROVED → LOGIN
+      if (res.data.state === "APPROVED") {
         dispatch(setCredentials({
-          user,
-          accessToken,
+          user: res.data.user,
+          accessToken: res.data.accessToken,
           refreshToken: res.data.refreshToken
         }));
 
         navigate('/dashboard');
       }
 
-    } catch (err: any) {
-      console.error(err);
+    } catch (err) {
+      console.log(err);
     }
   }
-}); 
+});
   return (
     <Container maxWidth="sm">
       <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
