@@ -1,202 +1,107 @@
 import React, { useState } from 'react';
 import {
-  Box,
-  Paper,
-  TextField,
-  Button,
-  Typography,
-  Container,
-  Alert,
-  CircularProgress,
-  Link,
-  Divider,
+  Box, Paper, TextField, Button, Typography,
+  Container, Alert, CircularProgress, Divider, Link
 } from '@mui/material';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { useRegisterMutation } from '../redux/api/apiSlice';
-import { setCredentials } from '../redux/features/authSlice';
 import { useGoogleLogin } from '@react-oauth/google';
+import { useDispatch } from 'react-redux'; // Ajouté
 import axios from 'axios';
+import { setCredentials } from '../redux/features/authSlice';
+
+const BACKEND = 'https://backend-rmfq.onrender.com';
 
 export const Register: React.FC = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const [register, { isLoading }] = useRegisterMutation();
+  const dispatch = useDispatch(); // Initialisé
 
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-  });
+  const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handleRegister = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError('');
+  setLoading(true);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError('');
+  try {
+    const res = await axios.post(`${BACKEND}/api/auth/register`, form);
 
-    if (formData.password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères');
-      return;
-    }
+    navigate('/waiting-approval', {
+      state: { message: res.data.message }
+    });
 
+  } catch (err: any) {
+    setError(err?.response?.data?.message || 'Erreur inscription');
+  } finally {
+    setLoading(false);
+  }
+};
+    const googleRegister = useGoogleLogin({
+  onSuccess: async (tokenResponse) => {
     try {
-      const result = await register(formData).unwrap();
-      if (result.success) {
-        navigate('/login');
-      } else {
-        setError(result.message || "Erreur lors de l'inscription");
-      }
-    } catch (err: any) {
-      setError(err?.data?.message || "Erreur lors de l'inscription");
-    }
-  };
+      const userInfo = await axios.get(
+        'https://www.googleapis.com/oauth2/v3/userinfo',
+        { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } }
+      );
 
-  // 🔥 Inscription avec Google
-  const googleRegister = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setError('');
-      try {
-        // Récupérer les infos utilisateur depuis Google
-        const userInfo = await axios.get(
-          'https://www.googleapis.com/oauth2/v3/userinfo',
-          {
-            headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
-          }
-        );
+      const res = await axios.post(`${BACKEND}/api/auth/google`, {
+        email: userInfo.data.email,
+        name: userInfo.data.name,
+        googleId: userInfo.data.sub,
+        avatar: userInfo.data.picture
+      });
 
-        console.log('Google User Info:', userInfo.data);
+      const { state, accessToken, user, message } = res.data;
 
-        // Envoyer au backend pour création de compte
-        const response = await axios.post(
-          'https://backend-rmfq.onrender.com/api/auth/google',
-          {
-            email: userInfo.data.email,
-            name: userInfo.data.name,
-            googleId: userInfo.data.sub,
-            avatar: userInfo.data.picture,
-          }
-        );
-
-        console.log('Backend response:', response.data);
-
-        if (response.data.success) {
-          // Connexion automatique après inscription Google
-          dispatch(setCredentials({
-            user: response.data.user,
-            accessToken: response.data.accessToken,
-            refreshToken: response.data.refreshToken
-          }));
-          navigate('/dashboard');
-        } else {
-          setError(response.data.message || 'Erreur lors de l\'inscription Google');
-        }
-      } catch (err: any) {
-        console.error('Google register error:', err);
-        setError(err?.response?.data?.message || 'Erreur lors de l\'inscription Google');
-      }
-    },
-    onError: () => {
-      setError('L\'inscription avec Google a échoué');
-    },
+      // 🟡 PENDING → WAITING PAGE
+     if (res.data.status === "PENDING") {
+  navigate('/waiting-approval', {
+    state: { message: res.data.message }
   });
+  return;
+}
 
+      // 🟢 APPROVED → LOGIN
+      if (state === "APPROVED") {
+        dispatch(setCredentials({
+          user,
+          accessToken,
+          refreshToken: res.data.refreshToken
+        }));
+
+        navigate('/dashboard');
+      }
+
+    } catch (err: any) {
+      console.error(err);
+    }
+  }
+}); 
   return (
     <Container maxWidth="sm">
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4 }}>
-        <Paper sx={{ p: 4, width: '100%', borderRadius: 3, boxShadow: 3 }}>
-          <Typography variant="h4" align="center" gutterBottom sx={{ fontWeight: 700, color: '#1a1a1a' }}>
-            ReactBuilder
-          </Typography>
-          <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 4 }}>
-            Créez votre compte gratuitement
-          </Typography>
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
+        <Paper sx={{ p: 4, width: '100%', borderRadius: 2 }}>
+          <Typography variant="h4" textAlign="center" gutterBottom>Register</Typography>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-          {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-
-          <form onSubmit={handleSubmit}>
-            <TextField
-              fullWidth
-              label="Nom complet"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              margin="normal"
-              required
-              autoFocus
-            />
-            
-            <TextField
-              fullWidth
-              label="Email"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              margin="normal"
-              required
-            />
-
-            <TextField
-              fullWidth
-              label="Mot de passe"
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              margin="normal"
-              required
-              helperText="Minimum 6 caractères"
-            />
-
-            <Button
-              fullWidth
-              type="submit"
-              variant="contained"
-              size="large"
-              disabled={isLoading}
-              sx={{ mt: 3, py: 1.5, fontWeight: 'bold', textTransform: 'none', borderRadius: 2 }}
-            >
-              {isLoading ? <CircularProgress size={24} color="inherit" /> : "S'inscrire"}
+          <form onSubmit={handleRegister}>
+            <TextField fullWidth label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} margin="normal" required />
+            <TextField fullWidth label="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} margin="normal" required />
+            <TextField fullWidth label="Password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} margin="normal" required />
+            <Button fullWidth type="submit" variant="contained" disabled={loading} sx={{ mt: 3 }}>
+              {loading ? <CircularProgress size={22} /> : 'Register'}
             </Button>
           </form>
 
-          <Divider sx={{ my: 3 }}>
-            <Typography variant="body2" color="text.secondary">OU</Typography>
-          </Divider>
+          <Divider sx={{ my: 3 }}>OR</Divider>
 
-          <Button
-            fullWidth
-            variant="outlined"
-            onClick={() => googleRegister()}
-            startIcon={<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="G" />}
-            sx={{ 
-              py: 1.2, 
-              textTransform: 'none', 
-              borderColor: '#e0e0e0', 
-              color: '#444', 
-              borderRadius: 2,
-              '&:hover': { borderColor: '#bdbdbd', bgcolor: '#f5f5f5' }
-            }}
-          >
-            S'inscrire avec Google
-          </Button>
-
-          <Box sx={{ mt: 3, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
-              Vous avez déjà un compte ?{' '}
-              <Link component={RouterLink} to="/login" sx={{ color: '#6366f1', textDecoration: 'none', fontWeight: 600 }}>
-                Se connecter
-              </Link>
-            </Typography>
+          <Button fullWidth variant="outlined" onClick={() => googleRegister()}>Continue with Google</Button>
+          <Box textAlign="center" mt={2}>
+            <Link component={RouterLink} to="/login">Already have an account?</Link>
           </Box>
         </Paper>
       </Box>
     </Container>
-  );    
+  );
 };
-
-export default Register;

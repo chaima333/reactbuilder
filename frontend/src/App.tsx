@@ -28,6 +28,7 @@ import Users from './pages/Users';
 import { LanguageProvider } from './context/LanguageContext';
 
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { WaitingPage } from './pages/WaitingPage';
 
 // 🔥 VOTRE CLIENT ID GOOGLE
 const GOOGLE_CLIENT_ID = '386973697348-lm5v1bvoupl2l7t7kfqe89irlif6oo37.apps.googleusercontent.com';
@@ -72,6 +73,7 @@ const AppContent: React.FC = () => {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/waiting-approval" element={<WaitingPage />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/site/:siteId" element={<PublicSite />} />

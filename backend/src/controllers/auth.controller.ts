@@ -265,61 +265,62 @@ export const googleAuthController = async (req: AuthRequest, res: Response) => {
   try {
     const { email, name, googleId, avatar } = req.body;
 
-    console.log('📡 Google auth request:', { email, name, googleId });
-
     let user = await User.findOne({ where: { email } });
 
+    // 🟡 USER NOT EXISTS → CREATE PENDING
     if (!user) {
-      console.log('👤 Création nouvel utilisateur Google');
-      user = await User.create({
+      await User.create({
         email,
         name: name || email.split('@')[0],
         googleId,
         avatar: avatar || null,
-        isApproved: true,
+        isApproved: false,
         role: 'Viewer',
         password: '',
       } as any);
-    } else if (!user.googleId) {
-      console.log('🔗 Liaison compte existant à Google');
-      await user.update({ googleId, avatar });
-    } else {
-      console.log('✅ Utilisateur existe déjà avec Google');
+
+      return res.json({
+        state: "PENDING",
+        message: "Account created. Waiting admin approval"
+      });
     }
 
+    // 🟡 EXISTS BUT NOT APPROVED
+    if (!user.isApproved) {
+      return res.json({
+        state: "PENDING",
+        message: "Waiting admin approval"
+      });
+    }
+
+    // 🟢 APPROVED USER → LOGIN
     await revokeUserTokens(user.id);
 
-    const accessToken = generateToken({ 
-      userId: user.id, 
-      type: "access", 
-      role: user.role 
+    const accessToken = generateToken({
+      userId: user.id,
+      type: "access",
+      role: user.role
     });
-    
-    const refreshToken = generateToken({ 
-      userId: user.id, 
-      type: "refresh", 
-      role: user.role 
+
+    const refreshToken = generateToken({
+      userId: user.id,
+      type: "refresh",
+      role: user.role
     });
 
     await addToken(refreshToken, "refresh", user.id);
 
-    res.json({
-      success: true,
+    return res.json({
+      state: "APPROVED",
       accessToken,
       refreshToken,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-      },
+      user
     });
+
   } catch (error) {
-    console.error('❌ Google auth error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Erreur lors de l\'authentification Google' 
+    return res.status(500).json({
+      state: "ERROR",
+      message: "Server error"
     });
   }
 };
