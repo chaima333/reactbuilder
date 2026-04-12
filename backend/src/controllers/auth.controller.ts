@@ -335,39 +335,54 @@ import { Resend } from "resend";
 // 1. DEMANDE DE RÉINITIALISATION (FORGOT)
 // ==========================================
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const forgotPassword = async (req, res) => {
   try {
+    console.log("STEP 0 forgotPassword");
+
     const { email } = req.body;
 
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
     }
 
+    console.log("STEP 1 searching user");
+
     const user = await User.findOne({ where: { email } });
 
-    // security (don’t reveal user existence)
+    // security
     if (!user) {
+      console.log("STEP 1.1 user not found");
       return res.json({ message: "If email exists, reset link sent" });
     }
 
-    // generate token
+    console.log("STEP 2 user found");
+
     const rawToken = crypto.randomBytes(32).toString("hex");
-    const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex");
 
     user.resetPasswordToken = hashedToken;
     user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
 
     await user.save();
 
+    console.log("STEP 3 token saved");
+
     const resetLink = `${process.env.FRONTEND_URL}/reset-password/${rawToken}`;
 
-    // SEND EMAIL WITH RESEND
-    await resend.emails.send({
+    console.log("STEP 4 sending email");
+
+    // 💣 IMPORTANT FIX HERE (safer + debugging)
+    const emailResult = await resend.emails.send({
       from: "ReactBuilder <onboarding@resend.dev>",
-      to: user.email,
+      to: [user.email], // ✅ FIX: array (best practice)
       subject: "Reset Password",
       html: `
         <div style="font-family:Arial;padding:20px">
@@ -388,11 +403,17 @@ export const forgotPassword = async (req, res) => {
       `,
     });
 
+    console.log("STEP 5 email sent:", emailResult);
+
     return res.json({ message: "Reset link sent" });
 
   } catch (error) {
     console.error("FORGOT PASSWORD ERROR:", error);
-    return res.status(500).json({ message: "Server error" });
+
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
 };
 
@@ -409,12 +430,13 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "Password is required" });
     }
 
-    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
 
     const user = await User.findOne({
-      where: {
-        resetPasswordToken: hashedToken,
-      },
+      where: { resetPasswordToken: hashedToken },
     });
 
     if (!user || user.resetPasswordExpires < new Date()) {
@@ -433,6 +455,10 @@ export const resetPassword = async (req, res) => {
 
   } catch (error) {
     console.error("RESET PASSWORD ERROR:", error);
-    return res.status(500).json({ message: "Server error" });
+
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
 };
