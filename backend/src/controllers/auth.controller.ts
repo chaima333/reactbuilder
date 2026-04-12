@@ -324,3 +324,122 @@ export const googleAuthController = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
+
+
+
+import crypto from "crypto";
+import nodemailer from "nodemailer";
+// ==========================================
+// 1. DEMANDE DE RÉINITIALISATION (FORGOT)
+// ==========================================
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await User.findOne({ where: { email } });
+
+    // Sécurité : même réponse si l'utilisateur n'existe pas
+    if (!user) {
+      return res.json({ message: "If email exists, reset link sent" });
+    }
+
+    // Génération du token brut (raw) pour l'email et haché pour la BDD
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex");
+
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    await user.save();
+
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password/${rawToken}`;
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: `"ReactBuilder CMS" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: "Réinitialisation du mot de passe",
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h3>Bonjour ${user.name},</h3>
+          <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
+          <p>Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe (valable 15 minutes) :</p>
+          <a href="${resetLink}" 
+             style="display: inline-block; background:#1976d2; color:white; padding:12px 25px; border-radius:5px; text-decoration:none; font-weight:bold;">
+             Réinitialiser mon mot de passe
+          </a>
+          <p style="margin-top: 20px; color: #666;">Si vous n'êtes pas à l'origine de cette demande, veuillez ignorer cet email.</p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    return res.json({ message: "Reset link sent" });
+
+  } catch (error) {
+    console.error("FORGOT PASSWORD ERROR:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ==========================================
+// 2. MISE À JOUR DU MOT DE PASSE (RESET)
+// ==========================================
+export const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params; // On récupère le token depuis l'URL (:token)
+    const { password } = req.body; // Le nouveau mot de passe depuis le formulaire
+
+    if (!password) {
+      return res.status(400).json({ message: "Password is required" });
+    }
+
+    // On hache le token reçu pour le comparer avec celui en BDD
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
+    const user = await User.findOne({
+      where: {
+        resetPasswordToken: hashedToken,
+      },
+    });
+
+    // Vérification du token et de l'expiration
+    if (!user || !user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
+      return res.status(400).json({ message: "Le lien est invalide ou a expiré" });
+    }
+
+    // Hachage du nouveau mot de passe
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
+
+    // Nettoyage du token après succès
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+
+    await user.save();
+
+    return res.json({ message: "Mot de passe mis à jour avec succès" });
+
+  } catch (error) {
+    console.error("RESET PASSWORD ERROR:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};

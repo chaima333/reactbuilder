@@ -69,9 +69,6 @@ export class User extends Model<User> {
   })
   updatedAt!: Date;
 
-  // backend/src/models/User.ts
-// Ajoutez cette ligne avec les autres colonnes
-
 @Column({
   type: DataType.STRING(255),
   allowNull: true,
@@ -94,6 +91,18 @@ googleId!: string;
     if (this.isEditor() && this.id === pageUserId) return true;
     return false;
   }
+  
+ @Column({
+  type: DataType.STRING(255),
+  allowNull: true,
+})
+resetPasswordToken!: string | null;
+
+@Column({
+  type: DataType.DATE,
+  allowNull: true,
+})
+resetPasswordExpires!: Date | null;
 
   toJSON() {
     return {
