@@ -23,8 +23,8 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
           [
             Sequelize.literal(`(
               SELECT COUNT(*)
-              FROM Sites AS site
-              WHERE site.ownerId = User.id
+              FROM "sites"
+              WHERE "sites"."owner_id" = "User"."id"
             )`),
             'siteCount' // C'est le nom de la propriété que tu recevras dans le frontend
           ]
