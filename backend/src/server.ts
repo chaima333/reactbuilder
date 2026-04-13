@@ -30,7 +30,8 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 // --- 2. ROUTES ---
 
 // Authentification
-app.use("/api/ai", aiRoutes);
+app.use("/api/auth", authRoutes);
+
 // Ressources
 app.use("/api/public", publicRoutes);
 app.use("/api/dashboard", dashboardRoutes);
@@ -41,7 +42,6 @@ app.use("/api/users", userRoutes);
 app.use("/api/seo", seoRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/ai", aiRoutes);
-
 
 // Health check (Un seul suffit)
 app.get("/api/health", (req, res) => {
