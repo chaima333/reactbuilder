@@ -24,6 +24,7 @@ import {
   ArrowUpward as ArrowUpIcon,
   ArrowDownward as ArrowDownIcon,
   Delete as DeleteIcon,
+  AutoAwesome as MagicIcon,
 } from '@mui/icons-material';
 import { 
   useGetPageByIdQuery, 
@@ -50,6 +51,7 @@ import {
 } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { AIGenerator } from '../components/AIGenerator';
 
 const blockTypes = [
   { type: 'title', label: 'Titre', icon: '📌', description: 'Titre de section' },
@@ -226,6 +228,7 @@ const SortableBlockItem = React.memo(({ block, index, totalBlocks, updateBlock, 
 });
 
 // --- COMPOSANT PRINCIPAL ---
+
 export const PageEditor: React.FC = () => {
   const { siteId, pageId } = useParams();
   const navigate = useNavigate();
@@ -235,13 +238,14 @@ export const PageEditor: React.FC = () => {
   const [blocks, setBlocks] = useState<any[]>([]);
   const [isPreview, setIsPreview] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [aiGeneratorOpen, setAiGeneratorOpen] = useState(false); // État pour l'IA
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const { data: pageData, isLoading: isLoadingPage, error: pageError } = useGetPageByIdQuery(
+  const { data: pageData, isLoading: isLoadingPage } = useGetPageByIdQuery(
     { siteId: Number(siteId), pageId: Number(pageId) },
     { skip: !pageId || pageId === 'new' }
   );
@@ -263,10 +267,10 @@ export const PageEditor: React.FC = () => {
     }
   }, [pageData, isNewPage]);
 
+  // Fonctions de manipulation (add, update, delete, move...)
   const addBlock = (type: string) => {
     const newBlock = { id: uuidv4(), type, content: '', ...(type === 'button' && { link: '' }) };
     setBlocks(prev => [...prev, newBlock]);
-    enqueueSnackbar(`Bloc ajouté`, { variant: 'info', autoHideDuration: 1000 });
   };
 
   const updateBlock = useCallback((id: string, content: string, link?: string) => {
@@ -318,7 +322,6 @@ export const PageEditor: React.FC = () => {
     if (!pageTitle.trim()) return enqueueSnackbar('Titre requis', { variant: 'error' });
     setSaving(true);
     try {
-      // On envoie les blocks tels quels (RTK Query s'occupe de la sérialisation)
       const payload = { title: pageTitle, blocks: blocks, status: 'published' };
       if (!isNewPage) {
         await updatePage({ siteId: Number(siteId), pageId: Number(pageId), ...payload }).unwrap();
@@ -326,7 +329,7 @@ export const PageEditor: React.FC = () => {
         await createPage({ siteId: Number(siteId), ...payload }).unwrap();
       }
       enqueueSnackbar('Enregistré avec succès !', { variant: 'success' });
-      navigate('/sites');
+      navigate(`/sites/${siteId}`);
     } catch (err) {
       enqueueSnackbar('Erreur de sauvegarde', { variant: 'error' });
     } finally {
@@ -338,9 +341,20 @@ export const PageEditor: React.FC = () => {
 
   return (
     <Box sx={{ pb: 10 }}>
+      {/* Header collant */}
       <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 2, alignItems: 'center', position: 'sticky', top: 0, zIndex: 100 }}>
         <Button onClick={() => navigate(`/sites/${siteId}`)}>Retour</Button>
         <Typography variant="h6" sx={{ flexGrow: 1 }}>{isNewPage ? 'Nouvelle Page' : pageTitle}</Typography>
+        
+        <Button 
+          startIcon={<MagicIcon />} 
+          onClick={() => setAiGeneratorOpen(true)}
+          sx={{ color: '#6366f1', borderColor: '#6366f1' }}
+          variant="outlined"
+        >
+          Générer avec IA
+        </Button>
+        
         <Button startIcon={<PreviewIcon />} onClick={() => setIsPreview(!isPreview)}>
           {isPreview ? 'Éditer' : 'Aperçu'}
         </Button>
@@ -405,12 +419,35 @@ export const PageEditor: React.FC = () => {
 
             {blocks.length === 0 && (
               <Box sx={{ textAlign: 'center', p: 10, border: '2px dashed #ccc', borderRadius: 2 }}>
-                <Typography color="text.secondary">Cliquez sur un composant pour l'ajouter</Typography>
+                <Typography color="text.secondary">Cliquez sur un composant pour l'ajouter ou utilisez l'IA</Typography>
               </Box>
             )}
           </Grid>
         </Grid>
       )}
+
+      {/* COMPOSANT IA - BIEN PLACÉ ICI */}
+      <AIGenerator
+        open={aiGeneratorOpen}
+        onClose={() => setAiGeneratorOpen(false)}
+        onContentGenerated={(content) => {
+          if (content.title) setPageTitle(content.title);
+          
+          // Utilisation de .blocks car ton backend renvoie maintenant "blocks"
+          if (content.blocks && content.blocks.length > 0) {
+            const newBlocks = content.blocks.map((block: any) => ({
+              id: block.id || uuidv4(), // Priorité à l'ID du backend
+              type: block.type,
+              content: block.content,
+              link: block.link || '',
+            }));
+            
+            // On ajoute les nouveaux blocs à la liste existante
+            setBlocks(prev => [...prev, ...newBlocks]);
+            enqueueSnackbar(`${newBlocks.length} blocs générés par l'IA`, { variant: 'success' });
+          }
+        }}
+      />
     </Box>
   );
 };
