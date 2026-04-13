@@ -16,6 +16,7 @@ import userRoutes from "./routes/user.routes";
 import seoRoutes from "./routes/seo.routes";
 import adminRoutes from "./routes/admin.routes";
 import { initializeDB } from "./database/connection";
+import aiRoutes from "./routes/ai.routes";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "10000", 10);
@@ -29,8 +30,7 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 // --- 2. ROUTES ---
 
 // Authentification
-app.use("/api/auth", authRoutes);
-
+app.use("/api/ai", aiRoutes);
 // Ressources
 app.use("/api/public", publicRoutes);
 app.use("/api/dashboard", dashboardRoutes);
@@ -40,6 +40,8 @@ app.use("/api/media", mediaRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/seo", seoRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/ai", aiRoutes);
+
 
 // Health check (Un seul suffit)
 app.get("/api/health", (req, res) => {
