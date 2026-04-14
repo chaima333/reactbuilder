@@ -318,8 +318,11 @@ export const PageEditor: React.FC = () => {
     }
   };
 
-    const savePage = async () => {
-  if (!pageTitle.trim()) return enqueueSnackbar('Titre requis', { variant: 'error' });
+const savePage = async () => {
+  if (!pageTitle.trim()) {
+    enqueueSnackbar('Titre requis', { variant: 'error' });
+    return false;
+  }
 
   setSaving(true);
 
@@ -331,21 +334,35 @@ export const PageEditor: React.FC = () => {
     };
 
     if (!isNewPage) {
-      await updatePage({ siteId: Number(siteId), pageId: Number(pageId), ...payload }).unwrap();
+      await updatePage({
+        siteId: Number(siteId),
+        pageId: Number(pageId),
+        ...payload,
+      }).unwrap();
     } else {
-      await createPage({ siteId: Number(siteId), ...payload }).unwrap();
+      await createPage({
+        siteId: Number(siteId),
+        ...payload,
+      }).unwrap();
     }
 
     enqueueSnackbar('Saved', { variant: 'success' });
+    return true; // ✅ important
 
-    // ❌ NO navigate here
   } catch (err) {
     enqueueSnackbar('Erreur de sauvegarde', { variant: 'error' });
+    return false; // ❌
   } finally {
     setSaving(false);
   }
 }; 
+const saveAndExit = async () => {
+  const ok = await savePage();
 
+  if (ok) {
+    navigate(`/sites/${siteId}`);
+  }
+};
   if (isLoadingPage) return <Box display="flex" justifyContent="center" mt={10}><CircularProgress /></Box>;
 
   return (
