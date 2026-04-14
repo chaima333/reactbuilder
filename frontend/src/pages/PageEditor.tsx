@@ -379,7 +379,7 @@ const savePage = async () => {
           {isPreview ? 'Éditer' : 'Aperçu'}
         </Button>
        <Button variant="contained" onClick={async () => { const ok = await savePage();
-             if (ok) navigate(`/sites/${siteId}`); }}>
+             if (ok) navigate('/sites'); }}>
                Save & Exit</Button>
       </Paper>
 
