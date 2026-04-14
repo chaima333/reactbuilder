@@ -102,33 +102,47 @@ export const getPageById = async (req: AuthRequest, res: Response) => {
 // ------------------------
 export const createPage = async (req: AuthRequest, res: Response) => {
   try {
+    console.log("BODY:", req.body);
+
     const { siteId } = req.params;
     const userId = req.user.id;
-    const { title, content = "", blocks = [], status = "draft" } = req.body as PageCreateInput;
 
-    // Validation simple des blocs
-    if (!Array.isArray(blocks) || blocks.some(b => !b.type || !b.content)) {
-      return res.status(400).json({ success: false, message: "Blocs invalides" });
+    const { title, content = "", blocks = [], status = "draft" } = req.body;
+
+    const safeBlocks = Array.isArray(blocks) ? blocks : [];
+
+    const site = await Site.findOne({
+      where: { id: Number(siteId), ownerId: userId }
+    });
+
+    if (!site) {
+      return res.status(404).json({ success: false, message: "Site not found" });
     }
-
-    const site = await Site.findOne({ where: { id: Number(siteId), ownerId: userId } });
-    if (!site) return res.status(404).json({ success: false, message: "Site non trouvé ou accès refusé" });
 
     const slug = await generateSlug(title, Number(siteId));
 
-    const page = await Page.create({ title, slug, content, blocks, status, site_id: Number(siteId), user_id: userId } as any);
+    const page = await Page.create({
+      title,
+      slug,
+      content,
+      blocks: safeBlocks,
+      status,
+      userId,
+      siteId: Number(siteId),
+    });
 
-    // Log séparé pour fiabilité
-    try {
-      await ActivityLog.create({ userId, site_id: Number(siteId), action: "page_created", entityType: "page", entityId: page.id, details: { title: page.title } });
-    } catch (e) {
-      console.warn("⚠️ ActivityLog failed:", e);
-    }
+    return res.status(201).json({ success: true, data: page });
 
-    return res.status(201).json({ success: true, message: "Page créée avec succès", data: page });
-  } catch (error) {
-    console.error("❌ Create page error:", error);
-    return res.status(500).json({ success: false, message: "Erreur lors de la création de la page" });
+  } catch (error: any) {
+    console.error("🔥 FULL ERROR:", error);
+    console.error("🔥 SQL:", error?.parent?.sql);
+    console.error("🔥 DETAIL:", error?.parent?.detail);
+    console.error("🔥 MESSAGE:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
