@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from "uuid";
 
 console.log("OPENAI KEY EXISTS:", !!process.env.OPENAI_API_KEY);
 
-// 🚨 Stop immediately if key missing
 if (!process.env.OPENAI_API_KEY) {
   throw new Error("OPENAI_API_KEY is missing in environment variables");
 }
@@ -34,7 +33,7 @@ Réponds UNIQUEMENT en JSON valide (aucun texte avant/après):
 `;
 
       const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini", // 🔥 plus stable que 3.5
+        model: "gpt-4o-mini", 
         messages: [{ role: "user", content: prompt }],
         temperature: 0.5,
       });

@@ -77,18 +77,20 @@ export class Site extends Model {
   })
   ownerId!: number;
 
-  @BelongsTo(() => User)
+  @BelongsTo(() => User, { foreignKey: 'ownerId', as: 'owner' })
   owner!: User;
 
   @Column({
     type: DataType.INTEGER,
     defaultValue: 0,
+    field: 'views',
   })
   views!: number;
 
   @Column({
     type: DataType.ENUM('active', 'suspended', 'deleted'),
     defaultValue: 'active',
+    field: 'status',
   })
   status!: 'active' | 'suspended' | 'deleted';
 
@@ -113,12 +115,15 @@ export class Site extends Model {
   updatedAt!: Date;
 
   // Associations
- @HasMany(() => Page, {
-  foreignKey: 'siteId',
-  as: 'pages'
-})
-pages!: Page[];
+  @HasMany(() => Page, {
+    foreignKey: 'siteId',
+    as: 'pages'
+  })
+  pages!: Page[];
 
-  @HasMany(() => ActivityLog)
+  @HasMany(() => ActivityLog, {
+    foreignKey: 'siteId',
+    as: 'activities'
+  })
   activities!: ActivityLog[];
 }

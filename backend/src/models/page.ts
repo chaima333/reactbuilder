@@ -113,21 +113,18 @@ export class Page extends Model {
   })
   userId!: number;
 
-  @BelongsTo(() => User)
+  @BelongsTo(() => User, 'user_id')
   author!: User;
 
   @ForeignKey(() => Site)
   @Column({
     type: DataType.INTEGER,
-    allowNull: true,
+    allowNull: false,
     field: 'site_id',
   })
   siteId!: number;
   
-@BelongsTo(() => Site, {
-  foreignKey: 'siteId',
-  as: 'site'
-})
+@BelongsTo(() => Site, 'site_id') // On lie explicitement à site_id
 site!: Site;
 
   @HasOne(() => Seo)

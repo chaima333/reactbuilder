@@ -10,14 +10,13 @@ import {
 
 const router = Router();
 
-// Toutes les routes nécessitent une authentification
 router.use(authenticateJWT);
 
-// Routes pour les pages
-router.get('/:siteId/pages', getPages);
-router.get('/:siteId/pages/:pageId', getPageById);
-router.post('/:siteId/pages', createPage);
-router.put('/:siteId/pages/:pageId', updatePage);
-router.delete('/:siteId/pages/:pageId', deletePage);
+// ✅ واضح وصريح بدون تعقيد
+router.get('/sites/:siteId/pages', getPages);
+router.get('/sites/:siteId/pages/:pageId', getPageById);
+router.post('/sites/:siteId/pages', createPage);
+router.put('/sites/:siteId/pages/:pageId', updatePage);
+router.delete('/sites/:siteId/pages/:pageId', deletePage);
 
 export default router;

@@ -1,72 +1,71 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { Site, Page, ActivityLog } from '../models';
 import { AuthRequest } from '../shared/auth.util';
 
-// Au lieu de (req: Request), utilise (req: AuthRequest)
-export const myController = async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;   
-  const { name } = req.body;   
-  const { page } = req.query;  
-  const authHeader = req.headers.authorization;
-}
-export const createSite = async (req: AuthRequest, res: Response) => {
-  try {
-    const { name, subdomain, title, description, language = 'fr', timezone = 'Europe/Paris' } = req.body;
-    const userId = req.user.id;
+// =========================
+// CREATE SITE
+// =========================
 
-    const existingSite = await Site.findOne({ where: { subdomain } });
-    if (existingSite) {
-      return res.status(400).json({ success: false, message: 'Ce sous-domaine est déjà utilisé' });
-    }
+      export const createSite = async (req: AuthRequest, res: Response) => {
+  try {
+    const { name, subdomain } = req.body;
+    const userId = req.user?.id;
 
     const site = await Site.create({
       name,
       subdomain,
-      title,
-      description,
-      language,
-      timezone,
+      title: name,
       ownerId: userId,
       status: 'active'
     });
 
-    // Créer page d'accueil correctement
-    await Page.create({
-      title: "Home",
-      slug: "home",
-      content: "<p>Bienvenue sur ce site !</p>",
-      blocks: [
-        { type: "title", content: "Bienvenue !" },
-        { type: "text", content: "Voici une page exemple." }
-      ],
-      siteId: site.id,
-      userId: userId,
-      status: 'published'
-    });
-
-    // Journalisation safe
     try {
+       await Page.create({
+  title: "Home",
+  slug: `home-${site.id}-${Date.now()}`,
+  site_id: site.id,
+  user_id: userId,
+  status: 'published'
+} as any);
       await ActivityLog.create({
         userId,
         siteId: site.id,
-        action: 'site_created',
-        entityType: 'site',
-        entityId: site.id,
-        details: { name: site.name, subdomain: site.subdomain }
-      });
-    } catch (logErr) {
-      console.warn('⚠️ Activity log failed:', logErr);
+        action: 'SITE_CREATED',
+        details: { name }
+      } as any);
+
+    } catch (bgError) {
+      console.error("⚠️ BACKGROUND ERROR:", bgError);
     }
 
-    return res.status(201).json({ success: true, message: 'Site créé avec succès', data: site });
-  } catch (error) {
-    console.error('Create site error:', error);
-    return res.status(500).json({ success: false, message: 'Erreur lors de la création du site' });
+    return res.status(201).json({
+      success: true,
+      data: site
+    });
+
+  } catch (error: any) {
+
+    // 🔥 هنا تحط الكود متاعك
+    console.error("🔥 FULL ERROR:", error);
+    console.error("🔥 SQL:", error?.parent?.sql);
+    console.error("🔥 DETAIL:", error?.parent?.detail);
+    console.error("🔥 MESSAGE:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
-
+// =========================
+// GET SITES
+// =========================
 export const getSites = async (req: AuthRequest, res: Response) => {
   try {
+    if (!req.user?.id) {
+      return res.status(401).json({ success: false });
+    }
+
     const userId = req.user.id;
 
     const sites = await Site.findAll({
@@ -74,156 +73,118 @@ export const getSites = async (req: AuthRequest, res: Response) => {
       include: [
         {
           model: Page,
-          as: 'pages', // لازم نفس الاسم في association
-          attributes: ['id', 'title', 'views', 'status'],
-          required: false // 🔥 مهم: باش يرجّع site حتى لو ما فيهش pages
+          as: 'pages',
+          required: false
         }
       ],
       order: [['createdAt', 'DESC']]
     });
 
-    const sitesWithStats = sites.map((site: any) => {
-      const siteJson = site.toJSON();
-
-      const pages = siteJson.pages || [];
-
-      return {
-        ...siteJson,
-        pagesCount: pages.length,
-        totalViews: pages.reduce(
-          (sum: number, page: any) => sum + (page.views || 0),
-          0
-        )
-      };
-    });
-
-    res.json({
+    return res.json({
       success: true,
-      data: sitesWithStats
+      data: sites
     });
 
   } catch (error) {
-    console.error('❌ Get sites error:', error);
-    res.status(500).json({
+    console.error("GET SITES ERROR:", error);
+
+    return res.status(500).json({
       success: false,
-      message: 'Erreur lors de la récupération des sites'
+      message: "error fetching sites"
     });
   }
 };
 
+// =========================
+// GET SITE BY ID
+// =========================
 export const getSiteById = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user?.id;
 
     const site = await Site.findOne({
       where: { id, ownerId: userId },
-      include: [
-        {
-          model: Page,
-          as: 'pages',
-          attributes: ['id', 'title', 'slug', 'status', 'views', 'createdAt']
-        }
-      ]
+      include: [{ model: Page, as: 'pages', required: false }]
     });
 
     if (!site) {
       return res.status(404).json({
         success: false,
-        message: 'Site non trouvé'
+        message: "not found"
       });
     }
 
-    res.json({
-      success: true,
-      data: site
-    });
+    return res.json({ success: true, data: site });
+
   } catch (error) {
-    console.error('Get site error:', error);
-    res.status(500).json({
+    console.error(error);
+
+    return res.status(500).json({
       success: false,
-      message: 'Erreur lors de la récupération du site'
+      message: "server error"
     });
   }
 };
 
+// =========================
+// UPDATE SITE
+// =========================
 export const updateSite = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
-    const { name, title, description, language, timezone } = req.body;
+    const userId = req.user?.id;
 
     const site = await Site.findOne({ where: { id, ownerId: userId } });
 
     if (!site) {
-      return res.status(404).json({
-        success: false,
-        message: 'Site non trouvé'
-      });
+      return res.status(404).json({ success: false });
     }
 
-    await site.update({ name, title, description, language, timezone });
+    await site.update(req.body);
 
-    // Journaliser l'activité
-    await ActivityLog.create({
-      userId,
-      siteId: site.id,
-      action: 'site_updated',
-      entityType: 'site',
-      entityId: site.id,
-      details: { name: site.name }
-    });
-
-    res.json({
+    return res.json({
       success: true,
-      message: 'Site mis à jour avec succès',
       data: site
     });
+
   } catch (error) {
-    console.error('Update site error:', error);
-    res.status(500).json({
+    console.error(error);
+
+    return res.status(500).json({
       success: false,
-      message: 'Erreur lors de la mise à jour du site'
+      message: "update failed"
     });
   }
 };
 
+// =========================
+// DELETE SITE
+// =========================
 export const deleteSite = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user?.id;
 
     const site = await Site.findOne({ where: { id, ownerId: userId } });
 
     if (!site) {
-      return res.status(404).json({
-        success: false,
-        message: 'Site non trouvé'
-      });
+      return res.status(404).json({ success: false });
     }
 
-    // Soft delete - changer le statut
     await site.update({ status: 'deleted' });
 
-    // Journaliser l'activité
-    await ActivityLog.create({
-      userId,
-      siteId: site.id,
-      action: 'site_deleted',
-      entityType: 'site',
-      entityId: site.id,
-      details: { name: site.name }
+    return res.json({
+      success: true,
+      message: "deleted"
     });
 
-    res.json({
-      success: true,
-      message: 'Site supprimé avec succès'
-    });
   } catch (error) {
-    console.error('Delete site error:', error);
-    res.status(500).json({
+    console.error(error);
+
+    return res.status(500).json({
       success: false,
-      message: 'Erreur lors de la suppression du site'
+      message: "delete failed"
     });
   }
 };

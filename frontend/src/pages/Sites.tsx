@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Grid,
   Card,
@@ -17,8 +17,9 @@ import {
   Chip,
   IconButton, 
 } from '@mui/material';
+
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
-// ↑ Supprimez la ligne du bas - un seul import suffit
+
 import { useGetSitesQuery, useCreateSiteMutation, useDeleteSiteMutation, useDeletePageMutation } from '../redux/api/apiSlice';
 import { CreateSiteModal } from '../components/Sites/CreateSiteModal';
 import { useSnackbar } from 'notistack';
@@ -28,6 +29,7 @@ import { useLanguage } from '../context/LanguageContext';
 export const Sites: React.FC = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
+
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedSite, setSelectedSite] = useState<any>(null);
@@ -40,8 +42,16 @@ export const Sites: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
 
   const sites = data?.data || [];
+
   console.log("RAW API DATA:", data);
   console.log("SITES ARRAY:", sites);
+
+  // 🔥 ONLY ADDITION (AUTO OPEN MODAL)
+  useEffect(() => {
+    if (!isLoading && sites.length === 0) {
+      setModalOpen(true);
+    }
+  }, [isLoading, sites]);
 
   const handleCreateSite = async (siteData: any) => {
     try {
@@ -126,6 +136,7 @@ export const Sites: React.FC = () => {
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                     {site.description || t.noDescription}
                   </Typography>
+
                   <Box sx={{ mt: 2, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
                     <Typography variant="body2">
                       📄 {site.pagesCount || site.pages?.length || 0} {t.pages}
@@ -142,7 +153,7 @@ export const Sites: React.FC = () => {
                     <Typography variant="subtitle2" gutterBottom>
                       {t.pages}:
                     </Typography>
-                    
+
                     {site.pages && site.pages.length > 0 && (
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
                         {site.pages.map((page: any) => (
@@ -153,38 +164,47 @@ export const Sites: React.FC = () => {
                               onClick={() => navigate(`/sites/${site.id}/pages/${page.id}/edit`)}
                               sx={{ cursor: 'pointer' }}
                             />
-                            <IconButton size="small" color="error" onClick={() => handleDeletePage(site.id, page.id, page.title)}>
+                            <IconButton size="small" color="error"
+                              onClick={() => handleDeletePage(site.id, page.id, page.title)}>
                               <DeleteIcon fontSize="small" />
                             </IconButton>
                           </Box>
                         ))}
                       </Box>
                     )}
-                    
+
                     {(!site.pages || site.pages.length === 0) && (
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      <Typography variant="body2" color="text.secondary">
                         {t.noPages}
                       </Typography>
                     )}
-                    
-                    <Button size="small" startIcon={<AddIcon />} onClick={() => navigate(`/sites/${site.id}/pages/new`)} sx={{ mt: 1 }}>
+
+                    <Button size="small" startIcon={<AddIcon />}
+                      onClick={() => navigate(`/sites/${site.id}/pages/new`)}
+                      sx={{ mt: 1 }}>
                       {t.addPage}
                     </Button>
                   </Box>
                 </CardContent>
+
                 <CardActions>
-                  <Button size="small" startIcon={<EditIcon />} onClick={() => navigate(`/sites/${site.id}/edit`)}>
+                  <Button size="small" startIcon={<EditIcon />}
+                    onClick={() => navigate(`/sites/${site.id}/edit`)}>
                     {t.edit}
                   </Button>
-                  <Button 
-                    size="small" 
-                    variant="outlined"
+
+                  <Button size="small" variant="outlined"
                     startIcon={<VisibilityIcon />}
-                    onClick={() => window.open(`/site/${site.id}`, '_blank')}
-                  >
+                    onClick={() => window.open(`/site/${site.id}`, '_blank')}>
                     Voir
                   </Button>
-                  <Button size="small" color="error" startIcon={<DeleteIcon />} onClick={() => { setSelectedSite(site); setDeleteDialogOpen(true); }}>
+
+                  <Button size="small" color="error"
+                    startIcon={<DeleteIcon />}
+                    onClick={() => {
+                      setSelectedSite(site);
+                      setDeleteDialogOpen(true);
+                    }}>
                     {t.delete}
                   </Button>
                 </CardActions>
@@ -194,7 +214,12 @@ export const Sites: React.FC = () => {
         </Grid>
       )}
 
-      <CreateSiteModal open={modalOpen} onClose={() => setModalOpen(false)} onCreate={handleCreateSite} isLoading={isCreating} />
+      <CreateSiteModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onCreate={handleCreateSite}
+        isLoading={isCreating}
+      />
 
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle>{t.confirm}</DialogTitle>
@@ -204,9 +229,11 @@ export const Sites: React.FC = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>{t.cancel}</Button>
-          <Button onClick={handleDeleteSite} color="error" disabled={isDeleting}>
-            {isDeleting ? t.loading : t.delete}
+          <Button onClick={() => setDeleteDialogOpen(false)}>
+            {t.cancel}
+          </Button>
+          <Button onClick={handleDeleteSite} color="error">
+            {t.delete}
           </Button>
         </DialogActions>
       </Dialog>

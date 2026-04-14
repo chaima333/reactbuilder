@@ -41,7 +41,7 @@ const generateSlug = async (
     await Page.findOne({
       where: {
         slug,
-        siteId,
+        site_id: siteId,
         status: { [Op.ne]: "deleted" },
         ...(excludeId ? { id: { [Op.ne]: excludeId } } : {}),
       },
@@ -116,11 +116,11 @@ export const createPage = async (req: AuthRequest, res: Response) => {
 
     const slug = await generateSlug(title, Number(siteId));
 
-    const page = await Page.create({ title, slug, content, blocks, status, userId, siteId: Number(siteId) });
+    const page = await Page.create({ title, slug, content, blocks, status, site_id: Number(siteId), user_id: userId } as any);
 
     // Log séparé pour fiabilité
     try {
-      await ActivityLog.create({ userId, siteId: Number(siteId), action: "page_created", entityType: "page", entityId: page.id, details: { title: page.title } });
+      await ActivityLog.create({ userId, site_id: Number(siteId), action: "page_created", entityType: "page", entityId: page.id, details: { title: page.title } });
     } catch (e) {
       console.warn("⚠️ ActivityLog failed:", e);
     }
