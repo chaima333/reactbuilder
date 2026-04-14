@@ -318,24 +318,33 @@ export const PageEditor: React.FC = () => {
     }
   };
 
-  const savePage = async () => {
-    if (!pageTitle.trim()) return enqueueSnackbar('Titre requis', { variant: 'error' });
-    setSaving(true);
-    try {
-      const payload = { title: pageTitle, blocks: blocks, status: 'published' };
-      if (!isNewPage) {
-        await updatePage({ siteId: Number(siteId), pageId: Number(pageId), ...payload }).unwrap();
-      } else {
-        await createPage({ siteId: Number(siteId), ...payload }).unwrap();
-      }
-      enqueueSnackbar('Enregistré avec succès !', { variant: 'success' });
-      navigate(`/sites/${siteId}`);
-    } catch (err) {
-      enqueueSnackbar('Erreur de sauvegarde', { variant: 'error' });
-    } finally {
-      setSaving(false);
+    const savePage = async () => {
+  if (!pageTitle.trim()) return enqueueSnackbar('Titre requis', { variant: 'error' });
+
+  setSaving(true);
+
+  try {
+    const payload = {
+      title: pageTitle,
+      blocks,
+      status: 'published',
+    };
+
+    if (!isNewPage) {
+      await updatePage({ siteId: Number(siteId), pageId: Number(pageId), ...payload }).unwrap();
+    } else {
+      await createPage({ siteId: Number(siteId), ...payload }).unwrap();
     }
-  };
+
+    enqueueSnackbar('Saved', { variant: 'success' });
+
+    // ❌ NO navigate here
+  } catch (err) {
+    enqueueSnackbar('Erreur de sauvegarde', { variant: 'error' });
+  } finally {
+    setSaving(false);
+  }
+}; 
 
   if (isLoadingPage) return <Box display="flex" justifyContent="center" mt={10}><CircularProgress /></Box>;
 
