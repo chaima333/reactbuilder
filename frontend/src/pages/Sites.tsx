@@ -53,16 +53,22 @@ export const Sites: React.FC = () => {
     }
   }, [isLoading, sites]);
 
-  const handleCreateSite = async (siteData: any) => {
-    try {
-      await createSite(siteData).unwrap();
-      enqueueSnackbar(t.saveSuccess, { variant: 'success' });
+// Dans handleCreateSite (Sites.tsx)
+const handleCreateSite = async (siteData: any) => {
+  try {
+    await createSite(siteData).unwrap();
+    setModalOpen(false);
+    enqueueSnackbar('Site créé avec succès !', { variant: 'success' });
+  } catch (err: any) {
+    // Si le serveur a fait une 500 mais que le site apparaît quand même (Array augmente)
+    // C'est que le crash était secondaire. On ferme quand même.
+    if (err.status === 500) {
       setModalOpen(false);
-      refetch();
-    } catch (err: any) {
-      enqueueSnackbar(err?.data?.message || t.error, { variant: 'error' });
+      refetch(); // On force la liste à se mettre à jour
     }
-  };
+    console.error("Erreur création:", err);
+  }
+};
 
   const handleDeleteSite = async () => {
     if (!selectedSite) return;

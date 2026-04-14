@@ -37,6 +37,20 @@ export const CreateSiteModal: React.FC<CreateSiteModalProps> = ({
       setError('Veuillez remplir tous les champs obligatoires');
       return;
     }
+    
+
+    // 2. Assainissement strict (on enlève tout ce qui n'est pas lettre, chiffre ou tiret)
+  const cleanSubdomain = formData.subdomain
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Enlève les accents
+    .replace(/[^a-z0-9-]/g, ''); // Enlève tout sauf a-z, 0-9 et -
+
+  const finalData = {
+    ...formData,
+    subdomain: cleanSubdomain
+  };
+  
+
     onCreate(formData);
     setFormData({ name: '', subdomain: '', title: '', description: '' });
     setError('');
