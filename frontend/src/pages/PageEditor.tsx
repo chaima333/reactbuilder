@@ -357,15 +357,6 @@ const savePage = async () => {
   }
 }; 
 
-const saveAndExit = async () => {
-  const ok = await savePage();
-
-  if (ok) {
-    navigate(`/sites/${siteId}`);
-  }
-};
-
-
   if (isLoadingPage) return <Box display="flex" justifyContent="center" mt={10}><CircularProgress /></Box>;
 
   return (
@@ -387,13 +378,9 @@ const saveAndExit = async () => {
         <Button startIcon={<PreviewIcon />} onClick={() => setIsPreview(!isPreview)}>
           {isPreview ? 'Éditer' : 'Aperçu'}
         </Button>
-        <Button
-  variant="outlined"
-  onClick={saveAndExit}
-  disabled={saving}
->
-  Sauvegarder + Sortir
-</Button>
+       <Button variant="contained" onClick={async () => { const ok = await savePage();
+             if (ok) navigate(`/sites/${siteId}`); }}>
+               Save & Exit</Button>
       </Paper>
 
       {isPreview ? (
