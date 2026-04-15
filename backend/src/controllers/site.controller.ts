@@ -5,58 +5,43 @@ import { AuthRequest } from '../shared/auth.util';
 // CREATE SITE
 // =========================
 
+// src/controllers/site.controller.ts
+import { sequelize } from '../database/connection'; // تأكد من الـ import الصحيح للـ instance
+
 export const createSite = async (req: AuthRequest, res: Response) => {
+  const t = await sequelize.transaction(); // بداية الـ Transaction
+
   try {
-    const { name, subdomain } = req.body;
-    const userId = req.user?.id;
+    const { name, subdomain, title } = req.body;
+    const userId = req.user.id;
 
-    if (!userId) {
-      return res.status(401).json({ success: false });
-    }
-
+    // 1. إنشاء الموقع
     const site = await Site.create({
       name,
       subdomain,
-      title: name,
+      title,
       status: 'active'
-    });
+    }, { transaction: t });
 
-    // 🔥 THIS IS THE CORE
-          await SiteMember.create({
-           userId: userId,
-           siteId: site.id,
-           role: "OWNER"
-           });
+    // 2. تعيين المستخدم كـ OWNER فوراً
+    await SiteMember.create({
+      userId: userId,
+      siteId: site.id,
+      role: 'OWNER'
+    }, { transaction: t });
 
-    // background stuff
-    try {
-      await Page.create({
-        title: "Home",
-        slug: `home-${site.id}-${Date.now()}`,
-        site_id: site.id,
-        user_id: userId,
-        status: 'published'
-      } as any);
+    // لو وصلنا هنا، كل شيء مريغل
+    await t.commit();
 
-      await ActivityLog.create({
-        userId,
-        siteId: site.id,
-        action: 'SITE_CREATED',
-        details: { name }
-      } as any);
-
-    } catch (bgError) {
-      console.error("⚠️ BACKGROUND ERROR:", bgError);
-    }
-
-    return res.status(201).json({
-      success: true,
-      data: site
-    });
+    return res.status(201).json({ success: true, data: site });
 
   } catch (error: any) {
-    console.error(error);
-    return res.status(500).json({ success: false });
+    await t.rollback(); // لو صارت أي غلطة، نلغيو كل شيء
+    
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ success: false, message: "Subdomain already taken" });
+    }
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
