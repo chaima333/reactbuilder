@@ -1,8 +1,8 @@
 // src/modules/membership/membership.middleware.ts
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "../../shared/auth.util";
-import { SiteRole } from "./membership.types";
 import SiteMember from "../../models/SiteMember";
+export type SiteRole = "OWNER" | "ADMIN" | "EDITOR" | "VIEWER";
 
 export const checkSiteAccess = (allowedRoles: SiteRole[]) => {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {

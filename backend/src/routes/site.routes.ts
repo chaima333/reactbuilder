@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticateJWT } from "../shared/auth.util";
-import { authorizeSiteRoles } from "../modules/membership/membership.middleware";
+// 👇 جيب الـ Middleware الجديد بالاسم الصحيح
+import { checkSiteAccess } from "../modules/membership/membership.middleware"; 
 
 import {
   createSite,
@@ -15,17 +16,18 @@ const router = Router();
 // auth global
 router.use(authenticateJWT);
 
-// 🧠 IMPORTANT: create site (أي user ينجم)
+// Create site
 router.post("/", createSite);
 
-// 🧠 list sites → user فقط يشوف sites متاعو (نخليوها كما هي توّة)
+// List sites
 router.get("/", getSites);
 
-// 🔥 site-specific access (HERE SaaS starts)
-router.get("/:siteId", authorizeSiteRoles("Owner", "Admin", "Editor", "Viewer"), getSiteById);
+// 🔥 تطبيق الـ SaaS Logic الجديد
+// استعملنا checkSiteAccess وبدلنا الـ Roles لـ OWNER, ADMIN... (Uppercase)
+router.get("/:siteId", checkSiteAccess(["OWNER", "ADMIN", "EDITOR", "VIEWER"]), getSiteById);
 
-router.put("/:siteId", authorizeSiteRoles("Owner", "Admin"), updateSite);
+router.put("/:siteId", checkSiteAccess(["OWNER", "ADMIN"]), updateSite);
 
-router.delete("/:siteId", authorizeSiteRoles("Owner"), deleteSite);
+router.delete("/:siteId", checkSiteAccess(["OWNER"]), deleteSite);
 
 export default router;
