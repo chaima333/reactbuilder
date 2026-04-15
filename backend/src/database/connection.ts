@@ -6,6 +6,7 @@ import { Site } from "../models/site";
 import { ActivityLog } from "../models/activityLog";
 import { Media } from "../models/media";
 import { Seo } from "../models/Seo";
+import { Plugin, SiteMember, SitePlugin } from "../models";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -17,7 +18,7 @@ if (!databaseUrl) {
 export const sequelize = new Sequelize(databaseUrl, {
   dialect: "postgres",
   logging: console.log,
-  models: [User, Token, Page, Site, ActivityLog, Media, Seo],
+  models: [User, Token, Page, Site, ActivityLog, Media, Seo,Plugin, SiteMember, SitePlugin],
   dialectOptions: {
     ssl: false  // ← Désactive SSL pour Railway
   },

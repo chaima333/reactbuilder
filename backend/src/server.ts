@@ -17,6 +17,7 @@ import seoRoutes from "./routes/seo.routes";
 import adminRoutes from "./routes/admin.routes";
 import { initializeDB } from "./database/connection";
 import aiRoutes from "./routes/ai.routes";
+import pluginRoutes from "./modules/plugins/plugin.routes";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "10000", 10);
@@ -43,6 +44,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/seo", seoRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/plugins",pluginRoutes);
 
 // Health check (Un seul suffit)
 app.get("/api/health", (req, res) => {

@@ -1,32 +1,43 @@
 import { Response } from 'express';
-import { Site, Page, ActivityLog } from '../models';
+import { Site, Page, ActivityLog, SiteMember } from '../models';
 import { AuthRequest } from '../shared/auth.util';
-
 // =========================
 // CREATE SITE
 // =========================
 
-      export const createSite = async (req: AuthRequest, res: Response) => {
+export const createSite = async (req: AuthRequest, res: Response) => {
   try {
     const { name, subdomain } = req.body;
     const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ success: false });
+    }
 
     const site = await Site.create({
       name,
       subdomain,
       title: name,
-      ownerId: userId,
       status: 'active'
     });
 
+    // 🔥 THIS IS THE CORE
+          await SiteMember.create({
+           userId: userId,
+           siteId: site.id,
+           role: "OWNER"
+           });
+
+    // background stuff
     try {
-       await Page.create({
-  title: "Home",
-  slug: `home-${site.id}-${Date.now()}`,
-  site_id: site.id,
-  user_id: userId,
-  status: 'published'
-} as any);
+      await Page.create({
+        title: "Home",
+        slug: `home-${site.id}-${Date.now()}`,
+        site_id: site.id,
+        user_id: userId,
+        status: 'published'
+      } as any);
+
       await ActivityLog.create({
         userId,
         siteId: site.id,
@@ -44,41 +55,39 @@ import { AuthRequest } from '../shared/auth.util';
     });
 
   } catch (error: any) {
-
-    // 🔥 هنا تحط الكود متاعك
-    console.error("🔥 FULL ERROR:", error);
-    console.error("🔥 SQL:", error?.parent?.sql);
-    console.error("🔥 DETAIL:", error?.parent?.detail);
-    console.error("🔥 MESSAGE:", error.message);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error(error);
+    return res.status(500).json({ success: false });
   }
 };
+
 // =========================
 // GET SITES
 // =========================
+
 export const getSites = async (req: AuthRequest, res: Response) => {
   try {
-    if (!req.user?.id) {
+    const userId = req.user?.id;
+
+    if (!userId) {
       return res.status(401).json({ success: false });
     }
 
-    const userId = req.user.id;
-
-    const sites = await Site.findAll({
-      where: { ownerId: userId, status: 'active' },
+    const memberships = await SiteMember.findAll({
+  where: { userId: userId },
+  include: [
+    {
+      model: Site,
       include: [
         {
           model: Page,
-          as: 'pages',
           required: false
         }
-      ],
-      order: [['createdAt', 'DESC']]
-    });
+      ]
+    }
+  ]
+});
+
+const sites = memberships.map(m => m.site);
 
     return res.json({
       success: true,
@@ -86,12 +95,8 @@ export const getSites = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error) {
-    console.error("GET SITES ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "error fetching sites"
-    });
+    console.error(error);
+    return res.status(500).json({ success: false });
   }
 };
 
@@ -99,92 +104,58 @@ export const getSites = async (req: AuthRequest, res: Response) => {
 // GET SITE BY ID
 // =========================
 export const getSiteById = async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user?.id;
 
-    const site = await Site.findOne({
-      where: { id, ownerId: userId },
-      include: [{ model: Page, as: 'pages', required: false }]
-    });
+const { siteId } = req.params;
+const site = await Site.findByPk(siteId, {
+  include: [{ model: Page, as: 'pages', required: false }]
+});
 
-    if (!site) {
-      return res.status(404).json({
-        success: false,
-        message: "not found"
-      });
-    }
+if (!site) {
+  return res.status(404).json({
+    success: false,
+    message: "not found"
+  });
+}
 
-    return res.json({ success: true, data: site });
-
-  } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      success: false,
-      message: "server error"
-    });
-  }
+return res.json({ success: true, data: site });
 };
 
 // =========================
 // UPDATE SITE
 // =========================
 export const updateSite = async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user?.id;
+const { siteId } = req.params;
 
-    const site = await Site.findOne({ where: { id, ownerId: userId } });
+const site = await Site.findByPk(siteId);
 
-    if (!site) {
-      return res.status(404).json({ success: false });
-    }
+if (!site) {
+  return res.status(404).json({ success: false });
+}
 
-    await site.update(req.body);
+await site.update(req.body);
 
-    return res.json({
-      success: true,
-      data: site
-    });
-
-  } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      success: false,
-      message: "update failed"
-    });
-  }
+return res.json({
+  success: true,
+  data: site
+});
 };
 
 // =========================
 // DELETE SITE
 // =========================
 export const deleteSite = async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user?.id;
+const { siteId } = req.params;
 
-    const site = await Site.findOne({ where: { id, ownerId: userId } });
+const site = await Site.findByPk(siteId);
 
-    if (!site) {
-      return res.status(404).json({ success: false });
-    }
+if (!site) {
+  return res.status(404).json({ success: false });
+}
 
-    await site.update({ status: 'deleted' });
+await site.update({ status: 'deleted' });
 
-    return res.json({
-      success: true,
-      message: "deleted"
-    });
-
-  } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      success: false,
-      message: "delete failed"
-    });
-  }
+return res.json({
+  success: true,
+  message: "deleted"
+});
 };

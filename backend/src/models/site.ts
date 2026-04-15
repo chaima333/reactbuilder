@@ -69,16 +69,6 @@ export class Site extends Model {
   })
   timezone!: string;
 
-  @ForeignKey(() => User)
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: false,
-    field: 'owner_id',
-  })
-  ownerId!: number;
-
-  @BelongsTo(() => User, { foreignKey: 'ownerId', as: 'owner' })
-  owner!: User;
 
   @Column({
     type: DataType.INTEGER,

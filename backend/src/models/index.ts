@@ -6,6 +6,9 @@ import { Site } from "./site";
 import { ActivityLog } from "./activityLog";
 import { Media } from "./media";
 import { Seo } from "./Seo";
+import { SiteMember } from "./SiteMember";
+import { SitePlugin } from "./SitePlugin";
+import Plugin from "./Plugin";
 
 const sequelize = new Sequelize({
   dialect: "postgres",
@@ -20,7 +23,7 @@ const sequelize = new Sequelize({
       rejectUnauthorized: false
     }
   },
-  models: [User, Token, Page, Site, ActivityLog, Media, Seo],
+  models: [User, Token, Page, Site, ActivityLog, Media, Seo, Plugin, SitePlugin, SiteMember],
   logging: false,
   pool: {
     max: 10,
@@ -30,4 +33,4 @@ const sequelize = new Sequelize({
   },
 });
 
-export { sequelize, User, Token, Page, Site, ActivityLog, Media, Seo };
+export { sequelize, User, Token, Page, Site, ActivityLog, Media, Seo, Plugin, SitePlugin, SiteMember };
