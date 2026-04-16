@@ -1,15 +1,14 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import { User, Token } from '../models'; // تأكد أن الموديلات تخرج من index واحد
+import { User, Token } from '../models';
 
 const secretkey = process.env.JWT_SECRET || 'your_secret_key';
 
 // --- Interfaces ---
+// التوكن توّة فيه كان الـ ID والنوع، ما يهمناش الـ Role فيه
 export interface JwtPayload {
   userId: number;
   type?: 'access' | 'refresh';
-  role?: string;
-  email?: string;
 }
 
 export type AuthRequest = Request & {
@@ -18,13 +17,17 @@ export type AuthRequest = Request & {
   context?: any;
 }
 
-// 1. توليد الـ Token
+// 1. توليد الـ Token (نحينا الـ Role والـ Email من الـ Payload)
 export const generateToken = (payload: JwtPayload): string => {
   const expiresIn = payload.type === "refresh" ? "7d" : "1h";
-  return jwt.sign(payload, secretkey, { expiresIn });
+  return jwt.sign(
+    { userId: payload.userId, type: payload.type }, 
+    secretkey, 
+    { expiresIn }
+  );
 };
 
-// 2. التحقق من الـ Token (verify)
+// 2. التحقق من الـ Token
 export const verifyToken = (token: string): JwtPayload | null => {
   try {
     return jwt.verify(token, secretkey) as JwtPayload;
@@ -33,7 +36,7 @@ export const verifyToken = (token: string): JwtPayload | null => {
   }
 };
 
-// 3. فك تشفير الـ Token (decode)
+// 3. فك تشفير الـ Token
 export const decodeToken = (token: string): JwtPayload | null => {
   try {
     return jwt.decode(token) as JwtPayload;
@@ -49,7 +52,6 @@ export const addToken = async (token: string, type: 'access' | 'refresh', userId
     type,
     userId,
     isRevoked: false,
-    // حساب تاريخ انتهاء الصلاحية للـ DB
     expiresAt: new Date(Date.now() + (type === 'refresh' ? 7 : 1) * 24 * 60 * 60 * 1000)
   } as any);
 };
@@ -58,25 +60,7 @@ export const getToken = async (token: string) => {
   return await Token.findOne({ where: { token } });
 };
 
-export const deleteUserTokens = async (userId: number) => {
-  return await Token.destroy({ where: { userId } });
-};
-
-export const revokeUserTokens = async (userId: number) => {
-  return await Token.update(
-    { isRevoked: true },
-    { where: { userId, type: 'refresh', isRevoked: false } }
-  );
-};
-
-export const revokeToken = async (token: string) => {
-  return await Token.update(
-    { isRevoked: true },
-    { where: { token } }
-  );
-};
-
-// 5. Middleware الحماية (Authentication Middleware)
+// 5. Middleware الحماية (The Central Security Guard)
 export const authenticateJWT = async (
   req: Request,
   res: Response,
@@ -98,24 +82,34 @@ export const authenticateJWT = async (
       return;
     }
 
+    // 🛡️ المرجعية هي الـ Database دائماً (State of Truth)
     const user = await User.findByPk(verified.userId);
+    
     if (!user) {
       res.status(401).json({ success: false, message: 'User not found' });
       return;
     }
-    console.log(`DEBUG: User ${user.email} | isApproved status:`, user.isApproved);
+
+    // التثبت من الـ Approval (استعمال getDataValue كحماية من مشاكل التسمية)
     const isUserApproved = user.isApproved || user.getDataValue('is_approved');
-    console.log(`DEBUG: User ${user.email} | isUserApproved:`, isUserApproved);
     
-    // التثبت من الحساب (Approved)
-    if (!user.isApproved && user.role !== 'Admin') {
-      res.status(403).json({ success: false, message: 'Account pending approval.' });
+    // Debug بسيط ليك في الـ Logs
+    console.log(`[AUTH] User: ${user.email} | Approved: ${isUserApproved} | Global Role: ${user.role}`);
+
+    // الـ Admin العالمي فقط يتعدى حتى لو موش Approved (لحالات الصيانة)
+    if (!isUserApproved && user.role !== 'Admin') {
+      res.status(403).json({ 
+        success: false, 
+        message: 'Account pending admin approval.' 
+      });
       return;
     }
     
+    // نمرر الـ User الكامل للـ Request باش الـ Controllers يستعملوه
     (req as AuthRequest).user = user;
     next();
   } catch (error) {
+    console.error("AUTH_MIDDLEWARE_ERROR:", error);
     res.status(401).json({ success: false, message: 'Authentication failed' });
   }
 };
