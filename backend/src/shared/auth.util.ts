@@ -103,10 +103,13 @@ export const authenticateJWT = async (
       res.status(401).json({ success: false, message: 'User not found' });
       return;
     }
+    console.log(`DEBUG: User ${user.email} | isApproved status:`, user.isApproved);
+    const isUserApproved = user.isApproved || user.getDataValue('is_approved');
+    console.log(`DEBUG: User ${user.email} | isUserApproved:`, isUserApproved);
     
     // التثبت من الحساب (Approved)
-    if (!user.isApproved && user.role !== 'Admin') {
-      res.status(403).json({ success: false, message: 'Account pending approval.' });
+    if (!isUserApproved && user.role !== 'Admin') {
+      res.status(403).json({ success: false, message: 'Your account is pending admin approval.' });
       return;
     }
     
