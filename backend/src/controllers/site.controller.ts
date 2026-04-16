@@ -37,6 +37,7 @@ export const createSite = async (req: AuthRequest, res: Response) => {
 
   } catch (error: any) {
     await t.rollback(); // لو صارت أي غلطة، نلغيو كل شيء
+    console.log("❌ TRANSACTION ERROR DETAILS:", error);
     
     if (error.name === 'SequelizeUniqueConstraintError') {
       return res.status(400).json({ success: false, message: "Subdomain already taken" });
