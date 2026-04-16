@@ -1,5 +1,5 @@
 import { Table, Column, Model, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
-import { Site } from './site'; // ثبت في اسم المودل القديم متاعك
+import { Site } from '../models/site'; // ثبت في اسم المودل القديم متاعك
 import { Plugin } from './Plugin';
 
 @Table({ tableName: 'site_plugins', timestamps: true })

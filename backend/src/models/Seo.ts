@@ -9,7 +9,7 @@ import {
   UpdatedAt,
 } from "sequelize-typescript";
 import { Page } from "./page";
-import { Site } from "./site";
+import { Site } from "../modules/sites/site";
 
 @Table({
   tableName: "seo",

@@ -9,9 +9,8 @@ import {
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
-import { User } from "../modules/users/User";
-import { Page } from "./page";
-import { ActivityLog } from "./activityLog";
+import { Page } from "../models/page";
+import { ActivityLog } from "../models/activityLog";
 
 @Table({
   tableName: "sites",

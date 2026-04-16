@@ -3,46 +3,93 @@ import { Site, Page, ActivityLog, SiteMember } from '../../models';
 import { AuthRequest } from '../../shared/auth.util';
 import * as siteService from '../sites/site.service';
 import { sequelize } from '../../core/database/connection';
+
+
 // =========================
 // CREATE SITE
 // =========================
 
 
 export const createSite = async (req: AuthRequest, res: Response) => {
-  const t = await sequelize.transaction(); // بداية الـ Transaction
+  const t = await sequelize.transaction();
 
   try {
     const { name, subdomain, title } = req.body;
     const userId = req.user.id;
 
-    // 1. إنشاء الموقع
-    const site = await Site.create({
-      name,
-      subdomain,
-      title,
-      status: 'active'
-    }, { transaction: t });
+    if (!name || !subdomain) {
+      return res.status(400).json({
+        success: false,
+        message: "name and subdomain are required"
+      });
+    }
 
-    // 2. تعيين المستخدم كـ OWNER فوراً
-    await SiteMember.create({
-      userId: userId,
-      siteId: site.id,
-      role: 'OWNER'
-    }, { transaction: t });
+    // normalize subdomain (important)
+    const cleanSubdomain = subdomain
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-");
 
-    // لو وصلنا هنا، كل شيء مريغل
+    // 1. check existence (fast fail before DB error)
+    const existing = await Site.findOne({
+      where: { subdomain: cleanSubdomain },
+      transaction: t,
+      lock: t.LOCK.UPDATE
+    });
+
+    if (existing) {
+      await t.rollback();
+      return res.status(409).json({
+        success: false,
+        message: "Subdomain already taken"
+      });
+    }
+
+    // 2. create site
+    const site = await Site.create(
+      {
+        name,
+        subdomain: cleanSubdomain,
+        title,
+        status: "active"
+      },
+      { transaction: t }
+    );
+
+    // 3. create membership
+    await SiteMember.create(
+      {
+        userId,
+        siteId: site.id,
+        role: "OWNER"
+      },
+      { transaction: t }
+    );
+
     await t.commit();
 
-    return res.status(201).json({ success: true, data: site });
+    return res.status(201).json({
+      success: true,
+      data: site
+    });
 
   } catch (error: any) {
-    await t.rollback(); // لو صارت أي غلطة، نلغيو كل شيء
-    console.log("❌ TRANSACTION ERROR DETAILS:", error);
-    
-    if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.status(400).json({ success: false, message: "Subdomain already taken" });
+    await t.rollback();
+
+    // Sequelize unique fallback (safety net)
+    if (error?.name === "SequelizeUniqueConstraintError") {
+      return res.status(409).json({
+        success: false,
+        message: "Subdomain already exists"
+      });
     }
-    return res.status(500).json({ success: false, message: "Server error" });
+
+    console.error("CREATE_SITE_ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
   }
 };
 

@@ -10,7 +10,7 @@ import {
   HasOne,
 } from "sequelize-typescript";
 import { User } from "../modules/users/User";
-import { Site } from "./site";
+import { Site } from "../modules/sites/site";
 import { Seo } from "./Seo";
 
 // Type pour les blocs de l'éditeur
