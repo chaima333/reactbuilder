@@ -6,7 +6,7 @@ import {
   createPage,
   updatePage,
   deletePage,
-} from '../controllers/page.controller';
+} from '../modules/pages/page.controller';
 
 const router = Router();
 

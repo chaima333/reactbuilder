@@ -8,16 +8,16 @@ import path from "path";
 // Import des routes
 import authRoutes from "./routes/auth.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
-import siteRoutes from "./routes/site.routes";
+import siteRoutes from "./modules/sites/site.routes";
 import pageRoutes from "./routes/page.routes";
 import publicRoutes from "./routes/public.routes";
 import mediaRoutes from "./routes/media.routes";
 import userRoutes from "./routes/user.routes";
 import seoRoutes from "./routes/seo.routes";
 import adminRoutes from "./routes/admin.routes";
-import { initializeDB } from "./database/connection";
 import aiRoutes from "./routes/ai.routes";
 import pluginRoutes from "./modules/plugins/plugin.routes";
+import { initializeDB } from "./core/database/init";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "10000", 10);

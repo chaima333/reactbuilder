@@ -1,6 +1,6 @@
 import { Response } from "express";
-import { Page, ActivityLog, Site } from "../models";
-import { AuthRequest } from "../shared/auth.util";
+import { Page, ActivityLog, Site } from "../../models";
+import { AuthRequest } from "../../shared/auth.util";
 import { Op } from "sequelize";
 
 // Types

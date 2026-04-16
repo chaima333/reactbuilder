@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { z } from "zod";
-import { addUser, getUserByEmail } from "../services/user.service";
+import { addUser, getUserByEmail } from "../modules/users/user.service";
 import bcrypt from "bcrypt";
 import { AuthRequest, generateToken, verifyToken } from "../shared/auth.util";
 import { addToken, deleteToken, getToken, revokeUserTokens } from "../services/token.service";

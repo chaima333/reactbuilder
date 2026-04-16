@@ -1,6 +1,6 @@
 import { Response } from 'express';
-import { PluginService } from '../services/plugin.service';
-import { AuthRequest } from '../../../shared/auth.util';
+import { PluginService } from './plugin.service';
+import { AuthRequest } from '../../shared/auth.util';
 export const getSitePlugins = async (req: AuthRequest, res: Response) => {
   try {
     const { siteId } = req.params;

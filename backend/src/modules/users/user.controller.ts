@@ -1,6 +1,6 @@
 import { Response } from 'express';
-import { User, ActivityLog } from '../models';
-import { AuthRequest } from '../shared/auth.util';
+import { User, ActivityLog } from '../../models';
+import { AuthRequest } from '../../shared/auth.util';
 import bcrypt from 'bcrypt';
 import { Sequelize } from 'sequelize-typescript/dist/sequelize/sequelize/sequelize';
 

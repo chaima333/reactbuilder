@@ -9,7 +9,7 @@ import {
   UpdatedAt,
   HasOne,
 } from "sequelize-typescript";
-import { User } from "./User";
+import { User } from "../modules/users/User";
 import { Site } from "./site";
 import { Seo } from "./Seo";
 

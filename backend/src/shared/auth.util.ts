@@ -17,12 +17,15 @@ export const generateToken = (payload: JwtPayload): string => {
 };
 
 // Interface qui étend correctement Request
+export interface SiteContext {
+  role: "OWNER" | "ADMIN" | "EDITOR" | "VIEWER";
+  siteId: number;
+  userId: number;
+}
+
 export interface AuthRequest extends Request {
   user: User;
-  params: any
-  query: any
-  body: any
-  headers: any
+  siteContext?: SiteContext;
 }
 
 export const authenticateJWT = async (

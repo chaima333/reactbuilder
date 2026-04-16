@@ -1,14 +1,14 @@
 import { Sequelize } from "sequelize-typescript";
-import { User } from "./User";
 import { Token } from "./token";
 import { Page } from "./page";
-import { Site } from "./site";
 import { ActivityLog } from "./activityLog";
 import { Media } from "./media";
 import { Seo } from "./Seo";
-import { SiteMember } from "./SiteMember";
 import { SitePlugin } from "./SitePlugin";
 import Plugin from "./Plugin";
+import { SiteMember } from "./SiteMember";
+import { User } from "../modules/users/User";
+import { Site } from "./site";
 
 const sequelize = new Sequelize({
   dialect: "postgres",

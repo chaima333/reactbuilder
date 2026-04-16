@@ -1,12 +1,12 @@
 import { Response } from 'express';
-import { Site, Page, ActivityLog, SiteMember } from '../models';
-import { AuthRequest } from '../shared/auth.util';
+import { Site, Page, ActivityLog, SiteMember } from '../../models';
+import { AuthRequest } from '../../shared/auth.util';
+import * as siteService from '../sites/site.service';
+import { sequelize } from '../../core/database/connection';
 // =========================
 // CREATE SITE
 // =========================
 
-// src/controllers/site.controller.ts
-import { sequelize } from '../database/connection'; // تأكد من الـ import الصحيح للـ instance
 
 export const createSite = async (req: AuthRequest, res: Response) => {
   const t = await sequelize.transaction(); // بداية الـ Transaction
@@ -88,60 +88,36 @@ const sites = memberships.map(m => m.site);
 
 // =========================
 // GET SITE BY ID
-// =========================
+// =========================//
 export const getSiteById = async (req: AuthRequest, res: Response) => {
-
-const { siteId } = req.params;
-const site = await Site.findByPk(siteId, {
-  include: [{ model: Page, as: 'pages', required: false }]
-});
-
-if (!site) {
-  return res.status(404).json({
-    success: false,
-    message: "not found"
+  const siteId = req.siteContext!.siteId; 
+  const site = await Site.findByPk(siteId, {
+    include: [{ model: Page, as: 'pages', required: false }]
   });
-}
-
-return res.json({ success: true, data: site });
+  if (!site) return res.status(404).json({ message: "Site not found" });
+  return res.json({ success: true, data: site });
 };
 
-// =========================
-// UPDATE SITE
-// =========================
 export const updateSite = async (req: AuthRequest, res: Response) => {
-const { siteId } = req.params;
-
-const site = await Site.findByPk(siteId);
-
-if (!site) {
-  return res.status(404).json({ success: false });
-}
-
-await site.update(req.body);
-
-return res.json({
-  success: true,
-  data: site
-});
+  try {
+    const siteId = req.siteContext!.siteId;
+    const updatedSite = await siteService.updateSiteService(siteId, req.body);
+    return res.json({ success: true, data: updatedSite });
+  } catch (error: any) {
+    if (error.message === "SITE_NOT_FOUND") return res.status(404).json({ message: "Site not found" });
+    return res.status(500).json({ message: "Update failed" });
+  }
 };
 
-// =========================
-// DELETE SITE
-// =========================
 export const deleteSite = async (req: AuthRequest, res: Response) => {
-const { siteId } = req.params;
+  const siteId = req.siteContext!.siteId; // 👈 استعملنا الـ Context موش الـ params
 
-const site = await Site.findByPk(siteId);
+  const [affectedCount] = await Site.update(
+    { status: 'deleted' }, 
+    { where: { id: siteId } }
+  );
 
-if (!site) {
-  return res.status(404).json({ success: false });
-}
+  if (affectedCount === 0) return res.status(404).json({ success: false });
 
-await site.update({ status: 'deleted' });
-
-return res.json({
-  success: true,
-  message: "deleted"
-});
+  return res.json({ success: true, message: "deleted" });
 };

@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { AuthRequest } from '../shared/auth.util'; // Import du type
+import { AuthRequest } from '../../../shared/auth.util'; // Import du type
 
 /**
  * Middleware pour vérifier les rôles autorisés

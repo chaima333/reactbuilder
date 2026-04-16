@@ -1,14 +1,14 @@
 import { Request, Response } from 'express';
 import { User, Site, Page, ActivityLog } from '../models';
 import { AuthRequest } from '../shared/auth.util';
-import { sequelize } from '../database/connection';
+import { sequelize } from '../core/database/connection'; // تأكد من الـ import الصحيح للـ instance
 
 
 // Au lieu de (req: Request), utilise (req: AuthRequest)
 export const myController = async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;   // ✅ Maintenant reconnu
-  const { name } = req.body;   // ✅ Maintenant reconnu
-  const { page } = req.query;  // ✅ Maintenant reconnu
+  const { id } = req.params;  
+  const { name } = req.body;   
+  const { page } = req.query;  
   const authHeader = req.headers.authorization;
 }
 // Fonction pour calculer le stockage utilisé

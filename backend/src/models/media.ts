@@ -8,7 +8,7 @@ import {
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
-import { User } from "./User";
+import { User } from "../modules/users/User";
 import { Site } from "./site";
 
 @Table({
