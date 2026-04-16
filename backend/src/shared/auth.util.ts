@@ -113,3 +113,17 @@ export const authenticateJWT = async (
     res.status(401).json({ success: false, message: 'Authentication failed' });
   }
 };
+export const revokeUserTokens = async (userId: number) => {
+  return await Token.update(
+    { isRevoked: true },
+    { where: { userId, type: 'refresh', isRevoked: false } }
+  );
+};
+
+// وزيد هذي كاحتياط كان تستحقها
+export const revokeToken = async (token: string) => {
+  return await Token.update(
+    { isRevoked: true },
+    { where: { token } }
+  );
+};

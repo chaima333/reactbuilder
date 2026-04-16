@@ -3,10 +3,10 @@ import crypto from "crypto";
 import { User } from "../../models";
 import { 
   generateToken, 
-  revokeUserTokens, 
   addToken, 
   verifyToken, 
-  getToken 
+  getToken,
+  revokeUserTokens,
 } from "../../shared/auth.util";
 import { Resend } from "resend";
 
@@ -22,10 +22,12 @@ export const loginUser = async (email: string, pass: string) => {
 
   if (!user.isApproved) throw new Error("Waiting admin approval");
 
+  // تنظيف التوكنات القديمة
   await revokeUserTokens(user.id);
 
-  const accessToken = generateToken({ userId: user.id, type: "access", role: user.role });
-  const refreshToken = generateToken({ userId: user.id, type: "refresh", role: user.role });
+  // 🚀 التعديل: نحينا الـ role من الـ generateToken
+  const accessToken = generateToken({ userId: user.id, type: "access" });
+  const refreshToken = generateToken({ userId: user.id, type: "refresh" });
 
   await addToken(refreshToken, "refresh", user.id);
 
@@ -51,7 +53,7 @@ export const registerUser = async (data: any) => {
   return newUser;
 };
 
-// 3. REFRESH TOKEN (اللي كان ناقص)
+// 3. REFRESH TOKEN
 export const refreshUserToken = async (refreshToken: string) => {
   const dbToken = await getToken(refreshToken);
   
@@ -65,15 +67,16 @@ export const refreshUserToken = async (refreshToken: string) => {
 
   await dbToken.update({ isRevoked: true });
 
-  const newAccessToken = generateToken({ userId: user.id, type: "access", role: user.role });
-  const newRefreshToken = generateToken({ userId: user.id, type: "refresh", role: user.role });
+  // 🚀 التعديل: نحينا الـ role
+  const newAccessToken = generateToken({ userId: user.id, type: "access" });
+  const newRefreshToken = generateToken({ userId: user.id, type: "refresh" });
 
   await addToken(newRefreshToken, "refresh", user.id);
 
   return { accessToken: newAccessToken, refreshToken: newRefreshToken };
 };
 
-// 4. LOGOUT (اللي كان ناقص)
+// 4. LOGOUT
 export const logoutUser = async (refreshToken: string) => {
   const dbToken = await getToken(refreshToken);
   if (dbToken) {
@@ -81,13 +84,13 @@ export const logoutUser = async (refreshToken: string) => {
   }
 };
 
-// 5. GOOGLE AUTH (اللي كان ناقص)
+// 5. GOOGLE AUTH
 export const handleGoogleAuth = async (data: any) => {
   const { email, name, googleId, avatar } = data;
   let user = await User.findOne({ where: { email } });
 
   if (!user) {
-    await User.create({
+    user = await User.create({
       email,
       name: name || email.split('@')[0],
       googleId,
@@ -102,14 +105,17 @@ export const handleGoogleAuth = async (data: any) => {
   if (!user.isApproved) return { state: "PENDING", message: "Waiting admin approval" };
 
   await revokeUserTokens(user.id);
-  const accessToken = generateToken({ userId: user.id, type: "access", role: user.role });
-  const refreshToken = generateToken({ userId: user.id, type: "refresh", role: user.role });
+  
+  // 🚀 التعديل: نحينا الـ role
+  const accessToken = generateToken({ userId: user.id, type: "access" });
+  const refreshToken = generateToken({ userId: user.id, type: "refresh" });
+  
   await addToken(refreshToken, "refresh", user.id);
 
   return { state: "APPROVED", accessToken, refreshToken, user };
 };
 
-// 6. FORGOT PASSWORD (اللي كان ناقص)
+// 6. FORGOT PASSWORD
 export const processForgotPassword = async (email: string) => {
   const user = await User.findOne({ where: { email } });
   if (!user) return { message: "If email exists, reset link sent" };
@@ -133,7 +139,7 @@ export const processForgotPassword = async (email: string) => {
   return { message: "Reset link sent" };
 };
 
-// 7. RESET PASSWORD (اللي كان ناقص)
+// 7. RESET PASSWORD
 export const processResetPassword = async (token: string, pass: string) => {
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
   const user = await User.findOne({ where: { resetPasswordToken: hashedToken } });
