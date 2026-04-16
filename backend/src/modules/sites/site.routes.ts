@@ -1,52 +1,25 @@
 import { Router } from "express";
 import { authenticateJWT } from "../../shared/auth.util";
-// استيراد الحراس (Guards)
-import { requireGlobalRole } from "../../core/middleware/globalGuard"; 
-import { requireSiteAccess, requireTenantRole } from "../../core/middleware/siteGuard";
-
-import {
-  createSite,
-  getSites,
-  getSiteById,
-  updateSite,
-  deleteSite
-} from "./site.controller";
+import { requireGlobalRole } from "../../core/middleware/globalGuard";
+import { requireSiteAccess } from "../../core/middleware/siteGuard";
+import { requirePermission } from "../../core/constants/requirePermission";
+import { createSite, updateSite, deleteSite, getSiteById } from "./site.controller";
+import { PERMISSIONS } from "../../core/constants/permissions";
 
 const router = Router();
 
-
 router.use(authenticateJWT);
 
+// 1. Create Site (Global Guard)
+router.post("/", requireGlobalRole(["Admin", "Creator"]), createSite);
 
+// 2. Get Site (Permission: SITE_READ)
+router.get("/:siteId", requireSiteAccess, requirePermission(PERMISSIONS.SITE_READ), getSiteById);
 
-router.post(
-  '/', 
-  requireGlobalRole(['Admin', 'Creator']), 
-  createSite
-);
+// 3. Update Site (Permission: SITE_UPDATE)
+router.put("/:siteId", requireSiteAccess, requirePermission(PERMISSIONS.SITE_UPDATE), updateSite);
 
-router.get("/", getSites);
-
-
-
-router.get(
-  "/:siteId", 
-  requireSiteAccess, 
-  getSiteById
-);
-
-router.put(
-  "/:siteId", 
-  requireSiteAccess, 
-  requireTenantRole(["OWNER", "ADMIN"]), 
-  updateSite
-);
-
-router.delete(
-  "/:siteId", 
-  requireSiteAccess, 
-  requireTenantRole(["OWNER"]), 
-  deleteSite
-);
+// 4. Delete Site (Permission: SITE_DELETE)
+router.delete("/:siteId", requireSiteAccess, requirePermission(PERMISSIONS.SITE_DELETE), deleteSite);
 
 export default router;
