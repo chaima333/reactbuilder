@@ -99,28 +99,26 @@ export const createSite = async (req: AuthRequest, res: Response) => {
 
 export const getSites = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.id;
-
-    if (!userId) {
-      return res.status(401).json({ success: false });
-    }
+    const userId = req.user.id;
 
     const memberships = await SiteMember.findAll({
-  where: { userId: userId },
-  include: [
-    {
-      model: Site,
+      where: { userId },
       include: [
         {
-          model: Page,
-          required: false
+          model: Site
         }
       ]
-    }
-  ]
-});
+    });
 
-const sites = memberships.map(m => m.site);
+    const sites = memberships.map((m: any) => {
+      return {
+        id: m.site.id,
+        name: m.site.name,
+        subdomain: m.site.subdomain,
+        status: m.site.status,
+        role: m.role
+      };
+    });
 
     return res.json({
       success: true,
@@ -129,7 +127,10 @@ const sites = memberships.map(m => m.site);
 
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ success: false });
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
   }
 };
 
@@ -137,18 +138,66 @@ const sites = memberships.map(m => m.site);
 // GET SITE BY ID
 // =========================//
 export const getSiteById = async (req: AuthRequest, res: Response) => {
-  const siteId = req.siteContext!.siteId; 
-  const site = await Site.findByPk(siteId, {
-    include: [{ model: Page, as: 'pages', required: false }]
-  });
-  if (!site) return res.status(404).json({ message: "Site not found" });
-  return res.json({ success: true, data: site });
-};
+  try {
+    const siteId = Number(req.params.siteId);
+    const userId = req.user.id;
 
+    const site = await Site.findByPk(siteId, {
+      include: [{ model: Page, as: "pages", required: false }]
+    });
+
+    if (!site) {
+      return res.status(404).json({
+        success: false,
+        message: "Site not found"
+      });
+    }
+
+    const membership = await SiteMember.findOne({
+      where: {
+        userId,
+        siteId
+      }
+    });
+
+    if (!membership) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied"
+      });
+    }
+
+    const role = membership.role;
+
+    // permissions mapping (simple but scalable)
+    const permissionsMap: any = {
+      OWNER: ["read", "edit", "delete", "invite"],
+      ADMIN: ["read", "edit", "invite"],
+      EDITOR: ["read", "edit"],
+      VIEWER: ["read"]
+    };
+
+    return res.json({
+      success: true,
+      data: {
+        site,
+        role,
+        permissions: permissionsMap[role] || []
+      }
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
 export const updateSite = async (req: AuthRequest, res: Response) => {
   try {
-    const siteId = req.siteContext!.siteId;
-    const updatedSite = await siteService.updateSiteService(siteId, req.body);
+const siteId = req.context.membership?.siteId || req.context.site?.id;    const updatedSite = await siteService.updateSiteService(siteId, req.body);
     return res.json({ success: true, data: updatedSite });
   } catch (error: any) {
     if (error.message === "SITE_NOT_FOUND") return res.status(404).json({ message: "Site not found" });
@@ -157,8 +206,7 @@ export const updateSite = async (req: AuthRequest, res: Response) => {
 };
 
 export const deleteSite = async (req: AuthRequest, res: Response) => {
-  const siteId = req.siteContext!.siteId; // 👈 استعملنا الـ Context موش الـ params
-
+const siteId = req.context.membership?.siteId || req.context.site?.id;
   const [affectedCount] = await Site.update(
     { status: 'deleted' }, 
     { where: { id: siteId } }

@@ -1,18 +1,16 @@
-import { SiteRole } from "../modules/membership/membership.middleware";
+// src/core/types/express.d.ts
+import { Site } from "../../models/site";
+
+export interface RequestContext {
+  site?: any;
+  user?: any;
+  membership?: any;
+}
 
 declare global {
   namespace Express {
     interface Request {
-      user?: {
-        id: number;
-        role: string;
-        email: string;
-      };
-      siteContext?: {
-        role: SiteRole;
-        siteId: number;
-        userId: number;
-      };
+      context: RequestContext;
     }
   }
 }

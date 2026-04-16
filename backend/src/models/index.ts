@@ -7,7 +7,7 @@ import { Seo } from "./Seo";
 import { SitePlugin } from "./SitePlugin";
 import Plugin from "./Plugin";
 import { SiteMember } from "./SiteMember";
-import { User } from "../modules/users/User";
+import { User } from "./User";
 import { Site } from "./site";
 
 const sequelize = new Sequelize({

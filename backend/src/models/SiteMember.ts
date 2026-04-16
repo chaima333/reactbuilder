@@ -1,6 +1,6 @@
 // src/models/SiteMember.ts
 import { Table, Column, Model, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
-import { User } from '../modules/users/User';
+import { User } from './User';
 import { Site } from '../models/site';
 
 @Table({ 

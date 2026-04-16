@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { authenticateJWT } from '../shared/auth.util';
-import { authorizeRoles } from '../core/middleware/middlewares/role.middleware';
+import { authenticateJWT } from '../../shared/auth.util';
+import { authorizeRoles } from '../../core/middleware/role.middleware';
 import {
   getUsers,
   getUserById,
@@ -8,7 +8,7 @@ import {
   updateUser,
   deleteUser,
   changeUserRole
-} from '../modules/users/user.controller';
+} from '../users/user.controller';
 
 const router = Router();
 

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { Site, Page } from '../models';
+import { Site, Page } from '../../models';
 
 const router = Router();
 

@@ -5,8 +5,8 @@ export const initializeDB = async () => {
     await sequelize.authenticate();
     console.log("✅ DB connected");
 
-    await sequelize.sync({ alter: false }); // production safe
-    console.log("✅ Models synced");
+    // ❌ NO sync HERE
+    console.log("📦 Using migrations only");
   } catch (error) {
     console.error("❌ DB error:", error);
     process.exit(1);

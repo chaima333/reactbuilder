@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { authenticateJWT } from "../shared/auth.util";
-import { authorizeRoles } from "../core/middleware/middlewares/role.middleware";
+import { authenticateJWT } from "../../shared/auth.util";
+import { authorizeRoles } from "../../core/middleware/role.middleware";
 import {
   getDashboardStats,
   getSiteStats,
   getActivityLog
-} from "../controllers/dashboard.controller";
+} from "./dashboard.controller";
 
 const router = Router();
 
@@ -19,7 +19,6 @@ router.get("/activity", getActivityLog);
 
 // Routes admin uniquement (si nécessaire)
 router.get("/admin/stats", 
-  authenticateJWT, 
   authorizeRoles("Admin"), 
   getDashboardStats
 );

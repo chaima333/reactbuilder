@@ -6,18 +6,20 @@ import cors from "cors";
 import path from "path";
 
 // Import des routes
-import authRoutes from "./routes/auth.routes";
-import dashboardRoutes from "./routes/dashboard.routes";
+import authRoutes from "./modules/auth/auth.routes";
+import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import siteRoutes from "./modules/sites/site.routes";
-import pageRoutes from "./routes/page.routes";
-import publicRoutes from "./routes/public.routes";
-import mediaRoutes from "./routes/media.routes";
-import userRoutes from "./routes/user.routes";
-import seoRoutes from "./routes/seo.routes";
-import adminRoutes from "./routes/admin.routes";
-import aiRoutes from "./routes/ai.routes";
+import pageRoutes from "./modules/pages/page.routes";
+import publicRoutes from "./modules/public/public.routes";
+import mediaRoutes from "./modules/media/media.routes";
+import userRoutes from "./modules/users/user.routes";
+import seoRoutes from "./modules/seo/seo.routes";
+import adminRoutes from "./modules/admin/admin.routes";
+import aiRoutes from "./modules/ai/ai.routes";
 import pluginRoutes from "./modules/plugins/plugin.routes";
 import { initializeDB } from "./core/database/init";
+import { tenantResolver } from "./core/middleware/tenant.middleware";
+import { initContext } from "./core/middleware/context.middleware";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "10000", 10);
@@ -31,7 +33,11 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 // --- 2. ROUTES ---
 
 // Authentification
+app.use(initContext);
+app.use(tenantResolver);
+
 app.use("/api/auth", authRoutes);
+
 
 // Ressources
 app.use("/api/public", publicRoutes);

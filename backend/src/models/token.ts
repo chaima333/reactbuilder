@@ -9,7 +9,7 @@ import {
   CreatedAt,
   UpdatedAt
 } from 'sequelize-typescript';
-import { User } from '../modules/users/User';
+import { User } from './User';
 
 @Table({
   tableName: 'tokens',

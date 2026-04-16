@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import e, { Request, Response, NextFunction } from 'express';
 import { User } from '../../models';
-import router from '../../routes/auth.routes';
+import router from '../auth/auth.routes'; // تأكد من المسار الصحيح للـ router
 
 const secretkey = process.env.JWT_SECRET!;
 

@@ -8,8 +8,8 @@ import {
   CreatedAt,
   UpdatedAt,
 } from "sequelize-typescript";
-import { User } from "../modules/users/User";
-import { Site } from "../modules/sites/site";
+import { User } from "./User";
+import { Site } from "../models/site";
 
 @Table({
   tableName: "media",

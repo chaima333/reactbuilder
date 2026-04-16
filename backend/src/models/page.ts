@@ -9,8 +9,8 @@ import {
   UpdatedAt,
   HasOne,
 } from "sequelize-typescript";
-import { User } from "../modules/users/User";
-import { Site } from "../modules/sites/site";
+import { User } from "./User";
+import { Site } from "../models/site";
 import { Seo } from "./Seo";
 
 // Type pour les blocs de l'éditeur

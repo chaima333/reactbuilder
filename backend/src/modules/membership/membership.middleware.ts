@@ -29,11 +29,11 @@ export const requireSiteRole = (allowedRoles: SiteRole[]) => {
 
       if (!membership) {
         if (user.role === "Admin") {
-          req.siteContext = {
-            role: "OWNER",
-            siteId: siteId,
-            userId: user.id,
-          };
+            req.context.membership = {
+    role: membership.role,
+    siteId: membership.siteId,
+    userId: membership.userId
+};
           return next();
         }
 
@@ -47,7 +47,7 @@ export const requireSiteRole = (allowedRoles: SiteRole[]) => {
       }
       
 
-req.siteContext = {
+req.context.membership = {
   role: currentRole,
   siteId: Number(membership.siteId || (membership as any).site_id),
   userId: Number(membership.userId || (membership as any).user_id)

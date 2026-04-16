@@ -1,7 +1,8 @@
+
 import { Router } from 'express';
-import { authenticateJWT } from '../shared/auth.util';
-import { authorizeRoles } from '../core/middleware/middlewares/role.middleware';
-import { getPendingUsers, approveUser, rejectUser } from '../controllers/admin.controller';
+import { authenticateJWT } from '../../shared/auth.util';
+import { authorizeRoles } from '../../core/middleware/role.middleware';
+import { getPendingUsers, approveUser, rejectUser } from './admin.controller';
 
 const router = Router();
 

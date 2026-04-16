@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { authenticateJWT } from '../shared/auth.util';
+import { authenticateJWT } from '../../shared/auth.util';
 import {
   getPageSeo,
   updatePageSeo,
   generateSitemap,
   getRobotsTxt,
-} from '../controllers/seo.controller';
+} from './seo.controller';
 
 const router = Router();
 
