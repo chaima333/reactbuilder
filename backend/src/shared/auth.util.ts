@@ -108,8 +108,8 @@ export const authenticateJWT = async (
     console.log(`DEBUG: User ${user.email} | isUserApproved:`, isUserApproved);
     
     // التثبت من الحساب (Approved)
-    if (!isUserApproved && user.role !== 'Admin') {
-      res.status(403).json({ success: false, message: 'Your account is pending admin approval.' });
+    if (!user.isApproved && user.role !== 'Admin') {
+      res.status(403).json({ success: false, message: 'Account pending approval.' });
       return;
     }
     
