@@ -3,95 +3,52 @@ import { Site, Page, ActivityLog, SiteMember } from '../../models';
 import { AuthRequest } from '../../shared/auth.util';
 import * as siteService from '../sites/site.service';
 import { sequelize } from '../../core/database/connection';
+import { SiteService } from '../sites/site.service';
 
 
 // =========================
 // CREATE SITE
 // =========================
-
-
 export const createSite = async (req: AuthRequest, res: Response) => {
-  const t = await sequelize.transaction();
-
   try {
     const { name, subdomain, title } = req.body;
     const userId = req.user.id;
 
     if (!name || !subdomain) {
-      return res.status(400).json({
-        success: false,
-        message: "name and subdomain are required"
-      });
+      return res.status(400).json({ success: false, message: "Name and subdomain required" });
     }
 
-    // normalize subdomain (important)
-    const cleanSubdomain = subdomain
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, "-");
+    const cleanSubdomain = subdomain.toLowerCase().trim().replace(/\s+/g, "-");
 
-    // 1. check existence (fast fail before DB error)
-    const existing = await Site.findOne({
-      where: { subdomain: cleanSubdomain },
-      transaction: t,
-      lock: t.LOCK.UPDATE
+    // استعمال الـ Service اللي فيه الـ Transaction
+    const site = await SiteService.createSite(userId, { 
+      name, 
+      subdomain: cleanSubdomain, 
+      title 
     });
 
-    if (existing) {
-      await t.rollback();
-      return res.status(409).json({
-        success: false,
-        message: "Subdomain already taken"
-      });
-    }
-
-    // 2. create site
-    const site = await Site.create(
-      {
-        name,
-        subdomain: cleanSubdomain,
-        title,
-        status: "active"
-      },
-      { transaction: t }
-    );
-
-    // 3. create membership
-    await SiteMember.create(
-      {
-        userId,
-        siteId: site.id,
-        role: "OWNER"
-      },
-      { transaction: t }
-    );
-
-    await t.commit();
-
-    return res.status(201).json({
-      success: true,
-      data: site
-    });
-
+    return res.status(201).json({ success: true, data: site });
   } catch (error: any) {
-    await t.rollback();
-
-    // Sequelize unique fallback (safety net)
-    if (error?.name === "SequelizeUniqueConstraintError") {
-      return res.status(409).json({
-        success: false,
-        message: "Subdomain already exists"
-      });
+    if (error.name === "SequelizeUniqueConstraintError") {
+      return res.status(409).json({ success: false, message: "Subdomain already taken" });
     }
-
-    console.error("CREATE_SITE_ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error"
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export const updateSite = async (req: AuthRequest, res: Response) => {
+  try {
+    // الأولوية ديما للـ ID اللي جاي من الـ Guard (أكثر أمان)
+    const siteId = req.context?.membership?.siteId || req.params.siteId;
+    const updatedSite = await SiteService.updateSiteService(Number(siteId), req.body);
+    
+    return res.json({ success: true, data: updatedSite });
+  } catch (error: any) {
+    if (error.message === "SITE_NOT_FOUND") return res.status(404).json({ message: "Site not found" });
+    return res.status(500).json({ success: false, message: "Update failed" });
+  }
+};
+
 
 // =========================
 // GET SITES
@@ -195,15 +152,7 @@ export const getSiteById = async (req: AuthRequest, res: Response) => {
     });
   }
 };
-export const updateSite = async (req: AuthRequest, res: Response) => {
-  try {
-const siteId = req.context.membership?.siteId || req.context.site?.id;    const updatedSite = await siteService.updateSiteService(siteId, req.body);
-    return res.json({ success: true, data: updatedSite });
-  } catch (error: any) {
-    if (error.message === "SITE_NOT_FOUND") return res.status(404).json({ message: "Site not found" });
-    return res.status(500).json({ message: "Update failed" });
-  }
-};
+
 
 export const deleteSite = async (req: AuthRequest, res: Response) => {
 const siteId = req.context.membership?.siteId || req.context.site?.id;
