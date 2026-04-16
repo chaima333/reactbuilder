@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { authenticateJWT } from "../../shared/auth.util";
-import { requireSiteRole } from "../membership/membership.middleware"; // تأكد من المسار الصحيح للميدل-وير الجديد
-
+// استيراد الحراس (Guards)
+import { requireGlobalRole } from "../../core/middleware/globalGuard"; 
+import { requireSiteAccess, requireTenantRole } from "../../core/middleware/siteGuard";
 
 import {
   createSite,
@@ -13,21 +14,39 @@ import {
 
 const router = Router();
 
-// auth global
+
 router.use(authenticateJWT);
 
-// Create site
-router.post("/", createSite);
 
-// List sites
+
+router.post(
+  '/', 
+  requireGlobalRole(['Admin', 'Creator']), 
+  createSite
+);
+
 router.get("/", getSites);
 
-// 🔥 تطبيق الـ SaaS Logic الجديد
-// استعملنا checkSiteAccess وبدلنا الـ Roles لـ OWNER, ADMIN... (Uppercase)
-router.get("/:siteId", requireSiteRole(["OWNER", "ADMIN", "EDITOR", "VIEWER"]), getSiteById);
 
-router.put("/:siteId", requireSiteRole(["OWNER", "ADMIN"]), updateSite);
 
-router.delete("/:siteId", requireSiteRole(["OWNER"]), deleteSite);
+router.get(
+  "/:siteId", 
+  requireSiteAccess, 
+  getSiteById
+);
+
+router.put(
+  "/:siteId", 
+  requireSiteAccess, 
+  requireTenantRole(["OWNER", "ADMIN"]), 
+  updateSite
+);
+
+router.delete(
+  "/:siteId", 
+  requireSiteAccess, 
+  requireTenantRole(["OWNER"]), 
+  deleteSite
+);
 
 export default router;
