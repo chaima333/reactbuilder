@@ -1,26 +1,23 @@
 import { Router } from 'express';
 import { authenticateJWT } from '../../shared/auth.util';
-import { requirePermission, PERMISSIONS } from '../../core/middleware/role.middleware';
-import {
-  getPages,
-  getPageById,
-  createPage,
-  updatePage,
-  deletePage,
-} from './page.controller';
+import { requirePermission } from '../../core/middleware/role.middleware';
+import { PERMISSIONS } from '../../core/constants/permissions';
+import { getPages, createPage, updatePage, deletePage } from './page.controller';
 
 const router = Router();
-
 router.use(authenticateJWT);
 
-router.get('/sites/:siteId/pages', requirePermission(PERMISSIONS.SITE_READ), getPages);
 
-router.get('/sites/:siteId/pages/:pageId', requirePermission(PERMISSIONS.SITE_READ), getPageById);
+// GET Pages (Read)
+router.get('/', requirePermission(PERMISSIONS.SITE_READ), getPages);
 
-router.post('/sites/:siteId/pages', requirePermission(PERMISSIONS.SITE_EDIT), createPage);
+// POST Page (Create)
+router.post('/', requirePermission(PERMISSIONS.PAGE_CREATE), createPage);
 
-router.put('/sites/:siteId/pages/:pageId', requirePermission(PERMISSIONS.SITE_EDIT), updatePage);
+// PUT Page (Update)
+router.put('/:pageId', requirePermission(PERMISSIONS.PAGE_UPDATE), updatePage);
 
-router.delete('/sites/:siteId/pages/:pageId', requirePermission(PERMISSIONS.SITE_DELETE), deletePage);
+// DELETE Page (Delete)
+router.delete('/:pageId', requirePermission(PERMISSIONS.PAGE_DELETE), deletePage);
 
 export default router;
