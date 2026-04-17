@@ -1,8 +1,13 @@
+
+
+
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env" });
 import express from "express";
 import cors from "cors";
 import path from "path";
+
+
 
 // Import des routes
 import authRoutes from "./modules/auth/auth.routes";
@@ -23,27 +28,40 @@ import pageRoutes from "./modules/pages/page.routes";
 const app = express();
 const PORT = parseInt(process.env.PORT || "10000", 10);
 
-// --- 1. MIDDLEWARES GÉNÉRAUX ---
-app.use(cors());
+
+
+// server.ts - حطو الفوق بالكل
+app.use((req, res, next) => {
+  const traceId = Math.random().toString(36).substring(7);
+  const start = Date.now();
+
+  console.log(`[TRACE-${traceId}] 🚀 START: ${req.method} ${req.url} | Subdomain: ${req.headers['x-subdomain']}`);
+
+  // باش نعرفو وقتاش الريكويست كملت وقداش خذات وقت
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`[TRACE-${traceId}] ✅ FINISH: Status ${res.statusCode} | Duration: ${duration}ms`);
+  });
+
+  next();
+});
+
+
 app.use(express.json());
+app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(initContext); 
 
-// --- 2. ROUTES PUBLIQUES (تخدم بلاش Token) ---
-// لازم يكونوا فوق الـ authenticateJWT باش تنجّم تعمل Login
 app.use("/api/auth", authRoutes);   
 app.use("/api/public", publicRoutes); 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// --- 3. 🛡️ حيط الحماية (SECURITY MIDDLEWARES) ---
-// من السطر هذا وهبط، أي رويكيت لازمها Token و Tenant مريغل
 app.use(authenticateJWT); 
 app.use(tenantResolver); 
 
-// --- 4. ROUTES PROTÉGÉES (تخدم بالـ Token والـ Role) ---
 app.use("/api/pages", pageRoutes);
 app.use("/api/sites", siteRoutes);
 app.use("/api/dashboard", dashboardRoutes);
