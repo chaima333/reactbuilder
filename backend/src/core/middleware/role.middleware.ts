@@ -9,41 +9,28 @@ import { ROLE_PERMISSIONS } from '../constants/rolePermissions';
 export const requirePermission = (permission: string) => {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const siteContext = req.siteContext;
-
-      // تثبّت إنّو الـ TenantResolver خدم خدمتو
-      if (!siteContext?.siteId) {
+      // 1. تثبّت إنّو الـ Context تعبّى م الـ Resolver
+      if (!req.siteContext || !req.siteContext.siteId) {
+        console.error("❌ Context Error: Site ID is missing!");
         return res.status(400).json({ 
           success: false, 
-          message: "Site context missing in request" 
+          message: "Site context missing in request" // ثبت في الميساج هذا
         });
       }
 
-      const role = siteContext.role; // هوني الـ Role (OWNER, ADMIN, إلخ)
-
-      if (!role) {
-        return res.status(403).json({ 
-          success: false, 
-          message: "No role assigned for this site" 
-        });
-      }
-
-      // 2️⃣ استعمل الـ Record الجديد اللي فيه PAGE_CREATE
+      const role = req.siteContext.role; 
       const permissions = ROLE_PERMISSIONS[role] || [];
 
       if (!permissions.includes(permission)) {
         return res.status(403).json({ 
           success: false, 
-          message: `Permission manquante: ${permission}` 
+          message: `Accès refusé: ${permission} manquant pour le rôle ${role}` 
         });
       }
 
       next();
     } catch (error) {
-      return res.status(500).json({ 
-        success: false, 
-        message: "Erreur d'autorisation" 
-      });
+      return res.status(500).json({ success: false, message: "Erreur d'autorisation" });
     }
   };
 };

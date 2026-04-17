@@ -31,19 +31,16 @@ const PORT = parseInt(process.env.PORT || "10000", 10);
 
 
 // server.ts - حطو الفوق بالكل
-import { randomUUID } from "crypto";
-
 app.use((req, res, next) => {
-  const requestId = randomUUID();
+  const traceId = Math.random().toString(36).substring(7);
+  const start = Date.now();
 
-  req.headers["x-request-id"] = requestId;
+  console.log(`[TRACE-${traceId}] 🚀 START: ${req.method} ${req.url} | Subdomain: ${req.headers['x-subdomain']}`);
 
-  console.log("➡️ REQUEST START", {
-    id: requestId,
-    method: req.method,
-    url: req.url,
-    subdomain: req.headers["x-subdomain"],
-    time: new Date().toISOString()
+  // باش نعرفو وقتاش الريكويست كملت وقداش خذات وقت
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`[TRACE-${traceId}] ✅ FINISH: Status ${res.statusCode} | Duration: ${duration}ms`);
   });
 
   next();
@@ -74,42 +71,6 @@ app.use("/api/seo", seoRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/plugins", pluginRoutes);
-
-
-
-const recentRequests = new Map<string, number>();
-
-app.use((req, res, next) => {
-  const key = `${req.method}-${req.url}-${req.headers["x-subdomain"]}`;
-
-  const now = Date.now();
-  const last = recentRequests.get(key);
-
-  if (last && now - last < 1000) {
-    console.log("⚠️ DUPLICATE REQUEST DETECTED:", key);
-  }
-
-  recentRequests.set(key, now);
-
-  next();
-});
-
-
-
-
-app.use((req, res, next) => {
-  const start = Date.now();
-
-  res.on("finish", () => {
-    console.log("⬅️ REQUEST END", {
-      id: req.headers["x-request-id"],
-      status: res.statusCode,
-      duration: Date.now() - start
-    });
-  });
-
-  next();
-});
 
 // --- 5. DÉMARRAGE ---
 const startServer = async () => {
