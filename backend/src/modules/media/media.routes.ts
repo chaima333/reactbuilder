@@ -27,7 +27,6 @@ const upload = multer({
 });
 
 router.use(authenticateJWT);
-router.use(tenantResolver); // 
 
 
 // Routes

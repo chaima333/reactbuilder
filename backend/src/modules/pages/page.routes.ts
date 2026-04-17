@@ -6,7 +6,7 @@ import { getPages, createPage, updatePage, deletePage } from './page.controller'
 
 const router = Router();
 
-
+router.use(authenticateJWT);
 // GET Pages (Read)
 router.get('/', requirePermission(PERMISSIONS.SITE_READ), getPages);
 
