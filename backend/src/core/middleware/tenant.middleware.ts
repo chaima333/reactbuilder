@@ -2,7 +2,7 @@ import { Response, NextFunction } from "express";
 import { AuthRequest } from "../../shared/auth.util";
 import { Site, SiteMember } from "../../models";
 
-export const tenantResolver = async (req: any, res: Response, next: NextFunction) => {
+export const tenantResolver = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const host = req.headers.host || "";
     const headerSubdomain = req.headers["x-subdomain"]; 
@@ -15,48 +15,56 @@ export const tenantResolver = async (req: any, res: Response, next: NextFunction
       subdomain = host.split('.')[0];
     }
 
-    // الـ Bypass للـ routes العامة (backend, local, etc)
-    if (!subdomain || subdomain === "www" || subdomain === "backend-rmfq" || subdomain === "localhost:10000") {
-      return next();
+    // ❌ ما عادش bypass
+    if (!subdomain || subdomain === "www") {
+      return res.status(400).json({
+        success: false,
+        message: "Subdomain is required"
+      });
     }
 
     console.log(`🔍 [TenantResolver] Looking for subdomain: "${subdomain}"`);
 
-    // 1. التثبت من وجود السايت
     const site = await Site.findOne({ 
-      where: { subdomain: subdomain } 
+      where: { subdomain } 
     });
 
     if (!site) {
       return res.status(404).json({ 
         success: false, 
-        message: `Site [${subdomain}] non trouvé.` 
+        message: `Site [${subdomain}] not found` 
       });
     }
 
-    // 2. 🛡️ ربط الـ User بالسايت (Membership Check)
-    // التثبيت هذا لازم بش الـ Role ما يخرجش null
     const userId = req.user?.id;
-    console.log(`🛠️ Checking Membership: User[${userId}] -> Site[${site.id}]`);
 
     if (!userId) {
-       console.warn("⚠️ [TenantResolver] req.user is missing. Check if authenticateJWT is placed BEFORE tenantResolver.");
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: user missing"
+      });
     }
 
     const membership = await SiteMember.findOne({
       where: { 
-        siteId: site.id,   // 💡 إذا عطاك Error "column does not exist", بدلها لـ site_id
-        userId: userId      // 💡 إذا عطاك Error "column does not exist", بدلها لـ user_id
+        siteId: site.id,
+        userId: userId
       }
     });
 
-    // 3. تخزين الـ Context
+    if (!membership) {
+      return res.status(403).json({
+        success: false,
+        message: "User not a member of this site"
+      });
+    }
+
     req.siteContext = { 
       siteId: site.id, 
-      role: membership ? membership.role.toUpperCase() : null 
+      role: membership.role.toUpperCase()
     };
 
-    console.log(`✅ [TenantResolver] Resolved Site: ${site.name} | Role: ${req.siteContext.role || 'NONE'}`);
+    console.log(`✅ [TenantResolver] Site: ${site.name} | Role: ${req.siteContext.role}`);
     
     next();
 
@@ -64,8 +72,8 @@ export const tenantResolver = async (req: any, res: Response, next: NextFunction
     console.error("❌ [TenantResolver] Error:", error.message);
     return res.status(500).json({ 
       success: false, 
-      message: "Erreur interne du Tenant Resolver",
-      details: error.message // بش نعرفو بالظبط شنيّة الـ column اللي ناقصة
+      message: "Tenant Resolver error",
+      details: error.message
     });
   }
 };
