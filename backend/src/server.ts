@@ -31,16 +31,19 @@ const PORT = parseInt(process.env.PORT || "10000", 10);
 
 
 // server.ts - حطو الفوق بالكل
+import { randomUUID } from "crypto";
+
 app.use((req, res, next) => {
-  const traceId = Math.random().toString(36).substring(7);
-  const start = Date.now();
+  const requestId = randomUUID();
 
-  console.log(`[TRACE-${traceId}] 🚀 START: ${req.method} ${req.url} | Subdomain: ${req.headers['x-subdomain']}`);
+  req.headers["x-request-id"] = requestId;
 
-  // باش نعرفو وقتاش الريكويست كملت وقداش خذات وقت
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    console.log(`[TRACE-${traceId}] ✅ FINISH: Status ${res.statusCode} | Duration: ${duration}ms`);
+  console.log("➡️ REQUEST START", {
+    id: requestId,
+    method: req.method,
+    url: req.url,
+    subdomain: req.headers["x-subdomain"],
+    time: new Date().toISOString()
   });
 
   next();
