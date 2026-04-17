@@ -44,9 +44,9 @@ app.use(authenticateJWT);
 //app.use(tenantResolver); 
 
 // --- 4. ROUTES PROTÉGÉES (تخدم بالـ Token والـ Role) ---
-app.use("/api/pages", pageRoutes);
-app.use("/api/sites", siteRoutes);
-app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/pages",tenantResolver, pageRoutes);
+app.use("/api/sites",tenantResolver, siteRoutes);
+app.use("/api/dashboard",tenantResolver, dashboardRoutes);
 app.use("/api/media", mediaRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/seo", seoRoutes);
