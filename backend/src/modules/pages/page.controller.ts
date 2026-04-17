@@ -8,6 +8,7 @@ export const createPage = async (req: AuthRequest, res: Response) => {
     const userId = req.user.id;
 
     const page = await PageService.createPage(siteId, userId, req.body);
+    
     return res.status(201).json({ success: true, data: page });
   } catch (error: any) {
     return res.status(500).json({ success: false, message: error.message });

@@ -12,7 +12,7 @@ export class PageService {
     while (await Page.findOne({
       where: {
         slug,
-        site_id: siteId,
+        siteId: siteId,
         status: { [Op.ne]: "deleted" },
         ...(excludeId ? { id: { [Op.ne]: excludeId } } : {}),
       },
