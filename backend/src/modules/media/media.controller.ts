@@ -31,9 +31,9 @@ export const uploadMedia = async (req: AuthRequest, res: Response) => {
     if (!file) return res.status(400).json({ success: false, message: 'Aucun fichier' });
 
     // ابعث الـ siteId للـ service باش يقيد التصويرة تابعة السايت الصحيح
-    const media = await MediaService.createMediaRecord(file, req.user.id, { ...req.body, siteId });
+    const media = await MediaService.createMediaRecord(file, req.user.id, { ...req.body, siteId: siteId });
     
-    res.json({ success: true, data: media });
+    res.json({ success: true, message: 'Média téléchargé avec succès', data: media });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
