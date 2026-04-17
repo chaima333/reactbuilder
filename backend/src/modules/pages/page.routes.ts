@@ -5,7 +5,6 @@ import { PERMISSIONS } from '../../core/constants/permissions';
 import { getPages, createPage, updatePage, deletePage } from './page.controller';
 
 const router = Router();
-router.use(authenticateJWT);
 
 
 // GET Pages (Read)
