@@ -24,44 +24,37 @@ import pageRoutes from "./modules/pages/page.routes";
 const app = express();
 const PORT = parseInt(process.env.PORT || "10000", 10);
 
-// --- 1. MIDDLEWARES (Toujours en premier) ---
+// --- 1. MIDDLEWARES GÉNÉRAUX ---
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+app.use(initContext); // يخدم على الناس الكل مريغل
 
-// --- 2. ROUTES ---
-
-// Authentification
-app.use(initContext);
-app.use(authenticateJWT);
-app.use(tenantResolver);
-
-app.use("/api/auth", authRoutes);
-
-
-// Ressources
-app.use("/api/public", publicRoutes);
-app.use("/api/dashboard", dashboardRoutes);
-// server.ts
-app.use("/api/sites", siteRoutes);
-
-app.use("/api/pages", pageRoutes);
-
-app.use("/api/media", mediaRoutes);
-app.use("/api/users", userRoutes);
-
-app.use("/api/seo", seoRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/ai", aiRoutes);
-app.use("/api/plugins",pluginRoutes);
-
-// Health check (Un seul suffit)
+// --- 2. ROUTES PUBLIQUES (ما تستحقش Token ولا Tenant) ---
+app.use("/api/auth", authRoutes);   // Login/Register لازم يبقاو لبرا
+app.use("/api/public", publicRoutes); // الـ Front-end العام
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// --- 3. DÉMARRAGE ---
+// --- 3. MIDDLEWARES DE SÉCURITÉ (Middleware Chain) ---
+// 🛡️ السطرين هاذم هوما "الفلتر". أي حاجة تحتهم لازمها Token و Tenant
+app.use(authenticateJWT); 
+app.use(tenantResolver); 
+
+// --- 4. ROUTES PROTÉGÉES (الخدمة الصحيحة هنا) ---
+app.use("/api/pages", pageRoutes);
+app.use("/api/sites", siteRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/media", mediaRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/seo", seoRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/plugins", pluginRoutes);
+
+// --- 5. DÉMARRAGE ---
 const startServer = async () => {
   try {
     console.log("📡 Tentative de connexion à la base de données...");
@@ -70,7 +63,6 @@ const startServer = async () => {
     
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Serveur démarré sur port ${PORT}`);
-      console.log(`🔗 Route Google active sur: /api/auth/google`);
     });
   } catch (error) {
     console.error("❌ Échec du démarrage :", error);
