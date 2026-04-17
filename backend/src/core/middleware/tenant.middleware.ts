@@ -1,5 +1,5 @@
 import { Response, NextFunction } from "express";
-import { AuthRequest } from "../../shared/auth.util";
+import { AuthRequest, SiteContext } from "../../shared/auth.util";
 import { Site } from "../../models/site";
 
 export const tenantResolver = async (req: any, res: Response, next: NextFunction) => {
@@ -13,25 +13,36 @@ export const tenantResolver = async (req: any, res: Response, next: NextFunction
         subdomain = host.split('.')[0];
     }
 
-    if (!subdomain || subdomain === "www") {
+    if (!subdomain || subdomain === "www" || subdomain === "backend-rmfq") {
       return next(); 
     }
 
-    const site = await Site.findOne({ where: { subdomain: subdomain.toLowerCase() } });
+    const site = await Site.findOne({ 
+      where: { subdomain: subdomain.toLowerCase() } 
+    });
 
     if (!site) {
-      return res.status(404).json({ success: false, message: "Site not found" });
+      return res.status(404).json({ 
+        success: false, 
+        message: `Site with subdomain [${subdomain}] not found` 
+      });
     }
 
-    if (req.context) {
-      req.context.site = site;
-    } else {
-      (req as any).context = { site };
-    }
+    (req as AuthRequest).siteContext = {
+      siteId: site.id,
+      role: null, 
+    };
+    
+    (req as any).site = site; 
+
+    console.log(`[TenantResolver] Resolved Site: ${site.name} (ID: ${site.id})`);
 
     next();
   } catch (error) {
     console.error("TENANT_RESOLVER_ERROR:", error);
-    return res.status(500).json({ success: false, message: "Internal Server Error" });
+    return res.status(500).json({ 
+      success: false, 
+      message: "Internal Server Error during tenant resolution" 
+    });
   }
 };
