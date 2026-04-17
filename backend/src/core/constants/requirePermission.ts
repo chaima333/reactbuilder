@@ -5,28 +5,39 @@ import { ROLE_PERMISSIONS } from "./rolePermissions";
 export const requirePermission = (permission: string) => {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const user = req.user;
-      const siteContext = req.siteContext; 
+      const siteContext = req.siteContext;
 
-      if (!siteContext) {
-        return res.status(403).json({ success: false, message: "Site context missing" });
+      if (!siteContext?.siteId) {
+        return res.status(400).json({
+          success: false,
+          message: "Site context missing"
+        });
       }
 
-      const siteId = siteContext.siteId;
-      const userRole = siteContext.role; 
+      const role = siteContext.role;
 
-      const permissions = ROLE_PERMISSIONS[userRole?.toUpperCase() || ''] || [];
+      if (!role) {
+        return res.status(403).json({
+          success: false,
+          message: "Role missing in site context"
+        });
+      }
+
+      const permissions = ROLE_PERMISSIONS[role] || [];
 
       if (!permissions.includes(permission)) {
-        return res.status(403).json({ 
-          success: false, 
-          message: `Accès refusé. Permission [${permission}] requise.` 
+        return res.status(403).json({
+          success: false,
+          message: `Permission manquante: ${permission}`
         });
       }
 
       next();
     } catch (error) {
-      return res.status(500).json({ success: false, message: "Erreur d'autorisation" });
+      return res.status(500).json({
+        success: false,
+        message: "Erreur d'autorisation"
+      });
     }
   };
 };
