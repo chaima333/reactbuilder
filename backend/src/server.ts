@@ -49,6 +49,7 @@ app.use("/api/sites", siteRoutes);
 app.post("/api/pages", (req, res) => {
     res.json({ message: "TEST POST WORKING DIRECTLY" });
 });
+app.use("/api/pages", pageRoutes);
 
 app.use("/api/media", mediaRoutes);
 app.use("/api/users", userRoutes);
