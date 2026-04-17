@@ -61,7 +61,7 @@ export const tenantResolver = async (req: AuthRequest, res: Response, next: Next
 
     req.siteContext = { 
       siteId: site.id, 
-      role: membership.role.toUpperCase()
+      role: membership.role.toUpperCase() || null
     };
 
     console.log(`✅ [TenantResolver] Site: ${site.name} | Role: ${req.siteContext.role}`);
