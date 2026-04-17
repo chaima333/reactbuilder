@@ -23,7 +23,7 @@ export type PageStatus = 'draft' | 'published' | 'scheduled' | 'deleted';
   tableName: "pages",
   timestamps: true,
   underscored: true,
-  indexes: [{ unique: true, fields: ['site_id', 'slug'] }],
+  indexes: [{ unique: true, fields: ['siteId', 'slug'] }],
 })
 export class Page extends Model {
   @Column({
