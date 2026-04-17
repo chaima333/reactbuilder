@@ -1,4 +1,3 @@
-// server.ts
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env" });
 import express from "express";
@@ -29,21 +28,22 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-app.use(initContext); // يخدم على الناس الكل مريغل
+app.use(initContext); 
 
-// --- 2. ROUTES PUBLIQUES (ما تستحقش Token ولا Tenant) ---
-app.use("/api/auth", authRoutes);   // Login/Register لازم يبقاو لبرا
-app.use("/api/public", publicRoutes); // الـ Front-end العام
+// --- 2. ROUTES PUBLIQUES (تخدم بلاش Token) ---
+// لازم يكونوا فوق الـ authenticateJWT باش تنجّم تعمل Login
+app.use("/api/auth", authRoutes);   
+app.use("/api/public", publicRoutes); 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// --- 3. MIDDLEWARES DE SÉCURITÉ (Middleware Chain) ---
-// 🛡️ السطرين هاذم هوما "الفلتر". أي حاجة تحتهم لازمها Token و Tenant
+// --- 3. 🛡️ حيط الحماية (SECURITY MIDDLEWARES) ---
+// من السطر هذا وهبط، أي رويكيت لازمها Token و Tenant مريغل
 app.use(authenticateJWT); 
 app.use(tenantResolver); 
 
-// --- 4. ROUTES PROTÉGÉES (الخدمة الصحيحة هنا) ---
+// --- 4. ROUTES PROTÉGÉES (تخدم بالـ Token والـ Role) ---
 app.use("/api/pages", pageRoutes);
 app.use("/api/sites", siteRoutes);
 app.use("/api/dashboard", dashboardRoutes);
