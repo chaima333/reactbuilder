@@ -3,7 +3,6 @@ import { authenticateJWT } from '../../shared/auth.util';
 import { requirePermission } from '../../core/middleware/role.middleware';
 import { PERMISSIONS } from '../../core/constants/permissions';
 import { getPages, createPage, updatePage, deletePage } from './page.controller';
-import tenantResolver from '../../core/middleware/tenant.middleware';
 
 const router = Router();
 router.use(authenticateJWT);
