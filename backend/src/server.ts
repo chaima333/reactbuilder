@@ -15,7 +15,7 @@ import userRoutes from "./modules/users/user.routes";
 import seoRoutes from "./modules/seo/seo.routes";
 import adminRoutes from "./modules/admin/admin.routes";
 import aiRoutes from "./modules/ai/ai.routes";
-import pluginRoutes from "./modules/plugins/plugin.routes";
+import pluginRoutes, { authenticateJWT } from "./modules/plugins/plugin.routes";
 import { initializeDB } from "./core/database/init";
 import { tenantResolver } from "./core/middleware/tenant.middleware";
 import { initContext } from "./core/middleware/context.middleware";
@@ -34,6 +34,7 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // Authentification
 app.use(initContext);
+app.use(authenticateJWT);
 app.use(tenantResolver);
 
 app.use("/api/auth", authRoutes);
@@ -45,10 +46,6 @@ app.use("/api/dashboard", dashboardRoutes);
 // server.ts
 app.use("/api/sites", siteRoutes);
 
-// فسخ السطر القديم وحط هذا في بلاصتو لـ 5 دقائق بركة:
-app.post("/api/pages", (req, res) => {
-    res.json({ message: "TEST POST WORKING DIRECTLY" });
-});
 app.use("/api/pages", pageRoutes);
 
 app.use("/api/media", mediaRoutes);
