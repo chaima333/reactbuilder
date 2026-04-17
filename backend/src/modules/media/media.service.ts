@@ -39,6 +39,19 @@ export const createMediaRecord = async (file: any, userId: number, body: any) =>
   return media;
 };
 
+export class MediaService {
+  static async upload({ file, userId, siteId }: any) {
+    return await Media.create({
+      filename: file.originalname,
+      url: `/uploads/${file.filename}`,
+      type: file.mimetype.startsWith("image") ? "image" : "file",
+      size: file.size,
+      userId,
+      siteId, // 🔥 CRITICAL (sinon SaaS mort)
+    });
+  }
+}
+
 export const deleteMediaAndFile = async (mediaId: string, userId: number) => {
   const media = await Media.findOne({ where: { id: mediaId, userId } });
   if (!media) throw new Error('Média non trouvé');
@@ -51,3 +64,7 @@ export const deleteMediaAndFile = async (mediaId: string, userId: number) => {
   await media.destroy();
   return true;
 };
+
+export function upload(arg0: { file: Express.Multer.File; userId: any; siteId: number; }) {
+  throw new Error('Function not implemented.');
+}

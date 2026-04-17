@@ -25,21 +25,40 @@ export const getAllMedia = async (req: AuthRequest, res: Response) => {
 
 export const uploadMedia = async (req: AuthRequest, res: Response) => {
   try {
-    const file = (req as any).file;
-    // 🎯 ON RÉCUPÈRE LE SITEID DEPUIS LE CONTEXTE (RÉSOLU PAR LE TENANTRESOLVER)
-    const siteId = req.siteContext?.siteId; 
-    
-    if (!file) return res.status(400).json({ success: false, message: 'Aucun fichier' });
+    const siteId = req.siteContext?.siteId;
+    const userId = req.user?.id;
 
-    // 🎯 ON INJECTE LE SITEID DANS L'OBJET DATA PASSÉ AU SERVICE
-    const media = await MediaService.createMediaRecord(file, req.user.id, { 
-      ...req.body, 
-      siteId: siteId // C'est cette ligne qui fait le lien !
+    if (!siteId || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing tenant context",
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No file uploaded",
+      });
+    }
+
+    const media = await MediaService.upload({
+      file: req.file,
+      userId,
+      siteId,
     });
-    
-    res.json({ success: true, message: 'Média téléchargé avec succès', data: media });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+
+    return res.status(201).json({
+      success: true,
+      message: "File uploaded successfully",
+      data: media,
+    });
+
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
 
