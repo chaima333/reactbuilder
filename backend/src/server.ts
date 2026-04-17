@@ -9,7 +9,6 @@ import path from "path";
 import authRoutes from "./modules/auth/auth.routes";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import siteRoutes from "./modules/sites/site.routes";
-import pageRoutes from "./modules/pages/page.routes";
 import publicRoutes from "./modules/public/public.routes";
 import mediaRoutes from "./modules/media/media.routes";
 import userRoutes from "./modules/users/user.routes";
@@ -20,6 +19,7 @@ import pluginRoutes from "./modules/plugins/plugin.routes";
 import { initializeDB } from "./core/database/init";
 import { tenantResolver } from "./core/middleware/tenant.middleware";
 import { initContext } from "./core/middleware/context.middleware";
+import pageRoutes from "./modules/pages/page.routes";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "10000", 10);
