@@ -7,12 +7,10 @@ export const requirePermission = (permission: string) => {
     try {
       const siteContext = req.siteContext;
 
-      if (!siteContext?.siteId) {
-        return res.status(400).json({
-          success: false,
-          message: "Site context missing"
-        });
-      }
+      if (!req.siteContext?.siteId) {
+    console.error("🚨 CRITICAL: requirePermission reached without siteContext!");
+    return res.status(500).json({ success: false, message: "Security Context Error" });
+}
 
       const role = siteContext.role;
 
