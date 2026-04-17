@@ -7,7 +7,7 @@ import tenantResolver from '../../core/middleware/tenant.middleware';
 
 const router = Router();
 router.use(authenticateJWT);
-router.use(tenantResolver);
+
 
 // GET Pages (Read)
 router.get('/', requirePermission(PERMISSIONS.SITE_READ), getPages);

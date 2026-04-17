@@ -3,21 +3,23 @@ import { AuthRequest } from "../../shared/auth.util";
 import { ROLE_PERMISSIONS } from "./rolePermissions";
 
 export const requirePermission = (permission: string) => {
-  return async (req: AuthRequest, res: Response, next: NextFunction) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const siteContext = req.siteContext;
 
-      if (!req.siteContext?.siteId) {
-    console.error("🚨 CRITICAL: requirePermission reached without siteContext!");
-    return res.status(500).json({ success: false, message: "Security Context Error" });
-}
+      if (!siteContext?.siteId) {
+        return res.status(500).json({
+          success: false,
+          message: "Missing site context (tenantResolver not applied)",
+        });
+      }
 
       const role = siteContext.role;
 
       if (!role) {
         return res.status(403).json({
           success: false,
-          message: "Role missing in site context"
+          message: "Role missing",
         });
       }
 
@@ -26,15 +28,15 @@ export const requirePermission = (permission: string) => {
       if (!permissions.includes(permission)) {
         return res.status(403).json({
           success: false,
-          message: `Permission manquante: ${permission}`
+          message: `Missing permission: ${permission}`,
         });
       }
 
       next();
-    } catch (error) {
+    } catch (err) {
       return res.status(500).json({
         success: false,
-        message: "Erreur d'autorisation"
+        message: "Authorization error",
       });
     }
   };

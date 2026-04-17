@@ -5,34 +5,27 @@ import { Site, SiteMember } from "../../models";
 export const tenantResolver = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const host = req.headers.host || "";
-    const headerSubdomain = req.headers["x-subdomain"]; 
-    
-    let subdomain = "";
+    const headerSubdomain = req.headers["x-subdomain"];
 
-    if (headerSubdomain) {
-      subdomain = String(headerSubdomain).toLowerCase().trim();
-    } else {
-      subdomain = host.split('.')[0];
-    }
+    let subdomain = headerSubdomain
+      ? String(headerSubdomain).toLowerCase().trim()
+      : host.split(".")[0];
 
-    // ❌ ما عادش bypass
     if (!subdomain || subdomain === "www") {
       return res.status(400).json({
         success: false,
-        message: "Subdomain is required"
+        message: "Subdomain required",
       });
     }
 
-    console.log(`🔍 [TenantResolver] Looking for subdomain: "${subdomain}"`);
-
-    const site = await Site.findOne({ 
-      where: { subdomain } 
+    const site = await Site.findOne({
+      where: { subdomain },
     });
 
     if (!site) {
-      return res.status(404).json({ 
-        success: false, 
-        message: `Site [${subdomain}] not found` 
+      return res.status(404).json({
+        success: false,
+        message: "Site not found",
       });
     }
 
@@ -41,40 +34,35 @@ export const tenantResolver = async (req: AuthRequest, res: Response, next: Next
     if (!userId) {
       return res.status(401).json({
         success: false,
-        message: "Unauthorized: user missing"
+        message: "Unauthorized",
       });
     }
 
     const membership = await SiteMember.findOne({
-      where: { 
+      where: {
         siteId: site.id,
-        userId: userId
-      }
+        userId,
+      },
     });
 
     if (!membership) {
       return res.status(403).json({
         success: false,
-        message: "User not a member of this site"
+        message: "Not a site member",
       });
     }
 
-    req.siteContext = { 
-      siteId: site.id, 
-      role: membership.role.toUpperCase() || null
+    req.siteContext = {
+      siteId: site.id,
+      role: membership.role.toUpperCase(),
     };
 
-    console.log(`✅ [TenantResolver] Site: ${site.name} | Role: ${req.siteContext.role}`);
-    
     next();
-
-  } catch (error: any) {
-    console.error("❌ [TenantResolver] Error:", error.message);
-    return res.status(500).json({ 
-      success: false, 
-      message: "Tenant Resolver error",
-      details: error.message
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Tenant resolver error",
+      details: err.message,
     });
   }
 };
-export default tenantResolver;

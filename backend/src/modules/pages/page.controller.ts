@@ -2,22 +2,29 @@ import { Response } from "express";
 import { AuthRequest } from "../../shared/auth.util";
 import { PageService } from "./page.service";
 
-// page.controller.ts
 export const createPage = async (req: AuthRequest, res: Response) => {
   try {
-    // 💡 بنجيب الـ siteId من الـ Context اللي Middleware حضره
-    const siteId = req.siteContext?.siteId; 
-    
-    if (!siteId) {
-       return res.status(400).json({ success: false, message: "Site ID missing in context" });
+    const siteId = req.siteContext?.siteId;
+    const userId = req.user?.id;
+
+    if (!siteId || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing context",
+      });
     }
 
-    // بنبعت الـ siteId كأول Parameter للـ Service
-    const page = await PageService.createPage(siteId, req.user.id, req.body);
-    
-    return res.status(201).json({ success: true, data: page });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
+    const page = await PageService.createPage(siteId, userId, req.body);
+
+    return res.status(201).json({
+      success: true,
+      data: page,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
 
@@ -26,15 +33,26 @@ export const getPages = async (req: AuthRequest, res: Response) => {
     const siteId = req.siteContext?.siteId;
 
     if (!siteId) {
-      return res.status(400).json({ success: false, message: "Site ID missing in context" });
+      return res.status(400).json({
+        success: false,
+        message: "Missing context",
+      });
     }
 
     const pages = await PageService.getPages(siteId);
-    return res.json({ success: true, data: pages });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
+
+    return res.json({
+      success: true,
+      data: pages,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
+
 
 
 export const updatePage = async (req: AuthRequest, res: Response) => {
