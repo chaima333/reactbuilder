@@ -1,27 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../../shared/auth.util';
-import * as MediaService from './media.service';
+import MediaService from './media.service'; // 👈 ناديلو كـ Default export
 import { Media } from '../../models';
-
-export const getAllMedia = async (req: AuthRequest, res: Response) => {
-  try {
-    const siteId = req.siteContext?.siteId; // 👈 نجبدو الـ ID المضمون م الـ Middleware
-    const { folderId, type } = req.query;
-
-    const where: any = { 
-      siteId: siteId, 
-      userId: req.user.id 
-    };
-    
-    if (folderId) where.folderId = folderId;
-    if (type) where.type = type;
-
-    const media = await Media.findAll({ where, order: [['createdAt', 'DESC']] });
-    res.json({ success: true, data: media });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Erreur serveur' });
-  }
-};
 
 export const uploadMedia = async (req: AuthRequest, res: Response) => {
   try {
@@ -29,23 +9,19 @@ export const uploadMedia = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
 
     if (!siteId || !userId) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing tenant context",
-      });
+      return res.status(400).json({ success: false, message: "Missing tenant context" });
     }
 
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "No file uploaded",
-      });
+      return res.status(400).json({ success: false, message: "No file uploaded" });
     }
 
+    // 🎯 توّة الـ SiteId قاعد يتعدى للـ Service بالصحيح
     const media = await MediaService.upload({
       file: req.file,
       userId,
       siteId,
+      body: req.body
     });
 
     return res.status(201).json({
@@ -55,10 +31,23 @@ export const uploadMedia = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (err: any) {
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const getAllMedia = async (req: AuthRequest, res: Response) => {
+  try {
+    const siteId = req.siteContext?.siteId;
+    const { folderId, type } = req.query;
+
+    const where: any = { siteId, userId: req.user.id };
+    if (folderId) where.folderId = folderId;
+    if (type) where.type = type;
+
+    const media = await Media.findAll({ where, order: [['createdAt', 'DESC']] });
+    res.json({ success: true, data: media });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Erreur serveur' });
   }
 };
 
