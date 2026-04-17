@@ -25,11 +25,12 @@ export const updatePageSeo = async (req: AuthRequest, res: Response) => {
 
 export const generateSitemap = async (req: AuthRequest, res: Response) => {
   try {
-    const siteId = parseInt(req.params.siteId);
+    const siteId = req.siteContext?.siteId; // ✅ استعمل ديما الـ Context المحمي
+
     const xml = await SeoService.buildSitemapXml(siteId, req.headers.host || '');
     res.header('Content-Type', 'application/xml').send(xml);
   } catch (error: any) {
-    res.status(error.message === 'Site non trouvé' ? 404 : 500).send(error.message);
+    res.status(500).send("Erreur sitemap");
   }
 };
 
