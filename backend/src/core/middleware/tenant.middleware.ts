@@ -4,11 +4,11 @@ import { Site, SiteMember } from "../../models";
 
 export const tenantResolver = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const host = req.headers.host || "";
     const headerSubdomain = req.headers["x-subdomain"];
+    const host = req.headers.host || "";
 
-    let subdomain = headerSubdomain
-      ? String(headerSubdomain).toLowerCase().trim()
+    let subdomain = headerSubdomain 
+      ? String(headerSubdomain).toLowerCase().trim() 
       : host.split(".")[0];
 
     if (!subdomain || subdomain === "www") {
@@ -33,7 +33,7 @@ export const tenantResolver = async (req: AuthRequest, res: Response, next: Next
       return res.status(403).json({ success: false, message: "Not a site member" });
     }
 
-    // --- 🎯 هوني الخدمة الصحيحة ---
+    // --- 🎯 الترجمة وتعبئة الـ Context ---
     const roleMapping: Record<string, string> = {
       'PROPRIÉTAIRE': 'OWNER',
       'ADMINISTRATEUR': 'ADMIN',
@@ -41,25 +41,13 @@ export const tenantResolver = async (req: AuthRequest, res: Response, next: Next
       'LECTEUR': 'VIEWER'
     };
 
-    // نطلعو الـ Role م الداتابيز ونحولوه للـ Mapping
-    const rawRole = membership.role.toUpperCase();
-    const mappedRole = roleMapping[rawRole] || 'VIEWER';
-
-    console.log(`🔍 [TenantResolver] Raw Role: ${rawRole} -> Mapped to: ${mappedRole}`);
-
     req.siteContext = {
       siteId: site.id,
-      role: mappedRole, // توّة الـ requirePermission باش يفهمها
+      role: roleMapping[membership.role.toUpperCase()] || 'VIEWER'
     };
 
-    next(); // توّة الريكويست تتعدى مريغلة
-    // ----------------------------
-
+    next();
   } catch (err: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Tenant resolver error",
-      details: err.message,
-    });
+    return res.status(500).json({ success: false, message: "Tenant Error", details: err.message });
   }
 };

@@ -1,30 +1,33 @@
 import { Response } from "express";
 import { AuthRequest } from "../../shared/auth.util";
 import { PageService } from "./page.service";
+import { Page } from "../../models";
 
 export const createPage = async (req: AuthRequest, res: Response) => {
   try {
+    // 1. نجبدو الـ IDs م الـ Context اللي عبّاه الـ Middleware
     const siteId = req.siteContext?.siteId;
     const userId = req.user?.id;
 
-    if (!siteId || !userId) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing context",
-      });
+    if (!siteId) {
+      return res.status(400).json({ success: false, message: "Site context missing" });
     }
 
-    const page = await PageService.createPage(siteId, userId, req.body);
+    // 2. نصنعو الصفحة باستعمال الـ IDs هاذم (مستحيل يغلطو)
+    const newPage = await Page.create({
+      ...req.body, // title, content...
+      siteId: siteId,
+      userId: userId
+    });
 
     return res.status(201).json({
       success: true,
-      data: page,
+      message: "Page created successfully",
+      data: newPage
     });
-  } catch (err: any) {
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 

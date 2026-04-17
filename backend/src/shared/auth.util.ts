@@ -11,21 +11,16 @@ export interface JwtPayload {
   type?: 'access' | 'refresh';
 }
 
-// 🛡️ تعريف الـ Site Context (المعلومات الخاصة بالموقع داخل الـ Request)
 export interface SiteContext {
   siteId: number;
-  role: string | null;
-  membership?: any; 
+  role: string ;
 }
 
-// 🔐 تحديث الـ AuthRequest باش يقبل الـ User والـ SiteContext
 export type AuthRequest = Request & {
-  user?: any;         // للـ Global User
-  siteContext?: SiteContext; // للـ Tenant/Site Logic
-  context?: any;      // أي معلومات إضافية أخرى
+  user?: any;         
+  siteContext?: SiteContext; 
 }
 
-// 1. توليد الـ Token
 export const generateToken = (payload: JwtPayload): string => {
   const expiresIn = payload.type === "refresh" ? "7d" : "1h";
   return jwt.sign(
@@ -35,7 +30,6 @@ export const generateToken = (payload: JwtPayload): string => {
   );
 };
 
-// 2. التحقق من الـ Token
 export const verifyToken = (token: string): JwtPayload | null => {
   try {
     return jwt.verify(token, secretkey) as JwtPayload;
@@ -44,7 +38,6 @@ export const verifyToken = (token: string): JwtPayload | null => {
   }
 };
 
-// 3. فك تشفير الـ Token
 export const decodeToken = (token: string): JwtPayload | null => {
   try {
     return jwt.decode(token) as JwtPayload;

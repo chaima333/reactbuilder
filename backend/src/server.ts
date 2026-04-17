@@ -29,24 +29,6 @@ const app = express();
 const PORT = parseInt(process.env.PORT || "10000", 10);
 
 
-
-// server.ts - حطو الفوق بالكل
-app.use((req, res, next) => {
-  const traceId = Math.random().toString(36).substring(7);
-  const start = Date.now();
-
-  console.log(`[TRACE-${traceId}] 🚀 START: ${req.method} ${req.url} | Subdomain: ${req.headers['x-subdomain']}`);
-
-  // باش نعرفو وقتاش الريكويست كملت وقداش خذات وقت
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    console.log(`[TRACE-${traceId}] ✅ FINISH: Status ${res.statusCode} | Duration: ${duration}ms`);
-  });
-
-  next();
-});
-
-
 app.use(express.json());
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
