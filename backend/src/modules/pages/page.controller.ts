@@ -2,12 +2,18 @@ import { Response } from "express";
 import { AuthRequest } from "../../shared/auth.util";
 import { PageService } from "./page.service";
 
+// page.controller.ts
 export const createPage = async (req: AuthRequest, res: Response) => {
   try {
-    const siteId = req.siteContext.siteId; // الحماية هنا
-    const userId = req.user.id;
+    // 💡 بنجيب الـ siteId من الـ Context اللي Middleware حضره
+    const siteId = req.siteContext?.siteId; 
+    
+    if (!siteId) {
+       return res.status(400).json({ success: false, message: "Site ID missing in context" });
+    }
 
-    const page = await PageService.createPage(siteId, userId, req.body);
+    // بنبعت الـ siteId كأول Parameter للـ Service
+    const page = await PageService.createPage(siteId, req.user.id, req.body);
     
     return res.status(201).json({ success: true, data: page });
   } catch (error: any) {
@@ -17,7 +23,12 @@ export const createPage = async (req: AuthRequest, res: Response) => {
 
 export const getPages = async (req: AuthRequest, res: Response) => {
   try {
-    const siteId = req.siteContext.siteId;
+    const siteId = req.siteContext?.siteId;
+
+    if (!siteId) {
+      return res.status(400).json({ success: false, message: "Site ID missing in context" });
+    }
+
     const pages = await PageService.getPages(siteId);
     return res.json({ success: true, data: pages });
   } catch (error: any) {
