@@ -2,23 +2,35 @@ import { Response, NextFunction } from "express";
 import { AuthRequest, SiteContext } from "../../shared/auth.util";
 import { Site } from "../../models/site";
 
-export const tenantResolver = async (req: any, res: Response, next: NextFunction) => {
+
+  export const tenantResolver = async (req: any, res: Response, next: NextFunction) => {
   try {
     const host = req.headers.host || "";
-    let subdomain = "";
+    const headerSubdomain = req.headers["x-subdomain"] as string;
     
-    if (host.includes("localhost") || host.includes("render.com")) {
-        subdomain = (req.headers["x-subdomain"] as string) || host.split('.')[0];
-    } else {
-        subdomain = host.split('.')[0];
+    let subdomain = "";
+
+    // 1. الأولوية للـ Header (مهم جداً للـ Testing والـ Postman)
+    if (headerSubdomain) {
+      subdomain = headerSubdomain;
+    } 
+    // 2. إذا ما فماش Header، نطلعوه مالـ Host (للـ Production)
+    else if (!host.includes("localhost") && !host.includes("render.com")) {
+      subdomain = host.split('.')[0];
     }
 
+    // تنظيف الـ subdomain
+    subdomain = subdomain.toLowerCase().trim();
+
+    // 3. الحالات اللي ما نلوجوش فيها على Site
     if (!subdomain || subdomain === "www" || subdomain === "backend-rmfq") {
       return next(); 
     }
 
+    console.log(`🔍 Attempting to resolve site for subdomain: [${subdomain}]`);
+
     const site = await Site.findOne({ 
-      where: { subdomain: subdomain.toLowerCase() } 
+      where: { subdomain: subdomain } 
     });
 
     if (!site) {
@@ -32,11 +44,8 @@ export const tenantResolver = async (req: any, res: Response, next: NextFunction
       siteId: site.id,
       role: null, 
     };
-    
-    (req as any).site = site; 
 
-    console.log(`[TenantResolver] Resolved Site: ${site.name} (ID: ${site.id})`);
-
+    console.log(`✅ [TenantResolver] Resolved Site: ${site.name} (ID: ${site.id})`);
     next();
   } catch (error) {
     console.error("TENANT_RESOLVER_ERROR:", error);
