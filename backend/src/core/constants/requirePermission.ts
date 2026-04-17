@@ -10,7 +10,7 @@ export const requirePermission = (permission: string) => {
       if (!siteContext?.siteId) {
         return res.status(500).json({
           success: false,
-          message: "Missing site context (tenantResolver not applied)",
+          message: "Missing site context"
         });
       }
 
@@ -19,7 +19,7 @@ export const requirePermission = (permission: string) => {
       if (!role) {
         return res.status(403).json({
           success: false,
-          message: "Role missing",
+          message: "Role missing"
         });
       }
 
@@ -28,15 +28,15 @@ export const requirePermission = (permission: string) => {
       if (!permissions.includes(permission)) {
         return res.status(403).json({
           success: false,
-          message: `Missing permission: ${permission}`,
+          message: "Permission denied"
         });
       }
 
       next();
-    } catch (err) {
+    } catch (e) {
       return res.status(500).json({
         success: false,
-        message: "Authorization error",
+        message: "Auth error"
       });
     }
   };
