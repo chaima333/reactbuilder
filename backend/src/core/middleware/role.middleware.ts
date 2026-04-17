@@ -24,30 +24,39 @@ const rolePermissions: Record<string, string[]> = {
 export const requirePermission = (permission: string) => {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user.id;
-      const siteId = req.params.siteId;
+      const siteContext = req.siteContext;
 
-      if (!siteId) {
-        return res.status(400).json({ success: false, message: "Site ID missing in request" });
+      if (!siteContext?.siteId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Site context missing" 
+        });
       }
 
-      const membership = await SiteMember.findOne({
-        where: { userId, siteId: Number(siteId) }
-      });
+      const role = siteContext.role;
 
-      if (!membership) {
-        return res.status(403).json({ success: false, message: "Accès refusé. Vous n'êtes pas membre de ce site." });
+      if (!role) {
+        return res.status(403).json({ 
+          success: false, 
+          message: "No role assigned for this site" 
+        });
       }
 
-      const permissions = rolePermissions[membership.role.toUpperCase()] || [];
+      const permissions = rolePermissions[role] || [];
 
       if (!permissions.includes(permission)) {
-        return res.status(403).json({ success: false, message: `Permission manquante: ${permission}` });
+        return res.status(403).json({ 
+          success: false, 
+          message: `Permission manquante: ${permission}` 
+        });
       }
 
       next();
     } catch (error) {
-      return res.status(500).json({ success: false, message: "Erreur d'autorisation" });
+      return res.status(500).json({ 
+        success: false, 
+        message: "Erreur d'autorisation" 
+      });
     }
   };
 };
