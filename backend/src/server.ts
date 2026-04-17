@@ -44,7 +44,12 @@ app.use("/api/public", publicRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 // server.ts
 app.use("/api/sites", siteRoutes);
-app.use("/api/pages", pageRoutes);
+
+// فسخ السطر القديم وحط هذا في بلاصتو لـ 5 دقائق بركة:
+app.post("/api/pages", (req, res) => {
+    res.json({ message: "TEST POST WORKING DIRECTLY" });
+});
+
 app.use("/api/media", mediaRoutes);
 app.use("/api/users", userRoutes);
 
