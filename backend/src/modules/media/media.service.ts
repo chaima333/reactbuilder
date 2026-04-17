@@ -22,13 +22,13 @@ export const createMediaRecord = async (file: any, userId: number, body: any) =>
     alt: alt || '',
     folderId: folderId ? parseInt(folderId) : null,
     userId,
-    siteId: siteId ? parseInt(siteId) : null,
+    siteId: body.siteId ? parseInt(body.siteId.toString()) : null,
   } as any);
 
   // سجل النشاط
   await ActivityLog.create({
     userId,
-    siteId: siteId ? parseInt(siteId) : null,
+    siteId: body.siteId ? parseInt(body.siteId.toString()) : null,
     action: 'media_uploaded',
     entityType: 'media',
     entityId: media.id,

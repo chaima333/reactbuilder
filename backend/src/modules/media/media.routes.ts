@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { authenticateJWT } from '../../shared/auth.util';
 import * as MediaController from './media.controller';
+import { tenantResolver } from '../../core/middleware/tenant.middleware';
 
 const router = Router();
 
@@ -26,6 +27,8 @@ const upload = multer({
 });
 
 router.use(authenticateJWT);
+router.use(tenantResolver); // 
+
 
 // Routes
 router.post('/upload', upload.single('image'), MediaController.uploadMedia);
