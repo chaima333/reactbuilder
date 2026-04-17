@@ -1,39 +1,25 @@
+
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../../shared/auth.util'; 
-import { SiteMember } from '../../models/SiteMember';
-
+import { ROLE_PERMISSIONS } from '../constants/rolePermissions';
 
 /**
  * Middleware pour vérifier les rôles autorisés
  */
-
-export const PERMISSIONS = {
-  SITE_READ: "site:read",
-  SITE_EDIT: "site:edit",
-  SITE_DELETE: "site:delete",
-  SITE_INVITE: "site:invite",
-};
-
-const rolePermissions: Record<string, string[]> = {
-  OWNER: [PERMISSIONS.SITE_READ, PERMISSIONS.SITE_EDIT, PERMISSIONS.SITE_DELETE, PERMISSIONS.SITE_INVITE],
-  ADMIN: [PERMISSIONS.SITE_READ, PERMISSIONS.SITE_EDIT, PERMISSIONS.SITE_INVITE],
-  EDITOR: [PERMISSIONS.SITE_READ, PERMISSIONS.SITE_EDIT],
-  VIEWER: [PERMISSIONS.SITE_READ]
-};
-
 export const requirePermission = (permission: string) => {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const siteContext = req.siteContext;
 
+      // تثبّت إنّو الـ TenantResolver خدم خدمتو
       if (!siteContext?.siteId) {
         return res.status(400).json({ 
           success: false, 
-          message: "Site context missing" 
+          message: "Site context missing in request" 
         });
       }
 
-      const role = siteContext.role;
+      const role = siteContext.role; // هوني الـ Role (OWNER, ADMIN, إلخ)
 
       if (!role) {
         return res.status(403).json({ 
@@ -42,7 +28,8 @@ export const requirePermission = (permission: string) => {
         });
       }
 
-      const permissions = rolePermissions[role] || [];
+      // 2️⃣ استعمل الـ Record الجديد اللي فيه PAGE_CREATE
+      const permissions = ROLE_PERMISSIONS[role] || [];
 
       if (!permissions.includes(permission)) {
         return res.status(403).json({ 
@@ -60,6 +47,9 @@ export const requirePermission = (permission: string) => {
     }
   };
 };
+
+
+
 export const authorizeRoles = (...allowedRoles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     const user = req.user;
