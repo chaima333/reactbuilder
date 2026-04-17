@@ -44,9 +44,10 @@ app.use("/api/public", publicRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 // server.ts
 app.use("/api/sites", siteRoutes);
-app.use("/api", pageRoutes);
+app.use("/api/pages", pageRoutes);
 app.use("/api/media", mediaRoutes);
 app.use("/api/users", userRoutes);
+
 app.use("/api/seo", seoRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/ai", aiRoutes);
