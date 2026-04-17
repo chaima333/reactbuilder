@@ -3,31 +3,27 @@ import { AuthRequest, SiteContext } from "../../shared/auth.util";
 import { Site } from "../../models/site";
 
 
-  export const tenantResolver = async (req: any, res: Response, next: NextFunction) => {
+export const tenantResolver = async (req: any, res: Response, next: NextFunction) => {
   try {
     const host = req.headers.host || "";
-    const headerSubdomain = req.headers["x-subdomain"] as string;
+    // Express يحوّل الـ Headers أوتوماتيكياً لـ lowercase
+    const headerSubdomain = req.headers["x-subdomain"]; 
     
     let subdomain = "";
 
-    // 1. الأولوية للـ Header (مهم جداً للـ Testing والـ Postman)
     if (headerSubdomain) {
-      subdomain = headerSubdomain;
-    } 
-    // 2. إذا ما فماش Header، نطلعوه مالـ Host (للـ Production)
-    else if (!host.includes("localhost") && !host.includes("render.com")) {
+      subdomain = String(headerSubdomain).toLowerCase().trim();
+    } else {
+      // Logic الـ Host العادي
       subdomain = host.split('.')[0];
     }
 
-    // تنظيف الـ subdomain
-    subdomain = subdomain.toLowerCase().trim();
-
-    // 3. الحالات اللي ما نلوجوش فيها على Site
-    if (!subdomain || subdomain === "www" || subdomain === "backend-rmfq") {
-      return next(); 
+    // الحالات اللي نتعداو فيها (الـ Backend نفسه)
+    if (!subdomain || subdomain === "www" || subdomain === "backend-rmfq" || subdomain === "localhost:10000") {
+      return next();
     }
 
-    console.log(`🔍 Attempting to resolve site for subdomain: [${subdomain}]`);
+    console.log(`🔍 [TenantResolver] Looking for subdomain: "${subdomain}"`);
 
     const site = await Site.findOne({ 
       where: { subdomain: subdomain } 
@@ -40,18 +36,12 @@ import { Site } from "../../models/site";
       });
     }
 
-    (req as AuthRequest).siteContext = {
-      siteId: site.id,
-      role: null, 
-    };
-
+    req.siteContext = { siteId: site.id, role: null };
     console.log(`✅ [TenantResolver] Resolved Site: ${site.name} (ID: ${site.id})`);
+    
     next();
   } catch (error) {
     console.error("TENANT_RESOLVER_ERROR:", error);
-    return res.status(500).json({ 
-      success: false, 
-      message: "Internal Server Error during tenant resolution" 
-    });
+    return res.status(500).json({ success: false, message: "Internal Error" });
   }
 };
