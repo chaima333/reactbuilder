@@ -96,9 +96,19 @@ export const getSites = async (req: AuthRequest, res: Response) => {
 // =========================//
 export const getSiteById = async (req: AuthRequest, res: Response) => {
   try {
-    const siteId = Number(req.params.siteId);
+    // 1. خوذ الـ siteId مالـ context اللي عبّاه الـ tenantResolver
+    const siteId = req.siteContext?.siteId;
     const userId = req.user.id;
 
+    // 2. تثبّت كان فمة siteId (احتياطاً)
+    if (!siteId) {
+      return res.status(400).json({
+        success: false,
+        message: "No site context found. Use a valid subdomain."
+      });
+    }
+
+    // 3. جيب الداتا متاع الموقع (بما إنو الـ Guard تعدّى، إذن الموقع موجود)
     const site = await Site.findByPk(siteId, {
       include: [{ model: Page, as: "pages", required: false }]
     });
@@ -110,23 +120,10 @@ export const getSiteById = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const membership = await SiteMember.findOne({
-      where: {
-        userId,
-        siteId
-      }
-    });
+    // 4. الـ Role توّة نجيبوه مالـ context (الـ siteGuard ديجا طلّعو مالـ DB)
+    const role = req.siteContext?.role || 'VIEWER';
 
-    if (!membership) {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied"
-      });
-    }
-
-    const role = membership.role;
-
-    // permissions mapping (simple but scalable)
+    // 5. الـ Permissions mapping
     const permissionsMap: any = {
       OWNER: ["read", "edit", "delete", "invite"],
       ADMIN: ["read", "edit", "invite"],
@@ -144,15 +141,13 @@ export const getSiteById = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error) {
-    console.error(error);
-
+    console.error("GET_SITE_CONTROLLER_ERROR:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error"
     });
   }
 };
-
 
 export const deleteSite = async (req: AuthRequest, res: Response) => {
 const siteId = req.context.membership?.siteId || req.context.site?.id;
