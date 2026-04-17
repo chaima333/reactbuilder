@@ -75,6 +75,42 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/plugins", pluginRoutes);
 
+
+
+const recentRequests = new Map<string, number>();
+
+app.use((req, res, next) => {
+  const key = `${req.method}-${req.url}-${req.headers["x-subdomain"]}`;
+
+  const now = Date.now();
+  const last = recentRequests.get(key);
+
+  if (last && now - last < 1000) {
+    console.log("⚠️ DUPLICATE REQUEST DETECTED:", key);
+  }
+
+  recentRequests.set(key, now);
+
+  next();
+});
+
+
+
+
+app.use((req, res, next) => {
+  const start = Date.now();
+
+  res.on("finish", () => {
+    console.log("⬅️ REQUEST END", {
+      id: req.headers["x-request-id"],
+      status: res.statusCode,
+      duration: Date.now() - start
+    });
+  });
+
+  next();
+});
+
 // --- 5. DÉMARRAGE ---
 const startServer = async () => {
   try {
