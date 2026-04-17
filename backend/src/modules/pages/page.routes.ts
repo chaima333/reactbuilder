@@ -7,13 +7,13 @@ import tenantResolver from '../../core/middleware/tenant.middleware';
 
 const router = Router();
 router.use(authenticateJWT);
-
+router.use(tenantResolver);
 
 // GET Pages (Read)
 router.get('/', requirePermission(PERMISSIONS.SITE_READ), getPages);
 
 // POST Page (Create)
-router.post('/', tenantResolver, requirePermission(PERMISSIONS.PAGE_CREATE), createPage);
+router.post('/', requirePermission(PERMISSIONS.PAGE_CREATE), createPage);
 
 // PUT Page (Update)
 router.put('/:pageId', requirePermission(PERMISSIONS.PAGE_UPDATE), updatePage);
