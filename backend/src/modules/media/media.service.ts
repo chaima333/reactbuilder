@@ -20,9 +20,10 @@ export const createMediaRecord = async (file: any, userId: number, body: any) =>
     type: fileType,
     size: file.size,
     alt: alt || '',
-    folderId: folderId ? parseInt(folderId) : null,
     userId,
-    siteId: body.siteId ? parseInt(body.siteId.toString()) : null,
+    // 🎯 ON S'ASSURE QUE C'EST BIEN ENREGISTRÉ ICI
+    siteId: siteId ? parseInt(siteId.toString()) : null, 
+    folderId: folderId ? parseInt(folderId.toString()) : null,
   } as any);
 
   // سجل النشاط

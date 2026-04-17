@@ -26,19 +26,22 @@ export const getAllMedia = async (req: AuthRequest, res: Response) => {
 export const uploadMedia = async (req: AuthRequest, res: Response) => {
   try {
     const file = (req as any).file;
-    const siteId = req.siteContext?.siteId; // 👈
+    // 🎯 ON RÉCUPÈRE LE SITEID DEPUIS LE CONTEXTE (RÉSOLU PAR LE TENANTRESOLVER)
+    const siteId = req.siteContext?.siteId; 
     
     if (!file) return res.status(400).json({ success: false, message: 'Aucun fichier' });
 
-    // ابعث الـ siteId للـ service باش يقيد التصويرة تابعة السايت الصحيح
-    const media = await MediaService.createMediaRecord(file, req.user.id, { ...req.body, siteId: siteId });
+    // 🎯 ON INJECTE LE SITEID DANS L'OBJET DATA PASSÉ AU SERVICE
+    const media = await MediaService.createMediaRecord(file, req.user.id, { 
+      ...req.body, 
+      siteId: siteId // C'est cette ligne qui fait le lien !
+    });
     
     res.json({ success: true, message: 'Média téléchargé avec succès', data: media });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 
 export const deleteMedia = async (req: AuthRequest, res: Response) => {
   try {
