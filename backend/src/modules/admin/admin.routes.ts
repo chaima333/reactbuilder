@@ -7,7 +7,7 @@ import { getPendingUsers, approveUser, rejectUser } from './admin.controller';
 const router = Router();
 
 router.use(authenticateJWT);
-router.use(authorizeRoles('Admin'));
+router.use(authorizeRoles('ADMIN'));
 
 router.get('/pending-users', getPendingUsers);
 router.post('/approve-user/:id', approveUser);

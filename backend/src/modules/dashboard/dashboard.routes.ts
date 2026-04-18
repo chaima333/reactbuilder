@@ -19,7 +19,7 @@ router.get("/activity", getActivityLog);
 
 // Routes admin uniquement (si nécessaire)
 router.get("/admin/stats", 
-  authorizeRoles("Admin"), 
+  authorizeRoles("ADMIN"), 
   getDashboardStats
 );
 
