@@ -6,7 +6,7 @@ import cors from "cors";
 import path from "path";
 
 // =====================
-// ROUTES (SAFE IMPORT - AVOID ESM ISSUES)
+// ROUTES
 // =====================
 const authRoutes = require("./modules/auth/auth.routes").default;
 const dashboardRoutes = require("./modules/dashboard/dashboard.routes").default;
@@ -42,10 +42,10 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(initContext);
 
 // =====================
-// DEBUG LOG (IMPORTANT)
+// DEBUG LOGGER (optional but useful)
 // =====================
 app.use((req, _res, next) => {
-  console.log("➡️ REQUEST:", req.method, req.url);
+  console.log("➡️", req.method, req.url);
   next();
 });
 
@@ -55,25 +55,31 @@ app.use((req, _res, next) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/public", publicRoutes);
 
-app.get("/api/health", (req, res) => {
+app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
 // =====================
-// PROTECTED ROUTES (SCOPED MIDDLEWARE)
+// PROTECTED STACK (IMPORTANT RULE)
+// order: auth → tenant → routes
 // =====================
-app.use("/api/pages", tenantResolver, pageRoutes);
-app.use("/api/sites",  tenantResolver, siteRoutes);
-app.use("/api/dashboard", tenantResolver, dashboardRoutes);
-app.use("/api/media", tenantResolver, mediaRoutes);
-app.use("/api/users", tenantResolver, userRoutes);
-app.use("/api/seo", authenticateJWT, tenantResolver, seoRoutes);
-app.use("/api/admin", tenantResolver, adminRoutes);
-app.use("/api/ai", authenticateJWT, tenantResolver, aiRoutes);
-app.use("/api/plugins", authenticateJWT, tenantResolver, pluginRoutes);
+const protectedStack = [authenticateJWT, tenantResolver];
 
 // =====================
-// DB + SERVER START
+// PROTECTED ROUTES
+// =====================
+app.use("/api/pages", ...protectedStack, pageRoutes);
+app.use("/api/sites", ...protectedStack, siteRoutes);
+app.use("/api/dashboard", ...protectedStack, dashboardRoutes);
+app.use("/api/media", ...protectedStack, mediaRoutes);
+app.use("/api/users", ...protectedStack, userRoutes);
+app.use("/api/seo", ...protectedStack, seoRoutes);
+app.use("/api/admin", ...protectedStack, adminRoutes);
+app.use("/api/ai", ...protectedStack, aiRoutes);
+app.use("/api/plugins", ...protectedStack, pluginRoutes);
+
+// =====================
+// START SERVER
 // =====================
 const startServer = async () => {
   try {

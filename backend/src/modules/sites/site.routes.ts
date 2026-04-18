@@ -1,24 +1,25 @@
 import { Router } from "express";
 import { authenticateJWT } from "../../shared/auth.util";
-import { requireGlobalRole } from "../../core/middleware/globalGuard";
-import { requireSiteAccess } from "../../core/middleware/siteGuard";
-import { requirePermission } from "../../core/constants/requirePermission";
-import { createSite, updateSite, deleteSite, getSiteById } from "./site.controller";
-import { PERMISSIONS } from "../../core/constants/permissions";
+import {
+  createSite,
+  updateSite,
+  deleteSite,
+  getSiteById,
+  getSites
+} from "./site.controller";
+import { authorizeRoles } from "../../core/middleware/role.middleware";
 
 const router = Router();
 
 router.use(authenticateJWT);
 
-router.post("/", requireGlobalRole(["ADMIN", "Creator"]), createSite);
+// 👇 any logged user
+router.get("/", getSites);
+router.get("/:id", getSiteById);
 
-
-router.get("/", requireSiteAccess, requirePermission(PERMISSIONS.SITE_READ), getSiteById);
-
-
-router.put("/", requireSiteAccess, requirePermission(PERMISSIONS.SITE_UPDATE), updateSite);
-
-
-router.delete("/", requireSiteAccess, requirePermission(PERMISSIONS.SITE_DELETE), deleteSite);
+// 👇 restricted actions
+router.post("/", authorizeRoles("ADMIN", "EDITOR"), createSite);
+router.put("/:id", authorizeRoles("ADMIN", "EDITOR"), updateSite);
+router.delete("/:id", authorizeRoles("ADMIN"), deleteSite);
 
 export default router;
