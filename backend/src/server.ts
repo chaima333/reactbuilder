@@ -37,44 +37,54 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(initContext);
 
 // =====================
-// PUBLIC ROUTES (NO AUTH)
+// DEBUG ROUTE (IMPORTANT)
+// =====================
+app.get("/__debug__", (req, res) => {
+  res.json({
+    status: "ok",
+    siteRoutes: typeof siteRoutes,
+    dashboardRoutes: typeof dashboardRoutes,
+  });
+});
+
+// =====================
+// PUBLIC ROUTES
 // =====================
 app.use("/api/auth", authRoutes);
 app.use("/api/public", publicRoutes);
 
+// =====================
+// HEALTH CHECK
+// =====================
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
 // =====================
-// LOGGING (DEBUG ONLY)
+// LOG REQUESTS
 // =====================
-app.use((req, res, next) => {
-  console.log("➡️ REQUEST:", req.method, req.url);
+app.use((req, _res, next) => {
+  console.log("➡️", req.method, req.url);
   next();
 });
 
 // =====================
-// PROTECTED MIDDLEWARE (APPLY ONLY AFTER)
+// PROTECTED ROUTES (SCOPED MIDDLEWARE)
 // =====================
-app.use(authenticateJWT);
-app.use(tenantResolver);
+
+// IMPORTANT: apply middleware per route (NOT globally)
+app.use("/api/pages", authenticateJWT, tenantResolver, pageRoutes);
+app.use("/api/sites", authenticateJWT, tenantResolver, siteRoutes);
+app.use("/api/dashboard", authenticateJWT, tenantResolver, dashboardRoutes);
+app.use("/api/media", authenticateJWT, tenantResolver, mediaRoutes);
+app.use("/api/users", authenticateJWT, tenantResolver, userRoutes);
+app.use("/api/seo", authenticateJWT, tenantResolver, seoRoutes);
+app.use("/api/admin", authenticateJWT, tenantResolver, adminRoutes);
+app.use("/api/ai", authenticateJWT, tenantResolver, aiRoutes);
+app.use("/api/plugins", authenticateJWT, tenantResolver, pluginRoutes);
 
 // =====================
-// PROTECTED ROUTES
-// =====================
-app.use("/api/pages", pageRoutes);
-app.use("/api/sites", siteRoutes);
-app.use("/api/dashboard", dashboardRoutes);
-app.use("/api/media", mediaRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/seo", seoRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/ai", aiRoutes);
-app.use("/api/plugins", pluginRoutes);
-
-// =====================
-// DB + SERVER START
+// START SERVER
 // =====================
 const startServer = async () => {
   try {
