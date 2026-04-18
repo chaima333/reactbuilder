@@ -185,7 +185,7 @@ export const Profile: React.FC = () => {
             <TextField
               fullWidth
               label={t.role}
-              value={user?.role === 'Admin' ? t.admin : user?.role === 'Editor' ? t.editor : t.viewer}
+              value={user?.role === 'ADMIN' ? t.ADMIN : user?.role === 'EDITOR' ? t.EDITOR : t.VIEWER}
               disabled
               variant="filled"
               helperText={t.roleHelper || 'Le rôle ne peut pas être modifié'}

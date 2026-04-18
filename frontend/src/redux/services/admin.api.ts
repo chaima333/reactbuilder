@@ -3,13 +3,13 @@ import { api } from '../api/api';
 export const adminApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getPendingUsers: builder.query<any, void>({
-      query: () => '/admin/pending-users',
+      query: () => '/ADMIN/pending-users',
       providesTags: ['PendingUsers'],
     }),
 
     approveUser: builder.mutation<any, number>({
       query: (id) => ({
-        url: `/admin/approve-user/${id}`,
+        url: `/ADMIN/approve-user/${id}`,
         method: 'POST',
       }),
       invalidatesTags: ['PendingUsers', 'Users', 'Stats'],
@@ -17,7 +17,7 @@ export const adminApi = api.injectEndpoints({
 
     rejectUser: builder.mutation<any, number>({
       query: (id) => ({
-        url: `/admin/reject-user/${id}`,
+        url: `/ADMIN/reject-user/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['PendingUsers', 'Users'],

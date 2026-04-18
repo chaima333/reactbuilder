@@ -9,7 +9,7 @@ const getSubdomain = () => {
   const parts = host.split('.');
   if (parts.length > 1 && parts[parts.length - 1] !== 'localhost') return parts[0];
   if (parts.length > 1 && host.includes('localhost')) return parts[0];
-  return 'admin';
+  return 'ADMIN';
 };
 
 const rawBaseQuery = fetchBaseQuery({

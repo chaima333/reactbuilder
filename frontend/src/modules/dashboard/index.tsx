@@ -37,10 +37,10 @@ export const Dashboard: React.FC = () => {
   }
 
   switch (userRole) {
-    case 'Admin':
-      return <AdminDashboard stats={stats} activities={activities} userName={user?.name || 'Admin'} />;
+    case 'ADMIN':
+      return <AdminDashboard stats={stats} activities={activities} userName={user?.name || 'ADMIN'} />;
     case 'Editor':
-      return <EditorDashboard stats={stats} sites={sites} userName={user?.name || 'Créateur'} />;
+      return <EditorDashboard stats={stats} sites={sites} userName={user?.name || 'EDITOR'} />;
     default:
       return <Navigate to="/" replace />;
   }

@@ -36,7 +36,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats, activitie
           Tableau de bord
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Bienvenue, {userName || 'Admin'}
+          Bienvenue, {userName || 'ADMIN'}
         </Typography>
       </Box>
 

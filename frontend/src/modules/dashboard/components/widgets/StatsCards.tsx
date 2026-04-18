@@ -6,7 +6,7 @@ import {
   Visibility as ViewsIcon,
   Storage as StorageIcon,
 } from '@mui/icons-material';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage } from '../../../../app/providers/LanguageProvider';
 interface StatsCardsProps {
   stats?: {
     totalSites?: number;
