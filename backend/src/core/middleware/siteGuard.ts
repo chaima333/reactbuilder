@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../../shared/auth.util';
 import { SiteMember } from '../../models/SiteMember';
+import { normalizeRole } from './role.middleware';
 
 export const requireSiteAccess = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -21,8 +22,9 @@ export const requireSiteAccess = async (req: AuthRequest, res: Response, next: N
       return res.status(403).json({ message: "Forbidden: You are not a member of this site" });
     }
 
-    req.siteContext.role = membership ? membership.role : (isGlobalAdmin ? 'OWNER' : null);
-
+req.siteContext.role = normalizeRole(
+  membership?.role || (isGlobalAdmin ? "OWNER" : "VIEWER")
+);
     next();
   } catch (error) {
     console.error("SITE_GUARD_ERROR:", error);

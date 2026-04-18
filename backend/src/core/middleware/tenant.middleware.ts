@@ -1,6 +1,7 @@
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "../../shared/auth.util";
 import { Site, SiteMember } from "../../models";
+import { SiteRole } from "./role.middleware";
 
 export const tenantResolver = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -43,7 +44,7 @@ export const tenantResolver = async (req: AuthRequest, res: Response, next: Next
 
     req.siteContext = {
       siteId: site.id,
-      role: roleMapping[membership.role.toUpperCase()] || 'VIEWER'
+      role: (roleMapping[membership.role.toUpperCase()] as SiteRole) ?? "VIEWER"
     };
 
     next();
