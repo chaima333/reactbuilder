@@ -18,7 +18,7 @@ router.get("/sites/:siteId/stats", getSiteStats);
 router.get("/activity", getActivityLog);
 
 // Routes admin uniquement (si nécessaire)
-router.get("/admin/stats", 
+router.get("/ADMIN/stats", 
   authorizeRoles("ADMIN"), 
   getDashboardStats
 );

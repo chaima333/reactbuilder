@@ -10,7 +10,7 @@ const router = Router();
 
 router.use(authenticateJWT);
 
-router.post("/", requireGlobalRole(["Admin", "Creator"]), createSite);
+router.post("/", requireGlobalRole(["ADMIN", "Creator"]), createSite);
 
 
 router.get("/", requireSiteAccess, requirePermission(PERMISSIONS.SITE_READ), getSiteById);

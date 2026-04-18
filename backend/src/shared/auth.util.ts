@@ -17,12 +17,9 @@ export interface SiteContext {
 }
 
 export type AuthRequest = Request & {
-  user?: any;
-  siteContext?: {
-    siteId: number;
-    role: "OWNER" | "ADMIN" | "EDITOR" | "VIEWER";
-  };
-};
+  user?: any;         
+  siteContext?: SiteContext; 
+}
 
 export const generateToken = (payload: JwtPayload): string => {
   const expiresIn = payload.type === "refresh" ? "7d" : "1h";
@@ -96,7 +93,7 @@ Promise<void> => {
 
     const isUserApproved = user.isApproved || user.getDataValue('is_approved');
     
-    if (!isUserApproved && user.role !== 'Admin') {
+    if (!isUserApproved && user.role !== 'ADMIN') {
       res.status(403).json({ 
         success: false, 
         message: 'Account pending admin approval.' 

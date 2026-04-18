@@ -10,7 +10,7 @@ export const addUser = async (name: string, email: string, password: string, rol
     name, 
     email, 
     password, 
-    role: role as 'Admin' | 'Editor' | 'Viewer',
+    role: role as 'ADMIN' | 'EDITOR' | 'VIEWER',
     isApproved 
   });
 };

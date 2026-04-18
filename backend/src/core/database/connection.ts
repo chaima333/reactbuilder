@@ -16,7 +16,6 @@ export const sequelize = new Sequelize(databaseUrl, {
   dialect: "postgres",
   logging: false,
   
-  // استعمل الأسماء المباشرة للموديلات توة
   models: [
     User,
     Token,

@@ -16,7 +16,7 @@ export const requireSiteAccess = async (req: AuthRequest, res: Response, next: N
     }
 
     const membership = await SiteMember.findOne({ where: { userId, siteId } });
-    const isGlobalAdmin = req.user.role === 'Admin';
+    const isGlobalAdmin = req.user.role === 'ADMIN';
 
     if (!membership && !isGlobalAdmin) {
       return res.status(403).json({ message: "Forbidden: You are not a member of this site" });

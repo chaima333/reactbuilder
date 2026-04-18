@@ -23,8 +23,7 @@ export type PageStatus = 'draft' | 'published' | 'scheduled' | 'deleted';
 @Table({
   tableName: "pages",
   timestamps: true,
-  underscored: true, // هذي معناها الداتابيز فيها (_)
-  // ✅ التصليح هوني: لازم نكتبوا site_id موش siteId لداخل الـ fields
+  underscored: true, 
   indexes: [{ unique: true, fields: ['site_id', 'slug'] }], 
 })
 export class Page extends Model {
@@ -55,19 +54,18 @@ export class Page extends Model {
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
-    field: 'user_id', // تأكيد الإسم في الداتابيز
+    field: 'user_id',
   })
   userId!: number;
 
   @BelongsTo(() => User, 'user_id')
   author!: User;
 
-  // 🛡️ الربط مع الموقع (هوني كانت العكّة)
   @ForeignKey(() => Site)
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
-    field: 'site_id', // تأكيد الإسم في الداتابيز
+    field: 'site_id',
   })
   siteId!: number; 
   

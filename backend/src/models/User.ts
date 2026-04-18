@@ -35,11 +35,11 @@ export class User extends Model<User> {
   password!: string;
 
   @Column({
-    type: DataType.ENUM('Admin', 'Editor', 'Viewer'),
+    type: DataType.ENUM('ADMIN', 'EDITOR', 'VIEWER'),
     allowNull: false,
-    defaultValue: 'Viewer'
+    defaultValue: 'VIEWER'
   })
-  role!: 'Admin' | 'Editor' | 'Viewer';  
+role!: 'ADMIN' | 'EDITOR' | 'VIEWER';
 
   @Column({
     type: DataType.STRING(500),
@@ -79,11 +79,11 @@ googleId!: string;
 
   // Méthodes utilitaires
   isAdmin(): boolean {
-    return this.role === 'Admin';
+    return this.role === 'ADMIN';
   }
 
   isEditor(): boolean {
-    return this.role === 'Editor';
+    return this.role === 'EDITOR';
   }
 
   canEditPage(pageUserId: number): boolean {

@@ -236,7 +236,7 @@ export const changeUserRole = async (req: AuthRequest, res: Response) => {
     const userId = typeof id === 'string' ? parseInt(id) : parseInt(id[0]);
     const { role } = req.body;
 
-    if (!['Admin', 'Editor', 'Viewer'].includes(role)) {
+    if (!['ADMIN', 'EDITOR', 'VIEWER'].includes(role)) {
       return res.status(400).json({ success: false, message: 'Rôle invalide' });
     }
 
