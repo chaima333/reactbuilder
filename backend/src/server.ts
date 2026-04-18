@@ -24,7 +24,7 @@ const pageRoutes = require("./modules/pages/page.routes").default;
 // CORE
 // =====================
 import { initializeDB } from "./core/database/init";
-import { authenticateJWT } from "./modules/plugins/plugin.routes";
+import { authenticateJWT } from "./shared/auth.util";
 import { tenantResolver } from "./core/middleware/tenant.middleware";
 import { initContext } from "./core/middleware/context.middleware";
 
@@ -62,13 +62,13 @@ app.get("/api/health", (req, res) => {
 // =====================
 // PROTECTED ROUTES (SCOPED MIDDLEWARE)
 // =====================
-app.use("/api/pages", authenticateJWT, tenantResolver, pageRoutes);
-app.use("/api/sites", authenticateJWT, tenantResolver, siteRoutes);
-app.use("/api/dashboard", authenticateJWT, tenantResolver, dashboardRoutes);
-app.use("/api/media", authenticateJWT, tenantResolver, mediaRoutes);
-app.use("/api/users", authenticateJWT, tenantResolver, userRoutes);
+app.use("/api/pages", tenantResolver, pageRoutes);
+app.use("/api/sites",  tenantResolver, siteRoutes);
+app.use("/api/dashboard", tenantResolver, dashboardRoutes);
+app.use("/api/media", tenantResolver, mediaRoutes);
+app.use("/api/users", tenantResolver, userRoutes);
 app.use("/api/seo", authenticateJWT, tenantResolver, seoRoutes);
-app.use("/api/admin", authenticateJWT, tenantResolver, adminRoutes);
+app.use("/api/admin", tenantResolver, adminRoutes);
 app.use("/api/ai", authenticateJWT, tenantResolver, aiRoutes);
 app.use("/api/plugins", authenticateJWT, tenantResolver, pluginRoutes);
 
