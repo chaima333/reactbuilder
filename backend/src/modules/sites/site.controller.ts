@@ -39,7 +39,7 @@ export const createSite = async (req: AuthRequest, res: Response) => {
 export const updateSite = async (req: AuthRequest, res: Response) => {
   try {
     // الأولوية ديما للـ ID اللي جاي من الـ Guard (أكثر أمان)
-    const siteId = req.context?.membership?.siteId || req.params.siteId;
+    const siteId = req.siteContext?.siteId || req.params.siteId;
     const updatedSite = await SiteService.updateSiteService(Number(siteId), req.body);
     
     return res.json({ success: true, data: updatedSite });
@@ -150,7 +150,11 @@ export const getSiteById = async (req: AuthRequest, res: Response) => {
 };
 
 export const deleteSite = async (req: AuthRequest, res: Response) => {
-const siteId = req.context.membership?.siteId || req.context.site?.id;
+  const siteId = req.siteContext?.siteId;
+
+if (!siteId) {
+  throw new Error("SITE_CONTEXT_MISSING");
+}
   const [affectedCount] = await Site.update(
     { status: 'deleted' }, 
     { where: { id: siteId } }

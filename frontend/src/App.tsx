@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -7,62 +7,73 @@ import { SnackbarProvider } from 'notistack';
 
 import { store, RootState } from './redux/store';
 import { lightTheme, darkTheme } from './theme';
+import { Layout } from './app/Layout/Layout';
 
-import { Layout } from './components/Layout/Layout';
+// Pages
+import { Dashboard } from './modules/dashboard';
+import { Login } from './modules/auth/pages/Login';
+import { Sites } from './modules/sites/pages/SitesPage';
+import { PageEditor } from './modules/pageBuilder/PageEditor';
+import { SiteEditor } from './modules/sites/pages/SiteEditorPage';
+import { PublicSite } from './modules/sites/pages/PublicSitePage';
+import { Profile } from './modules/users/pages/Profile';
+import  Media  from './modules/media/pages/MediaPage';
+import { Settings } from './modules/users/pages/Settings';
+import { Register } from './modules/auth/pages/Register';
+import { Home } from './app/pages/Home';
+import { ForgotPassword } from './modules/auth/pages/ForgotPassword'; 
+import { ResetPassword } from './modules/auth/pages/ResetPassword';
+import Users from './modules/users/pages/Users';
+import { WaitingPage } from './modules/auth/pages/WaitingPage';
 
-import { Dashboard } from './pages/Dashboard';
-import { Login } from './pages/Login';
-import { Sites } from './pages/Sites';
-import { PageEditor } from './pages/PageEditor';
-import { SiteEditor } from './pages/SiteEditor';
-import { PublicSite } from './pages/PublicSite';
-import { Profile } from './pages/Profile';
-import { Media } from './pages/Media';
-import { Settings } from './pages/Settings';
-import { Register } from './pages/Register';
-import { Home } from './pages/Home';
-import { ForgotPassword } from './pages/ForgotPassword'; 
-import { ResetPassword } from './pages/ResetPassword';
-import Users from './pages/Users';
-
-import { LanguageProvider } from './context/LanguageContext';
-
+import { LanguageProvider } from './app/providers/LanguageProvider';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { WaitingPage } from './pages/WaitingPage';
 
-// 🔥 VOTRE CLIENT ID GOOGLE
 const GOOGLE_CLIENT_ID = '386973697348-lm5v1bvoupl2l7t7kfqe89irlif6oo37.apps.googleusercontent.com';
 
 // =====================
-// 🔒 PROTECTED ROUTE
+// 🔒 PROTECTED ROUTES
 // =====================
 const ProtectedRoute = () => {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
-
-  if (!isAuthenticated) return <Navigate to="/" replace />;
-
-  return <Outlet />;
-};
-
-// =====================
-// 🔒 ADMIN ROUTE
-// =====================
-const AdminRoute = () => {
-  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
-  const role = useSelector((state: RootState) => state.auth.user?.role);
-
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (role !== 'Admin') return <Navigate to="/dashboard" replace />;
+  return <Outlet />;
+};
 
+const AdminRoute = () => {
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (user?.role !== 'Admin') return <Navigate to="/dashboard" replace />;
   return <Outlet />;
 };
 
 // =====================
-// 🌐 APP CONTENT
+// 🌐 APP CONTENT (Tenant Aware)
 // =====================
 const AppContent: React.FC = () => {
   const themeMode = useSelector((state: RootState) => state.theme.mode);
 
+  // 🔥 تحديد الـ Subdomain
+  const subdomain = useMemo(() => {
+    const host = window.location.hostname;
+    const parts = host.split('.');
+    // نعتبر 'www' و 'localhost' و 'admin' هم المديرين للسيستام
+    const isMainAdmin = parts.length <= 1 || parts[0] === 'www' || parts[0] === 'admin' || parts[parts.length-1] === 'localhost' && parts.length === 1;
+    
+    return isMainAdmin ? null : parts[0];
+  }, []);
+
+  // 🏪 حالة 1: المستعمل داخل لسايت معين (Subdomain)
+  if (subdomain && subdomain !== 'admin' && subdomain !== 'www') {
+    return (
+      <ThemeProvider theme={lightTheme}>
+        <CssBaseline />
+        <PublicSite /> 
+      </ThemeProvider>
+    );
+  }
+
+  // 🏗️ حالة 2: المستعمل داخل للـ Main App (Admin Panel)
   return (
     <ThemeProvider theme={themeMode === 'light' ? lightTheme : darkTheme}>
       <CssBaseline />
@@ -76,7 +87,6 @@ const AppContent: React.FC = () => {
             <Route path="/waiting-approval" element={<WaitingPage />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
-            <Route path="/site/:siteId" element={<PublicSite />} />
 
             {/* 🔒 PROTECTED ROUTES */}
             <Route element={<ProtectedRoute />}>
@@ -97,7 +107,6 @@ const AppContent: React.FC = () => {
               </Route>
             </Route>
 
-            {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
@@ -106,9 +115,6 @@ const AppContent: React.FC = () => {
   );
 };
 
-// =====================
-// 🚀 APP ROOT
-// =====================
 function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>

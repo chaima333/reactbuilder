@@ -1,30 +1,53 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+/*import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { RootState } from '../store';
 import { logout, setCredentials } from '../features/authSlice';
 
 const API_URL = 'https://backend-rmfq.onrender.com/api';
 
+/* ==========================================================
+    UTILITY: استخراج الـ Subdomain من الـ URL
+   ========================================================== *
+const getSubdomain = () => {
+  const host = window.location.hostname;
+  const parts = host.split('.');
+  
+  // التعامل مع localhost و الـ domains الحقيقية
+  // إذا كان الرابط: testsite.localhost:5173 -> سيعيد "testsite"
+  if (parts.length > 1 && parts[parts.length - 1] !== 'localhost') {
+    return parts[0];
+  } else if (parts.length > 1 && host.includes('localhost')) {
+    return parts[0];
+  }
+  
+  return 'admin'; // القيمة الافتراضية
+};
+
 /* =========================
-   BASE QUERY
-========================= */
+    BASE QUERY
+   ========================= *
 const baseQuery = fetchBaseQuery({
   baseUrl: API_URL,
   prepareHeaders: (headers, { getState }) => {
+    // 1. إضافة الـ Token من الـ Redux Store
     const token = (getState() as RootState).auth.accessToken;
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
     }
+
+    // 2. 🔥 إضافة الـ Subdomain Header لربط الـ Tenant
+    const subdomain = getSubdomain();
+    headers.set('x-subdomain', subdomain);
+
     return headers;
   },
 });
 
 /* =========================
-   REFRESH TOKEN LOGIC
-========================= */
+    REFRESH TOKEN LOGIC
+   ========================= *
 const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
   let result = await baseQuery(args, api, extraOptions);
 
-  // Détection d'expiration de session (401 ou 403)
   if (result.error && (result.error.status === 401 || result.error.status === 403)) {
     const refreshToken = (api.getState() as RootState).auth.refreshToken;
 
@@ -33,7 +56,7 @@ const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
       return result;
     }
 
-    // Tentative de rafraîchissement
+    // محاولة تجديد الـ Token
     const refreshResult = await baseQuery(
       {
         url: '/auth/refresh_token',
@@ -48,17 +71,15 @@ const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
       const { accessToken, refreshToken: newRefreshToken } = refreshResult.data as any;
       const currentUser = (api.getState() as RootState).auth.user;
 
-      // FIX: Protection contre "User | null"
-      // On ne dispatch setCredentials que si l'utilisateur existe dans le store
       if (currentUser) {
         api.dispatch(
           setCredentials({
-            user: currentUser, // Ici, TypeScript sait que currentUser n'est pas null
+            user: currentUser,
             accessToken,
             refreshToken: newRefreshToken ?? refreshToken,
           })
         );
-        // On rejoue la requête initiale
+        // إعادة تنفيذ الطلب الأصلي بعد التجديد
         result = await baseQuery(args, api, extraOptions);
       } else {
         api.dispatch(logout());
@@ -72,8 +93,8 @@ const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
 };
 
 /* =========================
-   API DEFINITION
-========================= */
+    API DEFINITION
+   ========================= *
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
@@ -88,7 +109,7 @@ export const api = createApi({
     'PendingUsers',
   ],
   endpoints: (builder) => ({
-    /* ================= DASHBOARD ================= */
+    /* ================= DASHBOARD ================= 
     getDashboardStats: builder.query<any, void>({
       query: () => '/dashboard/stats',
       providesTags: ['Stats'],
@@ -104,7 +125,7 @@ export const api = createApi({
       providesTags: ['Sites'],
     }),
 
-    /* ================= SITES ================= */
+    /* ================= SITES ================= *
     getSites: builder.query<any, void>({
       query: () => '/sites',
       providesTags: ['Sites'],
@@ -141,7 +162,7 @@ export const api = createApi({
       invalidatesTags: ['Sites', 'Stats'],
     }),
 
-    /* ================= PAGES ================= */
+    /* ================= PAGES ================= *
     getPages: builder.query<any, number>({
       query: (siteId) => `/sites/${siteId}/pages`,
       providesTags: ['Pages'],
@@ -178,7 +199,7 @@ export const api = createApi({
       invalidatesTags: ['Pages', 'Sites'],
     }),
 
-    /* ================= MEDIA ================= */
+    /* ================= MEDIA ================= *
     getMedia: builder.query<any, void>({
       query: () => '/media',
       providesTags: ['Media'],
@@ -210,7 +231,7 @@ export const api = createApi({
       invalidatesTags: ['Media'],
     }),
 
-    /* ================= USERS MANAGEMENT ================= */
+    /* ================= USERS MANAGEMENT ================= *
     getUsers: builder.query<any, void>({
       query: () => '/users',
       providesTags: ['Users'],
@@ -251,7 +272,7 @@ export const api = createApi({
       invalidatesTags: ['Users', 'Stats'],
     }),
 
-    /* ================= AUTH & PROFILE ================= */
+    /* ================= AUTH & PROFILE ================= *
     login: builder.mutation<any, any>({
       query: (credentials) => ({
         url: '/auth/login',
@@ -282,7 +303,7 @@ export const api = createApi({
       invalidatesTags: ['User', 'Users'],
     }),
 
-    /* ================= ADMIN ACTIONS ================= */
+    /* ================= ADMIN ACTIONS ================= *
     getPendingUsers: builder.query<any, void>({
       query: () => '/admin/pending-users',
       providesTags: ['PendingUsers'],
@@ -304,24 +325,21 @@ export const api = createApi({
       invalidatesTags: ['PendingUsers', 'Users'],
     }),
 
+    forgotPassword: builder.mutation<any, { email: string }>({
+      query: (data) => ({
+        url: '/auth/forgot-password',
+        method: 'POST',
+        body: data,
+      }),
+    }),
 
-// Mot de passe oublié
-forgotPassword: builder.mutation<any, { email: string }>({
-  query: (data) => ({
-    url: '/auth/forgot-password',
-    method: 'POST',
-    body: data,
-  }),
-}),
-
-// Login avec Google
-googleLogin: builder.mutation<any, { token: string }>({
-  query: (data) => ({
-    url: '/auth/google-login',
-    method: 'POST',
-    body: data,
-  }),
-}),
+    googleLogin: builder.mutation<any, { token: string }>({
+      query: (data) => ({
+        url: '/auth/google-login',
+        method: 'POST',
+        body: data,
+      }),
+    }),
   }),
 });
 
@@ -355,4 +373,17 @@ export const {
   useGetPendingUsersQuery,
   useApproveUserMutation,
   useRejectUserMutation,
-} = api;
+  useForgotPasswordMutation,
+  useGoogleLoginMutation,
+} = api;*/
+
+
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { baseQueryWithReauth } from './baseQuery';
+
+export const api = createApi({
+  reducerPath: 'api',
+  baseQuery: baseQueryWithReauth,
+  tagTypes: ['Stats', 'Activity', 'Sites', 'Pages', 'User', 'Media', 'Users', 'PendingUsers'],
+  endpoints: () => ({}), // فارغ، سيتم ملؤه عبر injectEndpoints
+});
