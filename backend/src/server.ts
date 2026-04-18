@@ -5,21 +5,26 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 
-// Routes
-import authRoutes from "./modules/auth/auth.routes";
-import dashboardRoutes from "./modules/dashboard/dashboard.routes";
-import siteRoutes from "./modules/sites/site.routes";
-import publicRoutes from "./modules/public/public.routes";
-import mediaRoutes from "./modules/media/media.routes";
-import userRoutes from "./modules/users/user.routes";
-import seoRoutes from "./modules/seo/seo.routes";
-import adminRoutes from "./modules/admin/admin.routes";
-import aiRoutes from "./modules/ai/ai.routes";
-import pluginRoutes, { authenticateJWT } from "./modules/plugins/plugin.routes";
-import pageRoutes from "./modules/pages/page.routes";
+// =====================
+// ROUTES (SAFE IMPORT - AVOID ESM ISSUES)
+// =====================
+const authRoutes = require("./modules/auth/auth.routes").default;
+const dashboardRoutes = require("./modules/dashboard/dashboard.routes").default;
+const siteRoutes = require("./modules/sites/site.routes").default;
+const publicRoutes = require("./modules/public/public.routes").default;
+const mediaRoutes = require("./modules/media/media.routes").default;
+const userRoutes = require("./modules/users/user.routes").default;
+const seoRoutes = require("./modules/seo/seo.routes").default;
+const adminRoutes = require("./modules/admin/admin.routes").default;
+const aiRoutes = require("./modules/ai/ai.routes").default;
+const pluginRoutes = require("./modules/plugins/plugin.routes").default;
+const pageRoutes = require("./modules/pages/page.routes").default;
 
-// Core
+// =====================
+// CORE
+// =====================
 import { initializeDB } from "./core/database/init";
+import { authenticateJWT } from "./modules/plugins/plugin.routes";
 import { tenantResolver } from "./core/middleware/tenant.middleware";
 import { initContext } from "./core/middleware/context.middleware";
 
@@ -37,14 +42,11 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(initContext);
 
 // =====================
-// DEBUG ROUTE (IMPORTANT)
+// DEBUG LOG (IMPORTANT)
 // =====================
-app.get("/__debug__", (req, res) => {
-  res.json({
-    status: "ok",
-    siteRoutes: typeof siteRoutes,
-    dashboardRoutes: typeof dashboardRoutes,
-  });
+app.use((req, _res, next) => {
+  console.log("➡️ REQUEST:", req.method, req.url);
+  next();
 });
 
 // =====================
@@ -53,28 +55,13 @@ app.get("/__debug__", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/public", publicRoutes);
 
-// =====================
-// HEALTH CHECK
-// =====================
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
-});
-app.get("/api/sites", (req, res) => {
-  res.json({ ok: true, message: "sites route works" });
-});
-// =====================
-// LOG REQUESTS
-// =====================
-app.use((req, _res, next) => {
-  console.log("➡️", req.method, req.url);
-  next();
 });
 
 // =====================
 // PROTECTED ROUTES (SCOPED MIDDLEWARE)
 // =====================
-
-// IMPORTANT: apply middleware per route (NOT globally)
 app.use("/api/pages", authenticateJWT, tenantResolver, pageRoutes);
 app.use("/api/sites", authenticateJWT, tenantResolver, siteRoutes);
 app.use("/api/dashboard", authenticateJWT, tenantResolver, dashboardRoutes);
@@ -86,7 +73,7 @@ app.use("/api/ai", authenticateJWT, tenantResolver, aiRoutes);
 app.use("/api/plugins", authenticateJWT, tenantResolver, pluginRoutes);
 
 // =====================
-// START SERVER
+// DB + SERVER START
 // =====================
 const startServer = async () => {
   try {
