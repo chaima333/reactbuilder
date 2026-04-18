@@ -53,33 +53,13 @@ const AdminRoute = () => {
 const AppContent: React.FC = () => {
   const themeMode = useSelector((state: RootState) => state.theme.mode);
 
-  // 🔥 تحديد الـ Subdomain
-  const subdomain = useMemo(() => {
-    const host = window.location.hostname;
-    const parts = host.split('.');
-    // نعتبر 'www' و 'localhost' و 'admin' هم المديرين للسيستام
-    const isMainAdmin = parts.length <= 1 || parts[0] === 'www' || parts[0] === 'admin' || parts[parts.length-1] === 'localhost' && parts.length === 1;
-    
-    return isMainAdmin ? null : parts[0];
-  }, []);
-
-  // 🏪 حالة 1: المستعمل داخل لسايت معين (Subdomain)
-  if (subdomain && subdomain !== 'admin' && subdomain !== 'www') {
-    return (
-      <ThemeProvider theme={lightTheme}>
-        <CssBaseline />
-        <PublicSite /> 
-      </ThemeProvider>
-    );
-  }
-
-  // 🏗️ حالة 2: المستعمل داخل للـ Main App (Admin Panel)
   return (
     <ThemeProvider theme={themeMode === 'light' ? lightTheme : darkTheme}>
       <CssBaseline />
       <SnackbarProvider maxSnack={3}>
         <BrowserRouter>
           <Routes>
+
             {/* 🌍 PUBLIC ROUTES */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
@@ -87,6 +67,9 @@ const AppContent: React.FC = () => {
             <Route path="/waiting-approval" element={<WaitingPage />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
+
+            {/* 🔥 THIS IS THE IMPORTANT ONE */}
+            <Route path="/site/:siteId" element={<PublicSite />} />
 
             {/* 🔒 PROTECTED ROUTES */}
             <Route element={<ProtectedRoute />}>
@@ -100,7 +83,6 @@ const AppContent: React.FC = () => {
                 <Route path="/media" element={<Media />} />
                 <Route path="/settings" element={<Settings />} />
 
-                {/* 🔥 ADMIN ONLY */}
                 <Route element={<AdminRoute />}>
                   <Route path="/users" element={<Users />} />
                 </Route>
@@ -108,13 +90,13 @@ const AppContent: React.FC = () => {
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
+
           </Routes>
         </BrowserRouter>
       </SnackbarProvider>
     </ThemeProvider>
   );
 };
-
 function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
