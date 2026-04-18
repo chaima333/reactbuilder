@@ -17,9 +17,12 @@ export interface SiteContext {
 }
 
 export type AuthRequest = Request & {
-  user?: any;         
-  siteContext?: SiteContext; 
-}
+  user?: any;
+  siteContext?: {
+    siteId: number;
+    role: "OWNER" | "ADMIN" | "EDITOR" | "VIEWER";
+  };
+};
 
 export const generateToken = (payload: JwtPayload): string => {
   const expiresIn = payload.type === "refresh" ? "7d" : "1h";

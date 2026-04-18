@@ -16,7 +16,7 @@ export const requireSiteRole = (allowedRoles: SiteRole[]) => {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      if (!siteId) {
+      if (!siteId || isNaN(siteId)) {
         return res.status(400).json({ message: "Invalid site ID" });
       }
 
@@ -26,31 +26,26 @@ export const requireSiteRole = (allowedRoles: SiteRole[]) => {
           siteId: siteId,
         },
       });
+            if (!membership) {
+  if (user.role === "ADMIN") {
+    req.siteContext = {
+      role: "ADMIN",
+      siteId,
+    };
+    return next();
+  }
 
-      if (!membership) {
-        if (user.role === "Admin") {
-            req.context.membership = {
-    role: membership.role,
-    siteId: membership.siteId,
-    userId: membership.userId
-};
-          return next();
-        }
+  return res.status(403).json({ message: "Access denied" });
+}
 
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      const currentRole = membership.role as SiteRole;
-
+const currentRole = membership.role?.toUpperCase() as SiteRole;
       if (!allowedRoles.includes(currentRole)) {
         return res.status(403).json({ message: "Insufficient permissions" });
       }
       
-
-req.context.membership = {
-  role: currentRole,
+      req.siteContext = {
   siteId: Number(membership.siteId || (membership as any).site_id),
-  userId: Number(membership.userId || (membership as any).user_id)
+  role: currentRole,
 };
       next();
     } catch (error) {

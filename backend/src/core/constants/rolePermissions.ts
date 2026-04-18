@@ -1,6 +1,7 @@
 import { PERMISSIONS } from "./permissions";
+import { Role } from "../../modules/auth/role";
 
-export const ROLE_PERMISSIONS: Record<string, string[]> = {
+export const ROLE_PERMISSIONS: Record<Role, readonly string[]> = {
   OWNER: [
     PERMISSIONS.SITE_READ,
     PERMISSIONS.SITE_UPDATE,

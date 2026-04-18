@@ -1,1 +1,1 @@
-export type SiteRole = "Owner" | "Admin" | "Editor" | "Viewer";
+export type SiteRole = "OWNER" | "ADMIN" | "EDITOR" | "VIEWER";
