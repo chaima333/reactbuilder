@@ -59,7 +59,9 @@ app.use("/api/public", publicRoutes);
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
-
+app.get("/api/sites", (req, res) => {
+  res.json({ ok: true, message: "sites route works" });
+});
 // =====================
 // LOG REQUESTS
 // =====================
