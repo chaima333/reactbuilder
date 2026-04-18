@@ -1,10 +1,12 @@
 // frontend/src/pages/Dashboard/hooks/useDashboardData.ts
 
 import {
-  useGetDashboardStatsQuery,
-  useGetActivityLogQuery,
   useGetSitesQuery,
-} from '../../../redux/api/apiSlice';
+} from '../../../redux/services/sites.api';
+import { 
+  useGetDashboardStatsQuery, 
+  useGetActivityLogQuery 
+} from '../../../redux/services/dashboard.api';
 
 export const useDashboardData = () => {
   const { data: statsData, isLoading: statsLoading, error: statsError } = useGetDashboardStatsQuery(undefined);

@@ -17,8 +17,8 @@ import {
   Visibility as ViewsIcon,
   People as UsersIcon,
 } from '@mui/icons-material';
-import { MonthlyChart } from '../../../components/Dashboard/MonthlyChart';
-import { ActivityFeed } from '../../../components/Dashboard/ActivityFeed';
+import { MonthlyChart } from './widgets/MonthlyChart';
+import { ActivityFeed } from './widgets/ActivityFeed';
 import { colors } from '../styles/colors';
 
 interface AdminDashboardProps {

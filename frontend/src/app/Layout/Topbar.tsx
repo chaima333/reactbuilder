@@ -21,7 +21,7 @@ import { RootState } from '../../redux/store';
 import { toggleTheme } from '../../redux/features/themeSlice';
 import { logout } from '../../redux/features/authSlice';
 import { useNavigate } from 'react-router-dom';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage } from '../providers/LanguageProvider';
 
 interface TopbarProps {
   onMenuClick: () => void;

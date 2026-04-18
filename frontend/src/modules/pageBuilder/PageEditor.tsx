@@ -31,7 +31,7 @@ import {
   useCreatePageMutation, 
   useUpdatePageMutation,
   useDeletePageMutation,
-} from '../redux/api/apiSlice';
+} from '../../redux/services/pages.api';
 
 // Import DnD Kit
 import {
@@ -51,7 +51,6 @@ import {
 } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { AIGenerator } from '../components/AIGenerator';
 
 const blockTypes = [
   { type: 'title', label: 'Titre', icon: '📌', description: 'Titre de section' },
@@ -446,28 +445,6 @@ const savePage = async () => {
         </Grid>
       )}
 
-      {/* COMPOSANT IA - BIEN PLACÉ ICI */}
-      <AIGenerator
-        open={aiGeneratorOpen}
-        onClose={() => setAiGeneratorOpen(false)}
-        onContentGenerated={(content) => {
-          if (content.title) setPageTitle(content.title);
-          
-          // Utilisation de .blocks car ton backend renvoie maintenant "blocks"
-          if (content.blocks && content.blocks.length > 0) {
-            const newBlocks = content.blocks.map((block: any) => ({
-              id: block.id || uuidv4(), // Priorité à l'ID du backend
-              type: block.type,
-              content: block.content,
-              link: block.link || '',
-            }));
-            
-            // On ajoute les nouveaux blocs à la liste existante
-            setBlocks(prev => [...prev, ...newBlocks]);
-            enqueueSnackbar(`${newBlocks.length} blocs générés par l'IA`, { variant: 'success' });
-          }
-        }}
-      />
     </Box>
   );
 };

@@ -27,8 +27,8 @@ import {
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSnackbar } from 'notistack';
-import { RootState } from '../redux/store';
-import { setTheme } from '../redux/features/themeSlice';
+import { RootState } from '../../../redux/store';
+import { setTheme } from '../../../redux/features/themeSlice';
 
 // Traductions directement dans le fichier
 const translations = {

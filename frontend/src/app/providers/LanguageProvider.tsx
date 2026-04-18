@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import fr from '../../i18n copy/fr';
-import en from '../../i18n copy/en';
-import ar from '../../i18n copy/ar';
+import fr from '../../i18n/fr';
+import en from '../../i18n/en';
+import ar from '../../i18n/ar';
 
 type Language = 'fr' | 'en' | 'ar';
 

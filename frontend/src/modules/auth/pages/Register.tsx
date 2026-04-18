@@ -8,7 +8,7 @@ import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useDispatch } from 'react-redux';
 import axios from 'axios';
-import { setCredentials } from '../redux/features/authSlice';
+import { setCredentials } from '../services/authSlice';
 import { motion } from 'framer-motion';
 import PersonIcon from '@mui/icons-material/Person';
 import EmailIcon from '@mui/icons-material/Email';

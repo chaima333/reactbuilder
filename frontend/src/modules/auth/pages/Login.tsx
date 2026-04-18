@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import { useDispatch } from 'react-redux';
 import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
-import { setCredentials } from '../redux/features/authSlice';
+import { setCredentials } from '../services/authSlice';
 import { useGoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import { motion } from 'framer-motion';

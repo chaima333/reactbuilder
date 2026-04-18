@@ -20,12 +20,20 @@ import {
 
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
 
-import { useGetSitesQuery, useCreateSiteMutation, useDeleteSiteMutation, useDeletePageMutation } from '../redux/api/apiSlice';
-import { CreateSiteModal } from '../components/Sites/CreateSiteModal';
+import { CreateSiteModal } from '../components/CreateSiteModal';
 import { useSnackbar } from 'notistack';
 import { useNavigate } from 'react-router-dom';
-import { useLanguage } from '../context/LanguageContext';
+import { 
+  useGetSitesQuery, 
+  useDeleteSiteMutation, 
+  useCreateSiteMutation
+} from '../../../redux/services/sites.api';
 
+import { 
+  useDeletePageMutation, 
+  useCreatePageMutation 
+} from '../../../redux/services/pages.api';
+import { useLanguage } from '../../../app/providers/LanguageProvider';
 export const Sites: React.FC = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();

@@ -20,10 +20,10 @@ import {
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSnackbar } from 'notistack';
-import { RootState } from '../redux/store';
-import { setCredentials } from '../redux/features/authSlice';
-import { useGetProfileQuery, useUpdateProfileMutation } from '../redux/api/apiSlice';
-import { useLanguage } from '../context/LanguageContext';
+import { RootState } from '../../../redux/store';
+import { setCredentials } from '../../../modules/auth/services/authSlice';
+import { useGetProfileQuery, useUpdateProfileMutation } from '../../../redux/services/users.api';
+import { useLanguage } from '../../../app/providers/LanguageProvider';
 
 export const Profile: React.FC = () => {
   const { t } = useLanguage();

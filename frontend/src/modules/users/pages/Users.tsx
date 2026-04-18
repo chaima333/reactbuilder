@@ -37,7 +37,7 @@ import {
   useCreateUserMutation,
   useUpdateUserMutation,
   useChangeUserRoleMutation,
-} from '../redux/api/apiSlice';
+} from '../../../redux/services/users.api';
 
 const roleColors = {
   Admin: 'error',

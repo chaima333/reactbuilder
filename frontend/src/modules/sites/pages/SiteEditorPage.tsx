@@ -11,7 +11,7 @@ import {
 import { Save as SaveIcon } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
-import { useGetSiteByIdQuery, useUpdateSiteMutation } from '../redux/api/apiSlice';
+import { useGetSiteByIdQuery, useUpdateSiteMutation } from '../../../redux/services/sites.api';
 
 export const SiteEditor: React.FC = () => {
   const { siteId } = useParams();
