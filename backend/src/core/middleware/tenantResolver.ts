@@ -4,8 +4,12 @@ import { Site, SiteMember } from "../../models";
 
 export const tenantResolver = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const siteId = req.params.siteId;
-    const userId = req.user?.id;
+const siteId =
+      req.params.siteId ||
+      req.headers["x-site-id"] ||
+      req.headers["x-subdomain"];
+      
+      const userId = req.user?.id;
 
     if (!siteId) {
       return res.status(400).json({
@@ -14,7 +18,7 @@ export const tenantResolver = async (req: AuthRequest, res: Response, next: Next
       });
     }
 
-    const site = await Site.findByPk(siteId);
+    const site = await Site.findByPk(Number(siteId));
 
     if (!site) {
       return res.status(404).json({
