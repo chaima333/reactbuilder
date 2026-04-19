@@ -5,21 +5,17 @@ import { PERMISSIONS } from '../../core/constants/permissions';
 import { getPages, createPage, updatePage, deletePage } from './page.controller';
 import { tenantResolver } from '../../core/middleware/tenantResolver';
 
-const router = Router();
+const router = Router({ mergeParams: true});
 
 router.use(authenticateJWT);
 router.use(tenantResolver)
 
-// GET Pages (Read)
 router.get('/', requirePermission(PERMISSIONS.SITE_READ), getPages);
 
-// POST Page (Create)
 router.post('/', requirePermission(PERMISSIONS.PAGE_CREATE), createPage);
 
-// PUT Page (Update)
 router.put('/:pageId', requirePermission(PERMISSIONS.PAGE_UPDATE), updatePage);
 
-// DELETE Page (Delete)
 router.delete('/:pageId', requirePermission(PERMISSIONS.PAGE_DELETE), deletePage);
 
 export default router;
