@@ -65,12 +65,12 @@ app.use("/api/sites", authenticateJWT, siteRoutes);
 app.use("/api/dashboard", authenticateJWT, dashboardRoutes);
 
 
-const tenantStack = [authenticateJWT, tenantResolver];
+app.use("/api/sites/:siteId", authenticateJWT, tenantResolver);
 
-app.use("/api/sites/:siteId/pages", tenantStack, pageRoutes);
-app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
-app.use("/api/sites/:siteId/plugins", tenantStack, pluginRoutes);
-app.use("/api/sites/:siteId/seo", tenantStack, seoRoutes);
+app.use("/api/sites/:siteId/pages", pageRoutes);
+app.use("/api/sites/:siteId/media", mediaRoutes);
+app.use("/api/sites/:siteId/seo", seoRoutes);
+app.use("/api/sites/:siteId/plugins", pluginRoutes);
 
 // =====================
 // START SERVER
