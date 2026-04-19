@@ -19,7 +19,7 @@ router.post("/", createSite);
 router.get("/", getSites);
 
 // FIX: ما تعملش route duplicate
-router.get("/:siteId", getSiteById);
-router.put("/:siteId", updateSite);
-router.delete("/:siteId", deleteSite);
+router.get("/current", tenantResolver, getSiteById);
+router.put("/current", tenantResolver, updateSite);
+router.delete("/current", tenantResolver, deleteSite);
 export default router;
