@@ -12,20 +12,14 @@ import { requireSiteAccess } from "../../core/middleware/siteGuard";
 
 const router = Router();
 
-
 router.use(authenticateJWT);
 
-// 🔥 CREATE SITE (global)
+// GLOBAL ONLY
 router.post("/", createSite);
-
 router.get("/", getSites);
 
-
-// 🔥 GET / UPDATE / DELETE (tenant)
-router.get("/", tenantResolver, requireSiteAccess, getSiteById);
-
-router.put("/", tenantResolver, requireSiteAccess, updateSite);
-
-router.delete("/", tenantResolver, requireSiteAccess, deleteSite);
-
+// FIX: ما تعملش route duplicate
+router.get("/:siteId", getSiteById);
+router.put("/:siteId", updateSite);
+router.delete("/:siteId", deleteSite);
 export default router;

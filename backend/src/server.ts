@@ -70,7 +70,6 @@ const protectedStack = [authenticateJWT, tenantResolver];
 // =====================
 
 app.use("/api/pages", ...protectedStack, pageRoutes);
-app.use("/api/sites", ...protectedStack, siteRoutes);
 app.use("/api/dashboard", ...protectedStack, dashboardRoutes);
 app.use("/api/media", ...protectedStack, mediaRoutes);
 app.use("/api/users", ...protectedStack, userRoutes);
@@ -78,6 +77,9 @@ app.use("/api/seo", ...protectedStack, seoRoutes);
 app.use("/api/admin", ...protectedStack, adminRoutes);
 app.use("/api/ai", ...protectedStack, aiRoutes);
 app.use("/api/plugins", ...protectedStack, pluginRoutes);
+
+app.use("/api/sites", authenticateJWT, siteRoutes);
+
 
 // =====================
 // START SERVER
