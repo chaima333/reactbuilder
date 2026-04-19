@@ -20,7 +20,6 @@ export const loginUser = async (email: string, pass: string) => {
   const isPasswordValid = await bcrypt.compare(pass, user.password);
   if (!isPasswordValid) throw new Error("Invalid credentials");
 
-  if (user.role !== 'ADMIN' && !user.isApproved) throw new Error("Waiting admin approval");
 
   await revokeUserTokens(user.id);
 
@@ -46,7 +45,7 @@ export const registerUser = async (data: any) => {
   const newUser = await User.create({
     ...data,
     password: hashedPassword,
-    isApproved: false
+    isApproved: true
   });
 
   return newUser;
