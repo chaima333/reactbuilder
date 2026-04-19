@@ -25,7 +25,7 @@ const pageRoutes = require("./modules/pages/page.routes").default;
 // =====================
 import { initializeDB } from "./core/database/init";
 import { authenticateJWT } from "./shared/auth.util";
-import { tenantResolver } from "./core/middleware/tenant.middleware";
+import { tenantResolver } from "./core/middleware/tenantResolver";
 import { initContext } from "./core/middleware/context.middleware";
 
 const app = express();
@@ -59,26 +59,18 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-// =====================
-// PROTECTED STACK (IMPORTANT RULE)
-// order: auth → tenant → routes
-// =====================
-const protectedStack = [authenticateJWT, tenantResolver];
-
-// =====================
-// PROTECTED ROUTES
-// =====================
-
-app.use("/api/pages", ...protectedStack, pageRoutes);
-app.use("/api/dashboard", ...protectedStack, dashboardRoutes);
-app.use("/api/media", ...protectedStack, mediaRoutes);
-app.use("/api/users", ...protectedStack, userRoutes);
-app.use("/api/seo", ...protectedStack, seoRoutes);
-app.use("/api/admin", ...protectedStack, adminRoutes);
-app.use("/api/ai", ...protectedStack, aiRoutes);
-app.use("/api/plugins", ...protectedStack, pluginRoutes);
-
+app.use("/api/users", authenticateJWT, userRoutes);
+app.use("/api/admin", authenticateJWT, adminRoutes);
 app.use("/api/sites", authenticateJWT, siteRoutes);
+app.use("/api/dashboard", authenticateJWT, dashboardRoutes);
+
+
+const tenantStack = [authenticateJWT, tenantResolver];
+
+app.use("/api/pages", ...tenantStack, pageRoutes);
+app.use("/api/media", ...tenantStack, mediaRoutes);
+app.use("/api/plugins", ...tenantStack, pluginRoutes);
+app.use("/api/seo", ...tenantStack, seoRoutes);
 
 
 // =====================

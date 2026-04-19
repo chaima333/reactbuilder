@@ -8,7 +8,7 @@ import {
   getSites,
   getSiteAccess
 } from "./site.controller";
-import { tenantResolver } from "../../core/middleware/tenant.middleware";
+import { tenantResolver } from "../../core/middleware/tenantResolver";
 import { requireSiteAccess } from "../../core/middleware/siteGuard";
 
 const router = Router();

@@ -50,11 +50,10 @@ export const tenantResolver = async (
       });
     }
 
-    // 🔥 IMPORTANT: NO MAPPING, NO TRANSLATION
-    req.siteContext = {
-      siteId: site.id,
-      role: membership.role as SiteRole,
-    };
+   req.siteContext = {
+  siteId: site.id,
+  role: membership?.role ?? null
+};
 
     next();
   } catch (err: any) {

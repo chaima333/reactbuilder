@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { authenticateJWT } from '../../shared/auth.util';
 import * as MediaController from './media.controller';
-import { tenantResolver } from '../../core/middleware/tenant.middleware';
+import { tenantResolver } from '../../core/middleware/tenantResolver';
 
 const router = Router();
 
