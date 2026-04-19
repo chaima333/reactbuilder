@@ -7,6 +7,8 @@ import slugify from "slugify";
 export const createPage = async (req: AuthRequest, res: Response) => {
   try {
     const siteId = req.siteContext.siteId;
+    const userId = req.user.id;
+
 
     const slug = slugify(req.body.title, {
       lower: true,
@@ -16,8 +18,9 @@ export const createPage = async (req: AuthRequest, res: Response) => {
     const page = await Page.create({
       title: req.body.title,
       content: req.body.content,
-      slug,          // 👈 هنا الحل
-      siteId
+      slug,          
+      siteId,
+      userId
     });
 
     return res.json({ success: true, data: page });
