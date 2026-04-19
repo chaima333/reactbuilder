@@ -1,8 +1,6 @@
 import { Response } from 'express';
-import { Site, Page, ActivityLog, SiteMember } from '../../models';
+import { Site, Page, SiteMember } from '../../models';
 import { AuthRequest } from '../../shared/auth.util';
-import * as siteService from '../sites/site.service';
-import { sequelize } from '../../core/database/connection';
 import { SiteService } from '../sites/site.service';
 
 
@@ -127,6 +125,19 @@ export const getSiteAccess = async (req, res) => {
 export const getSiteById = async (req: AuthRequest, res: Response) => {
   try {
     const siteId = Number(req.params.siteId);
+    const userId = req.user.id;
+
+    // 🔥 CHECK ACCESS
+    const member = await SiteMember.findOne({
+      where: { siteId, userId }
+    });
+
+    if (!member) {
+      return res.status(403).json({
+        success: false,
+        message: "No access to this site"
+      });
+    }
 
     const site = await Site.findByPk(siteId, {
       include: [{ model: Page, as: "pages", required: false }]
