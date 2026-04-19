@@ -2,32 +2,31 @@ import { Response } from "express";
 import { AuthRequest } from "../../shared/auth.util";
 import { PageService } from "./page.service";
 import { Page } from "../../models";
+import slugify from "slugify";
 
 export const createPage = async (req: AuthRequest, res: Response) => {
   try {
-    // 1. نجبدو الـ IDs م الـ Context اللي عبّاه الـ Middleware
-    const siteId = req.siteContext?.siteId;
-    const userId = req.user?.id;
+    const siteId = req.siteContext.siteId;
 
-    if (!siteId) {
-      return res.status(400).json({ success: false, message: "Site context missing" });
-    }
-
-    // 2. نصنعو الصفحة باستعمال الـ IDs هاذم (مستحيل يغلطو)
-    const newPage = await Page.create({
-      ...req.body, // title, content...
-      siteId: siteId,
-      userId: userId
+    const slug = slugify(req.body.title, {
+      lower: true,
+      strict: true
     });
 
-    return res.status(201).json({
-      success: true,
-      message: "Page created successfully",
-      data: newPage
+    const page = await Page.create({
+      title: req.body.title,
+      content: req.body.content,
+      slug,          // 👈 هنا الحل
+      siteId
     });
 
-  } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
+    return res.json({ success: true, data: page });
+
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
