@@ -6,7 +6,6 @@ import slugify from "slugify";
 
 export const createPage = async (req: AuthRequest, res: Response) => {
   try {
-    // 1. VALIDATION FIRST (قبل أي حاجة)
     if (!req.user?.id || !req.siteContext?.siteId) {
       return res.status(400).json({
         success: false,
@@ -14,25 +13,33 @@ export const createPage = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const siteId = req.siteContext.siteId;
-    const userId = req.user.id;
+    const { title, content } = req.body;
 
-    const slug = slugify(req.body.title, {
+    // 🔥 validation مهم
+    if (!title) {
+      return res.status(400).json({
+        success: false,
+        message: "title is required"
+      });
+    }
+
+    const slug = slugify(title, {
       lower: true,
       strict: true
     });
 
     const page = await Page.create({
-      title: req.body.title,
-      content: req.body.content,
+      title,
+      content: content || "",
       slug,
-      siteId,
-      userId
+      siteId: req.siteContext.siteId,
+      userId: req.user.id
     });
 
     return res.json({ success: true, data: page });
 
   } catch (err: any) {
+    console.error("CREATE_PAGE_ERROR:", err); // 🔥 مهم باش تفهم السبب الحقيقي
     return res.status(500).json({
       success: false,
       message: err.message
