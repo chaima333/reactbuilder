@@ -61,13 +61,12 @@ export const getToken = async (token: string) => {
   return await Token.findOne({ where: { token } });
 };
 
-// 5. Middleware الحماية المركزي
+// 5. Middleware 
 export const authenticateJWT = async (
   req: Request,
   res: Response,
   next: NextFunction
-): 
-Promise<void> => {
+): Promise<void> => {
   try {
     const authHeader = req.header('Authorization');
     
@@ -91,21 +90,10 @@ Promise<void> => {
       return;
     }
 
-    const isUserApproved = user.isApproved || user.getDataValue('is_approved');
-    
-    if (!isUserApproved && user.role !== 'ADMIN') {
-      res.status(403).json({ 
-        success: false, 
-        message: 'Account pending admin approval.' 
-      });
-      return;
-    }
-    
-    // إسناد الـ User للـ Request
     (req as AuthRequest).user = user;
+
     next();
   } catch (error) {
-    console.error("AUTH_MIDDLEWARE_ERROR:", error);
     res.status(401).json({ success: false, message: 'Authentication failed' });
   }
 };
