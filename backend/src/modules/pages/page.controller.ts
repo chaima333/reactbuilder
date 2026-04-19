@@ -6,9 +6,16 @@ import slugify from "slugify";
 
 export const createPage = async (req: AuthRequest, res: Response) => {
   try {
+    // 1. VALIDATION FIRST (قبل أي حاجة)
+    if (!req.user?.id || !req.siteContext?.siteId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing context"
+      });
+    }
+
     const siteId = req.siteContext.siteId;
     const userId = req.user.id;
-
 
     const slug = slugify(req.body.title, {
       lower: true,
@@ -18,7 +25,7 @@ export const createPage = async (req: AuthRequest, res: Response) => {
     const page = await Page.create({
       title: req.body.title,
       content: req.body.content,
-      slug,          
+      slug,
       siteId,
       userId
     });
