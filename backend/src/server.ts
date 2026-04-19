@@ -68,6 +68,7 @@ const protectedStack = [authenticateJWT, tenantResolver];
 // =====================
 // PROTECTED ROUTES
 // =====================
+
 app.use("/api/pages", ...protectedStack, pageRoutes);
 app.use("/api/sites", ...protectedStack, siteRoutes);
 app.use("/api/dashboard", ...protectedStack, dashboardRoutes);

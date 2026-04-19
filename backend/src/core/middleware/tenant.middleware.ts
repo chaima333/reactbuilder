@@ -3,52 +3,65 @@ import { AuthRequest } from "../../shared/auth.util";
 import { Site, SiteMember } from "../../models";
 import { SiteRole } from "./role.middleware";
 
-export const tenantResolver = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const tenantResolver = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const headerSubdomain = req.headers["x-subdomain"];
-    const host = req.headers.host || "";
-
-    let subdomain = headerSubdomain 
-      ? String(headerSubdomain).toLowerCase().trim() 
-      : host.split(".")[0];
+    const subdomain =
+      (req.headers["x-subdomain"] as string)?.toLowerCase().trim() ||
+      req.headers.host?.split(".")[0];
 
     if (!subdomain || subdomain === "www") {
-      return res.status(400).json({ success: false, message: "Subdomain required" });
+      return res.status(400).json({
+        success: false,
+        message: "Subdomain required",
+      });
     }
 
     const site = await Site.findOne({ where: { subdomain } });
+
     if (!site) {
-      return res.status(404).json({ success: false, message: "Site not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Site not found",
+      });
     }
 
-    const userId = req.user?.id;
-    if (!userId) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
+    if (!req.user?.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
     }
 
     const membership = await SiteMember.findOne({
-      where: { siteId: site.id, userId },
+      where: {
+        siteId: site.id,
+        userId: req.user.id,
+      },
     });
 
     if (!membership) {
-      return res.status(403).json({ success: false, message: "Not a site member" });
+      return res.status(403).json({
+        success: false,
+        message: "Not a site member",
+      });
     }
 
-    // --- 🎯 الترجمة وتعبئة الـ Context ---
-    const roleMapping: Record<string, string> = {
-      'PROPRIÉTAIRE': 'OWNER',
-      'ADMINISTRATEUR': 'ADMIN',
-      'ÉDITEUR': 'EDITOR',
-      'LECTEUR': 'VIEWER'
-    };
-
+    // 🔥 IMPORTANT: NO MAPPING, NO TRANSLATION
     req.siteContext = {
       siteId: site.id,
-      role: (roleMapping[membership.role.toUpperCase()] as SiteRole) ?? "VIEWER"
+      role: membership.role as SiteRole,
     };
 
     next();
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: "Tenant Error", details: err.message });
+    return res.status(500).json({
+      success: false,
+      message: "Tenant Error",
+      details: err.message,
+    });
   }
 };

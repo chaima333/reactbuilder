@@ -7,19 +7,25 @@ import {
   getSiteById,
   getSites
 } from "./site.controller";
-import { authorizeRoles } from "../../core/middleware/role.middleware";
+import { tenantResolver } from "../../core/middleware/tenant.middleware";
+import { requireSiteAccess } from "../../core/middleware/siteGuard";
 
 const router = Router();
 
+
 router.use(authenticateJWT);
 
-// 👇 any logged user
-router.get("/", getSites);
-router.get("/:id", getSiteById);
+// 🔥 CREATE SITE (global)
+router.post("/", createSite);
 
-// 👇 restricted actions
-router.post("/", authorizeRoles("ADMIN", "EDITOR"), createSite);
-router.put("/:id", authorizeRoles("ADMIN", "EDITOR"), updateSite);
-router.delete("/:id", authorizeRoles("ADMIN"), deleteSite);
+router.get("/all", getSites);
+
+
+// 🔥 GET / UPDATE / DELETE (tenant)
+router.get("/", tenantResolver, requireSiteAccess, getSiteById);
+
+router.put("/", tenantResolver, requireSiteAccess, updateSite);
+
+router.delete("/", tenantResolver, requireSiteAccess, deleteSite);
 
 export default router;
