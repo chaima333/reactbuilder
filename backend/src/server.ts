@@ -67,11 +67,10 @@ app.use("/api/dashboard", authenticateJWT, dashboardRoutes);
 
 const tenantStack = [authenticateJWT, tenantResolver];
 
-app.use("/api/pages", ...tenantStack, pageRoutes);
-app.use("/api/media", ...tenantStack, mediaRoutes);
-app.use("/api/plugins", ...tenantStack, pluginRoutes);
-app.use("/api/seo", ...tenantStack, seoRoutes);
-
+app.use("/api/sites/:siteId/pages", tenantStack, pageRoutes);
+app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
+app.use("/api/sites/:siteId/plugins", tenantStack, pluginRoutes);
+app.use("/api/sites/:siteId/seo", tenantStack, seoRoutes);
 
 // =====================
 // START SERVER

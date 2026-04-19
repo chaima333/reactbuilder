@@ -93,7 +93,7 @@ export const handleGoogleAuth = async (data: any) => {
       name: name || email.split('@')[0],
       googleId,
       avatar: avatar || null,
-      isApproved: false,
+      isApproved: true,
       role: 'Viewer',
       password: '',
     } as any);
