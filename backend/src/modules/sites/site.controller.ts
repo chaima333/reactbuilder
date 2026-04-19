@@ -73,7 +73,7 @@ export const getSites = async (req: AuthRequest, res: Response) => {
         name: m.site.name,
         subdomain: m.site.subdomain,
         status: m.site.status,
-        role: m.role
+        //role: m.role
       };
     });
 
