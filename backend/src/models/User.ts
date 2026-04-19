@@ -1,0 +1,117 @@
+import { Table, Column, Model, DataType, HasMany, CreatedAt, UpdatedAt } from "sequelize-typescript";
+
+@Table({ 
+  tableName: "users",
+  timestamps: true,
+  underscored: true
+})
+export class User extends Model<User> {
+  [x: string]: any;
+
+  @Column({
+    type: DataType.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  })
+  id!: number;
+
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: false
+  })
+  name!: string;
+
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: false,
+    unique: true
+  })
+  email!: string;
+
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: true
+  })
+  password!: string;
+
+  @Column({
+    type: DataType.ENUM('ADMIN', 'EDITOR', 'VIEWER'),
+    allowNull: false,
+    defaultValue: 'VIEWER'
+  })
+role!: 'ADMIN' | 'EDITOR' | 'VIEWER';
+
+  @Column({
+    type: DataType.STRING(500),
+    allowNull: true
+  })
+  avatar!: string;
+
+  @Column({
+    type: DataType.BOOLEAN,
+    defaultValue: false,
+    field: 'is_approved'
+  })
+  isApproved!: boolean;
+
+  
+  @CreatedAt
+  @Column({
+    type: DataType.DATE,
+    field: 'created_at'
+  })
+  createdAt!: Date;
+
+  @UpdatedAt
+  @Column({
+    type: DataType.DATE,
+    field: 'updated_at'
+  })
+  updatedAt!: Date;
+
+@Column({
+  type: DataType.STRING(255),
+  allowNull: true,
+  field: 'google_id',
+  unique: true
+})
+googleId!: string;
+
+  // Méthodes utilitaires
+  isAdmin(): boolean {
+    return this.role === 'ADMIN';
+  }
+
+  isEditor(): boolean {
+    return this.role === 'EDITOR';
+  }
+
+  canEditPage(pageUserId: number): boolean {
+    if (this.isAdmin()) return true;
+    if (this.isEditor() && this.id === pageUserId) return true;
+    return false;
+  }
+  
+ @Column({
+  type: DataType.STRING(255),
+  allowNull: true,
+})
+resetPasswordToken!: string | null;
+
+@Column({
+  type: DataType.DATE,
+  allowNull: true,
+})
+resetPasswordExpires!: Date | null;
+
+  toJSON() {
+    return {
+      id: this.id,
+      name: this.name,
+      email: this.email,
+      role: this.role,
+      avatar: this.avatar,
+      createdAt: this.createdAt
+    };
+  }
+}
