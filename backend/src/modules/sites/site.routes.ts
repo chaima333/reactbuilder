@@ -18,7 +18,7 @@ router.use(authenticateJWT);
 // 🔥 CREATE SITE (global)
 router.post("/", createSite);
 
-router.get("/all", getSites);
+router.get("/", getSites);
 
 
 // 🔥 GET / UPDATE / DELETE (tenant)
