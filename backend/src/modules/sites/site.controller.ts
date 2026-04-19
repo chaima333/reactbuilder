@@ -91,6 +91,29 @@ export const getSites = async (req: AuthRequest, res: Response) => {
   }
 };
 
+
+
+export const getSiteAccess = async (req, res) => {
+  const userId = req.user.id;
+  const siteId = req.params.siteId;
+
+  const member = await SiteMember.findOne({
+    where: { userId, siteId }
+  });
+
+  if (!member) {
+    return res.status(403).json({
+      success: false,
+      message: "No access to this site"
+    });
+  }
+
+  return res.json({
+    siteId,
+    role: member.role
+  });
+};
+
 // =========================
 // GET SITE BY ID
 // =========================//
