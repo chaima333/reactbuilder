@@ -6,6 +6,15 @@ import slugify from "slugify";
 const { nanoid } = require('nanoid');
 
 export class PageService {
+  static getById(pageId: number) {
+    throw new Error("Method not implemented.");
+  }
+ static async updatePageStatus(pageId: number, status: string) {
+  return Page.update(
+    { status },
+    { where: { id: pageId } }
+  );
+}
   // ✅ توليد Slug فريد
   private static generateBulletproofSlug(title: string): string {
     const base = slugify(title, { lower: true, strict: true });

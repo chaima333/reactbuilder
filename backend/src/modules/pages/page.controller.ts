@@ -94,20 +94,41 @@ export const getPublicPage = async (req: Request, res: Response) => {
 
 export const publishPage = async (req: AuthRequest, res: Response) => {
   try {
-    const { pageId } = req.params;
-    const siteId = req.siteContext.siteId;
+    const siteId = req.siteContext?.siteId;
+    const userId = req.user?.id;
+    const pageId = Number(req.params.pageId);
 
-    // استدعاء الـ Service لتغيير الحالة
-    const page = await PageService.updatePage(siteId, Number(pageId), req.user.id, {
-      status: "published"
+    if (!siteId || !userId || isNaN(pageId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing context or invalid ID",
+      });
+    }
+
+    // 🔍 1. استعمل findOne مباشرة من الـ Model أو زيد function في الـ Service
+    // هنا باش نستعملو الموديل باش نصلحو مشكلة الـ 'void'
+    const page = await Page.findOne({ where: { id: pageId, siteId } });
+
+    if (!page) {
+      return res.status(404).json({
+        success: false,
+        message: "Page not found",
+      });
+    }
+
+    // 🚀 2. نادي الـ publishPage اللي ديجا صنعناها في الـ Service
+    const updated = await PageService.publishPage(siteId, pageId);
+
+    return res.json({
+      success: true,
+      message: "Page published successfully! 🚀",
+      data: updated,
     });
 
-    return res.json({ 
-      success: true, 
-      message: "Page is now LIVE! 🚀", 
-      data: { id: page.id, status: page.status, slug: page.slug } 
-    });
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
