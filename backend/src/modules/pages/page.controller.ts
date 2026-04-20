@@ -1,69 +1,51 @@
-import { Response } from "express";
+import { Response ,Request} from "express";
 import { AuthRequest } from "../../shared/auth.util";
 import { PageService } from "./page.service";
 import { Page } from "../../models";
 import slugify from "slugify";
+import { Op } from "sequelize";
+
+
+
 
 export const createPage = async (req: AuthRequest, res: Response) => {
   try {
-    if (!req.user?.id || !req.siteContext?.siteId) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing context"
-      });
-    }
-
     const { title, content } = req.body;
+    const siteId = req.siteContext.siteId;
+    const userId = req.user.id;
 
-    // 🔥 validation مهم
     if (!title) {
       return res.status(400).json({
         success: false,
-        message: "title is required"
+        message: "title is required",
       });
     }
 
-    const slug = slugify(title, {
+    const baseSlug = slugify(title, {
       lower: true,
-      strict: true
+      strict: true,
     });
+
+    let slug = baseSlug;
+    let counter = 1;
+
+    while (await Page.findOne({ where: { slug, siteId } })) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
 
     const page = await Page.create({
       title,
       content: content || "",
       slug,
-      siteId: req.siteContext.siteId,
-      userId: req.user.id
+      status: "draft",
+      siteId,
+      userId,
+      blocks: [],
     });
 
     return res.json({ success: true, data: page });
 
-  } catch (err: any) {
-    console.error("CREATE_PAGE_ERROR:", err); // 🔥 مهم باش تفهم السبب الحقيقي
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
-  }
-};
-
-export const getPages = async (req: AuthRequest, res: Response) => {
-  try {
-    const siteId = req.siteContext?.siteId;
-
-    if (!siteId) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing context",
-      });
-    }
-
-    const pages = await PageService.getPages(siteId);
-
-    return res.json({
-      success: true,
-      data: pages,
-    });
   } catch (err: any) {
     return res.status(500).json({
       success: false,
@@ -73,51 +55,131 @@ export const getPages = async (req: AuthRequest, res: Response) => {
 };
 
 
+export const getPages = async (req: AuthRequest, res: Response) => {
+  try {
+    const siteId = req.siteContext.siteId;
+
+    const pages = await Page.findAll({
+      where: {
+        siteId,
+        status: {
+          [Op.ne]: "deleted",
+        },
+      },
+      order: [["createdAt", "DESC"]],
+    });
+
+    return res.json({
+      success: true,
+      data: pages,
+    });
+
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
 
 export const updatePage = async (req: AuthRequest, res: Response) => {
   try {
     const siteId = req.siteContext.siteId;
     const userId = req.user.id;
-    const { pageId } = req.params; // الـ pageId يبقى في الـ params عادي
+    const { pageId } = req.params;
 
-    const page = await PageService.updatePage(
-      siteId, 
-      Number(pageId), 
-      userId, 
-      req.body
-    );
+    const page = await Page.findOne({
+      where: { id: pageId, siteId },
+    });
+
+    if (!page) {
+      return res.status(404).json({
+        success: false,
+        message: "Page not found",
+      });
+    }
+
+    await page.update({
+      ...req.body,
+      userId,
+    });
 
     return res.json({
       success: true,
-      message: "Page updated successfully",
-      data: page
+      data: page,
     });
-  } catch (error: any) {
-    if (error.message === "PAGE_NOT_FOUND") {
-      return res.status(404).json({ success: false, message: "Page not found" });
-    }
-    return res.status(500).json({ success: false, message: error.message });
+
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
+
 
 export const deletePage = async (req: AuthRequest, res: Response) => {
   try {
     const siteId = req.siteContext.siteId;
-    const userId = req.user.id;
     const { pageId } = req.params;
 
-    // ملاحظة: الـ deletePage في الـ service لازم تخدمها بنفس منطق الـ update 
-    // باش تعمل soft delete (status = 'deleted')
-    await PageService.updatePage(siteId, Number(pageId), userId, { status: "deleted" });
+    const page = await Page.findOne({
+      where: { id: pageId, siteId },
+    });
+
+    if (!page) {
+      return res.status(404).json({
+        success: false,
+        message: "Page not found",
+      });
+    }
+
+    await page.update({
+      status: "deleted",
+    });
 
     return res.json({
       success: true,
-      message: "Page deleted successfully"
+      message: "Page deleted",
     });
-  } catch (error: any) {
-    if (error.message === "PAGE_NOT_FOUND") {
-      return res.status(404).json({ success: false, message: "Page not found" });
+
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+
+export const getPublicPage = async (req: Request, res: Response) => {
+  try {
+    const { slug } = req.params;
+
+    const page = await Page.findOne({
+      where: {
+        slug,
+        status: "published",
+      },
+    });
+
+    if (!page) {
+      return res.status(404).json({
+        success: false,
+        message: "Page not found",
+      });
     }
-    return res.status(500).json({ success: false, message: error.message });
+
+    return res.json({
+      success: true,
+      data: page,
+    });
+
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
