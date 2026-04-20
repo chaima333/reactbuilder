@@ -26,8 +26,7 @@ router.get('/', requirePermission(PERMISSIONS.SITE_READ), getPages);
 router.post('/', requirePermission(PERMISSIONS.PAGE_CREATE), createPage);
 router.put('/:pageId', requirePermission(PERMISSIONS.PAGE_UPDATE), updatePage);
 router.delete('/:pageId', requirePermission(PERMISSIONS.PAGE_DELETE), deletePage);
+// داخل page.routes.ts
+router.patch("/:pageId/publish", publishPage);
 
-// 🚀 زر النشر (استعمل نفس الـ Middlewares اللي استعملتهم الفوق)
-// في ملف src/modules/pages/page.routes.ts مثلاً
-router.patch("/:pageId/publish", authenticateJWT, tenantResolver, publishPage);
 export default router;
