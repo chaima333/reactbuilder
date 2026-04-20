@@ -3,32 +3,48 @@ import { Media, ActivityLog } from '../../models';
 
 export class MediaService {
 static async processUpload(file: any, siteId: string, userId: string, alt?: string) {
-      // 1. Storage Pipeline
-    const cloudResult = await uploadStream(file.buffer, `sites/${siteId}/media`);
+  // 1. Detect type (avant DB)
+  const mime = file.mimetype;
 
-    // 2. Metadata Persistence
-    const media = await Media.create({
-      originalName: file.originalname,
-      filename: cloudResult.public_id,
-      url: cloudResult.secure_url,
-      type: file.mimetype.startsWith('image') ? 'image' : 'file',
-      size: file.size,
-      alt: alt || '',
-      userId,
-      siteId,
-    });
+  let fileType: 'image' | 'video' | 'file' = 'file';
 
-    // 3. Audit Trail
-    await ActivityLog.create({
-      userId, siteId,
-      action: 'media_uploaded',
-      entityType: 'media',
-      entityId: media.id,
-    });
-
-    return media;
+  if (mime.startsWith('image/')) {
+    fileType = 'image';
+  } else if (mime.startsWith('video/')) {
+    fileType = 'video';
+  } else {
+    const ext = file.originalname.toLowerCase();
+    if (ext.match(/\.(jpg|jpeg|png|webp|gif|svg)$/)) {
+      fileType = 'image';
+    }
   }
 
+  // 2. Upload to Cloudinary
+  const cloudResult = await uploadStream(file.buffer, `sites/${siteId}/media`);
+
+  // 3. Save in DB
+  const media = await Media.create({
+    originalName: file.originalname,
+    filename: cloudResult.public_id,
+    url: cloudResult.secure_url,
+    type: fileType, // ✅ هنا
+    size: file.size,
+    alt: alt || '',
+    userId,
+    siteId,
+  });
+
+  // 4. Activity log
+  await ActivityLog.create({
+    userId,
+    siteId,
+    action: 'media_uploaded',
+    entityType: 'media',
+    entityId: media.id,
+  });
+
+  return media;
+}
   static async removeMedia(id: string, userId: string) {
     const media = await Media.findOne({ where: { id, userId } });
     if (!media) throw new Error("Media asset not found or unauthorized");
