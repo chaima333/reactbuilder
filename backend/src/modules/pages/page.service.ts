@@ -1,7 +1,9 @@
 import { Op } from "sequelize";
 import { Page, ActivityLog } from "../../models";
 import slugify from "slugify";
-import { nanoid } from "nanoid";
+
+const { nanoid } = require('nanoid');
+
 
 export class PageService {
   // ✅ توليد Slug فريد (Deterministic + Random Suffix) - مفيش Loops!
