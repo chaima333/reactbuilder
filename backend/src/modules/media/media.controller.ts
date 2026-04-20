@@ -4,23 +4,47 @@ import { MediaService } from './media.service';
 import { Media } from '../../models';
 
 // 1. Handling Upload
+// src/modules/media/media.controller.ts
+
 export const handleUpload = async (req: AuthRequest, res: Response) => {
   try {
-    if (!req.file) return res.status(400).json({ message: "No file provided" });
+    // 🔍 1. Debugging Logs: باش نثبتوا الحاجات قبل ما نبعثوهم للـ Service
+    console.log("🚀 [MediaController] Start Upload Process");
+    console.log("📂 File received:", req.file ? req.file.originalname : "NULL");
+    console.log("🌍 Site Context:", req.siteContext);
+    console.log("👤 User ID:", req.user?.id);
+
+    if (!req.file) {
+        return res.status(400).json({ message: "No file provided" });
+    }
     
     const siteId = req.siteContext?.siteId;
-    if (!siteId) return res.status(400).json({ message: "Site context missing" });
+    if (!siteId) {
+        console.error("❌ [MediaController] Missing Site ID in context");
+        return res.status(400).json({ message: "Site context missing" });
+    }
 
+    // ⚙️ 2. Calling the Service
     const media = await MediaService.processUpload(
       req.file, 
-      req.siteContext.siteId.toString(),
+      siteId.toString(),
       req.user.id, 
       req.body.alt
     );
 
+    console.log("✅ [MediaController] Upload Success:", media.id);
     return res.status(201).json({ success: true, data: media });
+
   } catch (err: any) {
-    return res.status(500).json({ message: err.message });
+    // 🔥 3. CRITICAL: هذا أهم سطر باش يخرجلك الـ Error الحقيقي في الـ Terminal
+    console.error("🔥 [MediaController] CRASH ERROR:", err);
+    
+    return res.status(500).json({ 
+      success: false, 
+      message: err.message,
+      // نزيدو الـ stack في الـ Response باش Postman يقلنا وين بالضبط صار الـ crash
+      stack: err.stack 
+    });
   }
 };
 
