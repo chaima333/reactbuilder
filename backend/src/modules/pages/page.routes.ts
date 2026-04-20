@@ -28,6 +28,6 @@ router.put('/:pageId', requirePermission(PERMISSIONS.PAGE_UPDATE), updatePage);
 router.delete('/:pageId', requirePermission(PERMISSIONS.PAGE_DELETE), deletePage);
 
 // 🚀 زر النشر (استعمل نفس الـ Middlewares اللي استعملتهم الفوق)
-router.patch("/:pageId/publish", requirePermission(PERMISSIONS.PAGE_UPDATE), publishPage);
-
+// في ملف src/modules/pages/page.routes.ts مثلاً
+router.patch("/:pageId/publish", authenticateJWT, tenantResolver, publishPage);
 export default router;
