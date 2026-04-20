@@ -16,7 +16,6 @@ const mediaRoutes = require("./modules/media/media.routes").default;
 const userRoutes = require("./modules/users/user.routes").default;
 const seoRoutes = require("./modules/seo/seo.routes").default;
 const adminRoutes = require("./modules/admin/admin.routes").default;
-const aiRoutes = require("./modules/ai/ai.routes").default;
 const pluginRoutes = require("./modules/plugins/plugin.routes").default;
 const pageRoutes = require("./modules/pages/page.routes").default;
 

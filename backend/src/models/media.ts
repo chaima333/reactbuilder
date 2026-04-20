@@ -10,19 +10,25 @@ import {
 } from "sequelize-typescript";
 import { User } from "./User";
 import { Site } from "./site";
-
 @Table({
   tableName: "media",
   timestamps: true,
   underscored: true,
 })
 export class Media extends Model {
+
   @Column({
     type: DataType.INTEGER,
     autoIncrement: true,
     primaryKey: true,
   })
   id!: number;
+
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: false,
+  })
+  originalName!: string;
 
   @Column({
     type: DataType.STRING(255),
@@ -37,16 +43,15 @@ export class Media extends Model {
   url!: string;
 
   @Column({
-    type: DataType.STRING(50),
+    type: DataType.ENUM('image', 'video', 'file'),
     allowNull: false,
     defaultValue: 'image',
   })
-  type!: string;
+  type!: 'image' | 'video' | 'file';
 
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
-    defaultValue: 0,
   })
   size!: number;
 
@@ -55,13 +60,6 @@ export class Media extends Model {
     allowNull: true,
   })
   alt!: string;
-
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: true,
-    field: 'folder_id',
-  })
-  folderId!: number;
 
   @ForeignKey(() => User)
   @Column({
@@ -77,7 +75,7 @@ export class Media extends Model {
   @ForeignKey(() => Site)
   @Column({
     type: DataType.INTEGER,
-    allowNull: true,
+    allowNull: false,
     field: 'site_id',
   })
   siteId!: number;

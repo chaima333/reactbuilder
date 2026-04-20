@@ -1,73 +1,70 @@
 import { Response } from 'express';
 import { AuthRequest } from '../../shared/auth.util';
-import MediaService from './media.service'; // 👈 ناديلو كـ Default export
+import { MediaService } from './media.service';
 import { Media } from '../../models';
 
-export const uploadMedia = async (req: AuthRequest, res: Response) => {
+// 1. Handling Upload
+export const handleUpload = async (req: AuthRequest, res: Response) => {
   try {
+    if (!req.file) return res.status(400).json({ message: "No file provided" });
+    
     const siteId = req.siteContext?.siteId;
-    const userId = req.user?.id;
+    if (!siteId) return res.status(400).json({ message: "Site context missing" });
 
-    if (!siteId || !userId) {
-      return res.status(400).json({ success: false, message: "Missing tenant context" });
-    }
+    const media = await MediaService.processUpload(
+      req.file, 
+      req.siteContext.siteId.toString(),
+      req.user.id, 
+      req.body.alt
+    );
 
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: "No file uploaded" });
-    }
-
-    // 🎯 توّة الـ SiteId قاعد يتعدى للـ Service بالصحيح
-    const media = await MediaService.upload({
-      file: req.file,
-      userId,
-      siteId,
-      body: req.body
-    });
-
-    return res.status(201).json({
-      success: true,
-      message: "File uploaded successfully",
-      data: media,
-    });
-
+    return res.status(201).json({ success: true, data: media });
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
-export const getAllMedia = async (req: AuthRequest, res: Response) => {
+// 2. Handling Get All (اللي كان ناقص)
+export const handleGetAll = async (req: AuthRequest, res: Response) => {
   try {
     const siteId = req.siteContext?.siteId;
-    const { folderId, type } = req.query;
+    
+    const media = await Media.findAll({
+      where: { siteId },
+      order: [['createdAt', 'DESC']] // الأجدد ديما يظهر الأول
+    });
 
-    const where: any = { siteId, userId: req.user.id };
-    if (folderId) where.folderId = folderId;
-    if (type) where.type = type;
-
-    const media = await Media.findAll({ where, order: [['createdAt', 'DESC']] });
-    res.json({ success: true, data: media });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Erreur serveur' });
+    return res.json({ success: true, data: media });
+  } catch (err: any) {
+    return res.status(500).json({ message: "Error fetching media" });
   }
 };
 
-export const deleteMedia = async (req: AuthRequest, res: Response) => {
+// 3. Handling Delete (اللي كان ناقص)
+export const handleDelete = async (req: AuthRequest, res: Response) => {
   try {
-    await MediaService.deleteMediaAndFile(req.params.id, req.user.id);
-    res.json({ success: true, message: 'Média supprimé avec succès' });
-  } catch (error: any) {
-    res.status(error.message === 'Média non trouvé' ? 404 : 500).json({ success: false, message: error.message });
+    const { id } = req.params;
+    await MediaService.removeMedia(id, req.user.id);
+    
+    return res.json({ success: true, message: "Media deleted successfully" });
+  } catch (err: any) {
+    return res.status(500).json({ message: err.message });
   }
 };
 
-export const updateMediaAlt = async (req: AuthRequest, res: Response) => {
+// 4. Handling Update Alt (اللي كان ناقص)
+export const handleUpdateAlt = async (req: AuthRequest, res: Response) => {
   try {
-    const media = await Media.findOne({ where: { id: req.params.id, userId: req.user.id } });
-    if (!media) return res.status(404).json({ success: false, message: 'Média non trouvé' });
+    const { id } = req.params;
+    const { alt } = req.body;
 
-    await media.update({ alt: req.body.alt });
-    res.json({ success: true, data: media });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Erreur serveur' });
+    const media = await Media.findOne({ where: { id, userId: req.user.id } });
+    if (!media) return res.status(404).json({ message: "Media not found" });
+
+    await media.update({ alt });
+
+    return res.json({ success: true, data: media });
+  } catch (err: any) {
+    return res.status(500).json({ message: "Error updating alt text" });
   }
 };

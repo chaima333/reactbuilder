@@ -1,38 +1,57 @@
 import { Router } from 'express';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 import { authenticateJWT } from '../../shared/auth.util';
 import * as MediaController from './media.controller';
-import { tenantResolver } from '../../core/middleware/tenantResolver';
 
 const router = Router();
 
-// Multer Storage Configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../../uploads'); // تأكد من المسار
-    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-    cb(null, uploadDir);
+/**
+ * 🛡️ Multer Configuration (In-Memory)
+ * نحدد الحجم الأقصى (مثلاً 5MB) ونوع الملفات المسموحة
+ */
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
   },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Format non supporté !'));
+    }
   }
 });
 
-const upload = multer({ 
-  storage, 
-  limits: { fileSize: 50 * 1024 * 1024 } 
-});
-
+// كل الـ Routes هذي محمية بـ JWT
 router.use(authenticateJWT);
 
+/**
+ * POST /api/media/upload
+ * Pipeline: Auth -> Multer (Memory) -> Controller -> Service -> Cloudinary
+ */
+router.post(
+  '/upload', 
+  upload.single('file'), 
+  MediaController.handleUpload
+);
 
-// Routes
-router.post('/upload', upload.single('image'), MediaController.uploadMedia);
-router.get('/', MediaController.getAllMedia);
-router.delete('/:id', MediaController.deleteMedia);
-router.put('/:id/alt', MediaController.updateMediaAlt);
+/**
+ * GET /api/media
+ * يرجع قائمة الصور الخاصة بالموقع (Site Context)
+ */
+router.get('/', MediaController.handleGetAll);
+
+/**
+ * DELETE /api/media/:id
+ * فسخ ملف من الـ DB ومن Cloudinary
+ */
+router.delete('/:id', MediaController.handleDelete);
+
+/**
+ * PUT /api/media/:id/alt
+ * تحديث الـ Alt text لتحسين الـ SEO
+ */
+router.put('/:id/alt', MediaController.handleUpdateAlt);
 
 export default router;
