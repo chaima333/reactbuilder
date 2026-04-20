@@ -87,4 +87,12 @@ export class PageService {
       order: [["createdAt", "DESC"]],
     });
   }
+
+  static async publishPage(siteId: number, pageId: number) {
+    const page = await Page.findOne({ where: { id: pageId, siteId } });
+    if (!page) throw new Error("PAGE_NOT_FOUND");
+
+    // تحويل الـ status لـ published
+    return await page.update({ status: "published" });
+}
 }

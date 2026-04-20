@@ -67,20 +67,46 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
 
 export const getPublicPage = async (req: Request, res: Response) => {
   try {
-    const { siteId, slug } = req.params; // التعديل المعماري: البحث بـ siteId + slug
+    const { siteId, slug } = req.params;
 
     const page = await Page.findOne({
       where: { 
         siteId, 
         slug, 
-        status: "published" 
+        status: "published" // ❌ لن يرى الزائر الصفحة إلا إذا كانت Published
       },
-      include: ["seo"]
+      // تأكد أن موديل الـ Page يحتوي على هذه الحقول أو جدول مرتبط بالـ SEO
+      attributes: ['id', 'title', 'content', 'blocks', 'slug', 'updatedAt'] 
     });
 
-    if (!page) return res.status(404).json({ success: false, message: "Page not found" });
+    if (!page) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Page not found. It might be a draft or deleted." 
+      });
+    }
 
     return res.json({ success: true, data: page });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const publishPage = async (req: AuthRequest, res: Response) => {
+  try {
+    const { pageId } = req.params;
+    const siteId = req.siteContext.siteId;
+
+    // استدعاء الـ Service لتغيير الحالة
+    const page = await PageService.updatePage(siteId, Number(pageId), req.user.id, {
+      status: "published"
+    });
+
+    return res.json({ 
+      success: true, 
+      message: "Page is now LIVE! 🚀", 
+      data: { id: page.id, status: page.status, slug: page.slug } 
+    });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
   }
