@@ -6,17 +6,24 @@ import * as MediaController from './media.controller';
 const router = Router();
 
 const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-  },
-  fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
-      cb(null, true);
-    } else {
-      cb(new Error('Format non supporté !'));
+  storage: multer.memoryStorage(), // مهم لـ Cloudinary
+  fileFilter: (req, file, cb) => {
+    const allowed = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "application/pdf",
+      "video/mp4",
+    ];
+
+    if (!allowed.includes(file.mimetype)) {
+      return cb(new Error("Format non pris en charge !"));
     }
-  }
+
+    cb(null, true);
+  },
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 });
 
 router.use(authenticateJWT);
