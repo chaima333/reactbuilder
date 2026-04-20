@@ -19,6 +19,5 @@ router.put('/:pageId', requirePermission(PERMISSIONS.PAGE_UPDATE), updatePage);
 router.delete('/:pageId', requirePermission(PERMISSIONS.PAGE_DELETE), deletePage);
 
 // public SEO route
-router.get('/public/:slug', getPublicPage);
-
+router.get('/public/:siteId/:slug', getPublicPage);
 export default router;

@@ -1,22 +1,30 @@
 import { Op } from "sequelize";
 import { Page, ActivityLog } from "../../models";
 import slugify from "slugify";
+import { nanoid } from "nanoid";
 
 export class PageService {
+  // ✅ توليد Slug فريد (Deterministic + Random Suffix) - مفيش Loops!
+  private static generateBulletproofSlug(title: string): string {
+    const base = slugify(title, { lower: true, strict: true });
+    return `${base}-${nanoid(5)}`; 
+  }
+
   static async createPage(siteId: number, userId: number, data: any) {
-    const slug = await this.generateUniqueSlug(siteId, data.title);
-    
+    const slug = this.generateBulletproofSlug(data.title);
+
     const page = await Page.create({
-      ...data,
-      slug, 
-      siteId,
+      title: data.title,
+      content: data.content || "",
+      blocks: data.blocks || [],
+      status: "draft",
+      slug: slug,
+      siteId, // مفروض فرضاً من الـ Context
       userId,
-      status: data.status || "draft",
     });
 
     await ActivityLog.create({
-      userId,
-      siteId,
+      userId, siteId,
       action: "page_created",
       entityType: "page",
       entityId: page.id,
@@ -29,46 +37,25 @@ export class PageService {
     const page = await Page.findOne({ where: { id: pageId, siteId } });
     if (!page) throw new Error("PAGE_NOT_FOUND");
 
-    if (data.title && data.title !== page.title) {
-      data.slug = await this.generateUniqueSlug(siteId, data.title, pageId);
-    }
-
-    await page.update({
-        ...data,
-        userId 
-    });
+    // 🛡️ Whitelist Enforcement: نختارو فقط الحقول المسموح بتعديلها
+    const { title, content, blocks, status } = data;
     
+    // الـ Slug يبقى ثابت (Immutable) لحماية الـ SEO
+    await page.update({
+      title,
+      content,
+      blocks,
+      status,
+      userId // لتتبع من قام بآخر تعديل
+    });
+
     return page;
-  }
-
-  private static async generateUniqueSlug(siteId: number, title: string, excludeId?: number): Promise<string> {
-    const baseSlug = slugify(title, { lower: true, strict: true });
-    let slug = baseSlug;
-    let counter = 1;
-
-    while (true) {
-      const existing = await Page.findOne({
-        where: { 
-          slug, 
-          siteId,
-          ...(excludeId && { id: { [Op.ne]: excludeId } }) 
-        }
-      });
-
-      if (!existing) break;
-      slug = `${baseSlug}-${counter}`;
-      counter++;
-    }
-    return slug;
   }
 
   static async getPages(siteId: number) {
     return Page.findAll({
-      where: {
-        siteId,
-        status: { [Op.ne]: "deleted" },
-      },
-      order: [['createdAt', 'DESC']] 
+      where: { siteId, status: { [Op.ne]: "deleted" } },
+      order: [["createdAt", "DESC"]],
     });
   }
 }
