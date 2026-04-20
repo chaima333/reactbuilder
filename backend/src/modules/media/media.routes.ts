@@ -7,20 +7,11 @@ const router = Router();
 
 const upload = multer({
   storage: multer.memoryStorage(), 
- 
-    fileFilter: (req, file, cb) => {
+  
+  fileFilter: (req, file, cb) => {
+  console.log("🔥 FILE OBJECT:", file);
   console.log("🔥 MIME RECEIVED:", file.mimetype);
-
-  // نقبلو الصور + pdf + video بطريقة flexible
-  if (
-    file.mimetype.startsWith("image/") ||
-    file.mimetype === "application/pdf" ||
-    file.mimetype.startsWith("video/")
-  ) {
-    return cb(null, true);
-  }
-
-  return cb(new Error("Format non pris en charge !"));
+  cb(null, true); // نخلي كل شيء يعدي
 }
 });
 
