@@ -2,17 +2,46 @@ import { Op } from "sequelize";
 import { Page, ActivityLog } from "../../models";
 import slugify from "slugify";
 
+// @ts-ignore
 const { nanoid } = require('nanoid');
 
-
 export class PageService {
-  // ✅ توليد Slug فريد (Deterministic + Random Suffix) - مفيش Loops!
+  // ✅ توليد Slug فريد
   private static generateBulletproofSlug(title: string): string {
     const base = slugify(title, { lower: true, strict: true });
     return `${base}-${nanoid(5)}`; 
   }
 
   static async createPage(siteId: number, userId: number, data: any) {
+    // 🔍 1. التثبت: هل فمة صفحة بنفس العنوان في نفس الـ Site؟
+    const existingPage = await Page.findOne({
+      where: {
+        siteId,
+        title: data.title,
+        status: { [Op.ne]: "deleted" } // نلوجوا كان في اللي مش مفسخين
+      },
+    });
+
+    // 🚀 2. الـ Upsert Logic: إذا موجودة، حدثها ورجعها
+    if (existingPage) {
+      await existingPage.update({
+        content: data.content || existingPage.content,
+        blocks: data.blocks || existingPage.blocks,
+        userId: userId // شكون آخر واحد مسّها
+      });
+      
+      // نسجلوا تعديل موش إنشاء جديد
+      await ActivityLog.create({
+        userId, siteId,
+        action: "page_updated_via_upsert",
+        entityType: "page",
+        entityId: existingPage.id,
+      });
+
+      return existingPage;
+    }
+
+    // ✨ 3. إذا مش موجودة، اصنع وحدة جديدة
     const slug = this.generateBulletproofSlug(data.title);
 
     const page = await Page.create({
@@ -21,7 +50,7 @@ export class PageService {
       blocks: data.blocks || [],
       status: "draft",
       slug: slug,
-      siteId, // مفروض فرضاً من الـ Context
+      siteId,
       userId,
     });
 
@@ -39,16 +68,14 @@ export class PageService {
     const page = await Page.findOne({ where: { id: pageId, siteId } });
     if (!page) throw new Error("PAGE_NOT_FOUND");
 
-    // 🛡️ Whitelist Enforcement: نختارو فقط الحقول المسموح بتعديلها
     const { title, content, blocks, status } = data;
     
-    // الـ Slug يبقى ثابت (Immutable) لحماية الـ SEO
     await page.update({
       title,
       content,
       blocks,
       status,
-      userId // لتتبع من قام بآخر تعديل
+      userId 
     });
 
     return page;
