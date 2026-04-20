@@ -6,24 +6,22 @@ import * as MediaController from './media.controller';
 const router = Router();
 
 const upload = multer({
-  storage: multer.memoryStorage(), // مهم لـ Cloudinary
-  fileFilter: (req, file, cb) => {
-    const allowed = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "image/gif",
-      "application/pdf",
-      "video/mp4",
-    ];
+  storage: multer.memoryStorage(), 
+ 
+    fileFilter: (req, file, cb) => {
+  console.log("🔥 MIME RECEIVED:", file.mimetype);
 
-    if (!allowed.includes(file.mimetype)) {
-      return cb(new Error("Format non pris en charge !"));
-    }
+  // نقبلو الصور + pdf + video بطريقة flexible
+  if (
+    file.mimetype.startsWith("image/") ||
+    file.mimetype === "application/pdf" ||
+    file.mimetype.startsWith("video/")
+  ) {
+    return cb(null, true);
+  }
 
-    cb(null, true);
-  },
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  return cb(new Error("Format non pris en charge !"));
+}
 });
 
 router.use(authenticateJWT);
