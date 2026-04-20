@@ -8,7 +8,6 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// لازم كلمة export هنا باش الـ Service تشوفها
 export const uploadStream = (fileBuffer: Buffer, folder: string): Promise<any> => {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
