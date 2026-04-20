@@ -2,8 +2,8 @@ import { uploadStream, deleteFromCloudinary } from '../../core/config/cloudinary
 import { Media, ActivityLog } from '../../models';
 
 export class MediaService {
-  static async processUpload(file: Express.Multer.File, siteId: string, userId: string, alt?: string) {
-    // 1. Storage Pipeline
+static async processUpload(file: any, siteId: string, userId: string, alt?: string) {
+      // 1. Storage Pipeline
     const cloudResult = await uploadStream(file.buffer, `sites/${siteId}/media`);
 
     // 2. Metadata Persistence
