@@ -43,9 +43,9 @@ app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 // PRIVATE ROUTES
 app.use("/api/users", authenticateJWT, userRoutes);
 app.use("/api/admin", authenticateJWT, adminRoutes);
-app.use("/api/sites/:siteId/pages", pageRoutes);
 
-app.use("/api/public/pages", pageRoutes);
+app.get("/api/public/pages/:siteId/:slug", getPublicPage);
+app.use("/api/sites/:siteId/pages", pageRoutes);
 
 app.use("/api/dashboard", authenticateJWT, dashboardRoutes);
 
