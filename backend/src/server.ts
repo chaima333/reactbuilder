@@ -34,38 +34,34 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(initContext);
 
-// --- 2. 🌍 PUBLIC AREA (No Auth Required) ---
+// --- 2. 🌍 PUBLIC LAYER (Strictly No Auth) ---
+// ⚠️ القاعدة الذهبية: الـ Routes الخاصّة (Specific) لازم تجي قبل الـ Router العام
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 app.use("/api/auth", authRoutes);
-app.use("/api/public", publicRoutes);
 
-/**
- * 🔥 الضربة القاضية للـ Access Denied:
- * حطينا الـ Public Page Route هوني مباشرة قبل أي Middleware متع حماية.
- * المسار هذا باش يخدم الـ Redirect 301 أوتوماتيكياً.
- */
+// ✅ الضربة القاضية: نحطو الـ Redirect Route "قبل" الـ publicRoutes
 app.get("/api/public/pages/:siteId/:slug", getPublicPage);
 
-
-// --- 3. 🔒 PRIVATE AREA (Auth Required) ---
-// استعملنا authenticateJWT كـ Global للمنطقة هذي
-app.use("/api/users", authenticateJWT, userRoutes);
-app.use("/api/admin", authenticateJWT, adminRoutes);
-app.use("/api/dashboard", authenticateJWT, dashboardRoutes);
-
-/**
- * 📝 PAGES MANAGEMENT (Private)
- * الـ pageRoutes توة مخصصة فقط للـ CRUD (Add/Edit/Delete)
- */
-app.use("/api/sites/:siteId/pages", authenticateJWT, pageRoutes);
+// الـ Router هذا توّة باش يشد كان الـ /sites/ فقط
+app.use("/api/public", publicRoutes);
 
 
-// --- 4. 🏢 TENANT ROUTES ---
+// --- 3. 🔒 PRIVATE LAYER (JWT Required) ---
+// باش نمنعو أي تداخل، نستعملو Middleware واحد يحمي الـ Block كامل
+const authStack = [authenticateJWT];
+
+app.use("/api/users", authStack, userRoutes);
+app.use("/api/admin", authStack, adminRoutes);
+app.use("/api/dashboard", authStack, dashboardRoutes);
+app.use("/api/sites/:siteId/pages", authStack, pageRoutes);
+
+
+// --- 4. 🏢 TENANT LAYER ---
 const tenantStack = [authenticateJWT, tenantResolver];
 app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
 app.use("/api/sites/:siteId/seo", tenantStack, seoRoutes);
 app.use("/api/sites/:siteId/plugins", tenantStack, pluginRoutes);
-app.use("/api/sites/:siteId/settings", tenantStack, siteRoutes); // أضفت الـ sites هوني لو هي تابعة للـ Tenant
+app.use("/api/sites/:siteId/settings", tenantStack, siteRoutes);
 
 
 // --- START SERVER ---
