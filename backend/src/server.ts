@@ -46,8 +46,6 @@ app.use("/api/admin", authenticateJWT, adminRoutes);
 app.use("/api/sites/:siteId/pages", pageRoutes);
 
 app.use("/api/public/pages", pageRoutes);
-app.use("/api/sites/:siteId/pages", pageRoutes);
-app.get("/api/v2/magic-redirect/:siteId/:slug", getPublicPage);
 
 app.use("/api/dashboard", authenticateJWT, dashboardRoutes);
 
