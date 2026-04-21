@@ -105,13 +105,13 @@ export const getPublicPage = async (req: Request, res: Response) => {
       return res.json({ success: true, data: result.data });
     }
 
-    if (result.type === "redirect") {
-      // 🔥 التغيير هوني: نبعثوه لنفس الـ magic-page route
-      return res.redirect(
-        301,
-        `/api/v2/magic-page/${siteId}/${result.to}`
-      );
-    }
+      if (result.type === "redirect") {
+  return res.json({
+    success: true,
+    type: "redirect",
+    to: result.to
+  });
+} 
 
     return res.status(404).json({
       success: false,
