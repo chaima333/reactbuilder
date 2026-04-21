@@ -8,6 +8,7 @@ import { sequelize } from "../../core/database/connection";
 
 import { PageRepository } from "./repositories/page.repository";
 import { PageEngine } from "./engine/page.engine";
+import { SlugService } from "./services/slug.service";
 
 // @ts-ignore
 const { nanoid } = require('nanoid');
@@ -22,46 +23,48 @@ export class PageService {
 
   // 🚀 Core Engine: UPDATE
   static async updatePage(siteId: number, pageId: number, userId: number, data: any) {
-    // --- زيد السطر هذا هوني ---
-    if (data.slug) {
-       await PageEngine.validateSlugAvailability(siteId, data.slug, pageId);
+  const transaction = await sequelize.transaction();
+
+  try {
+    const page = await PageRepository.findById(pageId, siteId, transaction);
+    if (!page) throw new Error("PAGE_NOT_FOUND");
+
+    // 🔥 SLUG CHECK (مرة وحدة فقط)
+    if (data.slug && data.slug !== page.slug) {
+      await SlugService.ensureAvailable(siteId, data.slug, pageId);
     }
 
-    const transaction = await sequelize.transaction();
-    try {
-      const page = await PageRepository.findById(pageId, siteId, transaction);
-      if (!page) throw new Error("PAGE_NOT_FOUND");
-
-      // 1. Snapshot: لو التبديل مهم، صوّر نسخة قبل ما تبدّل
-      if (PageEngine.needsVersion(page, data)) {
-        await PageRepository.createVersion({
-          pageId: page.id,
-          siteId,
-          title: page.title,
-          content: page.content,
-          blocks: page.blocks,
-          createdBy: userId
-        }, transaction);
-      }
-
-      // 2. Slug History: لو الـ slug تبدل، أرشف القديم
-      if (PageEngine.isSlugChanged(page.slug, data.slug)) {
-        await PageRepository.archiveSlug(page.id, siteId, page.slug, transaction);
-      }
-
-      // 3. Actual Update: بدّل الداتا ورجعها Draft
-      const updatedPage = await PageRepository.updatePage(page, {
-        ...data,
-        status: PAGE_STATUS.DRAFT
+    // versioning
+    if (PageEngine.needsVersion(page, data)) {
+      await PageRepository.createVersion({
+        pageId: page.id,
+        siteId,
+        title: page.title,
+        content: page.content,
+        blocks: page.blocks,
+        createdBy: userId
       }, transaction);
-
-      await transaction.commit();
-      return updatedPage;
-    } catch (error) {
-      await transaction.rollback();
-      throw error;
     }
+
+    // slug history
+    if (PageEngine.isSlugChanged(page.slug, data.slug)) {
+      await SlugService.archive(page.id, siteId, page.slug, transaction);
+    }
+
+    const updated = await PageRepository.updatePage(
+      page,
+      { ...data, status: PAGE_STATUS.DRAFT },
+      transaction
+    );
+
+    await transaction.commit();
+    return updated;
+
+  } catch (err) {
+    await transaction.rollback();
+    throw err;
   }
+}
 
   // 🚀 Core Engine: PUBLISH
   static async publishPage(siteId: number, pageId: number, userRole: string, userId: number) {
