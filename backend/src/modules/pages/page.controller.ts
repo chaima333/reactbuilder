@@ -4,7 +4,6 @@ import { PageService } from "./page.service";
 import { Page } from "../../models";
 import PageSlug from "../../models/pageSlug";
 
-// 1. إنشاء صفحة
 export const createPage = async (req: AuthRequest, res: Response) => {
   try {
     const page = await PageService.createPage(
@@ -18,7 +17,6 @@ export const createPage = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// 2. جلب كل الصفحات
 export const getPages = async (req: AuthRequest, res: Response) => {
   try {
     const pages = await PageService.getPages(req.siteContext.siteId);
@@ -28,7 +26,6 @@ export const getPages = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// 3. تحديث صفحة (تأكد إنو updatePage موجودة في الـ Service بنفس الـ Arguments)
 export const updatePage = async (req: AuthRequest, res: Response) => {
   try {
     // 💡 تأمين الـ siteId: لو Context فارغ، خوذ الـ ID من الـ Params
@@ -55,7 +52,6 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// 4. حذف صفحة
 export const deletePage = async (req: AuthRequest, res: Response) => {
   try {
     const siteId = req.siteContext.siteId;
@@ -73,25 +69,21 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// 5. جلب صفحة للعموم (Public)
 export const getPublicPage = async (req: Request, res: Response) => {
     const { siteId, slug } = req.params;
 
-    // 1. لو الـ Slug هو الحالي (Direct Hit)
     let page = await Page.findOne({
         where: { slug, siteId, status: "published" }
     });
 
     if (page) return res.json({ success: true, data: page });
 
-    // 2. لو موش موجود، نلوجو في الـ History (الـ Redirect)
     const oldSlugRecord = await PageSlug.findOne({ where: { slug, siteId } });
 
     if (oldSlugRecord) {
         const currentPage = await Page.findByPk(oldSlugRecord.pageId);
 
         if (currentPage && currentPage.status === "published") {
-            // ✅ السحر هوني: 301 Redirect للـ Slug الجديد
             return res.redirect(301, `/api/sites/${siteId}/pages/public/${siteId}/${currentPage.slug}`);
         }
     }
@@ -99,7 +91,6 @@ export const getPublicPage = async (req: Request, res: Response) => {
     return res.status(404).json({ success: false, message: "Page not found" });
 };
 
-// 6. النشر (الـ Controller الصحيح اللي يبعث الـ 4 arguments)
 export const publishPageController = async (req: AuthRequest, res: Response) => {
   try {
     const siteId = req.siteContext.siteId;
@@ -127,7 +118,6 @@ export const publishPageController = async (req: AuthRequest, res: Response) => 
   }
 };
 
-// GET /api/pages/:pageId/versions
 export const getPageHistory = async (req: AuthRequest, res: Response) => {
   try {
     const history = await PageService.getPageHistory(
@@ -140,7 +130,6 @@ export const getPageHistory = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// POST /api/pages/:pageId/restore/:versionId
 export const restorePageVersion = async (req: AuthRequest, res: Response) => {
   try {
     const page = await PageService.restoreVersion(

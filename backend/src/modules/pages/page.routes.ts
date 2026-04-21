@@ -16,8 +16,8 @@ import { tenantResolver } from '../../core/middleware/tenantResolver';
 
 const router = Router({ mergeParams: true});
 
-router.get('/public/:siteId/:slug', getPublicPage);
-
+//router.get('/public/:siteId/:slug', getPublicPage);
+router.get('/:siteId/:slug', getPublicPage);
 router.use(authenticateJWT);
 router.use(tenantResolver);
 

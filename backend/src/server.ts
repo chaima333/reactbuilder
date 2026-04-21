@@ -43,7 +43,10 @@ app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 app.use("/api/users", authenticateJWT, userRoutes);
 app.use("/api/admin", authenticateJWT, adminRoutes);
 app.use("/api/sites/:siteId/pages", pageRoutes);
-app.use("/api/sites", authenticateJWT, siteRoutes);
+
+app.use("/api/public/pages", pageRoutes);
+app.use("/api/sites/:siteId/pages", authenticateJWT, pageRoutes);
+
 app.use("/api/dashboard", authenticateJWT, dashboardRoutes);
 
 
