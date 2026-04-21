@@ -65,36 +65,43 @@ export class PageService {
   }
 
 
-  static async updatePage(siteId: number, pageId: number, userId: number, data: any) {
-    const page = await Page.findOne({ where: { id: pageId, siteId } });
-    if (!page) throw new Error("PAGE_NOT_FOUND");
+ static async updatePage(siteId: number, pageId: number, userId: number, data: any) {
+    try {
+        const page = await Page.findOne({ where: { id: pageId, siteId } });
+        if (!page) throw new Error("PAGE_NOT_FOUND");
 
-    // 1. منطق الـ Slug History
-    if (data.slug && data.slug !== page.slug) {
-        const isTaken = await this.isSlugTaken(siteId, data.slug);
-        if (isTaken) throw new Error("SLUG_ALREADY_EXISTS");
+        // 🔥 Log باش نعرفو وين وصل الكود
+        console.log("Checking slug update for site:", siteId);
 
-        // سجل الـ Slug القديم في الجدول الجديد
-        await PageSlug.create({
-            pageId: page.id,
-            slug: page.slug,
-            siteId
+        if (data.slug && data.slug !== page.slug) {
+            const isTaken = await this.isSlugTaken(siteId, data.slug);
+            if (isTaken) throw new Error("SLUG_ALREADY_EXISTS");
+
+            console.log("Creating History for old slug:", page.slug);
+
+            // 🧠 تأكد إنو الـ Model اسمو PageSlug موش pageSlug
+            await PageSlug.create({
+                pageId: page.id,
+                slug: page.slug,
+                siteId: siteId
+            });
+        }
+
+        await page.update({
+            title: data.title || page.title,
+            content: data.content || page.content,
+            blocks: data.blocks || page.blocks,
+            status: data.status || page.status,
+            slug: data.slug || page.slug,
+            userId: userId 
         });
+
+        return page;
+    } catch (error: any) {
+        console.error("SERVICE ERROR:", error); // 👈 هذا باش يطلعلك في Terminal متاع Railway
+        throw error; // باش الـ Controller يوصلو الـ Error
     }
-
-    // 2. تحديث البيانات (Content, Title, Status, etc.)
-    await page.update({
-        title: data.title || page.title,
-        content: data.content || page.content,
-        blocks: data.blocks || page.blocks,
-        status: data.status || page.status,
-        slug: data.slug || page.slug, // تأكد إن الـ slug الجديد يتسيف
-        userId: userId 
-    });
-
-    return page;
 }
-
   //HISTORY DU PAGES SUPPRIME //
 static async getPageHistory(pageId: number, siteId: number) {
   return await PageVersion.findAll({
