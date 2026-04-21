@@ -22,6 +22,11 @@ export class PageService {
 
   // 🚀 Core Engine: UPDATE
   static async updatePage(siteId: number, pageId: number, userId: number, data: any) {
+    // --- زيد السطر هذا هوني ---
+    if (data.slug) {
+       await PageEngine.validateSlugAvailability(siteId, data.slug, pageId);
+    }
+
     const transaction = await sequelize.transaction();
     try {
       const page = await PageRepository.findById(pageId, siteId, transaction);
