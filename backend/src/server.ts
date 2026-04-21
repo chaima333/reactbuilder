@@ -6,12 +6,12 @@ import cors from "cors";
 import path from "path";
 
 // CORE & DB
-import { sequelize } from "./core/database/connection"; // استورد الـ instance مباشرة
+import { sequelize } from "./core/database/connection";
 import { authenticateJWT } from "./shared/auth.util";
 import { tenantResolver } from "./core/middleware/tenantResolver";
 import { initContext } from "./core/middleware/context.middleware";
 
-// ROUTES (استعمل الـ Import العادي باش الـ Typescript يفهم الـ Default exports)
+// ROUTES
 import authRoutes from "./modules/auth/auth.routes";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import siteRoutes from "./modules/sites/site.routes";
@@ -27,45 +27,52 @@ import { getPublicPage } from "./modules/pages/page.controller";
 const app = express();
 const PORT = Number(process.env.PORT) || 10000;
 
-// GLOBAL MIDDLEWARE
+// --- 1. GLOBAL MIDDLEWARE ---
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(initContext);
 
-// PUBLIC ROUTES
+// --- 2. 🌍 PUBLIC AREA (No Auth Required) ---
+app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 app.use("/api/auth", authRoutes);
 app.use("/api/public", publicRoutes);
 
-app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
+/**
+ * 🔥 الضربة القاضية للـ Access Denied:
+ * حطينا الـ Public Page Route هوني مباشرة قبل أي Middleware متع حماية.
+ * المسار هذا باش يخدم الـ Redirect 301 أوتوماتيكياً.
+ */
+app.get("/api/public/pages/:siteId/:slug", getPublicPage);
 
-// PRIVATE ROUTES
+
+// --- 3. 🔒 PRIVATE AREA (Auth Required) ---
+// استعملنا authenticateJWT كـ Global للمنطقة هذي
 app.use("/api/users", authenticateJWT, userRoutes);
 app.use("/api/admin", authenticateJWT, adminRoutes);
-
-app.get("/api/public/pages/:siteId/:slug", getPublicPage);
-app.use("/api/sites/:siteId/pages", pageRoutes);
-
 app.use("/api/dashboard", authenticateJWT, dashboardRoutes);
 
+/**
+ * 📝 PAGES MANAGEMENT (Private)
+ * الـ pageRoutes توة مخصصة فقط للـ CRUD (Add/Edit/Delete)
+ */
+app.use("/api/sites/:siteId/pages", authenticateJWT, pageRoutes);
 
-// TENANT ROUTES
+
+// --- 4. 🏢 TENANT ROUTES ---
 const tenantStack = [authenticateJWT, tenantResolver];
 app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
 app.use("/api/sites/:siteId/seo", tenantStack, seoRoutes);
 app.use("/api/sites/:siteId/plugins", tenantStack, pluginRoutes);
+app.use("/api/sites/:siteId/settings", tenantStack, siteRoutes); // أضفت الـ sites هوني لو هي تابعة للـ Tenant
 
-// START SERVER
+
+// --- START SERVER ---
 const startServer = async () => {
   try {
-    // 1. تثبت من الربط فقط (Ping)
     await sequelize.authenticate();
-    console.log("✅ DB Connection: OK (Authenticity Verified)");
-
-    // 2. ممنوع منعا باتا وجود sequelize.sync() هنا! 
-    // الـ Migrations تتصب في الـ Deployment Pipeline (Render/Railway) 
-    // قبل ما السيرفر يبدأ الـ Listen
+    console.log("✅ DB Connection: OK");
 
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 Node Server: Operational on port ${PORT}`);
