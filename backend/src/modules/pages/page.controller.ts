@@ -31,16 +31,27 @@ export const getPages = async (req: AuthRequest, res: Response) => {
 // 3. تحديث صفحة (تأكد إنو updatePage موجودة في الـ Service بنفس الـ Arguments)
 export const updatePage = async (req: AuthRequest, res: Response) => {
   try {
+    // 💡 تأمين الـ siteId: لو Context فارغ، خوذ الـ ID من الـ Params
+    const siteId = req.siteContext?.siteId || Number(req.params.siteId);
+
     const page = await PageService.updatePage(
-      req.siteContext.siteId,
+      siteId,
       Number(req.params.pageId),
       req.user.id,
       req.body
     );
     return res.json({ success: true, data: page });
   } catch (err: any) {
+    // 💡 Log الحقيقة في الـ Terminal متاع Railway
+    console.error("🔥 UPDATE PAGE CRASH:", err);
+
     const status = err.message === "PAGE_NOT_FOUND" ? 404 : 500;
-    return res.status(status).json({ success: false, message: err.message });
+    
+    // 💡 نضمنو إنو الـ message ديما يرجع فيه حاجة
+    return res.status(status).json({ 
+      success: false, 
+      message: err.message || err.name || "Unknown Database Error" 
+    });
   }
 };
 
