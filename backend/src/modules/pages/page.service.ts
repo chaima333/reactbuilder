@@ -6,16 +6,59 @@ import { PageVersion } from "../../models/pageVersion";
 import PageSlug from "../../models/pageSlug";
 import { sequelize } from "../../core/database/connection";
 
+import { PageRepository } from "./repositories/page.repository";
+import { PageEngine } from "./engine/page.engine";
+
 // @ts-ignore
 const { nanoid } = require('nanoid');
 
 export class PageService {
   
+  // 🛠️ Private Utilities
   private static generateBulletproofSlug(title: string): string {
     const base = slugify(title, { lower: true, strict: true });
     return `${base}-${nanoid(5)}`; 
   }
 
+  // 🚀 Core Engine: UPDATE
+  static async updatePage(siteId: number, pageId: number, userId: number, data: any) {
+    const transaction = await sequelize.transaction();
+    try {
+      const page = await PageRepository.findById(pageId, siteId, transaction);
+      if (!page) throw new Error("PAGE_NOT_FOUND");
+
+      // 1. Snapshot: لو التبديل مهم، صوّر نسخة قبل ما تبدّل
+      if (PageEngine.needsVersion(page, data)) {
+        await PageRepository.createVersion({
+          pageId: page.id,
+          siteId,
+          title: page.title,
+          content: page.content,
+          blocks: page.blocks,
+          createdBy: userId
+        }, transaction);
+      }
+
+      // 2. Slug History: لو الـ slug تبدل، أرشف القديم
+      if (PageEngine.isSlugChanged(page.slug, data.slug)) {
+        await PageRepository.archiveSlug(page.id, siteId, page.slug, transaction);
+      }
+
+      // 3. Actual Update: بدّل الداتا ورجعها Draft
+      const updatedPage = await PageRepository.updatePage(page, {
+        ...data,
+        status: PAGE_STATUS.DRAFT
+      }, transaction);
+
+      await transaction.commit();
+      return updatedPage;
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  }
+
+  // 🚀 Core Engine: PUBLISH
   static async publishPage(siteId: number, pageId: number, userRole: string, userId: number) {
     const page = await Page.findOne({ where: { id: pageId, siteId } });
     if (!page) throw new Error("PAGE_NOT_FOUND");
@@ -23,13 +66,13 @@ export class PageService {
     if (!canPublish(userRole)) throw new Error("FORBIDDEN");
     if (!canTransition(page.status, PAGE_STATUS.PUBLISHED)) throw new Error("INVALID_TRANSITION");
 
-    // 📸 Versioning Snapshot
+    // 📸 Versioning Snapshot before publish
     await PageVersion.create({
       pageId: page.id,
       title: page.title,
       content: page.content,
       blocks: page.blocks,
-      versionTag: `v-${new Date().getTime()}`,
+      versionTag: `v-pub-${new Date().getTime()}`,
       createdBy: userId
     });
 
@@ -39,6 +82,7 @@ export class PageService {
     });
   }
 
+  // 🚀 Core Engine: CREATE
   static async createPage(siteId: number, userId: number, data: any) {
     const existingPage = await Page.findOne({
       where: { siteId, title: data.title, status: { [Op.ne]: "deleted" } },
@@ -58,6 +102,7 @@ export class PageService {
     });
   }
 
+  // 🚀 GETTERS
   static async getPages(siteId: number) {
     return Page.findAll({
       where: { siteId, status: { [Op.ne]: "deleted" } },
@@ -65,87 +110,34 @@ export class PageService {
     });
   }
 
+  static async getPageHistory(pageId: number, siteId: number) {
+    return await PageVersion.findAll({
+      where: { pageId },
+      order: [["createdAt", "DESC"]],
+      limit: 10 
+    });
+  }
 
+  // 🚀 RESTORE
+  static async restoreVersion(siteId: number, pageId: number, versionId: number) {
+    const version = await PageVersion.findOne({ where: { id: versionId, pageId } });
+    const page = await Page.findOne({ where: { id: pageId, siteId } });
 
+    if (!version || !page) throw new Error("VERSION_OR_PAGE_NOT_FOUND");
 
-  static async updatePage(siteId: number, pageId: number, userId: number, data: any) {
-    const transaction = await sequelize.transaction();
-    try {
-        const page = await Page.findOne({ where: { id: pageId, siteId }, transaction });
-        if (!page) throw new Error("PAGE_NOT_FOUND");
+    return await page.update({
+      title: version.title,
+      content: version.content,
+      blocks: version.blocks,
+      status: PAGE_STATUS.DRAFT
+    });
+  }
 
-        // 1️⃣ 📸 الـ Versioning Snapshot (لازم هنا قبل كل تعديل)
-        await PageVersion.create({
-            pageId: page.id,
-            title: page.title,
-            content: page.content,
-            blocks: page.blocks,
-            versionTag: `update-${new Date().getTime()}`,
-            createdBy: userId
-        }, { transaction });
-
-        // 2️⃣ 🔗 الـ Slug History
-        if (data.slug && data.slug !== page.slug) {
-            await PageSlug.create({
-                pageId: page.id,
-                slug: page.slug,
-                siteId
-            }, { transaction });
-        }
-
-        // 3️⃣ 📝 الـ Actual Update
-        await page.update({
-            ...data,
-            status: PAGE_STATUS.DRAFT // حسب الـ Rules متاعك
-        }, { transaction });
-
-        await transaction.commit();
-        return page;
-    } catch (error) {
-        await transaction.rollback();
-        throw error;
-    }
-}
-
-
-
-
-  //HISTORY DU PAGES SUPPRIME //
-static async getPageHistory(pageId: number, siteId: number) {
-  return await PageVersion.findAll({
-    where: { pageId },
-    order: [["createdAt", "DESC"]], // النسخة الأحدث تظهر الأولى
-    limit: 10 // نرجعو آخر 10 نسخ بركة باش ما نثقلوش الـ API
-  });
-}
-
-static async restoreVersion(siteId: number, pageId: number, versionId: number) {
-  // نثبتو إنو النسخة تابعة لـ نفس الصفحة
-  const version = await PageVersion.findOne({ where: { id: versionId, pageId } });
-  const page = await Page.findOne({ where: { id: pageId, siteId } });
-
-  if (!version || !page) throw new Error("VERSION_OR_PAGE_NOT_FOUND");
-
-  return await page.update({
-    title: version.title,
-    content: version.content,
-    blocks: version.blocks,
-    status: 'draft' // نرجعوها draft باش الـ user يثبت فيها قبل ما ينشرها مرة أخرى
-  });
-}
-
-// PageService.ts
-
-static async isSlugTaken(siteId: number, slug: string): Promise<boolean> {
-    // نثبتو في الصفحات الحالية
+  static async isSlugTaken(siteId: number, slug: string): Promise<boolean> {
     const page = await Page.findOne({ where: { slug, siteId } });
     if (page) return true;
 
-    // نثبتو في التاريخ (History)
     const history = await PageSlug.findOne({ where: { slug, siteId } });
     return !!history;
+  }
 }
-
-
-}
-
