@@ -1,14 +1,16 @@
 import { Sequelize } from "sequelize-typescript";
+import { User } from "./User";
 import { Token } from "./token";
 import { Page } from "./page";
+import { Site } from "./site";
 import { ActivityLog } from "./activityLog";
 import { Media } from "./media";
 import { Seo } from "./Seo";
 import { SitePlugin } from "./SitePlugin";
 import Plugin from "./Plugin";
 import { SiteMember } from "./SiteMember";
-import { User } from "./User";
-import { Site } from "./site";
+import PageVersion from "./pageVersion"; 
+import PageSlug from "./pageSlug"; 
 
 const sequelize = new Sequelize({
   dialect: "postgres",
@@ -18,19 +20,18 @@ const sequelize = new Sequelize({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false
-    }
+    ssl: { require: true, rejectUnauthorized: false }
   },
-  models: [User, Token, Page, Site, ActivityLog, Media, Seo, Plugin, SitePlugin, SiteMember],
+  models: [
+    User, Token, Page, Site, ActivityLog, Media, 
+    Seo, Plugin, SitePlugin, SiteMember, 
+    PageVersion, PageSlug 
+  ],
   logging: false,
-  pool: {
-    max: 10,
-    min: 0,
-    acquire: 30000,
-    idle: 10000,
-  },
 });
 
-export { sequelize, User, Token, Page, Site, ActivityLog, Media, Seo, Plugin, SitePlugin, SiteMember };
+export { 
+  sequelize, User, Token, Page, Site, 
+  ActivityLog, Media, Seo, Plugin, 
+  SitePlugin, SiteMember, PageVersion, PageSlug 
+};

@@ -3,6 +3,7 @@ import { Page, ActivityLog } from "../../models";
 import slugify from "slugify";
 import { canTransition, canPublish, PAGE_STATUS } from "./rules";
 import { PageVersion } from "../../models/pageVersion";
+import PageSlug from "../../models/pageSlug";
 
 // @ts-ignore
 const { nanoid } = require('nanoid');
@@ -12,22 +13,6 @@ export class PageService {
   private static generateBulletproofSlug(title: string): string {
     const base = slugify(title, { lower: true, strict: true });
     return `${base}-${nanoid(5)}`; 
-  }
-
-  // ✅ الدالة اللي كانت ناقصة في الـ Service
-  static async updatePage(siteId: number, pageId: number, userId: number, data: any) {
-    const page = await Page.findOne({ where: { id: pageId, siteId } });
-    if (!page) throw new Error("PAGE_NOT_FOUND");
-
-   
-await page.update({
-  title: data.title || page.title,
-  content: data.content || page.content,
-  blocks: data.blocks || page.blocks,
-  status: data.status || page.status, // يحافظ على الحالة القديمة لو ما بعثناش وحدة جديدة
-  userId: userId 
-});
-    return page;
   }
 
   static async publishPage(siteId: number, pageId: number, userRole: string, userId: number) {
@@ -80,6 +65,35 @@ await page.update({
   }
 
 
+  static async updatePage(siteId: number, pageId: number, userId: number, data: any) {
+    const page = await Page.findOne({ where: { id: pageId, siteId } });
+    if (!page) throw new Error("PAGE_NOT_FOUND");
+
+    // 1. منطق الـ Slug History
+    if (data.slug && data.slug !== page.slug) {
+        const isTaken = await this.isSlugTaken(siteId, data.slug);
+        if (isTaken) throw new Error("SLUG_ALREADY_EXISTS");
+
+        // سجل الـ Slug القديم في الجدول الجديد
+        await PageSlug.create({
+            pageId: page.id,
+            slug: page.slug,
+            siteId
+        });
+    }
+
+    // 2. تحديث البيانات (Content, Title, Status, etc.)
+    await page.update({
+        title: data.title || page.title,
+        content: data.content || page.content,
+        blocks: data.blocks || page.blocks,
+        status: data.status || page.status,
+        slug: data.slug || page.slug, // تأكد إن الـ slug الجديد يتسيف
+        userId: userId 
+    });
+
+    return page;
+}
 
   //HISTORY DU PAGES SUPPRIME //
 static async getPageHistory(pageId: number, siteId: number) {
@@ -104,5 +118,19 @@ static async restoreVersion(siteId: number, pageId: number, versionId: number) {
     status: 'draft' // نرجعوها draft باش الـ user يثبت فيها قبل ما ينشرها مرة أخرى
   });
 }
+
+// PageService.ts
+
+static async isSlugTaken(siteId: number, slug: string): Promise<boolean> {
+    // نثبتو في الصفحات الحالية
+    const page = await Page.findOne({ where: { slug, siteId } });
+    if (page) return true;
+
+    // نثبتو في التاريخ (History)
+    const history = await PageSlug.findOne({ where: { slug, siteId } });
+    return !!history;
+}
+
+
 }
 

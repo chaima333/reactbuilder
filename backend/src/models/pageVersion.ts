@@ -1,24 +1,26 @@
-// src/models/PageVersion.ts
-import { DataTypes, Model } from "sequelize";
-import { sequelize } from "../core/database/connection";
+import { Table, Column, Model, DataType, ForeignKey } from "sequelize-typescript";
+import { Page } from "./page";
 
-export class PageVersion extends Model {
-  public id!: number;
-  public pageId!: number;
-  public title!: string;
-  public content!: string;
-  public blocks!: any;
-  public versionTag!: string;
-  public createdBy!: number;
+@Table({ tableName: "page_versions", timestamps: true })
+export class PageVersion extends Model { // 👈 الـ Model هذا توّة هو الصحيح
+  @ForeignKey(() => Page)
+  @Column({ type: DataType.INTEGER, allowNull: false })
+  pageId!: number;
+
+  @Column(DataType.STRING)
+  title!: string;
+
+  @Column(DataType.TEXT)
+  content!: string;
+
+  @Column(DataType.JSON)
+  blocks!: any;
+
+  @Column(DataType.STRING)
+  versionTag!: string;
+
+  @Column(DataType.INTEGER)
+  createdBy!: number;
 }
-
-PageVersion.init({
-  pageId: DataTypes.INTEGER,
-  title: DataTypes.STRING,
-  content: DataTypes.TEXT,
-  blocks: DataTypes.JSON,
-  versionTag: DataTypes.STRING,
-  createdBy: DataTypes.INTEGER,
-}, { sequelize, modelName: 'page_version' });
 
 export default PageVersion;

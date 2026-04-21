@@ -2,6 +2,7 @@ import { Response, Request } from "express";
 import { AuthRequest } from "../../shared/auth.util";
 import { PageService } from "./page.service";
 import { Page } from "../../models";
+import PageSlug from "../../models/pageSlug";
 
 // 1. إنشاء صفحة
 export const createPage = async (req: AuthRequest, res: Response) => {
@@ -63,17 +64,28 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
 
 // 5. جلب صفحة للعموم (Public)
 export const getPublicPage = async (req: Request, res: Response) => {
-  try {
     const { siteId, slug } = req.params;
-    const page = await Page.findOne({
-      where: { siteId, slug, status: "published" },
-      attributes: ['id', 'title', 'content', 'blocks', 'slug', 'updatedAt'] 
+
+    // 1. لو الـ Slug هو الحالي (Direct Hit)
+    let page = await Page.findOne({
+        where: { slug, siteId, status: "published" }
     });
-    if (!page) return res.status(404).json({ success: false, message: "Page not found" });
-    return res.json({ success: true, data: page });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
+
+    if (page) return res.json({ success: true, data: page });
+
+    // 2. لو موش موجود، نلوجو في الـ History (الـ Redirect)
+    const oldSlugRecord = await PageSlug.findOne({ where: { slug, siteId } });
+
+    if (oldSlugRecord) {
+        const currentPage = await Page.findByPk(oldSlugRecord.pageId);
+
+        if (currentPage && currentPage.status === "published") {
+            // ✅ السحر هوني: 301 Redirect للـ Slug الجديد
+            return res.redirect(301, `/api/sites/${siteId}/pages/public/${siteId}/${currentPage.slug}`);
+        }
+    }
+
+    return res.status(404).json({ success: false, message: "Page not found" });
 };
 
 // 6. النشر (الـ Controller الصحيح اللي يبعث الـ 4 arguments)
@@ -134,3 +146,4 @@ export const restorePageVersion = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
+
