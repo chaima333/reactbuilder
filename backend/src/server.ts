@@ -41,7 +41,7 @@ app.use("/api/auth", authRoutes);
 
 // ✅ الضربة القاضية: نحطو الـ Redirect Route "قبل" الـ publicRoutes
 app.get("/api/public/pages/:siteId/:slug", getPublicPage);
-
+app.get("/api/v2/magic-page/:siteId/:slug", getPublicPage);
 // الـ Router هذا توّة باش يشد كان الـ /sites/ فقط
 app.use("/api/public", publicRoutes);
 

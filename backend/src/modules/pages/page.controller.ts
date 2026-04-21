@@ -93,28 +93,33 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
 // 🟢 PUBLIC PAGE RESOLVER (NEW ARCH)
 // ========================
 export const getPublicPage = async (req: Request, res: Response) => {
-  const { siteId, slug } = req.params;
+  try {
+    const { siteId, slug } = req.params;
 
-  const result = await PublicPageResolver.resolve(
-    Number(siteId),
-    slug
-  );
-
-  if (result.type === "page") {
-    return res.json({ success: true, data: result.data });
-  }
-
-  if (result.type === "redirect") {
-    return res.redirect(
-      301,
-      `/api/public/pages/${siteId}/${result.to}`
+    const result = await PublicPageResolver.resolve(
+      Number(siteId),
+      slug
     );
-  }
 
-  return res.status(404).json({
-    success: false,
-    message: "Page not found"
-  });
+    if (result.type === "page") {
+      return res.json({ success: true, data: result.data });
+    }
+
+    if (result.type === "redirect") {
+      // 🔥 التغيير هوني: نبعثوه لنفس الـ magic-page route
+      return res.redirect(
+        301,
+        `/api/v2/magic-page/${siteId}/${result.to}`
+      );
+    }
+
+    return res.status(404).json({
+      success: false,
+      message: "Page not found"
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 
