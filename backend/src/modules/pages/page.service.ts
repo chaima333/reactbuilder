@@ -19,14 +19,14 @@ export class PageService {
     const page = await Page.findOne({ where: { id: pageId, siteId } });
     if (!page) throw new Error("PAGE_NOT_FOUND");
 
-    await page.update({
-      title: data.title,
-      content: data.content,
-      blocks: data.blocks,
-      status: data.status, // هنا نثبتو في الـ status العادي (draft/review)
-      userId: userId 
-    });
-
+   
+await page.update({
+  title: data.title || page.title,
+  content: data.content || page.content,
+  blocks: data.blocks || page.blocks,
+  status: data.status || page.status, // يحافظ على الحالة القديمة لو ما بعثناش وحدة جديدة
+  userId: userId 
+});
     return page;
   }
 
@@ -78,4 +78,31 @@ export class PageService {
       order: [["createdAt", "DESC"]],
     });
   }
+
+
+
+  //HISTORY DU PAGES SUPPRIME //
+static async getPageHistory(pageId: number, siteId: number) {
+  return await PageVersion.findAll({
+    where: { pageId },
+    order: [["createdAt", "DESC"]], // النسخة الأحدث تظهر الأولى
+    limit: 10 // نرجعو آخر 10 نسخ بركة باش ما نثقلوش الـ API
+  });
 }
+
+static async restoreVersion(siteId: number, pageId: number, versionId: number) {
+  // نثبتو إنو النسخة تابعة لـ نفس الصفحة
+  const version = await PageVersion.findOne({ where: { id: versionId, pageId } });
+  const page = await Page.findOne({ where: { id: pageId, siteId } });
+
+  if (!version || !page) throw new Error("VERSION_OR_PAGE_NOT_FOUND");
+
+  return await page.update({
+    title: version.title,
+    content: version.content,
+    blocks: version.blocks,
+    status: 'draft' // نرجعوها draft باش الـ user يثبت فيها قبل ما ينشرها مرة أخرى
+  });
+}
+}
+

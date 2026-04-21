@@ -103,3 +103,34 @@ export const publishPageController = async (req: AuthRequest, res: Response) => 
     return res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// GET /api/pages/:pageId/versions
+export const getPageHistory = async (req: AuthRequest, res: Response) => {
+  try {
+    const history = await PageService.getPageHistory(
+      Number(req.params.pageId),
+      req.siteContext.siteId
+    );
+    return res.json({ success: true, data: history });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// POST /api/pages/:pageId/restore/:versionId
+export const restorePageVersion = async (req: AuthRequest, res: Response) => {
+  try {
+    const page = await PageService.restoreVersion(
+      req.siteContext.siteId,
+      Number(req.params.pageId),
+      Number(req.params.versionId)
+    );
+    return res.json({ 
+      success: true, 
+      message: "Page restored to old version! ⏪", 
+      data: page 
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};

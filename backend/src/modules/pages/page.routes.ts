@@ -8,7 +8,9 @@ import {
   updatePage, 
   deletePage, 
   getPublicPage, 
-  publishPageController
+  publishPageController,
+  restorePageVersion,
+  getPageHistory
 } from './page.controller';
 import { tenantResolver } from '../../core/middleware/tenantResolver';
 
@@ -24,5 +26,6 @@ router.post('/', requirePermission(PERMISSIONS.PAGE_CREATE), createPage);
 router.put('/:pageId', requirePermission(PERMISSIONS.PAGE_UPDATE), updatePage);
 router.delete('/:pageId', requirePermission(PERMISSIONS.PAGE_DELETE), deletePage);
 router.post("/:pageId/publish", publishPageController);
-
+router.get("/:pageId/versions", requirePermission(PERMISSIONS.PAGE_UPDATE), getPageHistory);
+router.post("/:pageId/restore/:versionId", requirePermission(PERMISSIONS.PAGE_UPDATE), restorePageVersion);
 export default router;
