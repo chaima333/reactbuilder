@@ -34,20 +34,14 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(initContext);
 
-// --- 2. 🌍 PUBLIC LAYER (Strictly No Auth) ---
-// ⚠️ القاعدة الذهبية: الـ Routes الخاصّة (Specific) لازم تجي قبل الـ Router العام
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 app.use("/api/auth", authRoutes);
 
-// ✅ الضربة القاضية: نحطو الـ Redirect Route "قبل" الـ publicRoutes
 app.get("/api/public/pages/:siteId/:slug", getPublicPage);
 
-// الـ Router هذا توّة باش يشد كان الـ /sites/ فقط
 app.use("/api/public", publicRoutes);
 
 
-// --- 3. 🔒 PRIVATE LAYER (JWT Required) ---
-// باش نمنعو أي تداخل، نستعملو Middleware واحد يحمي الـ Block كامل
 const authStack = [authenticateJWT];
 
 app.use("/api/users", authStack, userRoutes);
