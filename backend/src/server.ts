@@ -44,10 +44,11 @@ app.use("/api/users", authenticateJWT, userRoutes);
 app.use("/api/admin", authenticateJWT, adminRoutes);
 app.use("/api/sites", authenticateJWT, siteRoutes);
 app.use("/api/dashboard", authenticateJWT, dashboardRoutes);
+app.use("/api/sites/:siteId/pages", pageRoutes);
+
 
 // TENANT ROUTES
 const tenantStack = [authenticateJWT, tenantResolver];
-app.use("/api/sites/:siteId/pages", tenantStack, pageRoutes);
 app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
 app.use("/api/sites/:siteId/seo", tenantStack, seoRoutes);
 app.use("/api/sites/:siteId/plugins", tenantStack, pluginRoutes);
