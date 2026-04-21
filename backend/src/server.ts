@@ -22,6 +22,7 @@ import seoRoutes from "./modules/seo/seo.routes";
 import adminRoutes from "./modules/admin/admin.routes";
 import pluginRoutes from "./modules/plugins/plugin.routes";
 import pageRoutes from "./modules/pages/page.routes";
+import { getPublicPage } from "./modules/pages/page.controller";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 10000;
@@ -46,6 +47,7 @@ app.use("/api/sites/:siteId/pages", pageRoutes);
 
 app.use("/api/public/pages", pageRoutes);
 app.use("/api/sites/:siteId/pages", pageRoutes);
+app.get("/api/v2/magic-redirect/:siteId/:slug", getPublicPage);
 
 app.use("/api/dashboard", authenticateJWT, dashboardRoutes);
 
