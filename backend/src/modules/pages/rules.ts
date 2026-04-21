@@ -1,9 +1,8 @@
 // ===== PAGE STATUS =====
 export const PAGE_STATUS = {
   DRAFT: "draft",
-  REVIEW: "review",
   PUBLISHED: "published",
-  ARCHIVED: "archived",
+  DELETED: "deleted", // الـ Enum متاعك يعرف هذي
 } as const;
 
 // ===== ROLE PERMISSIONS =====
@@ -16,10 +15,9 @@ export const ROLE_PERMISSIONS = {
 
 // ===== STATUS TRANSITIONS =====
 export const STATUS_TRANSITIONS: Record<string, string[]> = {
-  draft: ["review"],
-  review: ["published", "draft"],
-  published: ["archived"],
-  archived: [],
+  draft: ["published", "deleted"],     // ✅ توّة الـ draft ينجم يتعدى لـ published طول
+  published: ["draft", "deleted"],     // ينجم يرجع مسودة أو يتمسح
+  deleted: ["draft"],                  // الممسوح يرجع كان draft
 };
 
 // ===== CHECK TRANSITION =====
