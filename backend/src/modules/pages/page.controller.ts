@@ -2,8 +2,7 @@ import { Response, Request } from "express";
 import { AuthRequest } from "../../shared/auth.util";
 import { PageService } from "./page.service";
 import { Page } from "../../models";
-import PageSlug from "../../models/pageSlug";
-import { PublicPageResolver } from "./engine/publicPageResolver";
+import { SlugResolver } from "./services/slugResolver.service";
 
 
 // ========================
@@ -92,28 +91,40 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
 // ========================
 // 🟢 PUBLIC PAGE RESOLVER (NEW ARCH)
 // ========================
+
 export const getPublicPage = async (req: Request, res: Response) => {
   try {
     const { siteId, slug } = req.params;
 
-    const result = await PublicPageResolver.resolve(
+    const result = await SlugResolver.resolve(
       Number(siteId),
       slug
     );
 
+    // ✅ page
     if (result.type === "page") {
-      return res.json({ success: true, data: result.data });
+      return res.status(200).json(result.data);
     }
 
-      if (result.type === "redirect") {
-        return res.redirect(301, `/api/public/pages/${siteId}/${result.to}`);};
+    // 🔁 redirect
+    if (result.type === "redirect") {
+      return res.redirect(
+        301,
+        `/api/public/pages/${siteId}/${result.to}`
+      );
+    }
 
+    // ❌ not found
     return res.status(404).json({
       success: false,
       message: "Page not found"
     });
+
   } catch (error: any) {
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
