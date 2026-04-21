@@ -5,85 +5,69 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 
-// =====================
-// ROUTES
-// =====================
-const authRoutes = require("./modules/auth/auth.routes").default;
-const dashboardRoutes = require("./modules/dashboard/dashboard.routes").default;
-const siteRoutes = require("./modules/sites/site.routes").default;
-const publicRoutes = require("./modules/public/public.routes").default;
-const mediaRoutes = require("./modules/media/media.routes").default;
-const userRoutes = require("./modules/users/user.routes").default;
-const seoRoutes = require("./modules/seo/seo.routes").default;
-const adminRoutes = require("./modules/admin/admin.routes").default;
-const pluginRoutes = require("./modules/plugins/plugin.routes").default;
-const pageRoutes = require("./modules/pages/page.routes").default;
-
-// =====================
-// CORE
-// =====================
-import { initializeDB } from "./core/database/init";
+// CORE & DB
+import { sequelize } from "./core/database/connection"; // استورد الـ instance مباشرة
 import { authenticateJWT } from "./shared/auth.util";
 import { tenantResolver } from "./core/middleware/tenantResolver";
 import { initContext } from "./core/middleware/context.middleware";
 
+// ROUTES (استعمل الـ Import العادي باش الـ Typescript يفهم الـ Default exports)
+import authRoutes from "./modules/auth/auth.routes";
+import dashboardRoutes from "./modules/dashboard/dashboard.routes";
+import siteRoutes from "./modules/sites/site.routes";
+import publicRoutes from "./modules/public/public.routes";
+import mediaRoutes from "./modules/media/media.routes";
+import userRoutes from "./modules/users/user.routes";
+import seoRoutes from "./modules/seo/seo.routes";
+import adminRoutes from "./modules/admin/admin.routes";
+import pluginRoutes from "./modules/plugins/plugin.routes";
+import pageRoutes from "./modules/pages/page.routes";
+
 const app = express();
 const PORT = Number(process.env.PORT) || 10000;
 
-// =====================
 // GLOBAL MIDDLEWARE
-// =====================
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(initContext);
 
-// =====================
-// DEBUG LOGGER (optional but useful)
-// =====================
-app.use((req, _res, next) => {
-  console.log("➡️", req.method, req.url);
-  next();
-});
-
-// =====================
 // PUBLIC ROUTES
-// =====================
 app.use("/api/auth", authRoutes);
 app.use("/api/public", publicRoutes);
 
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok" });
-});
+app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
+// PRIVATE ROUTES
 app.use("/api/users", authenticateJWT, userRoutes);
 app.use("/api/admin", authenticateJWT, adminRoutes);
 app.use("/api/sites", authenticateJWT, siteRoutes);
 app.use("/api/dashboard", authenticateJWT, dashboardRoutes);
 
-
+// TENANT ROUTES
 const tenantStack = [authenticateJWT, tenantResolver];
-
 app.use("/api/sites/:siteId/pages", tenantStack, pageRoutes);
 app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
 app.use("/api/sites/:siteId/seo", tenantStack, seoRoutes);
 app.use("/api/sites/:siteId/plugins", tenantStack, pluginRoutes);
-// =====================
+
 // START SERVER
-// =====================
 const startServer = async () => {
   try {
-    console.log("📡 Connecting DB...");
-    await initializeDB();
-    console.log("✅ DB Connected");
+    // 1. تثبت من الربط فقط (Ping)
+    await sequelize.authenticate();
+    console.log("✅ DB Connection: OK (Authenticity Verified)");
+
+    // 2. ممنوع منعا باتا وجود sequelize.sync() هنا! 
+    // الـ Migrations تتصب في الـ Deployment Pipeline (Render/Railway) 
+    // قبل ما السيرفر يبدأ الـ Listen
 
     app.listen(PORT, "0.0.0.0", () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🚀 Node Server: Operational on port ${PORT}`);
     });
   } catch (err) {
-    console.error("❌ Server failed:", err);
+    console.error("❌ Critical: Database Authentication Failed", err);
     process.exit(1);
   }
 };

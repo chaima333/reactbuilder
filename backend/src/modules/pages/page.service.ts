@@ -4,6 +4,7 @@ import slugify from "slugify";
 import { canTransition, canPublish, PAGE_STATUS } from "./rules";
 import { PageVersion } from "../../models/pageVersion";
 import PageSlug from "../../models/pageSlug";
+import { sequelize } from "../../core/database/connection";
 
 // @ts-ignore
 const { nanoid } = require('nanoid');
@@ -66,40 +67,26 @@ export class PageService {
 
 
  static async updatePage(siteId: number, pageId: number, userId: number, data: any) {
+    const transaction = await sequelize.transaction();
     try {
-        const page = await Page.findOne({ where: { id: pageId, siteId } });
-        if (!page) throw new Error("PAGE_NOT_FOUND");
-
-        // 🔥 Log باش نعرفو وين وصل الكود
-        console.log("Checking slug update for site:", siteId);
-
+        const page = await Page.findOne({ where: { id: pageId, siteId }, transaction });
+        
         if (data.slug && data.slug !== page.slug) {
-            const isTaken = await this.isSlugTaken(siteId, data.slug);
-            if (isTaken) throw new Error("SLUG_ALREADY_EXISTS");
-
-            console.log("Creating History for old slug:", page.slug);
-
-            // 🧠 تأكد إنو الـ Model اسمو PageSlug موش pageSlug
+            // سجل الـ History داخل نفس الـ Transaction
             await PageSlug.create({
                 pageId: page.id,
                 slug: page.slug,
-                siteId: siteId
-            });
+                siteId
+            }, { transaction });
         }
 
-        await page.update({
-            title: data.title || page.title,
-            content: data.content || page.content,
-            blocks: data.blocks || page.blocks,
-            status: data.status || page.status,
-            slug: data.slug || page.slug,
-            userId: userId 
-        });
-
+        await page.update(data, { transaction });
+        
+        await transaction.commit();
         return page;
-    } catch (error: any) {
-        console.error("SERVICE ERROR:", error); // 👈 هذا باش يطلعلك في Terminal متاع Railway
-        throw error; // باش الـ Controller يوصلو الـ Error
+    } catch (error) {
+        await transaction.rollback();
+        throw error;
     }
 }
   //HISTORY DU PAGES SUPPRIME //
