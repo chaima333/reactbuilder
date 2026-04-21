@@ -1,7 +1,7 @@
-import { Table, Column, Model, DataType, ForeignKey } from "sequelize-typescript";
-import { Page } from "./page";
+import { Table, Column, Model, DataType, ForeignKey } from 'sequelize-typescript';
+import { Page } from './page';
 
-@Table({ tableName: "page_slugs", timestamps: true })
+@Table({ tableName: 'page_slugs', timestamps: true })
 export class PageSlug extends Model {
   @Column({ type: DataType.INTEGER, primaryKey: true, autoIncrement: true })
   id!: number;
@@ -17,4 +17,4 @@ export class PageSlug extends Model {
   slug!: string;
 }
 
-export default PageSlug;
+export default PageSlug; 

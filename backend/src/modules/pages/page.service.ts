@@ -66,13 +66,26 @@ export class PageService {
   }
 
 
- static async updatePage(siteId: number, pageId: number, userId: number, data: any) {
+
+
+  static async updatePage(siteId: number, pageId: number, userId: number, data: any) {
     const transaction = await sequelize.transaction();
     try {
         const page = await Page.findOne({ where: { id: pageId, siteId }, transaction });
-        
+        if (!page) throw new Error("PAGE_NOT_FOUND");
+
+        // 1️⃣ 📸 الـ Versioning Snapshot (لازم هنا قبل كل تعديل)
+        await PageVersion.create({
+            pageId: page.id,
+            title: page.title,
+            content: page.content,
+            blocks: page.blocks,
+            versionTag: `update-${new Date().getTime()}`,
+            createdBy: userId
+        }, { transaction });
+
+        // 2️⃣ 🔗 الـ Slug History
         if (data.slug && data.slug !== page.slug) {
-            // سجل الـ History داخل نفس الـ Transaction
             await PageSlug.create({
                 pageId: page.id,
                 slug: page.slug,
@@ -80,8 +93,12 @@ export class PageService {
             }, { transaction });
         }
 
-        await page.update(data, { transaction });
-        
+        // 3️⃣ 📝 الـ Actual Update
+        await page.update({
+            ...data,
+            status: PAGE_STATUS.DRAFT // حسب الـ Rules متاعك
+        }, { transaction });
+
         await transaction.commit();
         return page;
     } catch (error) {
@@ -89,6 +106,10 @@ export class PageService {
         throw error;
     }
 }
+
+
+
+
   //HISTORY DU PAGES SUPPRIME //
 static async getPageHistory(pageId: number, siteId: number) {
   return await PageVersion.findAll({
