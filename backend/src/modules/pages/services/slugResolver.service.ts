@@ -6,32 +6,31 @@ export class SlugResolver {
 
   static async resolve(siteId: number, slug: string) {
 
-    // 1. current canonical page FIRST
-    const page = await Page.findOne({
-      where: { siteId, slug, status: "published" }
-    });
+  // 1. history FIRST (important for SEO redirect)
+  const history = await PageSlug.findOne({
+    where: { siteId, slug }
+  });
 
-    if (page) {
-      return { type: "page", data: page };
+  if (history) {
+    const current = await Page.findByPk(history.pageId);
+
+    if (current && current.status === "published") {
+      return {
+        type: "redirect",
+        to: current.slug
+      };
     }
-
-    // 2. history lookup ONLY if current not found
-    const history = await PageSlug.findOne({
-      where: { siteId, slug }
-    });
-
-    if (history) {
-      const current = await Page.findByPk(history.pageId);
-
-      // safety check
-      if (current && current.status === "published") {
-        return {
-          type: "redirect",
-          to: current.slug
-        };
-      }
-    }
-
-    return { type: "not_found" };
   }
+
+  // 2. current page SECOND
+  const page = await Page.findOne({
+    where: { siteId, slug, status: "published" }
+  });
+
+  if (page) {
+    return { type: "page", data: page };
+  }
+
+  return { type: "not_found" };
+}
 }
