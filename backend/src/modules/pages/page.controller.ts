@@ -106,12 +106,7 @@ export const getPublicPage = async (req: Request, res: Response) => {
     }
 
       if (result.type === "redirect") {
-  return res.json({
-    success: true,
-    type: "redirect",
-    to: result.to
-  });
-} 
+        return res.redirect(301, `/api/public/pages/${siteId}/${result.to}`);};
 
     return res.status(404).json({
       success: false,
