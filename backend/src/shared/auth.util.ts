@@ -112,3 +112,4 @@ export const revokeToken = async (token: string) => {
     { where: { token } }
   );
 };
+  
