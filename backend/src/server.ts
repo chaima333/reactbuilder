@@ -45,7 +45,7 @@ app.use("/api/admin", authenticateJWT, adminRoutes);
 app.use("/api/sites/:siteId/pages", pageRoutes);
 
 app.use("/api/public/pages", pageRoutes);
-app.use("/api/sites/:siteId/pages", authenticateJWT, pageRoutes);
+app.use("/api/sites/:siteId/pages", pageRoutes);
 
 app.use("/api/dashboard", authenticateJWT, dashboardRoutes);
 
