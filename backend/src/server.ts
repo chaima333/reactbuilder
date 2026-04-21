@@ -22,26 +22,67 @@ import seoRoutes from "./modules/seo/seo.routes";
 import adminRoutes from "./modules/admin/admin.routes";
 import pluginRoutes from "./modules/plugins/plugin.routes";
 import pageRoutes from "./modules/pages/page.routes";
+
 import { getPublicPage } from "./modules/pages/page.controller";
+import { SlugResolver } from "./modules/pages/services/slugResolver.service";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 10000;
 
-// --- 1. GLOBAL MIDDLEWARE ---
+// ========================
+// GLOBAL MIDDLEWARE
+// ========================
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(initContext);
 
+// ========================
+// PUBLIC LAYER
+// ========================
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
+
 app.use("/api/auth", authRoutes);
 
-app.get("/api/public/pages/:siteId/:slug", getPublicPage);
+// 🟢 SEO MAGIC ROUTE (slug system)
+app.get("/api/v2/magic-page/:siteId/:slug", async (req, res) => {
+  try {
+    const result = await SlugResolver.resolve(
+      Number(req.params.siteId),
+      req.params.slug
+    );
 
+    if (result.type === "page") {
+      return res.json({ success: true, data: result.data });
+    }
+
+    if (result.type === "redirect") {
+      // anti-loop protection
+      if (result.to === req.params.slug) {
+        return res.json({ success: true, data: result.data });
+      }
+
+      return res.redirect(
+        301,
+        `/api/v2/magic-page/${req.params.siteId}/${encodeURIComponent(result.to)}`
+      );
+    }
+
+    return res.status(404).json({ success: false, message: "Not found" });
+
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// legacy public route (optional)
+app.get("/api/public/pages/:siteId/:slug", getPublicPage);
 app.use("/api/public", publicRoutes);
 
-
+// ========================
+// PRIVATE LAYER
+// ========================
 const authStack = [authenticateJWT];
 
 app.use("/api/users", authStack, userRoutes);
@@ -49,26 +90,29 @@ app.use("/api/admin", authStack, adminRoutes);
 app.use("/api/dashboard", authStack, dashboardRoutes);
 app.use("/api/sites/:siteId/pages", authStack, pageRoutes);
 
-
-// --- 4. 🏢 TENANT LAYER ---
+// ========================
+// TENANT LAYER
+// ========================
 const tenantStack = [authenticateJWT, tenantResolver];
+
 app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
 app.use("/api/sites/:siteId/seo", tenantStack, seoRoutes);
 app.use("/api/sites/:siteId/plugins", tenantStack, pluginRoutes);
 app.use("/api/sites/:siteId/settings", tenantStack, siteRoutes);
 
-
-// --- START SERVER ---
+// ========================
+// START SERVER
+// ========================
 const startServer = async () => {
   try {
     await sequelize.authenticate();
     console.log("✅ DB Connection: OK");
 
     app.listen(PORT, "0.0.0.0", () => {
-      console.log(`🚀 Node Server: Operational on port ${PORT}`);
+      console.log(`🚀 Node Server running on port ${PORT}`);
     });
   } catch (err) {
-    console.error("❌ Critical: Database Authentication Failed", err);
+    console.error("❌ DB Error:", err);
     process.exit(1);
   }
 };
