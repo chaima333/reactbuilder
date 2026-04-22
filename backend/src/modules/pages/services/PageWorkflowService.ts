@@ -1,6 +1,6 @@
 import { Page } from "../../../models";
 import { PageVersionService } from "./pageVersion.service";
-import { PAGE_STATUS } from "../rules/rules";
+import { PAGE_STATUS } from "../domain/rules";
 
 export class PageWorkflowService {
 

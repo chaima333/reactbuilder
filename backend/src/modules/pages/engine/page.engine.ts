@@ -1,39 +1,61 @@
 import { Page, PageSlug } from "../../../models";
 
 export class PageEngine {
+  /*
 
+  // ========================
+  // CONTENT CHANGE DETECTION
+  // ========================
   static needsVersion(oldData: any, newData: any): boolean {
     return (
       newData.content !== oldData.content ||
-      newData.blocks !== oldData.blocks ||
+      JSON.stringify(newData.blocks) !== JSON.stringify(oldData.blocks) ||
       newData.title !== oldData.title
     );
   }
 
+  // ========================
+  // SLUG CHANGE DETECTION
+  // ========================
   static isSlugChanged(oldSlug: string, newSlug?: string): boolean {
-    return !!(newSlug && oldSlug !== newSlug);
+    return Boolean(newSlug && oldSlug !== newSlug);
   }
 
-  // ✅ FIX 1: function اللي ناقصة
-  static async validateSlugAvailability(
-    siteId: number,
-    slug: string,
-    pageId?: number
-  ) {
-    const existingPage = await Page.findOne({
-      where: { siteId, slug }
-    });
-
-    if (existingPage && existingPage.id !== pageId) {
-      throw new Error("SLUG_ALREADY_TAKEN");
-    }
-
-    const existingHistory = await PageSlug.findOne({
-      where: { siteId, slug }
-    });
-
-    if (existingHistory && existingHistory.pageId !== pageId) {
-      throw new Error("SLUG_RESERVED_IN_HISTORY");
-    }
+  // ========================
+  // ENGINE EVENT: VERSION NEEDED
+  // ========================
+  static shouldCreateVersion(oldPage: any, newPage: any): boolean {
+    return this.needsVersion(oldPage, newPage);
   }
+
+  // ========================
+  // ENGINE EVENT: SLUG CHANGE
+  // ========================
+  static handleSlugChange(oldSlug: string, newSlug: string | undefined) {
+    if (!newSlug) return null;
+
+    if (oldSlug === newSlug) return null;
+
+    return {
+      type: "slug_changed",
+      from: oldSlug,
+      to: newSlug
+    };
+  }/*/
+
+
+  static needsVersion(oldP, newP) {
+    return (
+      oldP.title !== newP.title ||
+      oldP.content !== newP.content ||
+      JSON.stringify(oldP.blocks) !== JSON.stringify(newP.blocks)
+    );
+  }
+
+  static slugChanged(oldSlug, newSlug) {
+    return newSlug && oldSlug !== newSlug;
+  }
+
 }
+
+    

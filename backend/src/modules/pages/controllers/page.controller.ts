@@ -5,7 +5,7 @@ import { PageService } from "../services/page.service";
 import { PageVersionService } from "../services/pageVersion.service";
 import { PageWorkflowService } from "../services/PageWorkflowService";
 import { SlugResolver } from "../services/slugResolver.service";
-import { formatPage } from "../dto/page.dto";
+import { PageMapper } from "../mappers/page.mapper";
 
 // ========================
 // 🟢 CREATE PAGE
@@ -18,10 +18,16 @@ export const createPage = async (req: AuthRequest, res: Response) => {
       req.body
     );
 
-    return res.status(201).json({ success: true, data: formatPage(page)});
+    return res.status(201).json({
+      success: true,
+      data: PageMapper.toDTO(page)
+    });
 
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
@@ -32,12 +38,16 @@ export const getPages = async (req: AuthRequest, res: Response) => {
   try {
     const pages = await PageService.getPages(req.siteContext.siteId);
 
-return res.json({
-  success: true,
-  data: pages.map(p => formatPage(p))
-});
+    return res.json({
+      success: true,
+      data: PageMapper.toListDTO(pages)
+    });
+
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
@@ -53,15 +63,21 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
       req.body
     );
 
-    return res.json({ success: true, data: formatPage(page) });
+    return res.json({
+      success: true,
+      data: PageMapper.toDTO(page)
+    });
 
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
 // ========================
-// 🟢 DELETE PAGE (FIXED)
+// 🟢 DELETE PAGE
 // ========================
 export const deletePage = async (req: AuthRequest, res: Response) => {
   try {
@@ -76,7 +92,10 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
@@ -93,7 +112,7 @@ export const getPublicPage = async (req: Request, res: Response) => {
       return res.json({
         success: true,
         type: "page",
-        data: result.data,
+        data: PageMapper.toDTO(result.data),
         canonical: result.data.slug
       });
     }
@@ -113,7 +132,10 @@ export const getPublicPage = async (req: Request, res: Response) => {
     });
 
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
@@ -129,21 +151,29 @@ export const publishPageController = async (req: AuthRequest, res: Response) => 
       req.user.id
     );
 
-    return res.json({ success: true, data: formatPage(page) });
+    return res.json({
+      success: true,
+      data: PageMapper.toDTO(page)
+    });
 
   } catch (err: any) {
-    if (err.message === "FORBIDDEN")
-      return res.status(403).json({ success: false });
+    if (err.message === "FORBIDDEN") {
+      return res.status(403).json({ success: false, message: "Forbidden" });
+    }
 
-    if (err.message === "INVALID_TRANSITION")
-      return res.status(400).json({ success: false });
+    if (err.message === "INVALID_TRANSITION") {
+      return res.status(400).json({ success: false, message: "Invalid transition" });
+    }
 
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
 // ========================
-// 🟢 HISTORY (FIXED)
+// 🟢 HISTORY
 // ========================
 export const getPageHistory = async (req: AuthRequest, res: Response) => {
   try {
@@ -152,15 +182,21 @@ export const getPageHistory = async (req: AuthRequest, res: Response) => {
       req.siteContext.siteId
     );
 
-    return res.json({ success: true, data: history });
+    return res.json({
+      success: true,
+      data: history
+    });
 
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
 // ========================
-// 🟢 RESTORE (FIXED)
+// 🟢 RESTORE VERSION
 // ========================
 export const restorePageVersion = async (req: AuthRequest, res: Response) => {
   try {
@@ -170,9 +206,15 @@ export const restorePageVersion = async (req: AuthRequest, res: Response) => {
       Number(req.params.versionId)
     );
 
-    return res.json({ success: true, data: formatPage(page) });
+    return res.json({
+      success: true,
+      data: PageMapper.toDTO(page)
+    });
 
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };

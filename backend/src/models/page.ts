@@ -83,6 +83,13 @@ export class Page extends Model {
   @Column({ field: 'updated_at' })
   updatedAt!: Date;
 
+  @Column({
+  type: DataType.DATE,
+  allowNull: true,
+  field: "published_at"
+})
+publishedAt!: Date;
+
   toJSON() {
   const values = { ...this.get() };
 

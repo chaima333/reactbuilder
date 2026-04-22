@@ -15,9 +15,9 @@ export const ROLE_PERMISSIONS = {
 
 // ===== STATUS TRANSITIONS =====
 export const STATUS_TRANSITIONS: Record<string, string[]> = {
-  draft: ["published", "deleted"],     // ✅ توّة الـ draft ينجم يتعدى لـ published طول
-  published: ["draft", "deleted"],     // ينجم يرجع مسودة أو يتمسح
-  deleted: ["draft"],                  // الممسوح يرجع كان draft
+  draft: ["published", "deleted"],    
+  published: ["draft", "deleted"], 
+  deleted: ["draft"],                 
 };
 
 // ===== CHECK TRANSITION =====

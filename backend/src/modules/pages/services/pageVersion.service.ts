@@ -1,6 +1,6 @@
 import { Page } from "../../../models";
 import { PageVersion } from "../../../models/pageVersion";
-import { PAGE_STATUS } from "../rules/rules";
+import { PAGE_STATUS } from "../domain/rules";
 
 export class PageVersionService {
 

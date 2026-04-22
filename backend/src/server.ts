@@ -20,7 +20,7 @@ import userRoutes from "./modules/users/user.routes";
 import seoRoutes from "./modules/seo/seo.routes";
 import adminRoutes from "./modules/admin/admin.routes";
 import pluginRoutes from "./modules/plugins/plugin.routes";
-import pageRoutes from "./modules/pages/page.routes";
+import pageRoutes from "./modules/pages/routes/page.routes";
 
 import { getPublicPage } from "./modules/pages/controllers/page.controller";
 import { SlugResolver } from "./modules/pages/services/slugResolver.service";

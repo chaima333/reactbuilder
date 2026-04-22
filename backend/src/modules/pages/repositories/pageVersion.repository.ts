@@ -1,4 +1,4 @@
-import { PageVersion } from "../../../models/pageVersion";
+/*import { PageVersion } from "../../../models/pageVersion";
 
 export class PageVersionRepository {
 
@@ -35,5 +35,28 @@ export class PageVersionRepository {
     for (const v of toDelete) {
       await v.destroy();
     }
+  }
+}
+  */
+ import { PageVersion } from "../../../models/pageVersion";
+
+export class PageVersionRepository {
+
+  static create(data: any, transaction?: any) {
+    return PageVersion.create(data, { transaction });
+  }
+
+  static findHistory(pageId: number) {
+    return PageVersion.findAll({
+      where: { pageId },
+      order: [["createdAt", "DESC"]],
+      limit: 20
+    });
+  }
+
+  static findById(id: number, pageId: number) {
+    return PageVersion.findOne({
+      where: { id, pageId }
+    });
   }
 }

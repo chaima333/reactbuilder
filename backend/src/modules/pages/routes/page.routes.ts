@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { authenticateJWT } from "../../shared/auth.util";
-import { requirePermission } from "../../core/middleware/role.middleware";
-import { PERMISSIONS } from "../../core/constants/permissions";
+import { authenticateJWT } from "../../../shared/auth.util";
+import { requirePermission } from "../../../core/middleware/role.middleware";
+import { PERMISSIONS } from "../../../core/constants/permissions";
 
 import {
   getPages,
@@ -11,7 +11,7 @@ import {
   publishPageController,
   restorePageVersion,
   getPageHistory
-} from "./controllers/page.controller";
+} from "../controllers/page.controller";
 
 const router = Router({ mergeParams: true });
 
