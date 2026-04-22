@@ -1,15 +1,15 @@
 import { Page } from "../../../models";
 import PageSlug from "../../../models/pageSlug";
+import { SEOBuilder } from "./seo.builder";
+import { SEOResult } from "./seo.types";
 
-export class SlugResolver {
+export class SEOEngine {
 
-  static async resolve(siteId: number, slug: string) {
+  static async resolve(siteId: number, slug: string): Promise<SEOResult> {
 
-    if (!slug) {
-      return { type: "not_found", reason: "missing_slug" };
-    }
+    if (!slug) return { type: "not_found" };
 
-    // 1. current active page
+    // 1. active page
     const page = await Page.findOne({
       where: { siteId, slug }
     });
@@ -17,20 +17,20 @@ export class SlugResolver {
     if (page && page.status === "published") {
       return {
         type: "page",
-        data: page
+        page,
+        seo: SEOBuilder.build(page)
       };
     }
 
-    // 2. slug history (redirect system)
+    // 2. history redirect
     const history = await PageSlug.findOne({
       where: { siteId, slug }
     });
 
     if (history) {
-
       const current = await Page.findByPk(history.pageId);
 
-      if (current && current.status === "published") {
+      if (current?.status === "published") {
         return {
           type: "redirect",
           to: current.slug
@@ -38,9 +38,6 @@ export class SlugResolver {
       }
     }
 
-    return {
-      type: "not_found",
-      reason: "no_match"
-    };
+    return { type: "not_found" };
   }
 }

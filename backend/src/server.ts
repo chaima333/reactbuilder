@@ -17,7 +17,6 @@ import siteRoutes from "./modules/sites/site.routes";
 import publicRoutes from "./modules/public/public.routes";
 import mediaRoutes from "./modules/media/media.routes";
 import userRoutes from "./modules/users/user.routes";
-import seoRoutes from "./modules/seo/seo.routes";
 import adminRoutes from "./modules/admin/admin.routes";
 import pluginRoutes from "./modules/plugins/plugin.routes";
 import pageRoutes from "./modules/pages/routes/page.routes";
@@ -44,14 +43,21 @@ app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 app.use("/api/auth", authRoutes);
 
 // SEO MAGIC ROUTE
+import { SEOEngine } from "./modules/pages/seo/seo.engine";
+
 app.get("/api/v2/magic-page/:siteId/:slug", async (req, res) => {
-  const result = await SlugResolver.resolve(
+
+  const result = await SEOEngine.resolve(
     Number(req.params.siteId),
     req.params.slug
   );
 
   if (result.type === "page") {
-    return res.json({ success: true, data: result.data });
+    return res.json({
+      success: true,
+      data: result.page,
+      seo: result.seo
+    });
   }
 
   if (result.type === "redirect") {
@@ -86,7 +92,6 @@ const tenantStack = [authenticateJWT, tenantResolver];
 
 app.use("/api/sites/:siteId/pages", tenantStack, pageRoutes);
 app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
-app.use("/api/sites/:siteId/seo", tenantStack, seoRoutes);
 app.use("/api/sites/:siteId/plugins", tenantStack, pluginRoutes);
 app.use("/api/sites/:siteId/settings", tenantStack, siteRoutes);
 

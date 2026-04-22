@@ -99,7 +99,7 @@ static async publishPage(siteId, pageId, userRole, userId) {
       }, transaction);
 
       // 2. update page cleanly
-      const updated = await PageRepository.updatePage(
+      const updated = await PageRepository.update(
         page,
         {
           status: PAGE_STATUS.PUBLISHED,

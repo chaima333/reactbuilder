@@ -103,44 +103,36 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
 // 🟢 PUBLIC PAGE RESOLVER
 // ========================
 
-export const getPublicPage = async (req: Request, res: Response) => {
-  try {
-    const { siteId, slug } = req.params;
+export const getPublicPage = async (req, res) => {
 
-    const result = await SlugResolver.resolve(Number(siteId), slug);
+  const result = await SlugResolver.resolve(
+    Number(req.params.siteId),
+    req.params.slug
+  );
 
-    if (result.type === "page") {
+  switch (result.type) {
+
+    case "page":
       return res.json({
         success: true,
         type: "page",
-        data: result.data,
-        canonical: result.data.slug
+        data: result.data
       });
-    }
 
-    if (result.type === "redirect") {
+    case "redirect":
       return res.json({
         success: true,
         type: "redirect",
         to: result.to
       });
-    }
 
-    // 🔥 مهم: ما عادش "false صامت"
-    return res.status(404).json({
-      success: false,
-      type: result.type,
-      reason: result.reason
-    });
-
-  } catch (err: any) {
-    return res.status(500).json({
-      success: false,
-      error: err.message
-    });
+    case "not_found":
+      return res.status(404).json({
+        success: false,
+        reason: result.reason
+      });
   }
 };
-
 // ========================
 // 🟢 PUBLISH PAGE
 // ========================

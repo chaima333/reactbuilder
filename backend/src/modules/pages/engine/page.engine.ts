@@ -1,50 +1,6 @@
-import { Page, PageSlug } from "../../../models";
-
 export class PageEngine {
-  /*
 
-  // ========================
-  // CONTENT CHANGE DETECTION
-  // ========================
-  static needsVersion(oldData: any, newData: any): boolean {
-    return (
-      newData.content !== oldData.content ||
-      JSON.stringify(newData.blocks) !== JSON.stringify(oldData.blocks) ||
-      newData.title !== oldData.title
-    );
-  }
-
-  // ========================
-  // SLUG CHANGE DETECTION
-  // ========================
-  static isSlugChanged(oldSlug: string, newSlug?: string): boolean {
-    return Boolean(newSlug && oldSlug !== newSlug);
-  }
-
-  // ========================
-  // ENGINE EVENT: VERSION NEEDED
-  // ========================
-  static shouldCreateVersion(oldPage: any, newPage: any): boolean {
-    return this.needsVersion(oldPage, newPage);
-  }
-
-  // ========================
-  // ENGINE EVENT: SLUG CHANGE
-  // ========================
-  static handleSlugChange(oldSlug: string, newSlug: string | undefined) {
-    if (!newSlug) return null;
-
-    if (oldSlug === newSlug) return null;
-
-    return {
-      type: "slug_changed",
-      from: oldSlug,
-      to: newSlug
-    };
-  }/*/
-
-
-  static needsVersion(oldP, newP) {
+  static shouldCreateVersion(oldP: any, newP: any) {
     return (
       oldP.title !== newP.title ||
       oldP.content !== newP.content ||
@@ -52,10 +8,21 @@ export class PageEngine {
     );
   }
 
-  static slugChanged(oldSlug, newSlug) {
-    return newSlug && oldSlug !== newSlug;
+  static isSlugChanged(oldSlug: string, newSlug?: string) {
+    return Boolean(newSlug && oldSlug !== newSlug);
   }
 
-}
+  static resolveActions(oldP: any, newP: any) {
+    const actions = [];
 
-    
+    if (this.shouldCreateVersion(oldP, newP)) {
+      actions.push("VERSION");
+    }
+
+    if (this.isSlugChanged(oldP.slug, newP.slug)) {
+      actions.push("SLUG");
+    }
+
+    return actions;
+  }
+}
