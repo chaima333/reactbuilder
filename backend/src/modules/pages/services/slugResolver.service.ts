@@ -15,7 +15,13 @@ export class SlugResolver {
     });
 
     if (history) {
-      const current = await Page.findByPk(history.pageId);
+      const current = await Page.findOne({
+  where: {
+    id: history.pageId,
+    siteId,
+    status: "published"
+  }
+});
       // تأكد إنو الـ Redirect ما يمشيش لنفس الـ slug (تجنب الـ Loop)
       if (current && current.status === "published" && current.slug !== slug) {
         return { type: "redirect", to: current.slug };
