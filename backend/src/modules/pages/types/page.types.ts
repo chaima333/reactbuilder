@@ -15,3 +15,8 @@ export interface PageUpdateInput {
   blocks?: PageBlock[];
   status?: PageStatus;
 }
+
+export type SlugResult =
+  | { type: "page"; data: any }
+  | { type: "redirect"; to: string }
+  | { type: "not_found" };

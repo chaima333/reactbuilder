@@ -102,6 +102,7 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
 // ========================
 // 🟢 PUBLIC PAGE RESOLVER
 // ========================
+
 export const getPublicPage = async (req: Request, res: Response) => {
   try {
     const { siteId, slug } = req.params;
