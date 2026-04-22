@@ -1,15 +1,13 @@
-
 import { Page } from "../../../models";
 import PageSlug from "../../../models/pageSlug";
 
 export class SlugResolver {
+
   static async resolve(siteId: number, slug: string) {
 
-    if (!slug) {
-      return { type: "not_found" };
-    }
+    if (!slug) return { type: "not_found" };
 
-    // 1. current page first
+    // current page
     const page = await Page.findOne({
       where: { siteId, slug, status: "published" }
     });
@@ -18,7 +16,7 @@ export class SlugResolver {
       return { type: "page", data: page };
     }
 
-    // 2. history fallback
+    // history redirect
     const history = await PageSlug.findOne({
       where: { siteId, slug }
     });
@@ -26,7 +24,7 @@ export class SlugResolver {
     if (history) {
       const current = await Page.findByPk(history.pageId);
 
-      if (current && current.status === "published") {
+      if (current?.status === "published") {
         return {
           type: "redirect",
           to: current.slug

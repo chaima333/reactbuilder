@@ -24,12 +24,11 @@ export class SlugService {
     );
   }
 
-  // ✅ الجديد
-  static async isSlugTaken(siteId: number, slug: string): Promise<boolean> {
-    const page = await Page.findOne({ where: { slug, siteId } });
+  static async isSlugTaken(siteId: number, slug: string) {
+    const page = await Page.findOne({ where: { siteId, slug } });
     if (page) return true;
 
-    const history = await PageSlug.findOne({ where: { slug, siteId } });
+    const history = await PageSlug.findOne({ where: { siteId, slug } });
     return !!history;
   }
 }

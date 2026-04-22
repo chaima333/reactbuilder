@@ -8,43 +8,40 @@ import { PageEngine } from "../engine/page.engine";
 import { SlugService } from "../services/slug.service";
 import { canPublish, canTransition, PAGE_STATUS } from "../rules/rules";
 
-// @ts-ignore
 const { nanoid } = require("nanoid");
 
 export class PageService {
 
-  // ========================
-  // CREATE
-  // ========================
+  private static generateSlug(title: string): string {
+    const base = slugify(title, { lower: true, strict: true });
+    return `${base}-${nanoid(5)}`;
+  }
+
+  // ================= CREATE =================
   static async createPage(siteId: number, userId: number, data: any) {
-    const existingPage = await Page.findOne({
-      where: { siteId, title: data.title, status: { [Op.ne]: "deleted" } },
+
+    const existing = await Page.findOne({
+      where: { siteId, title: data.title, status: { [Op.ne]: "deleted" } }
     });
 
-    if (existingPage) {
-      return this.updatePage(siteId, existingPage.id, userId, data);
+    if (existing) {
+      return this.updatePage(siteId, existing.id, userId, data);
     }
 
-    const slug = this.generateBulletproofSlug(data.title);
+    const slug = this.generateSlug(data.title);
 
     return Page.create({
       ...data,
       slug,
-      status: PAGE_STATUS.DRAFT,
       siteId,
       userId,
+      status: PAGE_STATUS.DRAFT
     });
   }
 
-  // ========================
-  // UPDATE (FIXED - 4 ARGS)
-  // ========================
-  static async updatePage(
-    siteId: number,
-    pageId: number,
-    userId: number,
-    data: any
-  ) {
+  // ================= UPDATE =================
+  static async updatePage(siteId: number, pageId: number, userId: number, data: any) {
+
     const transaction = await sequelize.transaction();
 
     try {
@@ -74,15 +71,9 @@ export class PageService {
     }
   }
 
-  // ========================
-  // PUBLISH
-  // ========================
-  static async publishPage(
-    siteId: number,
-    pageId: number,
-    userRole: string,
-    userId: number
-  ) {
+  // ================= PUBLISH =================
+  static async publishPage(siteId: number, pageId: number, userRole: string, userId: number) {
+
     const page = await Page.findOne({ where: { id: pageId, siteId } });
     if (!page) throw new Error("PAGE_NOT_FOUND");
 
@@ -93,25 +84,28 @@ export class PageService {
 
     return page.update({
       status: PAGE_STATUS.PUBLISHED,
-      publishedAt: new Date(),
+      publishedAt: new Date()
     });
   }
 
-  // ========================
-  // GET PAGES
-  // ========================
+  // ================= GET =================
   static async getPages(siteId: number) {
     return Page.findAll({
       where: { siteId, status: { [Op.ne]: "deleted" } },
-      order: [["createdAt", "DESC"]],
+      order: [["createdAt", "DESC"]]
     });
   }
+   static async deletePage(siteId: number, pageId: number) {
+  const page = await Page.findOne({
+    where: { id: pageId, siteId }
+  });
 
-  // ========================
-  // SLUG GENERATOR
-  // ========================
-  private static generateBulletproofSlug(title: string): string {
-    const base = slugify(title, { lower: true, strict: true });
-    return `${base}-${nanoid(5)}`;
-  }
+  if (!page) throw new Error("PAGE_NOT_FOUND");
+
+  await page.update({
+    status: PAGE_STATUS.DELETED
+  });
+
+  return true;
+}
 }

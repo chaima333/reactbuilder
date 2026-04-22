@@ -1,9 +1,10 @@
 import { Response, Request } from "express";
 import { AuthRequest } from "../../../shared/auth.util";
-import { PageService } from "../page.service";
-import { Page } from "../../../models";
-import { SlugResolver } from "../services/slugResolver.service";
 
+import { PageService } from "../services/page.service";
+import { PageVersionService } from "../services/pageVersion.service";
+import { PageWorkflowService } from "../services/PageWorkflowService";
+import { SlugResolver } from "../services/slugResolver.service";
 
 // ========================
 // 🟢 CREATE PAGE
@@ -16,19 +17,12 @@ export const createPage = async (req: AuthRequest, res: Response) => {
       req.body
     );
 
-    return res.status(201).json({
-      success: true,
-      data: page
-    });
+    return res.status(201).json({ success: true, data: page });
 
   } catch (err: any) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
-
 
 // ========================
 // 🟢 GET PAGES
@@ -37,73 +31,41 @@ export const getPages = async (req: AuthRequest, res: Response) => {
   try {
     const pages = await PageService.getPages(req.siteContext.siteId);
 
-    return res.json({
-      success: true,
-      data: pages
-    });
+    return res.json({ success: true, data: pages });
 
   } catch (err: any) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
-
 
 // ========================
 // 🟢 UPDATE PAGE
 // ========================
 export const updatePage = async (req: AuthRequest, res: Response) => {
   try {
-    const siteId = req.siteContext?.siteId || Number(req.params.siteId);
-
     const page = await PageService.updatePage(
-      siteId,
+      req.siteContext.siteId,
       Number(req.params.pageId),
       req.user.id,
       req.body
     );
 
-    return res.json({
-      success: true,
-      data: page
-    });
+    return res.json({ success: true, data: page });
 
   } catch (err: any) {
-    console.error("🔥 UPDATE PAGE ERROR:", err);
-
-    return res.status(500).json({
-      success: false,
-      message: err.message || "Unknown error"
-    });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-
 // ========================
-// 🟢 DELETE PAGE
+// 🟢 DELETE PAGE (FIXED)
 // ========================
 export const deletePage = async (req: AuthRequest, res: Response) => {
   try {
-    const siteId = req.siteContext.siteId;
-    const { pageId } = req.params;
-
-    const page = await Page.findOne({
-      where: { id: pageId, siteId }
-    });
-
-    if (!page) {
-      return res.status(404).json({
-        success: false,
-        message: "Page not found"
-      });
-    }
-
-    // ❗ مهم: ما نبدلوش slug هنا
-    await page.update({
-      status: "deleted"
-    });
+    await PageService.deletePage(
+      req.siteContext.siteId,
+      Number(req.params.pageId)
+    );
 
     return res.json({
       success: true,
@@ -111,163 +73,103 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (err: any) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-
 // ========================
-// 🟢 PUBLIC PAGE RESOLVER (CORE)
+// 🟢 PUBLIC PAGE RESOLVER
 // ========================
 export const getPublicPage = async (req: Request, res: Response) => {
   try {
     const { siteId, slug } = req.params;
 
-    console.log(`📡 Incoming Request - Site: ${siteId}, Slug: ${slug}`);
-
     const result = await SlugResolver.resolve(Number(siteId), slug);
 
-    console.log(`🧠 Resolver Decision: ${result.type}`);
-
-    // ========================
-    // PAGE
-    // ========================
     if (result.type === "page") {
-      return res.status(200).json({
+      return res.json({
         success: true,
         type: "page",
         data: result.data,
-        canonical: result.data.slug,
-        requested: slug
+        canonical: result.data.slug
       });
     }
 
-    // ========================
-    // REDIRECT (API STYLE)
-    // ========================
     if (result.type === "redirect") {
-      return res.status(200).json({
+      return res.json({
         success: true,
         type: "redirect",
-        from: slug,
         to: result.to,
         url: `/api/v2/magic-page/${siteId}/${result.to}`
       });
     }
 
-    // ========================
-    // NOT FOUND
-    // ========================
     return res.status(404).json({
       success: false,
-      type: "not_found",
-      message: "Page not found"
+      type: "not_found"
     });
 
-  } catch (error: any) {
-    console.error("🔥 Controller Error:", error.message);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
-
 
 // ========================
 // 🟢 PUBLISH PAGE
 // ========================
 export const publishPageController = async (req: AuthRequest, res: Response) => {
   try {
-    const siteId = req.siteContext.siteId;
-    const role = req.siteContext.role;
-    const userId = req.user.id;
-
     const page = await PageService.publishPage(
-      siteId,
+      req.siteContext.siteId,
       Number(req.params.pageId),
-      role,
-      userId
+      req.siteContext.role,
+      req.user.id
     );
 
-    return res.json({
-      success: true,
-      message: "Page published successfully",
-      data: page
-    });
+    return res.json({ success: true, data: page });
 
   } catch (err: any) {
-    if (err.message === "FORBIDDEN") {
-      return res.status(403).json({
-        success: false,
-        message: "Forbidden"
-      });
-    }
+    if (err.message === "FORBIDDEN")
+      return res.status(403).json({ success: false });
 
-    if (err.message === "INVALID_TRANSITION") {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid transition"
-      });
-    }
+    if (err.message === "INVALID_TRANSITION")
+      return res.status(400).json({ success: false });
 
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-
 // ========================
-// 🟢 PAGE HISTORY
+// 🟢 HISTORY (FIXED)
 // ========================
 export const getPageHistory = async (req: AuthRequest, res: Response) => {
   try {
-    const history = await PageService.getPageHistory(
+    const history = await PageVersionService.getPageHistory(
       Number(req.params.pageId),
       req.siteContext.siteId
     );
 
-    return res.json({
-      success: true,
-      data: history
-    });
+    return res.json({ success: true, data: history });
 
   } catch (err: any) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-
 // ========================
-// 🟢 RESTORE VERSION
+// 🟢 RESTORE (FIXED)
 // ========================
 export const restorePageVersion = async (req: AuthRequest, res: Response) => {
   try {
-    const page = await PageService.restoreVersion(
+    const page = await PageWorkflowService.restoreVersion(
       req.siteContext.siteId,
       Number(req.params.pageId),
       Number(req.params.versionId)
     );
 
-    return res.json({
-      success: true,
-      message: "Page restored",
-      data: page
-    });
+    return res.json({ success: true, data: page });
 
   } catch (err: any) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
