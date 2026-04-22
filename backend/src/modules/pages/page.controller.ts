@@ -96,38 +96,27 @@ export const getPublicPage = async (req: Request, res: Response) => {
   try {
     const { siteId, slug } = req.params;
 
-    const result = await SlugResolver.resolve(
-      Number(siteId),
-      slug
-    );
+    const result = await SlugResolver.resolve(Number(siteId), slug);
 
-    // ✅ page
+    // ✅ حالة الـ Page: نرجعو JSON و Status 200
     if (result.type === "page") {
-      return res.status(200).json(result.data);
+      return res.status(200).json({ success: true, data: result.data });
     }
 
-    // 🔁 redirect
+    // 🔁 حالة الـ Redirect: نبعثو الـ Browser لرابط جديد (Status 301)
     if (result.type === "redirect") {
-      return res.redirect(
-        301,
-        `/api/public/pages/${siteId}/${result.to}`
-      );
+      console.log(`🔀 Redirecting from ${slug} to ${result.to}`);
+      // 🔥 هوني الخدمة الصحيحة: res.redirect موش res.json
+      return res.redirect(301, `/api/v2/magic-page/${siteId}/${result.to}`);
     }
 
-    // ❌ not found
-    return res.status(404).json({
-      success: false,
-      message: "Page not found"
-    });
+    // ❌ حالة الـ Not Found
+    return res.status(404).json({ success: false, message: "Page not found" });
 
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
-
 
 // ========================
 // 🟢 PUBLISH PAGE
