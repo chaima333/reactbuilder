@@ -1,41 +1,25 @@
 import { Page } from "../../../models";
 import PageSlug from "../../../models/pageSlug";
 
-export class SlugResolver {
-  static async resolve(siteId: number, slug: string) {
+export class SlugService {
 
-    if (!slug || slug === "undefined") {
-      return { type: "not_found" };
+  static async ensureAvailable(siteId: number, slug: string, pageId?: number) {
+
+    const page = await Page.findOne({ where: { siteId, slug } });
+    if (page && page.id !== pageId) {
+      throw new Error("SLUG_TAKEN");
     }
 
-    // 1. current FIRST (source of truth)
-    const page = await Page.findOne({
-      where: { siteId, slug, status: "published" }
-    });
-
-    if (page) {
-      return { type: "page", data: page };
+    const history = await PageSlug.findOne({ where: { siteId, slug } });
+    if (history && history.pageId !== pageId) {
+      throw new Error("SLUG_RESERVED");
     }
+  }
 
-    // 2. history SECOND
-    const history = await PageSlug.findOne({
-      where: { siteId, slug }
-    });
-
-    if (history) {
-      const current = await Page.findOne({
-        where: {
-          id: history.pageId,
-          siteId,
-          status: "published"
-        }
-      });
-
-      if (current && current.slug !== slug) {
-        return { type: "redirect", to: current.slug };
-      }
-    }
-
-    return { type: "not_found" };
+  static async archive(pageId: number, siteId: number, slug: string, transaction?: any) {
+    return PageSlug.create(
+      { pageId, siteId, slug },
+      { transaction }
+    );
   }
 }
