@@ -95,29 +95,29 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
 export const getPublicPage = async (req: Request, res: Response) => {
   try {
     const { siteId, slug } = req.params;
-
     const result = await SlugResolver.resolve(Number(siteId), slug);
 
-    // ✅ حالة الـ Page: نرجعو JSON و Status 200
+    // 1️⃣ الحالة الأولى: Slug صحيح ومطابق
     if (result.type === "page") {
       return res.status(200).json({ success: true, data: result.data });
     }
 
-    // 🔁 حالة الـ Redirect: نبعثو الـ Browser لرابط جديد (Status 301)
+    // 2️⃣ الحالة الثانية: Slug قديم (Redirect)
     if (result.type === "redirect") {
-      console.log(`🔀 Redirecting from ${slug} to ${result.to}`);
-      // 🔥 هوني الخدمة الصحيحة: res.redirect موش res.json
+      console.log(`🔀 SEO Redirect: ${slug} -> ${result.to}`);
+      
+      // 🔥 هذي هي الضربة القاضية: 301 Redirect
+      // الـ Browser توّة يتبدل الـ URL متاعو وحدو لـ slug-v2-test
       return res.redirect(301, `/api/v2/magic-page/${siteId}/${result.to}`);
     }
 
-    // ❌ حالة الـ Not Found
+    // 3️⃣ الحالة الثالثة: موش موجود
     return res.status(404).json({ success: false, message: "Page not found" });
 
   } catch (error: any) {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
-
 // ========================
 // 🟢 PUBLISH PAGE
 // ========================
