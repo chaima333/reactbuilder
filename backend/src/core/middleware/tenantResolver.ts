@@ -47,7 +47,7 @@ const siteId =
 
     req.siteContext = {
       siteId: site.id,
-      role: membership.role
+      role: normalizeRole(membership.role)
     };
 
     next();
@@ -59,3 +59,7 @@ const siteId =
     });
   }
 };
+
+function normalizeRole(role: string) {
+  throw new Error("Function not implemented.");
+}

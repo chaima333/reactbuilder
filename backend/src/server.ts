@@ -9,7 +9,6 @@ import path from "path";
 import { sequelize } from "./core/database/connection";
 import { authenticateJWT } from "./shared/auth.util";
 import { tenantResolver } from "./core/middleware/tenantResolver";
-import { initContext } from "./core/middleware/context.middleware";
 
 // ROUTES
 import authRoutes from "./modules/auth/auth.routes";
@@ -37,7 +36,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 //app.use(initContext);
-app.use("/api/sites/:siteId", initContext);
 // ========================
 // PUBLIC LAYER
 // ========================
