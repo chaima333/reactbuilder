@@ -3,40 +3,44 @@ import { Page } from "../../../models";
 import PageSlug from "../../../models/pageSlug";
 
 export class SlugResolver {
-  static async resolve(siteId: number, slug: string) {
-    // 🛑 Guard 1: إذا الـ slug فارغ، اخرج طول
-    if (!slug || slug === 'undefined') {
-      return { type: "not_found" };
-    }
+ static async resolve(siteId: number, slug: string, depth = 0) {
 
-    // 1. history FIRST (SEO priority)
-    const history = await PageSlug.findOne({
-      where: { siteId, slug }
-    });
-
-    if (history) {
-      const current = await Page.findOne({
-  where: {
-    id: history.pageId,
-    siteId,
-    status: "published"
+  if (depth > 3) {
+    return { type: "not_found" }; // 🛑 anti-loop
   }
-});
-      // تأكد إنو الـ Redirect ما يمشيش لنفس الـ slug (تجنب الـ Loop)
-      if (current && current.status === "published" && current.slug !== slug) {
-        return { type: "redirect", to: current.slug };
-      }
-    }
 
-    // 2. current page SECOND
-    const page = await Page.findOne({
-      where: { siteId, slug, status: "published" }
-    });
-
-    if (page) {
-      return { type: "page", data: page };
-    }
-
+  if (!slug) {
     return { type: "not_found" };
   }
+
+  const history = await PageSlug.findOne({
+    where: { siteId, slug }
+  });
+
+  if (history) {
+    const current = await Page.findByPk(history.pageId);
+
+    if (current && current.status === "published") {
+
+      if (current.slug === slug) {
+        return { type: "page", data: current }; // 🛑 stop loop
+      }
+
+      return {
+        type: "redirect",
+        to: current.slug
+      };
+    }
+  }
+
+  const page = await Page.findOne({
+    where: { siteId, slug, status: "published" }
+  });
+
+  if (page) {
+    return { type: "page", data: page };
+  }
+
+  return { type: "not_found" };
+}
 }

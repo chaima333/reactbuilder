@@ -95,28 +95,45 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
 export const getPublicPage = async (req: Request, res: Response) => {
   try {
     const { siteId, slug } = req.params;
-    
-    // 🔍 Log 1: نشوفو شنوة وصلنا بالظبط
+
     console.log(`📡 Incoming Request - Site: ${siteId}, Slug: ${slug}`);
 
     const result = await SlugResolver.resolve(Number(siteId), slug);
 
-    // 🔍 Log 2: نشوفو الـ Resolver شنوة قرر
     console.log(`🧠 Resolver Decision: ${result.type}`);
 
+    // ✅ PAGE
     if (result.type === "page") {
-      return res.status(200).json({ success: true, data: result.data });
+      return res.status(200).json({
+        success: true,
+        data: result.data,
+        canonical: result.data.slug // 🔥 مهم برشة
+      });
     }
 
+    // ✅ REDIRECT
     if (result.type === "redirect") {
       console.log(`🔀 Executing 301 Redirect to: ${result.to}`);
-      return res.redirect(301, `/api/v2/magic-page/${siteId}/${result.to}`);
+
+      return res.redirect(
+        301,
+        `/api/v2/magic-page/${siteId}/${result.to}`
+      );
     }
 
-    return res.status(404).json({ success: false, message: "Page not found" });
+    // ❌ NOT FOUND
+    return res.status(404).json({
+      success: false,
+      message: "Page not found"
+    });
+
   } catch (error: any) {
     console.error("🔥 Controller Error:", error.message);
-    return res.status(500).json({ success: false, message: error.message });
+
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 // ========================
