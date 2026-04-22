@@ -82,4 +82,15 @@ export class Page extends Model {
   @UpdatedAt
   @Column({ field: 'updated_at' })
   updatedAt!: Date;
+
+  toJSON() {
+  const values = { ...this.get() };
+
+  delete values.user_id;
+  delete values.site_id;
+  delete values.created_at;
+  delete values.updated_at;
+
+  return values;
+}
 }
