@@ -23,7 +23,7 @@ import adminRoutes from "./modules/admin/admin.routes";
 import pluginRoutes from "./modules/plugins/plugin.routes";
 import pageRoutes from "./modules/pages/page.routes";
 
-import { getPublicPage } from "./modules/pages/page.controller";
+import { getPublicPage } from "./modules/pages/controllers/page.controller";
 import { SlugResolver } from "./modules/pages/services/slugResolver.service";
 
 const app = express();

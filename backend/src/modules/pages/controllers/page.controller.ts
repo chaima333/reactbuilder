@@ -1,8 +1,8 @@
 import { Response, Request } from "express";
-import { AuthRequest } from "../../shared/auth.util";
-import { PageService } from "./page.service";
-import { Page } from "../../models";
-import { SlugResolver } from "./services/slugResolver.service";
+import { AuthRequest } from "../../../shared/auth.util";
+import { PageService } from "../page.service";
+import { Page } from "../../../models";
+import { SlugResolver } from "../services/slugResolver.service";
 
 
 // ========================
@@ -16,9 +16,16 @@ export const createPage = async (req: AuthRequest, res: Response) => {
       req.body
     );
 
-    return res.status(201).json({ success: true, data: page });
+    return res.status(201).json({
+      success: true,
+      data: page
+    });
+
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
@@ -29,9 +36,17 @@ export const createPage = async (req: AuthRequest, res: Response) => {
 export const getPages = async (req: AuthRequest, res: Response) => {
   try {
     const pages = await PageService.getPages(req.siteContext.siteId);
-    return res.json({ success: true, data: pages });
+
+    return res.json({
+      success: true,
+      data: pages
+    });
+
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
@@ -50,7 +65,11 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
       req.body
     );
 
-    return res.json({ success: true, data: page });
+    return res.json({
+      success: true,
+      data: page
+    });
+
   } catch (err: any) {
     console.error("🔥 UPDATE PAGE ERROR:", err);
 
@@ -70,28 +89,39 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
     const siteId = req.siteContext.siteId;
     const { pageId } = req.params;
 
-    const page = await Page.findOne({ where: { id: pageId, siteId } });
-    if (!page) {
-      return res.status(404).json({ success: false, message: "Page not found" });
-    }
-
-    await page.update({
-      status: "deleted",
-      slug: `deleted-${page.slug}-${Date.now()}`
+    const page = await Page.findOne({
+      where: { id: pageId, siteId }
     });
 
-    return res.json({ success: true, message: "Page deleted" });
+    if (!page) {
+      return res.status(404).json({
+        success: false,
+        message: "Page not found"
+      });
+    }
+
+    // ❗ مهم: ما نبدلوش slug هنا
+    await page.update({
+      status: "deleted"
+    });
+
+    return res.json({
+      success: true,
+      message: "Page deleted"
+    });
 
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
 
 // ========================
-// 🟢 PUBLIC PAGE RESOLVER (NEW ARCH)
+// 🟢 PUBLIC PAGE RESOLVER (CORE)
 // ========================
-
 export const getPublicPage = async (req: Request, res: Response) => {
   try {
     const { siteId, slug } = req.params;
@@ -102,28 +132,38 @@ export const getPublicPage = async (req: Request, res: Response) => {
 
     console.log(`🧠 Resolver Decision: ${result.type}`);
 
-    // ✅ PAGE
+    // ========================
+    // PAGE
+    // ========================
     if (result.type === "page") {
       return res.status(200).json({
         success: true,
+        type: "page",
         data: result.data,
-        canonical: result.data.slug // 🔥 مهم برشة
+        canonical: result.data.slug,
+        requested: slug
       });
     }
 
-    // ✅ REDIRECT
+    // ========================
+    // REDIRECT (API STYLE)
+    // ========================
     if (result.type === "redirect") {
-      console.log(`🔀 Executing 301 Redirect to: ${result.to}`);
-
-      return res.redirect(
-        301,
-        `/api/v2/magic-page/${siteId}/${result.to}`
-      );
+      return res.status(200).json({
+        success: true,
+        type: "redirect",
+        from: slug,
+        to: result.to,
+        url: `/api/v2/magic-page/${siteId}/${result.to}`
+      });
     }
 
-    // ❌ NOT FOUND
+    // ========================
+    // NOT FOUND
+    // ========================
     return res.status(404).json({
       success: false,
+      type: "not_found",
       message: "Page not found"
     });
 
@@ -136,6 +176,8 @@ export const getPublicPage = async (req: Request, res: Response) => {
     });
   }
 };
+
+
 // ========================
 // 🟢 PUBLISH PAGE
 // ========================
@@ -160,14 +202,23 @@ export const publishPageController = async (req: AuthRequest, res: Response) => 
 
   } catch (err: any) {
     if (err.message === "FORBIDDEN") {
-      return res.status(403).json({ success: false, message: "Forbidden" });
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden"
+      });
     }
 
     if (err.message === "INVALID_TRANSITION") {
-      return res.status(400).json({ success: false, message: "Invalid transition" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid transition"
+      });
     }
 
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
@@ -182,10 +233,16 @@ export const getPageHistory = async (req: AuthRequest, res: Response) => {
       req.siteContext.siteId
     );
 
-    return res.json({ success: true, data: history });
+    return res.json({
+      success: true,
+      data: history
+    });
 
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
@@ -208,6 +265,9 @@ export const restorePageVersion = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };

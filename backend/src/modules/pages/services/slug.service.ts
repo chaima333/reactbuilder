@@ -4,13 +4,14 @@ import PageSlug from "../../../models/pageSlug";
 export class SlugService {
 
   static async ensureAvailable(siteId: number, slug: string, pageId?: number) {
-
     const page = await Page.findOne({ where: { siteId, slug } });
+
     if (page && page.id !== pageId) {
       throw new Error("SLUG_TAKEN");
     }
 
     const history = await PageSlug.findOne({ where: { siteId, slug } });
+
     if (history && history.pageId !== pageId) {
       throw new Error("SLUG_RESERVED");
     }
@@ -21,5 +22,14 @@ export class SlugService {
       { pageId, siteId, slug },
       { transaction }
     );
+  }
+
+  // ✅ الجديد
+  static async isSlugTaken(siteId: number, slug: string): Promise<boolean> {
+    const page = await Page.findOne({ where: { slug, siteId } });
+    if (page) return true;
+
+    const history = await PageSlug.findOne({ where: { slug, siteId } });
+    return !!history;
   }
 }

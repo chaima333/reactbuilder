@@ -1,106 +1,43 @@
 import { Op } from "sequelize";
-import { Page, ActivityLog } from "../../models"; 
+import { Page } from "../../models";
 import slugify from "slugify";
-import { canTransition, canPublish, PAGE_STATUS } from "./rules";
-import { PageVersion } from "../../models/pageVersion";
-import PageSlug from "../../models/pageSlug";
 import { sequelize } from "../../core/database/connection";
 
 import { PageRepository } from "./repositories/page.repository";
 import { PageEngine } from "./engine/page.engine";
 import { SlugService } from "./services/slug.service";
+import { canPublish, canTransition, PAGE_STATUS } from "./rules/rules";
 
 // @ts-ignore
-const { nanoid } = require('nanoid');
+const { nanoid } = require("nanoid");
 
 export class PageService {
-  
-  // 🛠️ Private Utilities
+  static getPageHistory(arg0: number, siteId: any) {
+    throw new Error("Method not implemented.");
+  }
+  static restoreVersion(siteId: any, arg1: number, arg2: number) {
+    throw new Error("Method not implemented.");
+  }
+
   private static generateBulletproofSlug(title: string): string {
     const base = slugify(title, { lower: true, strict: true });
-    return `${base}-${nanoid(5)}`; 
+    return `${base}-${nanoid(5)}`;
   }
 
-  // 🚀 Core Engine: UPDATE
-  static async updatePage(siteId: number, pageId: number, userId: number, data: any) {
-  const transaction = await sequelize.transaction();
-
-  try {
-    const page = await PageRepository.findById(pageId, siteId, transaction);
-    if (!page) throw new Error("PAGE_NOT_FOUND");
-
-    // 🔥 SLUG CHECK (مرة وحدة فقط)
-    if (data.slug && data.slug !== page.slug) {
-      await SlugService.ensureAvailable(siteId, data.slug, pageId);
-    }
-
-    // versioning
-    if (PageEngine.needsVersion(page, data)) {
-      await PageRepository.createVersion({
-        pageId: page.id,
-        siteId,
-        title: page.title,
-        content: page.content,
-        blocks: page.blocks,
-        createdBy: userId
-      }, transaction);
-    }
-
-    // slug history
-    if (PageEngine.isSlugChanged(page.slug, data.slug)) {
-      await SlugService.archive(page.id, siteId, page.slug, transaction);
-    }
-
-    const updated = await PageRepository.updatePage(
-      page,
-      { ...data, status: PAGE_STATUS.DRAFT },
-      transaction
-    );
-
-    await transaction.commit();
-    return updated;
-
-  } catch (err) {
-    await transaction.rollback();
-    throw err;
-  }
-}
-
-  // 🚀 Core Engine: PUBLISH
-  static async publishPage(siteId: number, pageId: number, userRole: string, userId: number) {
-    const page = await Page.findOne({ where: { id: pageId, siteId } });
-    if (!page) throw new Error("PAGE_NOT_FOUND");
-
-    if (!canPublish(userRole)) throw new Error("FORBIDDEN");
-    if (!canTransition(page.status, PAGE_STATUS.PUBLISHED)) throw new Error("INVALID_TRANSITION");
-
-    // 📸 Versioning Snapshot before publish
-    await PageVersion.create({
-      pageId: page.id,
-      title: page.title,
-      content: page.content,
-      blocks: page.blocks,
-      versionTag: `v-pub-${new Date().getTime()}`,
-      createdBy: userId
-    });
-
-    return await page.update({
-      status: PAGE_STATUS.PUBLISHED,
-      publishedAt: new Date(),
-    });
-  }
-
-  // 🚀 Core Engine: CREATE
+  // ========================
+  // CREATE
+  // ========================
   static async createPage(siteId: number, userId: number, data: any) {
     const existingPage = await Page.findOne({
       where: { siteId, title: data.title, status: { [Op.ne]: "deleted" } },
     });
 
     if (existingPage) {
-      return await this.updatePage(siteId, existingPage.id, userId, data);
+      return this.updatePage(siteId, existingPage.id, userId, data);
     }
 
     const slug = this.generateBulletproofSlug(data.title);
+
     return await Page.create({
       ...data,
       slug,
@@ -110,42 +47,64 @@ export class PageService {
     });
   }
 
-  // 🚀 GETTERS
+  // ========================
+  // UPDATE
+  // ========================
+  static async updatePage(siteId: number, pageId: number, userId: number, data: any) {
+    const transaction = await sequelize.transaction();
+
+    try {
+      const page = await PageRepository.findById(pageId, siteId, transaction);
+      if (!page) throw new Error("PAGE_NOT_FOUND");
+
+      if (data.slug && data.slug !== page.slug) {
+        await SlugService.ensureAvailable(siteId, data.slug, pageId);
+      }
+
+      if (PageEngine.isSlugChanged(page.slug, data.slug)) {
+        await SlugService.archive(page.id, siteId, page.slug, transaction);
+      }
+
+      const updated = await PageRepository.updatePage(
+        page,
+        { ...data, status: PAGE_STATUS.DRAFT },
+        transaction
+      );
+
+      await transaction.commit();
+      return updated;
+
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
+  }
+
+  // ========================
+  // PUBLISH
+  // ========================
+  static async publishPage(siteId: number, pageId: number, userRole: string, userId: number) {
+    const page = await Page.findOne({ where: { id: pageId, siteId } });
+    if (!page) throw new Error("PAGE_NOT_FOUND");
+
+    if (!canPublish(userRole)) throw new Error("FORBIDDEN");
+    if (!canTransition(page.status, PAGE_STATUS.PUBLISHED)) throw new Error("INVALID_TRANSITION");
+
+    await page.update({
+      status: PAGE_STATUS.PUBLISHED,
+      publishedAt: new Date(),
+    });
+
+    return page;
+  }
+
+  // ========================
+  // GET PAGES
+  // ========================
   static async getPages(siteId: number) {
     return Page.findAll({
       where: { siteId, status: { [Op.ne]: "deleted" } },
       order: [["createdAt", "DESC"]],
     });
-  }
-
-  static async getPageHistory(pageId: number, siteId: number) {
-    return await PageVersion.findAll({
-      where: { pageId },
-      order: [["createdAt", "DESC"]],
-      limit: 10 
-    });
-  }
-
-  // 🚀 RESTORE
-  static async restoreVersion(siteId: number, pageId: number, versionId: number) {
-    const version = await PageVersion.findOne({ where: { id: versionId, pageId } });
-    const page = await Page.findOne({ where: { id: pageId, siteId } });
-
-    if (!version || !page) throw new Error("VERSION_OR_PAGE_NOT_FOUND");
-
-    return await page.update({
-      title: version.title,
-      content: version.content,
-      blocks: version.blocks,
-      status: PAGE_STATUS.DRAFT
-    });
-  }
-
-  static async isSlugTaken(siteId: number, slug: string): Promise<boolean> {
-    const page = await Page.findOne({ where: { slug, siteId } });
-    if (page) return true;
-
-    const history = await PageSlug.findOne({ where: { slug, siteId } });
-    return !!history;
   }
 }

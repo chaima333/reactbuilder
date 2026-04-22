@@ -11,7 +11,7 @@ import {
   publishPageController,
   restorePageVersion,
   getPageHistory
-} from "./page.controller";
+} from "./controllers/page.controller";
 
 const router = Router({ mergeParams: true });
 
