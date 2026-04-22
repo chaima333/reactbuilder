@@ -113,7 +113,7 @@ export const getPublicPage = async (req: Request, res: Response) => {
       return res.json({
         success: true,
         type: "page",
-        data: PageMapper.toDTO(result.data),
+        data: result.data,
         canonical: result.data.slug
       });
     }
@@ -122,20 +122,21 @@ export const getPublicPage = async (req: Request, res: Response) => {
       return res.json({
         success: true,
         type: "redirect",
-        to: result.to,
-        url: `/api/v2/magic-page/${siteId}/${result.to}`
+        to: result.to
       });
     }
 
+    // 🔥 مهم: ما عادش "false صامت"
     return res.status(404).json({
       success: false,
-      type: "not_found"
+      type: result.type,
+      reason: result.reason
     });
 
   } catch (err: any) {
     return res.status(500).json({
       success: false,
-      message: err.message
+      error: err.message
     });
   }
 };

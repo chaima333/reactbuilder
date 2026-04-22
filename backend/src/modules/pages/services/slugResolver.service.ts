@@ -1,18 +1,22 @@
 import { Page } from "../../../models";
 import PageSlug from "../../../models/pageSlug";
-import { SlugResult } from "../types/page.types";
 
 export class SlugResolver {
 
-  static async resolve(siteId: number, slug: string): Promise<SlugResult> {
-
+  static async resolve(siteId: number, slug: string) {
     if (!slug) {
-      return { type: "not_found" };
+      return { type: "not_found", reason: "missing_slug" };
     }
 
-    // 1. page published
+    console.log("🔍 Resolving:", { siteId, slug });
+
+    // 1. current published page
     const page = await Page.findOne({
-      where: { siteId, slug, status: "published" }
+      where: {
+        siteId,
+        slug,
+        status: "published"
+      }
     });
 
     if (page) {
@@ -22,7 +26,7 @@ export class SlugResolver {
       };
     }
 
-    // 2. slug history → redirect
+    // 2. check history (redirect)
     const history = await PageSlug.findOne({
       where: { siteId, slug }
     });
@@ -38,7 +42,9 @@ export class SlugResolver {
       }
     }
 
-    // 3. not found
-    return { type: "not_found" };
+    return {
+      type: "not_found",
+      reason: "no_page_or_redirect"
+    };
   }
 }
