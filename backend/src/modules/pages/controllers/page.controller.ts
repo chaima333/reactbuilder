@@ -5,6 +5,7 @@ import { PageService } from "../services/page.service";
 import { PageVersionService } from "../services/pageVersion.service";
 import { PageWorkflowService } from "../services/PageWorkflowService";
 import { SlugResolver } from "../services/slugResolver.service";
+import { formatPage } from "../dto/page.dto";
 
 // ========================
 // 🟢 CREATE PAGE
@@ -17,7 +18,7 @@ export const createPage = async (req: AuthRequest, res: Response) => {
       req.body
     );
 
-    return res.status(201).json({ success: true, data: page });
+    return res.status(201).json({ success: true, data: formatPage(page)});
 
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
@@ -31,8 +32,10 @@ export const getPages = async (req: AuthRequest, res: Response) => {
   try {
     const pages = await PageService.getPages(req.siteContext.siteId);
 
-    return res.json({ success: true, data: pages });
-
+return res.json({
+  success: true,
+  data: pages.map(p => formatPage(p))
+});
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
   }
@@ -50,7 +53,7 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
       req.body
     );
 
-    return res.json({ success: true, data: page });
+    return res.json({ success: true, data: formatPage(page) });
 
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
@@ -126,7 +129,7 @@ export const publishPageController = async (req: AuthRequest, res: Response) => 
       req.user.id
     );
 
-    return res.json({ success: true, data: page });
+    return res.json({ success: true, data: formatPage(page) });
 
   } catch (err: any) {
     if (err.message === "FORBIDDEN")
@@ -167,7 +170,7 @@ export const restorePageVersion = async (req: AuthRequest, res: Response) => {
       Number(req.params.versionId)
     );
 
-    return res.json({ success: true, data: page });
+    return res.json({ success: true, data: formatPage(page) });
 
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
