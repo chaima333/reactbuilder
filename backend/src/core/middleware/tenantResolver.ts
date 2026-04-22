@@ -1,15 +1,16 @@
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "../../shared/auth.util";
 import { Site, SiteMember } from "../../models";
+import { normalizeRole } from "./role.middleware";
 
 export const tenantResolver = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-const siteId =
+    const siteId =
       req.params.siteId ||
       req.headers["x-site-id"] ||
       req.headers["x-subdomain"];
-      
-      const userId = req.user?.id;
+
+    const userId = req.user?.id;
 
     if (!siteId) {
       return res.status(400).json({
@@ -51,15 +52,11 @@ const siteId =
     };
 
     next();
+
   } catch (err: any) {
     return res.status(500).json({
       success: false,
-      message: "Tenant Error",
-      details: err.message
+      message: err.message   // 🔥 باش تشوف الخطأ الحقيقي
     });
   }
 };
-
-function normalizeRole(role: string) {
-  throw new Error("Function not implemented.");
-}
