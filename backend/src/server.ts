@@ -35,7 +35,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-//app.use(initContext);
+
 // ========================
 // PUBLIC LAYER
 // ========================
@@ -43,23 +43,18 @@ app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
 app.use("/api/auth", authRoutes);
 
-// 🟢 SEO MAGIC ROUTE (slug system)
+// SEO MAGIC ROUTE
 app.get("/api/v2/magic-page/:siteId/:slug", async (req, res) => {
-  console.log("🚀 ROUTE HIT:", req.params);
-
   const result = await SlugResolver.resolve(
     Number(req.params.siteId),
     req.params.slug
   );
-
-  console.log("🧠 RESULT:", result);
 
   if (result.type === "page") {
     return res.json({ success: true, data: result.data });
   }
 
   if (result.type === "redirect") {
-    console.log("🔀 REDIRECTING...");
     return res.redirect(
       301,
       `/api/v2/magic-page/${req.params.siteId}/${result.to}`
@@ -69,25 +64,27 @@ app.get("/api/v2/magic-page/:siteId/:slug", async (req, res) => {
   return res.status(404).json({ success: false });
 });
 
-// legacy public route (optional)
+// legacy public route
 app.get("/api/public/pages/:siteId/:slug", getPublicPage);
 app.use("/api/public", publicRoutes);
 
 // ========================
-// PRIVATE LAYER
+// PRIVATE LAYER (AUTH ONLY)
 // ========================
 const authStack = [authenticateJWT];
 
 app.use("/api/users", authStack, userRoutes);
 app.use("/api/admin", authStack, adminRoutes);
 app.use("/api/dashboard", authStack, dashboardRoutes);
-app.use("/api/sites/:siteId/pages", authStack, pageRoutes);
 
 // ========================
-// TENANT LAYER
+// TENANT LAYER (IMPORTANT FIX)
 // ========================
+
+// ⚠️ FIX: tenantResolver لازم يكون هنا قبل pages
 const tenantStack = [authenticateJWT, tenantResolver];
 
+app.use("/api/sites/:siteId/pages", tenantStack, pageRoutes);
 app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
 app.use("/api/sites/:siteId/seo", tenantStack, seoRoutes);
 app.use("/api/sites/:siteId/plugins", tenantStack, pluginRoutes);
