@@ -47,33 +47,28 @@ app.use("/api/auth", authRoutes);
 
 // 🟢 SEO MAGIC ROUTE (slug system)
 app.get("/api/v2/magic-page/:siteId/:slug", async (req, res) => {
-  try {
-    const result = await SlugResolver.resolve(
-      Number(req.params.siteId),
-      req.params.slug
-    );
+  console.log("🚀 ROUTE HIT:", req.params);
 
-    if (result.type === "page") {
-      return res.json({ success: true, data: result.data });
-    }
+  const result = await SlugResolver.resolve(
+    Number(req.params.siteId),
+    req.params.slug
+  );
 
-    if (result.type === "redirect") {
-      // anti-loop protection
-      if (result.to === req.params.slug) {
-        return res.json({ success: true, data: result.data });
-      }
+  console.log("🧠 RESULT:", result);
 
-      return res.redirect(
-        301,
-        `/api/v2/magic-page/${req.params.siteId}/${encodeURIComponent(result.to)}`
-      );
-    }
-
-    return res.status(404).json({ success: false, message: "Not found" });
-
-  } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+  if (result.type === "page") {
+    return res.json({ success: true, data: result.data });
   }
+
+  if (result.type === "redirect") {
+    console.log("🔀 REDIRECTING...");
+    return res.redirect(
+      301,
+      `/api/v2/magic-page/${req.params.siteId}/${result.to}`
+    );
+  }
+
+  return res.status(404).json({ success: false });
 });
 
 // legacy public route (optional)
