@@ -1,6 +1,5 @@
-
 import { Page } from "../../../models/page";
-import PageSlug from "../../../models/pageSlug";
+import { SlugMap } from "../../../models/slug_map"; // 👈 ثبت من اسم الموديل
 
 export class RedirectGraphEngine {
   static async resolve(siteId: number, inputSlug: string) {
@@ -11,16 +10,30 @@ export class RedirectGraphEngine {
       if (visited.has(currentSlug)) throw new Error("REDIRECT_LOOP");
       visited.add(currentSlug);
 
-      const page = await Page.findOne({ where: { siteId, slug: currentSlug, status: 'published' } });
-      if (page) return { page, isOriginal: currentSlug === inputSlug };
+      // 1. لو الـ Slug هو الصفحة الحالية و Published
+      const page = await Page.findOne({ 
+        where: { siteId, slug: currentSlug, status: 'published' } 
+      });
+      
+      if (page) {
+        return { page, isOriginal: currentSlug === inputSlug };
+      }
 
-      const history = await PageSlug.findOne({ where: { siteId, slug: currentSlug } });
-      if (!history) return null;
+      // 2. لو موش الصفحة الحالية، نلوجو عليه في جدول الـ SlugMap (تاريخ الروابط)
+      const mapping = await SlugMap.findOne({ 
+        where: { siteId, slug: currentSlug } 
+      });
 
-      const targetPage = await Page.findByPk(history.pageId);
-      if (!targetPage) return null;
+      if (!mapping) return null;
 
-      currentSlug = targetPage.slug; // توّة الـ Loop باش تعاود تلوّج بالـ Slug الجديد
+      // 3. نجيبو الصفحة اللي يشير ليها الـ mapping
+      const targetPage = await Page.findByPk(mapping.pageId);
+      if (!targetPage || targetPage.status !== 'published') return null;
+
+      // 4. السحر هوني: نمشيو لآخر Slug متاع الصفحة هذي طول
+      currentSlug = targetPage.slug;
+      
+      // الـ Loop باش تعاود تثبت، وهكا نضمنوا إنو الـ Redirect Chain تتقص
     }
   }
 }
