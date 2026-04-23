@@ -90,13 +90,18 @@ export class Page extends Model {
 })
 publishedAt!: Date;
 
-  toJSON() {
+ toJSON() {
   const values = { ...this.get() };
 
-  delete values.user_id;
-  delete values.site_id;
-  delete values.created_at;
-  delete values.updated_at;
+  // استعمل الأسماء اللي عرفتها في الـ Class
+  delete values.userId;
+  delete values.siteId;
+  delete values.createdAt;
+  delete values.updatedAt;
+
+  // لو تحب تنحي الـ Associations زادة باش ما يكبرش الـ Response
+  // delete values.author;
+  // delete values.site;
 
   return values;
 }
