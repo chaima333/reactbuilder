@@ -8,10 +8,11 @@ export class SlugMap extends Model<SlugMapAttributes> implements SlugMapAttribut
   public slug!: string;
   public pageId!: number;
   public type!: "page" | "redirect";
+  public redirectTo?: string
   public isActive!: boolean; // 👈 لازم تزيدها هوني
   public readonly createdAt!: Date; // 👈 وزيد هذي برغم إنها Readonly
+  toSlug: string;
 }
-
 SlugMap.init(
   {
     id: { 
@@ -19,26 +20,37 @@ SlugMap.init(
       autoIncrement: true, 
       primaryKey: true 
     },
+
     siteId: { 
       type: DataTypes.INTEGER, 
       allowNull: false 
     },
+
     slug: { 
       type: DataTypes.STRING, 
       allowNull: false 
     },
+
     pageId: { 
       type: DataTypes.INTEGER, 
       allowNull: false 
     },
+
     type: { 
       type: DataTypes.ENUM("page", "redirect"), 
       allowNull: false 
     },
+
     isActive: { 
       type: DataTypes.BOOLEAN, 
-      defaultValue: true // 👈 زيدها في الـ Init باش Sequelize يعرفها في الـ DB
+      defaultValue: true 
     },
+
+    redirectTo: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+
     createdAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
@@ -48,7 +60,6 @@ SlugMap.init(
     sequelize,
     tableName: "slug_maps",
     indexes: [
-      // 🚀 أهم حاجة لسرعة الـ SEO: Unique Index على الـ siteId والـ slug مع بعضهم
       {
         unique: true,
         fields: ["siteId", "slug"]

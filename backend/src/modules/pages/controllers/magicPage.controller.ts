@@ -1,24 +1,28 @@
 import { SlugResolver } from "../services/slugResolver.service";
-import { SEODecisionEngine } from "../engine/seoDecision.engine";
+import { SEOBuilder } from "../engine/seoBuilder";
 
 export const getPublicPage = async (req, res) => {
-  try {
-    // 1. جيب النتيجة م الـ Resolver
-    const result = await SlugResolver.resolve(
-      Number(req.params.siteId),
-      req.params.slug
-    );
 
-    // 2. خلّي الـ Engine يبني الـ Response كامل (Status + Headers + Body)
-    const decision = SEODecisionEngine.build({ result });
+  const result = await SlugResolver.resolve(
+    Number(req.params.siteId),
+    req.params.slug
+  );
 
-    // 3. ابعث النتيجة "حاضرة"
-    return res
-      .status(decision.status)
-      .set(decision.headers || {})
-      .json(decision.body);
-
-  } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+  if (result.type === "page") {
+    return res.status(200).json({
+      data: result.data,
+      seo: SEOBuilder.build(result.data)
+    });
   }
+
+  if (result.type === "redirect") {
+    return res.redirect(
+      301,
+      `/api/v2/magic-page/${req.params.siteId}/${result.to}`
+    );
+  }
+
+  return res.status(404).json({
+    error: "NOT_FOUND"
+  });
 };

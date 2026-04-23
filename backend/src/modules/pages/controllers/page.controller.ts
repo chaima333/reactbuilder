@@ -1,12 +1,12 @@
-import { Response, Request } from "express";
+import { Response } from "express";
 import { AuthRequest } from "../../../shared/auth.util";
 
 import { PageService } from "../services/page.service";
 import { PageVersionService } from "../services/pageVersion.service";
 import { PageWorkflowService } from "../services/PageWorkflowService";
 import { SlugResolver } from "../services/slugResolver.service";
+import { SEOBuilder } from "../engine/seoBuilder";
 import { PageMapper } from "../mappers/page.mapper";
-import { SEODecisionEngine } from "../engine/seoDecision.engine";
 
 // ========================
 // 🟢 CREATE PAGE
@@ -101,7 +101,7 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
 };
 
 // ========================
-// 🟢 PUBLIC PAGE RESOLVER
+// 🟢 PUBLIC PAGE RESOLVER (CLEAN)
 // ========================
 export const getPublicPage = async (req, res) => {
 
@@ -110,26 +110,25 @@ export const getPublicPage = async (req, res) => {
     req.params.slug
   );
 
-  switch (result.type) {
-
-    case "page":
-      return res.status(200).json({
-        data: result.page,
-        seo: result.seo
-      });
-
-    case "redirect":
-      return res.redirect(
-        301,
-        `/api/v2/magic-page/${req.params.siteId}/${result.to}`
-      );
-
-    default:
-      return res.status(404).json({
-        error: "NOT_FOUND"
-      });
+  if (result.type === "page") {
+    return res.status(200).json({
+      data: result.data,
+      seo: SEOBuilder.build(result.data)
+    });
   }
+
+  if (result.type === "redirect") {
+    return res.redirect(
+      301,
+      `/api/v2/magic-page/${req.params.siteId}/${result.to}`
+    );
+  }
+
+  return res.status(404).json({
+    error: "NOT_FOUND"
+  });
 };
+
 // ========================
 // 🟢 PUBLISH PAGE
 // ========================
