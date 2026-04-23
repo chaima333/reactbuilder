@@ -6,6 +6,7 @@ import { canPublish, canTransition, PAGE_STATUS } from "../domain/rules";
 import { PageVersionRepository } from "../repositories/pageVersion.repository";
 import { sequelize } from "../../../core/database/connection";
 import { Page } from "../../../models/page";
+import { SlugMap } from "../../../models/slug_map";
 
 
 const { nanoid } = require("nanoid");
@@ -18,22 +19,32 @@ export class PageService {
   }
 
   // ================= CREATE =================
-  static async createPage(siteId: number, userId: number, data: any) {
+ // PageService.ts
+static async createPage(siteId: number, userId: number, data: any) {
+  const existing = await PageRepository.findByTitle(siteId, data.title);
+  if (existing) throw new Error("PAGE_ALREADY_EXISTS");
 
-    const existing = await PageRepository.findByTitle(siteId, data.title);
+  const slug = this.generateSlug(data.title);
 
-    if (existing) {
-      throw new Error("PAGE_ALREADY_EXISTS");
-    }
+  const page = await PageRepository.create({
+    ...data,
+    slug,
+    siteId,
+    userId,
+    status: PAGE_STATUS.DRAFT
+  });
 
-    return PageRepository.create({
-      ...data,
-      slug: this.generateSlug(data.title),
-      siteId,
-      userId,
-      status: PAGE_STATUS.DRAFT
-    });
-  }
+  // 🚀 أربط الصفحة بالـ SlugMap طول
+  await SlugMap.create({
+    siteId,
+    slug,
+    pageId: page.id,
+    type: "page",
+    isActive: true
+  });
+
+  return page;
+}
 
   // ================= GET =================
   static async getPages(siteId: number) {
