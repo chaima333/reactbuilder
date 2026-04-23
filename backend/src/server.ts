@@ -45,6 +45,8 @@ app.use("/api/auth", authRoutes);
 // SEO MAGIC ROUTE
 import { SEOEngine } from "./modules/pages/seo/seo.engine";
 
+// server.ts
+
 app.get("/api/v2/magic-page/:siteId/:slug", async (req, res) => {
 
   const result = await SEOEngine.resolve(
@@ -54,6 +56,7 @@ app.get("/api/v2/magic-page/:siteId/:slug", async (req, res) => {
 
   console.log("RESOLVER RESULT:", result);
 
+  // ✅ PAGE
   if (result.type === "page") {
     return res.json({
       success: true,
@@ -62,17 +65,20 @@ app.get("/api/v2/magic-page/:siteId/:slug", async (req, res) => {
     });
   }
 
+  // 🔥 FIX هنا
   if (result.type === "redirect") {
-    return res.redirect(
-      301,
-      `/api/v2/magic-page/${req.params.siteId}/${result.to}`
-    );
+    return res.status(200).json({
+      success: true,
+      type: "redirect",
+      to: `/pages/${result.to}`
+    });
   }
 
-return res.status(404).json({
-      success: true,
-      type: "not_found"
-    });
+  // ❌ NOT FOUND
+  return res.status(404).json({
+    success: false,
+    type: "not_found"
+  });
 });
 
 // legacy public route
