@@ -1,4 +1,4 @@
-import { Table, Column, Model, DataType, ForeignKey } from 'sequelize-typescript';
+import { Table, Column, Model, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
 import { Page } from './page';
 
 @Table({ tableName: 'page_slugs', timestamps: true })
@@ -9,6 +9,10 @@ export class PageSlug extends Model {
   @ForeignKey(() => Page)
   @Column({ type: DataType.INTEGER, allowNull: false })
   pageId!: number;
+
+  
+  @BelongsTo(() => Page)
+  page!: Page;
 
   @Column({ type: DataType.INTEGER, allowNull: false })
   siteId!: number;

@@ -22,7 +22,7 @@ export type SlugResolveResult =
     }
   | {
       type: "redirect";
-      to: string;
+      to: string; status: number
     }
   | {
       type: "not_found";
