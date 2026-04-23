@@ -13,16 +13,9 @@ export class PageEngine {
   }
 
   static resolveActions(oldP: any, newP: any) {
-    const actions = [];
-
-    if (this.shouldCreateVersion(oldP, newP)) {
-      actions.push("VERSION");
-    }
-
-    if (this.isSlugChanged(oldP.slug, newP.slug)) {
-      actions.push("SLUG");
-    }
-
-    return actions;
+    return {
+      version: this.shouldCreateVersion(oldP, newP),
+      slug: this.isSlugChanged(oldP.slug, newP.slug),
+    };
   }
 }

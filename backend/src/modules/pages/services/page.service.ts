@@ -1,12 +1,11 @@
 
 import slugify from "slugify";
 import { PageRepository } from "../repositories/page.repository";
-import { SlugService } from "../services/slug.service";
 import { canPublish, canTransition, PAGE_STATUS } from "../domain/rules";
 import { PageVersionRepository } from "../repositories/pageVersion.repository";
 import { sequelize } from "../../../core/database/connection";
 import { PageEngine } from "../engine/page.engine";
-import { PageSlug } from "../../../models";
+import { PageSlug } from "../../../models/pageSlug";
 
 
 const { nanoid } = require("nanoid");
@@ -53,10 +52,9 @@ static async updatePage(siteId, pageId, userId, data) {
 
     const actions = PageEngine.resolveActions(page, data);
 
-    // 1. SLUG CHANGE (atomic & safe)
-    if (actions.includes("SLUG_CHANGED")) {
+    // ✅ SLUG CHANGE
+    if (actions.slug) {
 
-      // archive OLD slug (important: before mutation)
       await PageSlug.create({
         pageId: page.id,
         siteId,
@@ -64,7 +62,7 @@ static async updatePage(siteId, pageId, userId, data) {
       }, { transaction: t });
     }
 
-    // 2. APPLY UPDATE (single source of truth)
+    // ✅ UPDATE PAGE
     const updated = await PageRepository.updatePage(
       page,
       {
