@@ -1,17 +1,23 @@
 export class SEODecisionEngine {
 
-  static build(result: any) {
+  static build(ctx: any) {
+
+    const { result } = ctx;
 
     if (result.type === "page") {
       return {
         status: 200,
+        headers: {
+          "Cache-Control": "public, max-age=60"
+        },
         body: {
           success: true,
           type: "page",
           data: result.data,
           seo: {
             canonical: `/pages/${result.data.slug}`,
-            index: true
+            index: true,
+            priority: "high"
           }
         }
       };
@@ -20,6 +26,9 @@ export class SEODecisionEngine {
     if (result.type === "redirect") {
       return {
         status: 301,
+        headers: {
+          "Cache-Control": "public, max-age=86400"
+        },
         body: {
           success: true,
           type: "redirect",
@@ -33,11 +42,15 @@ export class SEODecisionEngine {
 
     return {
       status: 404,
+      headers: {
+        "Cache-Control": "no-store"
+      },
       body: {
         success: false,
         type: "not_found",
         seo: {
-          index: false
+          index: false,
+          title: "Page not found"
         }
       }
     };

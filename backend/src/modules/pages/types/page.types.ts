@@ -1,3 +1,5 @@
+import { Page } from "../../../models/page";
+
 export type PageStatus = "draft" | "published" | "scheduled" | "deleted";
 export interface PageBlock {
   type: string;
@@ -15,16 +17,23 @@ export interface PageUpdateInput {
   blocks?: PageBlock[];
   status?: PageStatus;
 }
+
 export type SlugResolveResult =
-  | {
-      type: "page";
-      data: any;
+  | { 
+      type: "page"; 
+      data: Page; 
+      canonical: string; 
+      trace?: any 
     }
-  | {
-      type: "redirect";
-      to: string; status: number
+  | { 
+      type: "redirect"; 
+      to: string; 
+      reason: string; 
+      canonical: string; 
+      trace?: any 
     }
-  | {
-      type: "not_found";
-      reason?: string;
+  | { 
+      type: "not_found"; 
+      reason: string; 
+      trace?: any 
     };
