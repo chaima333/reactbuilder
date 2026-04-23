@@ -111,26 +111,24 @@ export const getPublicPage = async (req, res) => {
     req.params.slug
   );
 
-  // PAGE
-  if (result.kind === "page") {
+  if (result.type === "page") {
     return res.status(200).json({
       data: result.page,
       seo: {
-        canonical: `/pages/${result.page.slug}`,
         index: true
       }
     });
   }
 
-  // REDIRECT (HTTP ONLY)
-  if (result.kind === "redirect") {
-    return res
-      .redirect(301, `/api/v2/magic-page/${req.params.siteId}/${result.targetSlug}`);
+  if (result.type === "redirect") {
+    return res.redirect(
+      301,
+      `/api/v2/magic-page/${req.params.siteId}/${result.to}`
+    );
   }
 
-  // NOT FOUND
   return res.status(404).json({
-    error: "NOT_FOUND"
+    seo: { index: false }
   });
 };
 // ========================
