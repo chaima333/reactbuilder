@@ -1,9 +1,8 @@
 export class SEODecisionEngine {
-
   static build(ctx: any) {
-
     const { result } = ctx;
 
+    // PAGE
     if (result.type === "page") {
       return {
         status: 200,
@@ -11,8 +10,6 @@ export class SEODecisionEngine {
           "Cache-Control": "public, max-age=60"
         },
         body: {
-          success: true,
-          type: "page",
           data: result.data,
           seo: {
             canonical: `/pages/${result.canonical}`,
@@ -22,28 +19,26 @@ export class SEODecisionEngine {
       };
     }
 
-    // داخل SEODecisionEngine.ts
-if (result.type === "redirect") {
-  return {
-    status: 200, // إنت تحبها 200 باش الـ Frontend يقرأ الـ JSON
-    headers: { "X-SEO-Redirect": "true" },
-    body: {
-      success: true,
-      type: "redirect",
-      to: `/pages/${result.to}`, // نزيدو الـ Prefix هوني موش في البلايص الكل
-      seo: { index: false }
+    // REDIRECT (IMPORTANT FIX)
+    if (result.type === "redirect") {
+      return {
+        status: 301,
+        headers: {
+          Location: `/pages/${result.to}`,
+          "Cache-Control": "public, max-age=86400"
+        },
+        body: null
+      };
     }
-  };
-}
 
+    // NOT FOUND
     return {
       status: 404,
       headers: {
         "Cache-Control": "no-store"
       },
       body: {
-        success: false,
-        type: "not_found",
+        error: "NOT_FOUND",
         seo: {
           index: false
         }
