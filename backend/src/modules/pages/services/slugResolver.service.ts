@@ -1,43 +1,47 @@
 import { Page } from "../../../models";
 import PageSlug from "../../../models/pageSlug";
+import { SlugResolveResult } from "../types/page.types";
 
 export class SlugResolver {
 
-  static async resolve(siteId: number, slug: string) {
+  static async resolve(siteId: number, slug: string): Promise<SlugResolveResult> {
 
     if (!slug) {
-      return { type: "not_found", reason: "missing_slug" };
+      return {
+        type: "not_found",
+        reason: "missing_slug"
+      };
     }
 
-    // 1. current active page
+    // ✅ 1. check current published page
     const page = await Page.findOne({
-      where: { siteId, slug }
+      where: { siteId, slug, status: "published" }
     });
 
-    if (page && page.status === "published") {
+    if (page) {
       return {
         type: "page",
         data: page
       };
     }
 
-    // 2. slug history (redirect system)
+    // ✅ 2. check slug history
     const history = await PageSlug.findOne({
       where: { siteId, slug }
     });
 
     if (history) {
+      const currentPage = await Page.findByPk(history.pageId);
 
-      const current = await Page.findByPk(history.pageId);
-
-      if (current && current.status === "published") {
+      if (currentPage && currentPage.status === "published") {
         return {
           type: "redirect",
-          to: current.slug
+          to: currentPage.slug
         };
       }
     }
 
+    // ❌ 3. not found
     return {
       type: "not_found",
       reason: "no_match"
