@@ -9,12 +9,10 @@ export const getPublicPage = async (req, res) => {
     req.params.slug
   );
 
-  const ctx = SEOContextBuilder.build(result, req);
-
-  const decision = SEODecisionEngine.build(ctx);
+  const decision = SEODecisionEngine.build(result);
 
   return res
     .status(decision.status)
-    .set(decision.headers || {})
+    .set(decision.headers)
     .json(decision.body);
 };

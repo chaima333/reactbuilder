@@ -1,8 +1,6 @@
 export class SEODecisionEngine {
 
-  static build(ctx: any) {
-
-    const { result } = ctx;
+  static build(result: any) {
 
     if (result.type === "page") {
       return {
@@ -15,9 +13,8 @@ export class SEODecisionEngine {
           type: "page",
           data: result.data,
           seo: {
-            canonical: `/pages/${result.data.slug}`,
-            index: true,
-            priority: "high"
+            canonical: `/pages/${result.canonical}`,
+            index: true
           }
         }
       };
@@ -49,8 +46,7 @@ export class SEODecisionEngine {
         success: false,
         type: "not_found",
         seo: {
-          index: false,
-          title: "Page not found"
+          index: false
         }
       }
     };
