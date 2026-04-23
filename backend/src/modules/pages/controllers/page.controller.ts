@@ -128,9 +128,13 @@ export const getPublicPage = async (req, res) => {
 
     case "not_found":
       return res.status(404).json({
-        success: false,
-        reason: result.reason
-      });
+  success: true,
+  type: "not_found",
+  seo: {
+    title: "Page not found",
+    noindex: true
+  }
+});
   }
 };
 // ========================
