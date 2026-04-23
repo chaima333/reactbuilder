@@ -47,7 +47,7 @@ import { SEOEngine } from "./modules/pages/seo/seo.engine";
 
 // server.ts
 
-app.get("/api/v2/magic-page/:siteId/:slug", async (req, res) => {
+/*app.get("/api/v2/magic-page/:siteId/:slug", async (req, res) => {
 
   const result = await SEOEngine.resolve(
     Number(req.params.siteId),
@@ -79,7 +79,9 @@ app.get("/api/v2/magic-page/:siteId/:slug", async (req, res) => {
     success: false,
     type: "not_found"
   });
-});
+//});*/
+
+app.get("/api/v2/magic-page/:siteId/:slug", getPublicPage);
 
 // legacy public route
 app.use("/api/public", publicRoutes);
