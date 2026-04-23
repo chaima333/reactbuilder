@@ -54,7 +54,10 @@ static async updatePage(
     const page = await PageRepository.findById(pageId, siteId);
     if (!page) throw new Error("PAGE_NOT_FOUND");
 
-   const isSlugChanging = data.slug && data.slug !== page.slug;
+    const oldSlug = page.slug;
+
+const isSlugChanging =
+  data.slug && data.slug !== oldSlug;
 
 if (isSlugChanging) {
 
@@ -63,7 +66,7 @@ if (isSlugChanging) {
   await SlugService.archive(
     page.id,
     siteId,
-    page.slug,
+    oldSlug,
     transaction
   );
 }
