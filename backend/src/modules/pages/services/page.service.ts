@@ -6,6 +6,7 @@ import { canPublish, canTransition, PAGE_STATUS } from "../domain/rules";
 import { PageVersionRepository } from "../repositories/pageVersion.repository";
 import { sequelize } from "../../../core/database/connection";
 import { PageEngine } from "../engine/page.engine";
+import { PageSlug } from "../../../models";
 
 
 const { nanoid } = require("nanoid");
@@ -41,34 +42,40 @@ export class PageService {
   }
 
   // ================= UPDATE =================
-static async updatePage(siteId: number, pageId: number, userId: number, data: any) {
-  const transaction = await sequelize.transaction();
-  try {
+static async updatePage(siteId, pageId, userId, data) {
+
+  return sequelize.transaction(async (t) => {
+
     const page = await PageRepository.findById(pageId, siteId);
     if (!page) throw new Error("PAGE_NOT_FOUND");
 
-    // 🔥 نعيطو للـ Engine ياخذ القرارات
+    const oldSlug = page.slug;
+
     const actions = PageEngine.resolveActions(page, data);
 
-    // 1. أرشفة الـ Slug لو الـ Engine قال "SLUG"
-    if (actions.includes("SLUG")) {
-      await SlugService.ensureAvailable(siteId, data.slug, pageId);
-      await SlugService.archive(page.id, siteId, page.slug, transaction);
+    // 1. SLUG CHANGE (atomic & safe)
+    if (actions.includes("SLUG_CHANGED")) {
+
+      // archive OLD slug (important: before mutation)
+      await PageSlug.create({
+        pageId: page.id,
+        siteId,
+        slug: oldSlug
+      }, { transaction: t });
     }
 
-    // 2. تحديث الصفحة (ونردّوها Draft كيف ما حبيت إنت)
-    const updated = await PageRepository.update(
+    // 2. APPLY UPDATE (single source of truth)
+    const updated = await PageRepository.updatePage(
       page,
-      { ...data, status: PAGE_STATUS.DRAFT },
-      transaction
+      {
+        ...data,
+        status: PAGE_STATUS.DRAFT
+      },
+      t
     );
 
-    await transaction.commit();
     return updated;
-  } catch (err) {
-    await transaction.rollback();
-    throw err;
-  }
+  });
 }
 
   // ================= DELETE =================
