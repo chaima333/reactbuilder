@@ -6,6 +6,7 @@ import { PageVersionService } from "../services/pageVersion.service";
 import { PageWorkflowService } from "../services/PageWorkflowService";
 import { SlugResolver } from "../services/slugResolver.service";
 import { PageMapper } from "../mappers/page.mapper";
+import { SEODecisionEngine } from "../engine/seoDecision.engine";
 
 // ========================
 // 🟢 CREATE PAGE
@@ -110,34 +111,11 @@ export const getPublicPage = async (req, res) => {
     req.params.slug
   );
 
-  switch (result.type) {
+  const decision = SEODecisionEngine.build(result);
 
-    case "page":
-      return res.json({
-        success: true,
-        type: "page",
-        data: result.data,
-         seo: {
-         canonical: `/pages/${result.data.slug}`}
-      });
-
-    case "redirect":
-      return res.json({
-        success: true,
-        type: "redirect",
-        to: result.to
-      });
-
-    case "not_found":
-      return res.status(404).json({
-  success: true,
-  type: "not_found",
-  seo: {
-    title: "Page not found",
-    noindex: true
-  }
-});
-  }
+  return res
+    .status(decision.status)
+    .json(decision.body);
 };
 // ========================
 // 🟢 PUBLISH PAGE

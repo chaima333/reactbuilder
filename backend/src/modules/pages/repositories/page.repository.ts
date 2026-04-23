@@ -1,7 +1,10 @@
 import { Page, PageVersion, PageSlug } from "../../../models";
-import { Op } from "sequelize";
+import { Op, Transaction } from "sequelize";
 
 export class PageRepository {
+  static updatePage(page: Page, arg1: any, t: Transaction) {
+    throw new Error("Method not implemented.");
+  }
 
   static findById(id: number, siteId: number) {
     return Page.findOne({ where: { id, siteId } });
