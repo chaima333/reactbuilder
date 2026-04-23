@@ -103,7 +103,6 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
 // ========================
 // 🟢 PUBLIC PAGE RESOLVER
 // ========================
-
 export const getPublicPage = async (req, res) => {
 
   const result = await SlugResolver.resolve(
@@ -111,24 +110,34 @@ export const getPublicPage = async (req, res) => {
     req.params.slug
   );
 
+  // PAGE
   if (result.type === "page") {
     return res.status(200).json({
-      data: result.page,
+      data: result.data,
       seo: {
-        index: true
+        index: true,
+        canonical: `/pages/${result.canonical}`,
+        title: result.data.title,
+        type: "article"
       }
     });
   }
 
+  // REDIRECT
   if (result.type === "redirect") {
     return res.redirect(
       301,
-      `/api/v2/magic-page/${req.params.siteId}/${result.to}`
+      `/pages/${result.to}`
     );
   }
 
+  // NOT FOUND
   return res.status(404).json({
-    seo: { index: false }
+    error: "NOT_FOUND",
+    seo: {
+      index: false,
+      type: "404"
+    }
   });
 };
 // ========================

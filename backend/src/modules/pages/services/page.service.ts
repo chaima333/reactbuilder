@@ -6,6 +6,8 @@ import { PageVersionRepository } from "../repositories/pageVersion.repository";
 import { sequelize } from "../../../core/database/connection";
 import { PageEngine } from "../engine/page.engine";
 import { PageSlug } from "../../../models/pageSlug";
+import { Page } from "../../../models/page";
+import { SlugMap } from "../../../models/slug_map";
 
 
 const { nanoid } = require("nanoid");
@@ -41,40 +43,43 @@ export class PageService {
   }
 
   // ================= UPDATE =================
-static async updatePage(siteId, pageId, userId, data) {
 
-  return sequelize.transaction(async (t) => {
+  static async updatePage(siteId, pageId, userId, data) {
 
-    const page = await PageRepository.findById(pageId, siteId);
-    if (!page) throw new Error("PAGE_NOT_FOUND");
+    return sequelize.transaction(async (t) => {
 
-    const oldSlug = page.slug;
+      const page = await Page.findByPk(pageId);
+      if (!page) throw new Error("NOT_FOUND");
 
-    const actions = PageEngine.resolveActions(page, data);
+      const oldSlug = page.slug;
+      const newSlug = data.slug;
 
-    // ✅ SLUG CHANGE
-    if (actions.slug) {
+      // 1. update page
+      const updated = await page.update(data, { transaction: t });
 
-      await PageSlug.create({
-        pageId: page.id,
-        siteId,
-        slug: oldSlug
-      }, { transaction: t });
-    }
+      // 2. if slug changed → update index
+      if (oldSlug !== newSlug) {
 
-    // ✅ UPDATE PAGE
-    const updated = await PageRepository.updatePage(
-      page,
-      {
-        ...data,
-        status: PAGE_STATUS.DRAFT
-      },
-      t
-    );
+        await SlugMap.bulkCreate([
+          {
+            siteId,
+            slug: newSlug,
+            pageId,
+            type: "page"
+          },
+          {
+            siteId,
+            slug: oldSlug,
+            pageId,
+            type: "redirect"
+          }
+        ], { transaction: t });
+      }
 
-    return updated;
-  });
-}
+      return updated;
+    });
+  }
+
 
   // ================= DELETE =================
   static async deletePage(siteId: number, pageId: number) {
