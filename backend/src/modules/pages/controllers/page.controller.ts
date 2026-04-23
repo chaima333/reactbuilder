@@ -111,30 +111,38 @@ export const getPublicPage = async (req, res) => {
     req.params.slug
   );
 
-  // ✅ CASE 1: PAGE
+  // ✅ PAGE
   if (result.type === "page") {
     return res.status(200).json({
       success: true,
       type: "page",
       data: result.data,
       seo: {
-        canonical: `/pages/${result.canonical}`
+        canonical: `/pages/${result.canonical}`,
+        index: true
       }
     });
   }
 
-  // 🔥 CASE 2: REDIRECT (IMPORTANT)
+  // ✅ REDIRECT (NO SERVER REDIRECT)
   if (result.type === "redirect") {
-    return res.redirect(
-      301,
-      `/api/v2/magic-page/${req.params.siteId}/${result.to}`
-    );
+    return res.status(200).json({
+      success: true,
+      type: "redirect",
+      to: `/pages/${result.to}`,
+      seo: {
+        index: false
+      }
+    });
   }
 
-  // ❌ CASE 3: NOT FOUND
+  // ❌ NOT FOUND
   return res.status(404).json({
     success: false,
-    type: "not_found"
+    type: "not_found",
+    seo: {
+      index: false
+    }
   });
 };
 // ========================

@@ -76,7 +76,6 @@ return res.status(404).json({
 });
 
 // legacy public route
-//app.get("/api/public/pages/:siteId/:slug", getPublicPage);
 app.use("/api/public", publicRoutes);
 
 // ========================
