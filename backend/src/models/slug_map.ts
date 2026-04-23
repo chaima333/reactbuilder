@@ -23,7 +23,8 @@ SlugMap.init(
 
     siteId: { 
       type: DataTypes.INTEGER, 
-      allowNull: false 
+      allowNull: false ,
+      field: 'siteId'
     },
 
     slug: { 
