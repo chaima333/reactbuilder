@@ -7,6 +7,7 @@ import { PageWorkflowService } from "../services/PageWorkflowService";
 import { SlugResolver } from "../services/slugResolver.service";
 import { SEOBuilder } from "../engine/seoBuilder";
 import { PageMapper } from "../mappers/page.mapper";
+import { RedirectGraphEngine } from "../engine/redirectGraph.engine";
 
 // ========================
 // 🟢 CREATE PAGE
@@ -103,30 +104,48 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
 // ========================
 // 🟢 PUBLIC PAGE RESOLVER (CLEAN)
 // ========================
+
+
 export const getPublicPage = async (req, res) => {
+  try {
+    const siteId = Number(req.params.siteId);
+    const inputSlug = req.params.slug;
 
-  const result = await SlugResolver.resolve(
-    Number(req.params.siteId),
-    req.params.slug
-  );
+    // 🚀 نعيطو للـ Graph Engine باش يعطينا الحقيقة من أول مرة
+    const result = await RedirectGraphEngine.resolve(siteId, inputSlug);
 
-  if (result.type === "page") {
+    // 1️⃣ لو الـ Slug موش موجود جملة
+    if (!result) {
+      return res.status(404).json({
+        error: "NOT_FOUND"
+      });
+    }
+
+    // 2️⃣ لو الـ Slug اللي دخل هو "تاريخي" (Redirect)
+    if (!result.isOriginal) {
+      // ✅ نبعثوه للـ Frontend URL النظيف
+      // الـ Browser توة باش يتبدل لـ: /pages/new-cool-slug
+      return res.redirect(301, `/pages/${result.page.slug}`);
+    }
+
+    // 3️⃣ لو الـ Slug هو الصفحة الحالية (The Happy Path)
     return res.status(200).json({
-      data: result.data,
-      seo: SEOBuilder.build(result.data)
+      success: true,
+      data: PageMapper.toDTO(result.page), // استعملنا الـ Mapper باش الداتا تكون نظيفة
+      seo: SEOBuilder.build(result.page)
+    });
+
+  } catch (error: any) {
+    // حماية من الـ Loops
+    if (error.message === "REDIRECT_LOOP") {
+      return res.status(508).json({ error: "Infinite redirect loop detected" });
+    }
+    
+    return res.status(500).json({
+      success: false,
+      message: error.message
     });
   }
-
-  if (result.type === "redirect") {
-    return res.redirect(
-      301,
-      `/api/v2/magic-page/${req.params.siteId}/${result.to}`
-    );
-  }
-
-  return res.status(404).json({
-    error: "NOT_FOUND"
-  });
 };
 
 // ========================
