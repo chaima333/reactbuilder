@@ -54,19 +54,19 @@ static async updatePage(
     const page = await PageRepository.findById(pageId, siteId);
     if (!page) throw new Error("PAGE_NOT_FOUND");
 
-    const isSlugChanging = data.slug && data.slug !== page.slug;
+   const isSlugChanging = data.slug && data.slug !== page.slug;
 
-    if (isSlugChanging) {
+if (isSlugChanging) {
 
-      await SlugService.ensureAvailable(siteId, data.slug, pageId);
+  await SlugService.ensureAvailable(siteId, data.slug, pageId);
 
-      await SlugService.archive(
-        page.id,
-        siteId,
-        page.slug,
-        transaction
-      );
-    }
+  await SlugService.archive(
+    page.id,
+    siteId,
+    page.slug,
+    transaction
+  );
+}
 
     const updated = await PageRepository.update(
       page,
