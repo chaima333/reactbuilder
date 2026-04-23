@@ -111,11 +111,31 @@ export const getPublicPage = async (req, res) => {
     req.params.slug
   );
 
-  const decision = SEODecisionEngine.build(result);
+  // ✅ CASE 1: PAGE
+  if (result.type === "page") {
+    return res.status(200).json({
+      success: true,
+      type: "page",
+      data: result.data,
+      seo: {
+        canonical: `/pages/${result.canonical}`
+      }
+    });
+  }
 
-  return res
-    .status(decision.status)
-    .json(decision.body);
+  // 🔥 CASE 2: REDIRECT (IMPORTANT)
+  if (result.type === "redirect") {
+    return res.redirect(
+      301,
+      `/api/v2/magic-page/${req.params.siteId}/${result.to}`
+    );
+  }
+
+  // ❌ CASE 3: NOT FOUND
+  return res.status(404).json({
+    success: false,
+    type: "not_found"
+  });
 };
 // ========================
 // 🟢 PUBLISH PAGE
