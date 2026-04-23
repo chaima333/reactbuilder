@@ -52,6 +52,8 @@ app.get("/api/v2/magic-page/:siteId/:slug", async (req, res) => {
     req.params.slug
   );
 
+  console.log("RESOLVER RESULT:", result);
+
   if (result.type === "page") {
     return res.json({
       success: true,
@@ -67,7 +69,10 @@ app.get("/api/v2/magic-page/:siteId/:slug", async (req, res) => {
     );
   }
 
-  return res.status(404).json({ success: false });
+return res.status(404).json({
+      success: true,
+      type: "not_found"
+    });
 });
 
 // legacy public route
