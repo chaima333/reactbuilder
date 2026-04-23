@@ -1,6 +1,5 @@
 import { Page } from "../../../models";
 import PageSlug from "../../../models/pageSlug";
-import { SlugResolveResult } from "../types/page.types";
 
 export class SlugResolver {
   static async resolve(siteId: number, slug: string) {
@@ -11,7 +10,7 @@ export class SlugResolver {
   });
 
   if (page) {
-    return { type: "page", data: page };
+    return { type: "page", data: page,canonical: page.slug };
   }
 
   // 2. history
@@ -31,8 +30,15 @@ export class SlugResolver {
   }
 
   return {
-    type: "redirect",
-    to: target.slug
-  };
+  type: "redirect",
+  to: target.slug,
+  reason: "slug_moved",
+  trace: {
+    inputSlug: slug,
+    foundHistory: true,
+    targetPageId: target.id,
+    targetStatus: target.status
+  }
+};
 }
 }

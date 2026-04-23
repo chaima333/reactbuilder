@@ -116,7 +116,9 @@ export const getPublicPage = async (req, res) => {
       return res.json({
         success: true,
         type: "page",
-        data: result.data
+        data: result.data,
+         seo: {
+         canonical: `/pages/${result.data.slug}`}
       });
 
     case "redirect":
