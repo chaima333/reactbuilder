@@ -20,22 +20,19 @@ export class SEODecisionEngine {
       };
     }
 
-    if (result.type === "redirect") {
-      return {
-        status: 301,
-        headers: {
-          "Cache-Control": "public, max-age=86400"
-        },
-        body: {
-          success: true,
-          type: "redirect",
-          to: result.to,
-          seo: {
-            index: false
-          }
-        }
-      };
+  // SEODecisionEngine.ts
+if (result.type === "redirect") {
+  return {
+    status: 200, // أو 301 حسب الـ Client setup
+    body: {
+      success: true,
+      type: "redirect",
+      to: result.to, // الـ slug النهائي فقط
+      targetUrl: `/pages/${result.to}`, // الرابط اللي باش يمشي له الـ Frontend
+      seo: { index: false }
     }
+  };
+}
 
     return {
       status: 404,
