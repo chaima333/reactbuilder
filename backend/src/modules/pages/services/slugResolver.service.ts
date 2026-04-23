@@ -1,18 +1,35 @@
 import { Page } from "../../../models/page";
 import PageSlug from "../../../models/pageSlug";
-import { RedirectGraphEngine } from "../engine/redirectGraph.engine";
 
 export class SlugResolver {
   static async resolve(siteId: number, slug: string) {
-    // 🔥 استدعي العملاق!
-    const result = await RedirectGraphEngine.resolve(siteId, slug);
 
-    if (!result) return { type: "not_found" };
+    const page = await Page.findOne({
+      where: { siteId, slug, status: "published" }
+    });
 
-    if (result.isOriginal) {
-      return { type: "page", data: result.page, canonical: result.page.slug };
+    if (page) {
+      return { kind: "page", page };
     }
 
-    return { type: "redirect", to: result.page.slug };
+    const history = await PageSlug.findOne({
+      where: { siteId, slug }
+    });
+
+    if (!history) {
+      return { kind: "not_found" };
+    }
+
+    const target = await Page.findByPk(history.pageId);
+
+    if (!target || target.status !== "published") {
+      return { kind: "not_found" };
+    }
+
+    return {
+      kind: "redirect",
+      targetSlug: target.slug,
+      siteId
+    };
   }
 }
