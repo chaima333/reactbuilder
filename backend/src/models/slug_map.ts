@@ -34,7 +34,8 @@ SlugMap.init(
 
     pageId: { 
       type: DataTypes.INTEGER, 
-      allowNull: false 
+      allowNull: false ,
+      field: 'pageId'
     },
 
     type: { 
