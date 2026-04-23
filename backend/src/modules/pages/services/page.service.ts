@@ -40,22 +40,52 @@ export class PageService {
   }
 
   // ================= UPDATE =================
-  static async updatePage(siteId: number, pageId: number, userId: number, data: any) {
+static async updatePage(
+  siteId: number,
+  pageId: number,
+  userId: number,
+  data: any
+) {
+
+  const transaction = await sequelize.transaction();
+
+  try {
 
     const page = await PageRepository.findById(pageId, siteId);
     if (!page) throw new Error("PAGE_NOT_FOUND");
 
-    if (data.slug && data.slug !== page.slug) {
+    const isSlugChanging = data.slug && data.slug !== page.slug;
+
+    if (isSlugChanging) {
+
       await SlugService.ensureAvailable(siteId, data.slug, pageId);
+
+      await SlugService.archive(
+        page.id,
+        siteId,
+        page.slug,
+        transaction
+      );
     }
 
-    Object.assign(page, {
-      ...data,
-      status: PAGE_STATUS.DRAFT
-    });
+    const updated = await PageRepository.update(
+      page,
+      {
+        ...data,
+        status: PAGE_STATUS.DRAFT
+      },
+      transaction
+    );
 
-    return PageRepository.save(page);
+    await transaction.commit();
+
+    return updated;
+
+  } catch (err) {
+    await transaction.rollback();
+    throw err;
   }
+}
 
   // ================= DELETE =================
   static async deletePage(siteId: number, pageId: number) {

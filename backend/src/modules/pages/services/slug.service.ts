@@ -17,12 +17,19 @@ export class SlugService {
     }
   }
 
-  static async archive(pageId: number, siteId: number, slug: string, transaction?: any) {
-    return PageSlug.create(
-      { pageId, siteId, slug },
-      { transaction }
-    );
-  }
+  static async archive(pageId, siteId, slug, transaction?) {
+
+  const existing = await PageSlug.findOne({
+    where: { siteId, slug }
+  });
+
+  if (existing) return; // 
+
+  return PageSlug.create(
+    { pageId, siteId, slug },
+    { transaction }
+  );
+}
 
   static async isSlugTaken(siteId: number, slug: string) {
     const page = await Page.findOne({ where: { siteId, slug } });
