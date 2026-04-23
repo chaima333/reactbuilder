@@ -34,9 +34,6 @@ export class SEODecisionEngine {
     // NOT FOUND
     return {
       status: 404,
-      headers: {
-        "Cache-Control": "no-store"
-      },
       body: {
         error: "NOT_FOUND",
         seo: {
