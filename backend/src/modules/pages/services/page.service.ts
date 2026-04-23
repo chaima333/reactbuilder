@@ -5,6 +5,7 @@ import { SlugService } from "../services/slug.service";
 import { canPublish, canTransition, PAGE_STATUS } from "../domain/rules";
 import { PageVersionRepository } from "../repositories/pageVersion.repository";
 import { sequelize } from "../../../core/database/connection";
+import { PageEngine } from "../engine/page.engine";
 
 
 const { nanoid } = require("nanoid");
@@ -40,50 +41,30 @@ export class PageService {
   }
 
   // ================= UPDATE =================
-static async updatePage(
-  siteId: number,
-  pageId: number,
-  userId: number,
-  data: any
-) {
-
+static async updatePage(siteId: number, pageId: number, userId: number, data: any) {
   const transaction = await sequelize.transaction();
-
   try {
-
     const page = await PageRepository.findById(pageId, siteId);
     if (!page) throw new Error("PAGE_NOT_FOUND");
 
-    const oldSlug = page.slug;
+    // 🔥 نعيطو للـ Engine ياخذ القرارات
+    const actions = PageEngine.resolveActions(page, data);
 
-const isSlugChanging =
-  data.slug && data.slug !== oldSlug;
+    // 1. أرشفة الـ Slug لو الـ Engine قال "SLUG"
+    if (actions.includes("SLUG")) {
+      await SlugService.ensureAvailable(siteId, data.slug, pageId);
+      await SlugService.archive(page.id, siteId, page.slug, transaction);
+    }
 
-if (isSlugChanging) {
-
-  await SlugService.ensureAvailable(siteId, data.slug, pageId);
-
-  await SlugService.archive(
-    page.id,
-    siteId,
-    oldSlug,
-    transaction
-  );
-}
-
+    // 2. تحديث الصفحة (ونردّوها Draft كيف ما حبيت إنت)
     const updated = await PageRepository.update(
       page,
-      {
-        ...data,
-        status: PAGE_STATUS.DRAFT
-      },
+      { ...data, status: PAGE_STATUS.DRAFT },
       transaction
     );
 
     await transaction.commit();
-
     return updated;
-
   } catch (err) {
     await transaction.rollback();
     throw err;
