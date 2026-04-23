@@ -1,6 +1,8 @@
 export class SEODecisionEngine {
 
-  static build(result: any) {
+  static build(ctx: any) {
+
+    const { result } = ctx;
 
     if (result.type === "page") {
       return {

@@ -42,45 +42,6 @@ app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
 app.use("/api/auth", authRoutes);
 
-// SEO MAGIC ROUTE
-import { SEOEngine } from "./modules/pages/seo/seo.engine";
-
-// server.ts
-
-/*app.get("/api/v2/magic-page/:siteId/:slug", async (req, res) => {
-
-  const result = await SEOEngine.resolve(
-    Number(req.params.siteId),
-    req.params.slug
-  );
-
-  console.log("RESOLVER RESULT:", result);
-
-  // ✅ PAGE
-  if (result.type === "page") {
-    return res.json({
-      success: true,
-      data: result.page,
-      seo: result.seo
-    });
-  }
-
-  // 🔥 FIX هنا
-  if (result.type === "redirect") {
-    return res.status(200).json({
-      success: true,
-      type: "redirect",
-      to: `/pages/${result.to}`
-    });
-  }
-
-  // ❌ NOT FOUND
-  return res.status(404).json({
-    success: false,
-    type: "not_found"
-  });
-//});*/
-
 app.get("/api/v2/magic-page/:siteId/:slug", getPublicPage);
 
 // legacy public route

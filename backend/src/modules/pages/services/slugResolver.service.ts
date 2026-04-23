@@ -1,31 +1,16 @@
-import { Page } from "../../../models";
-import { RedirectGraphEngine } from "../engine/redirectGraph.engine";
-import { SlugResolveResult } from "../types/page.types";
+import { Page } from "../../../models/page";
+import PageSlug from "../../../models/pageSlug";
 
 export class SlugResolver {
 
-  static async resolve(siteId: number, inputSlug: string): Promise<SlugResolveResult> {
+  static async resolve(siteId: number, slug: string) {
 
-    const pageId = await RedirectGraphEngine.resolveFinalPageId(siteId, inputSlug);
+    // 1. current page (ONLY published)
+    const page = await Page.findOne({
+      where: { siteId, slug, status: "published" }
+    });
 
-    if (!pageId) {
-      return {
-        type: "not_found",
-        reason: "no_match"
-      };
-    }
-
-    const page = await Page.findByPk(pageId);
-
-    if (!page || page.status !== "published") {
-      return {
-        type: "not_found",
-        reason: "not_published"
-      };
-    }
-
-    // ✅ canonical decision (مرة وحدة فقط)
-    if (page.slug === inputSlug) {
+    if (page) {
       return {
         type: "page",
         data: page,
@@ -33,11 +18,27 @@ export class SlugResolver {
       };
     }
 
+    // 2. history lookup
+    const history = await PageSlug.findOne({
+      where: { siteId, slug }
+    });
+
+    if (!history) {
+      return { type: "not_found" };
+    }
+
+    // 3. target page
+    const target = await Page.findByPk(history.pageId);
+
+    if (!target || target.status !== "published") {
+      return { type: "not_found" };
+    }
+
+    // 4. redirect
     return {
       type: "redirect",
-      to: page.slug,
-      canonical: page.slug,
-      reason: "slug_moved"
+      to: target.slug,
+      canonical: target.slug
     };
   }
 }
