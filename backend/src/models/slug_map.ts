@@ -8,18 +8,51 @@ export class SlugMap extends Model<SlugMapAttributes> implements SlugMapAttribut
   public slug!: string;
   public pageId!: number;
   public type!: "page" | "redirect";
+  public isActive!: boolean; // 👈 لازم تزيدها هوني
+  public readonly createdAt!: Date; // 👈 وزيد هذي برغم إنها Readonly
 }
 
 SlugMap.init(
   {
-    id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-    siteId: DataTypes.INTEGER,
-    slug: DataTypes.STRING,
-    pageId: DataTypes.INTEGER,
-    type: DataTypes.ENUM("page", "redirect")
+    id: { 
+      type: DataTypes.INTEGER, 
+      autoIncrement: true, 
+      primaryKey: true 
+    },
+    siteId: { 
+      type: DataTypes.INTEGER, 
+      allowNull: false 
+    },
+    slug: { 
+      type: DataTypes.STRING, 
+      allowNull: false 
+    },
+    pageId: { 
+      type: DataTypes.INTEGER, 
+      allowNull: false 
+    },
+    type: { 
+      type: DataTypes.ENUM("page", "redirect"), 
+      allowNull: false 
+    },
+    isActive: { 
+      type: DataTypes.BOOLEAN, 
+      defaultValue: true // 👈 زيدها في الـ Init باش Sequelize يعرفها في الـ DB
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
+    }
   },
   {
     sequelize,
-    tableName: "slug_maps"
+    tableName: "slug_maps",
+    indexes: [
+      // 🚀 أهم حاجة لسرعة الـ SEO: Unique Index على الـ siteId والـ slug مع بعضهم
+      {
+        unique: true,
+        fields: ["siteId", "slug"]
+      }
+    ]
   }
 );

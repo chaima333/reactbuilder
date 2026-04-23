@@ -110,35 +110,25 @@ export const getPublicPage = async (req, res) => {
     req.params.slug
   );
 
-  // PAGE
-  if (result.type === "page") {
-    return res.status(200).json({
-      data: result.data,
-      seo: {
-        index: true,
-        canonical: `/pages/${result.canonical}`,
-        title: result.data.title,
-        type: "article"
-      }
-    });
-  }
+  switch (result.type) {
 
-  // REDIRECT
-  if (result.type === "redirect") {
-    return res.redirect(
-      301,
-      `/pages/${result.to}`
-    );
-  }
+    case "page":
+      return res.status(200).json({
+        data: result.page,
+        seo: result.seo
+      });
 
-  // NOT FOUND
-  return res.status(404).json({
-    error: "NOT_FOUND",
-    seo: {
-      index: false,
-      type: "404"
-    }
-  });
+    case "redirect":
+      return res.redirect(
+        301,
+        `/api/v2/magic-page/${req.params.siteId}/${result.to}`
+      );
+
+    default:
+      return res.status(404).json({
+        error: "NOT_FOUND"
+      });
+  }
 };
 // ========================
 // 🟢 PUBLISH PAGE

@@ -4,4 +4,6 @@ export interface SlugMapAttributes {
   slug: string;
   pageId: number;
   type: "page" | "redirect";
+  isActive: boolean,
+  createdAt: Date
 }

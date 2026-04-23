@@ -3,7 +3,7 @@ import PageSlug from "../../../models/pageSlug";
 import { SEOBuilder } from "./seo.builder";
 import { SEOResult } from "./seo.types";
 
-export class SEOEngine {
+/*export class SEOEngine {
 
   static async resolve(siteId: number, slug: string): Promise<SEOResult> {
 
@@ -39,5 +39,21 @@ export class SEOEngine {
     }
 
     return { type: "not_found" };
+  }
+}*/
+export class SEOEngine {
+
+  static build(page: any, slug: string) {
+
+    return {
+      title: page.title,
+      description: page.excerpt || "",
+      canonical: `/pages/${slug}`,
+      openGraph: {
+        title: page.title,
+        description: page.excerpt || "",
+        type: "article"
+      }
+    };
   }
 }

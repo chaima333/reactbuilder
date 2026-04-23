@@ -1,5 +1,6 @@
 import { Page } from "../../../models";
 import PageSlug from "../../../models/pageSlug";
+import { SlugMap } from "../../../models/slug_map";
 
 export class SlugService {
 
@@ -38,4 +39,41 @@ export class SlugService {
     const history = await PageSlug.findOne({ where: { siteId, slug } });
     return !!history;
   }
+
+
+  static async changeSlug(siteId: number, pageId: number, newSlug: string) {
+
+    const page = await Page.findByPk(pageId);
+    if (!page) throw new Error("PAGE_NOT_FOUND");
+
+    const oldSlug = page.slug;
+
+    // deactivate old
+    await SlugMap.update(
+      { isActive: false },
+      { where: { siteId, slug: oldSlug } }
+    );
+
+    // add redirect
+    await SlugMap.create({
+      siteId,
+      slug: oldSlug,
+      pageId,
+      type: "redirect",
+      isActive: false
+    });
+
+    // add new active slug
+    await SlugMap.create({
+      siteId,
+      slug: newSlug,
+      pageId,
+      type: "page",
+      isActive: true
+    });
+
+    // update page
+    await page.update({ slug: newSlug });
+  }
+
 }

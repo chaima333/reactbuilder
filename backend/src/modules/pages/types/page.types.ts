@@ -21,19 +21,14 @@ export interface PageUpdateInput {
 export type SlugResolveResult =
   | { 
       type: "page"; 
-      data: Page; 
-      canonical: string; 
-      trace?: any 
+      page: Page; 
+      seo: any;
     }
   | { 
       type: "redirect"; 
       to: string; 
-      reason: string; 
-      canonical: string; 
-      trace?: any 
+      seo: any;
     }
   | { 
       type: "not_found"; 
-      reason: string; 
-      trace?: any 
     };
