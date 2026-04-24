@@ -1,6 +1,9 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
+// 🔥 السطر الأهم: نعيطو للـ Bootstrap باش الـ Plugins يتسجلو في الـ Memory
+import { registry } from "./app.bootstrap"; 
+
 import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import path from "path";
@@ -17,7 +20,6 @@ import siteRoutes from "./modules/sites/site.routes";
 import mediaRoutes from "./modules/media/media.routes";
 import userRoutes from "./modules/users/user.routes";
 import adminRoutes from "./modules/admin/admin.routes";
-import pluginRoutes from "./modules/plugins/plugin.routes";
 import pageRoutes from "./modules/pages/routes/page.routes";
 import publicRoutes from "./modules/pages/routes/public.routes";
 
@@ -40,7 +42,6 @@ app.get("/api/health", (_req: Request, res: Response) => {
 });
 
 // 🔥 PUBLIC ROUTES (Redirects & Public Pages)
-// لازم تكون الفوق باش Express يلقاها طول قبل الـ Auth
 app.use("/", publicRoutes); 
 
 // AUTHENTICATION
@@ -62,7 +63,6 @@ const tenantStack = [authenticateJWT, tenantResolver];
 
 app.use("/api/sites/:siteId/pages", tenantStack, pageRoutes);
 app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
-app.use("/api/sites/:siteId/plugins", tenantStack, pluginRoutes);
 app.use("/api/sites/:siteId/settings", tenantStack, siteRoutes);
 
 // ========================
@@ -77,13 +77,14 @@ app.use((_req: Request, res: Response) => {
 // ========================
 const startServer = async () => {
   try {
-    // تأكد من الاتصال بالقاعدة قبل التشغيل
+    // 1. تأكد من الاتصال بالقاعدة
     await sequelize.authenticate();
     console.log("✅ DB Connection: OK");
 
-    // Sync models if needed (Optional)
-    // await sequelize.sync({ alter: false });
+    // 2. نثبتو إنو الـ Plugins ركبو مريغلين
+    console.log("🔌 Active Event Listeners:", registry.eventBus.eventNames());
 
+    // 3. ديماري السيرفر
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 Node Server running on port ${PORT}`);
       console.log(`🌍 Public Access: http://localhost:${PORT}/pages/:siteId/:slug`);

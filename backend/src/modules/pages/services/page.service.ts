@@ -1,13 +1,14 @@
 
 import slugify from "slugify";
 import { PageRepository } from "../repositories/page.repository";
-import { SlugService } from "../services/slug.service";
 import { canPublish, canTransition, PAGE_STATUS } from "../domain/rules";
 import { PageVersionRepository } from "../repositories/pageVersion.repository";
 import { sequelize } from "../../../core/database/connection";
 import { Page } from "../../../models/page";
 import { SlugMap } from "../../../models/slug_map";
-
+import { PageEngine } from "../engine/page.engine";
+import { PAGE_EVENTS } from "../../../core/plugins/events/pageEvents";
+import { registry as cmsRegistry } from "../../../app.bootstrap";
 
 const { nanoid } = require("nanoid");
 
@@ -52,25 +53,40 @@ static async createPage(siteId: number, userId: number, data: any) {
   }
 
   // ================= UPDATE =================
-static async updatePage(siteId, pageId, userId, data) {
 
-  return sequelize.transaction(async (t) => {
 
-    const page = await Page.findByPk(pageId);
-    if (!page) throw new Error("NOT_FOUND");
+static async updatePage(siteId, pageId, userId, input) {
+    return await sequelize.transaction(async (t) => {
+      const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
+      if (!page) throw new Error("NOT_FOUND");
 
-    const oldSlug = page.slug;
+      const oldPage = page.toJSON();
+      const actions = PageEngine.resolveActions(oldPage, input);
 
-    const updated = await page.update(data, { transaction: t });
+      const updated = await page.update(input, { transaction: t });
 
-    // 👇 ONLY CALL SERVICE
-    if (data.slug && data.slug !== oldSlug) {
-      await SlugService.changeSlug(siteId, pageId, data.slug);
-    }
+      // 🔥 استعمل cmsRegistry هنا:
+      cmsRegistry.emit(PAGE_EVENTS.UPDATED, {
+        page: updated,
+        oldPage,
+        shouldVersion: actions.shouldVersion, // تثبت إنك بعثت shouldVersion للـ VersionPlugin
+        userId
+      });
 
-    return updated;
-  });
-}
+      if (actions.slugChanged) {
+        // 🔥 واستعملها هنا زادة:
+        cmsRegistry.emit(PAGE_EVENTS.SLUG_CHANGED, {
+          siteId,
+          pageId,
+          oldSlug: oldPage.slug,
+          newSlug: input.slug
+        });
+      }
+
+      return updated;
+    });
+  }
+
 
   // ================= DELETE =================
   static async deletePage(siteId: number, pageId: number) {
