@@ -111,24 +111,18 @@ export const getPublicPage = async (req, res) => {
     const siteId = Number(req.params.siteId);
     const inputSlug = req.params.slug;
 
-    // 🚀 نعيطو للـ Graph Engine باش يعطينا الحقيقة من أول مرة
     const result = await RedirectGraphEngine.resolve(siteId, inputSlug);
 
-    // 1️⃣ لو الـ Slug موش موجود جملة
     if (!result) {
       return res.status(404).json({
         error: "NOT_FOUND"
       });
     }
 
-    // 2️⃣ لو الـ Slug اللي دخل هو "تاريخي" (Redirect)
     if (!result.isOriginal) {
-      // ✅ نبعثوه للـ Frontend URL النظيف
-      // الـ Browser توة باش يتبدل لـ: /pages/new-cool-slug
-      return res.redirect(301, `/pages/${result.page.slug}`);
+return res.redirect(301, `/pages/${siteId}/${result.page.slug}`);      
     }
 
-    // 3️⃣ لو الـ Slug هو الصفحة الحالية (The Happy Path)
     return res.status(200).json({
       success: true,
       data: PageMapper.toDTO(result.page), // استعملنا الـ Mapper باش الداتا تكون نظيفة

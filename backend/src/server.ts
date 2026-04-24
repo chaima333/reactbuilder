@@ -14,7 +14,7 @@ import { tenantResolver } from "./core/middleware/tenantResolver";
 import authRoutes from "./modules/auth/auth.routes";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import siteRoutes from "./modules/sites/site.routes";
-import publicRoutes from "./modules/public/public.routes";
+//import publicRoutes from "./modules/public/public.routes";
 import mediaRoutes from "./modules/media/media.routes";
 import userRoutes from "./modules/users/user.routes";
 import adminRoutes from "./modules/admin/admin.routes";
@@ -22,7 +22,6 @@ import pluginRoutes from "./modules/plugins/plugin.routes";
 import pageRoutes from "./modules/pages/routes/page.routes";
 
 import { getPublicPage } from "./modules/pages/controllers/page.controller";
-import { SlugResolver } from "./modules/pages/services/slugResolver.service";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 10000;
@@ -45,7 +44,11 @@ app.use("/api/auth", authRoutes);
 app.get("/api/v2/magic-page/:siteId/:slug", getPublicPage);
 
 // legacy public route
-app.use("/api/public", publicRoutes);
+//app.use("/api/public", publicRoutes);
+
+import publicRoutes from "./modules/pages/routes/public.routes";
+
+app.use("/", publicRoutes);
 
 // ========================
 // PRIVATE LAYER (AUTH ONLY)
