@@ -1,6 +1,6 @@
 // modules/pages/routes/public.routes.ts
 import { Router } from "express";
-import { getPublicPage } from "../controllers/page.controller"; // ثبت من اسم الكنترولر
+import { getPublicPage } from "../controllers/public.controller"; // ثبت من اسم الكنترولر
 
 const router = Router({ mergeParams: true }); // 👈 زيد هذي ضروري!!
 
