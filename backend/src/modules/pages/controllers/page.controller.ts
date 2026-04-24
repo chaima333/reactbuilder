@@ -123,7 +123,7 @@ export const getPublicPage = async (req, res) => {
       // 🔥 LOG 2: باش نشوفو المسار قبل ما نبعثوه
       console.log(`[DEBUG] Redirecting to target: ${target}`);
       
-      return res.redirect(302, target); 
+      return res.redirect(301, target); 
     }
 
     return res.status(200).json({
