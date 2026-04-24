@@ -105,40 +105,36 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
 // 🟢 PUBLIC PAGE RESOLVER (CLEAN)
 // ========================
 
-
 export const getPublicPage = async (req, res) => {
   try {
     const siteId = Number(req.params.siteId);
     const inputSlug = req.params.slug;
 
+    // 🔥 LOG 1: باش نعرفو الـ siteId خلط ولا لا
+    console.log(`[DEBUG] siteId: ${siteId}, slug: ${inputSlug}`);
+
     const result = await RedirectGraphEngine.resolve(siteId, inputSlug);
 
-    if (!result) {
-      return res.status(404).json({
-        error: "NOT_FOUND"
-      });
-    }
+    if (!result) return res.status(404).json({ error: "NOT_FOUND" });
 
     if (!result.isOriginal) {
-      return res.redirect(301, `/pages/${siteId}/${result.page.slug}`); 
+      const target = `/pages/${siteId}/${result.page.slug}`;
+      
+      // 🔥 LOG 2: باش نشوفو المسار قبل ما نبعثوه
+      console.log(`[DEBUG] Redirecting to target: ${target}`);
+      
+      return res.redirect(302, target); 
     }
 
     return res.status(200).json({
       success: true,
-      data: PageMapper.toDTO(result.page), // استعملنا الـ Mapper باش الداتا تكون نظيفة
+      data: PageMapper.toDTO(result.page),
       seo: SEOBuilder.build(result.page)
     });
 
   } catch (error: any) {
-    // حماية من الـ Loops
-    if (error.message === "REDIRECT_LOOP") {
-      return res.status(508).json({ error: "Infinite redirect loop detected" });
-    }
-    
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error("[DEBUG ERROR]", error.message);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
