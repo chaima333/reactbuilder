@@ -45,7 +45,7 @@ app.use("/api/auth", authRoutes);
 app.use("/", publicRoutes);
 
 
-app.get("/api/v2/magic-page/:siteId/:slug", getPublicPage);
+//app.get("/api/v2/magic-page/:siteId/:slug", getPublicPage);
 
 //legacy public route
 app.use("/api/public", publicRoutes);
