@@ -4,6 +4,7 @@ import { addToQueue } from "../queues/plugin.queue";
 import { eventBus } from "./events/eventBus"; // 👈 ثبت في الـ path
 
 class PluginRegistry {
+  [x: string]: any;
   private plugins: ICmsPlugin[] = [];
 
   register(plugin: ICmsPlugin) {
