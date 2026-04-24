@@ -23,6 +23,7 @@ import userRoutes from "./modules/users/user.routes";
 import adminRoutes from "./modules/admin/admin.routes";
 import pageRoutes from "./modules/pages/routes/page.routes";
 import publicRoutes from "./modules/pages/routes/public.routes";
+import { bootstrapPlugins } from "./app.bootstrap";
 
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
@@ -64,29 +65,22 @@ app.use((_req: Request, res: Response) => {
 // ========================
 const startServer = async () => {
   try {
-    // 1. التأكد من اتصال الداتابيز
     await sequelize.authenticate();
-    console.log("✅ DB Connection: OK");
+    
+    // 🔥 تفعيل الـ Plugins عبر الـ Bootstrap
+    const registry = bootstrapPlugins(); 
 
-    // 2. 🔥 تفعيل الـ Plugins (Initialization)
-    // الـ Registry توّة باش يركّب الـ SEO والـ Versioning والـ Notification
-    cmsRegistry.init();
-    console.log("🔌 Active Event Listeners:", cmsRegistry.eventBus.eventNames());
+    // 🔥 توّة الـ Listeners موش باش يطلعوا فارغين
+    console.log("🔌 Active Event Listeners:", registry.eventBus.eventNames());
 
-    // 3. 👷 تفعيل الـ Background Worker (BullMQ)
-    // السيرفر توّة يبدأ يسمع للـ Redis ويخدم الـ Tasks اللي في الـ Queue
+    // تشغيل الـ Worker (توّة الـ Redis يخدم مريغل في Docker)
     initPluginWorker();
-    console.log("👷 Background Worker: Active & Listening to Redis");
-
-    // 4. ديماري السيرفر
+    
     app.listen(PORT, "0.0.0.0", () => {
-      console.log(`🚀 Node Server running on port ${PORT}`);
-      console.log(`🌍 Public Access: http://localhost:${PORT}/pages/:siteId/:slug`);
+      console.log(`🚀 Server running on port ${PORT}`);
     });
-
   } catch (err) {
-    console.error("❌ Bootstrap Error:", err);
-    process.exit(1);
+    console.error("❌ Error:", err);
   }
 };
 

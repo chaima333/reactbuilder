@@ -56,51 +56,36 @@ static async createPage(siteId: number, userId: number, data: any) {
 
 
 static async updatePage(siteId, pageId, userId, input) {
-    // 1. تعريف متغيرات لبرّة باش نستعملوهم بعد الـ Transaction
-    let updatedRecord;
-    let oldPageData;
-    let actionResults;
+  let updated;
+  let oldPage;
+  let actions;
 
-    // 2. الـ Transaction تهتم كان بالـ DB (باش تكون سريعة)
-    await sequelize.transaction(async (t) => {
-        const page = await Page.findOne({ 
-            where: { id: pageId, siteId }, 
-            transaction: t 
-        });
+  // 🔒 DB Transaction (Keep it fast!)
+  await sequelize.transaction(async (t) => {
+    const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
+    if (!page) throw new Error("NOT_FOUND");
+    oldPage = page.toJSON();
+    actions = PageEngine.resolveActions(oldPage, input);
+    updated = await page.update(input, { transaction: t });
+  });
 
-        if (!page) throw new Error("NOT_FOUND");
+  // 🔴 1. CRITICAL (SYNC): الـ Versioning لازم يخدم توّة باش ما يضيعش
+  await cmsRegistry.emitSafe(PAGE_EVENTS.UPDATED, {
+    page: updated,
+    oldPage,
+    shouldVersion: actions.shouldVersion,
+    userId,
+    siteId
+  });
 
-        oldPageData = page.toJSON();
-        actionResults = PageEngine.resolveActions(oldPageData, input);
+  // 🟢 2. NON-CRITICAL (QUEUE): الـ SEO والـ Notifications لـ Redis
+  // الميثود هذي توّة تبعث لـ BullMQ والـ User ما يستناش جملة
+  await cmsRegistry.emitToQueue(PAGE_EVENTS.UPDATED, {
+    page: updated,
+    siteId
+  });
 
-        // التحديث في الداتابيز
-        updatedRecord = await page.update(input, { transaction: t });
-    });
-
-    // 3. 🚀 توّة الـ Transaction كملت (COMMIT) والبيانات ثابتة
-    // نبعثو الـ Events في الـ Background (Async)
-    console.log("📣 EMITTING ASYNC EVENT: page.updated for site", siteId);
-    
-    cmsRegistry.emitAsync(PAGE_EVENTS.UPDATED, {
-        page: updatedRecord,
-        oldPage: oldPageData,
-        shouldVersion: actionResults.shouldVersion,
-        userId: userId,
-        siteId: siteId
-    });
-
-    // إذا الـ Slug تبدّل، نبعثو الـ Event الخاص بيه
-    if (actionResults.slugChanged) {
-        cmsRegistry.emitAsync(PAGE_EVENTS.SLUG_CHANGED, {
-            siteId,
-            pageId,
-            oldSlug: oldPageData.slug,
-            newSlug: input.slug
-        });
-    }
-
-    // 🏁 الـ User ياخذ الـ Response توّة (ما يستناش الـ 500ms متاع الـ Plugins)
-    return updatedRecord;
+  return updated;
 }
 
 
