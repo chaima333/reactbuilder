@@ -120,7 +120,7 @@ export const getPublicPage = async (req, res) => {
     }
 
     if (!result.isOriginal) {
-return res.redirect(301, `/pages/${siteId}/${result.page.slug}`);      
+      return res.redirect(301, `/pages/${siteId}/${result.page.slug}`); 
     }
 
     return res.status(200).json({

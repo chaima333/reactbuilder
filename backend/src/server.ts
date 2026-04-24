@@ -47,8 +47,8 @@ app.use("/", publicRoutes);
 
 app.get("/api/v2/magic-page/:siteId/:slug", getPublicPage);
 
-// legacy public route
-//app.use("/api/public", publicRoutes);
+//legacy public route
+app.use("/api/public", publicRoutes);
 
 // ========================
 // PRIVATE LAYER (AUTH ONLY)
