@@ -11,22 +11,30 @@ export const VersionPlugin: Plugin = {
 
 
 register({ eventBus }) {
-  eventBus.on(PAGE_EVENTS.UPDATED, async (payload) => {
-    // 🔥 لهنا المشكلة: لازم تزيد siteId و userId في السطر هذا
-    const { shouldVersion, oldPage, siteId, userId } = payload; 
-    
-    if (shouldVersion) {
-      console.log("📜 [Plugin]: Creating snapshot...");
+  // 📂 src/modules/plugin/version.plugin.ts
+
+eventBus.on(PAGE_EVENTS.UPDATED, async (payload) => {
+  // 1. ثبت هل الـ payload فيه القيم هاذم بالرسمي؟
+  const { shouldVersion, oldPage, siteId, userId } = payload; 
+  
+  if (shouldVersion) {
+    console.log("📜 [Plugin]: Creating snapshot for site:", siteId, "by user:", userId);
+
+    try {
       await PageVersionRepository.create({
-        pageId: oldPage.id,
+        pageId: Number(oldPage.id), // تأكد إنو رقم
+        siteId: Number(siteId),     // 🔥 لو الـ siteId جاي undefined يولي NaN ويخرجلك الـ Error
         title: oldPage.title,
-        siteId: siteId,     
         content: oldPage.content,
         blocks: oldPage.blocks,
         status: oldPage.status,
-        createdBy: userId    
+        createdBy: Number(userId)   // 🔥 لو الـ userId جاي undefined يولي NaN
       });
+      console.log("✅ [Plugin]: Snapshot saved successfully!");
+    } catch (err) {
+      console.error("❌ [Plugin Error]:", err.message);
     }
-  });
+  }
+});
 }
 };

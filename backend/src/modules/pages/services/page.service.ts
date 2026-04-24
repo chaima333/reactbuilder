@@ -75,8 +75,8 @@ static async updatePage(siteId, pageId, userId, input) {
         page: updated,
         oldPage,
         shouldVersion: actions.shouldVersion, // تثبت إنك بعثت shouldVersion للـ VersionPlugin
-        userId,
-        siteId
+        userId: Number(userId), 
+        siteId: Number(siteId)
       });
 
       if (actions.slugChanged) {
