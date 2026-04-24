@@ -56,6 +56,11 @@ static async createPage(siteId: number, userId: number, data: any) {
 
 
 static async updatePage(siteId, pageId, userId, input) {
+  console.log("🔍 DEBUG PARAMS:", { 
+        siteId: { val: siteId, type: typeof siteId, isNaN: isNaN(siteId) },
+        userId: { val: userId, type: typeof userId, isNaN: isNaN(userId) },
+        pageId: { val: pageId, type: typeof pageId, isNaN: isNaN(pageId) }
+    });
     return await sequelize.transaction(async (t) => {
       const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
       if (!page) throw new Error("NOT_FOUND");
