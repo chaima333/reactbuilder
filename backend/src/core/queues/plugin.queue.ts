@@ -6,13 +6,20 @@ export const pluginQueue = new Queue('plugin-tasks', {
   connection: REDIS_CONFIG
 });
 
+// 📂 src/queues/plugin.queue.ts
 export const addToQueue = async (pluginName: string, event: string, payload: any) => {
-  await pluginQueue.add(pluginName, {
-    pluginName,
-    event,
-    payload
-  }, {
-    attempts: 3, // لو فشل الـ Plugin، عاود جرب 3 مرات آلياً
-    backoff: { type: 'exponential', delay: 1000 } // استنى شويّة قبل ما تعاود
-  });
+  await pluginQueue.add(
+    pluginName, 
+    { pluginName, event, payload },
+    {
+      // 🛡️ الـ Hardening Layer
+      attempts: 5, // جرب 5 مرات قبل ما تستسلم
+      backoff: {
+        type: 'exponential',
+        delay: 2000, // استنى 2ث، 4ث، 8ث... هكا ما نتعبوش الـ CPU
+      },
+      removeOnComplete: true, // نظف الـ Redis كي تكمل
+      removeOnFail: false,    // خلي الفاشلين باش نراجعوهم (Dead Letter Queue)
+    }
+  );
 };

@@ -3,20 +3,21 @@ import { REDIS_CONFIG } from './config';
 import { cmsRegistry } from '../plugins/plugin.registry'; 
 
 export const initPluginWorker = () => {
-  const worker = new Worker('plugin-tasks', async (job) => {
-    const { pluginName, event, payload } = job.data;
-    
-    console.log(`👷 [Worker] Processing: ${pluginName}`);
-    
+ // 📂 src/queues/plugin.worker.ts
+const worker = new Worker('plugin-tasks', async (job) => {
+  const { pluginName, event, payload } = job.data;
+  
+  try {
     const plugin = cmsRegistry.getPlugin(pluginName);
-    
-    if (plugin && plugin.execute) {
-        await plugin.execute(event, payload); 
-    } else {
-        console.warn(`⚠️ Plugin ${pluginName} has no execute method`);
+    if (plugin?.execute) {
+      await plugin.execute(event, payload);
     }
-  }, { connection: REDIS_CONFIG });
-
+  } catch (error) {
+    console.error(`💥 [Worker Error] Job ${job.id} for ${pluginName} failed:`, error);
+    // نبعثو الـ Error للـ BullMQ باش يعرف اللي لازم يعاود الـ Attempt
+    throw error; 
+  }
+}, { connection: REDIS_CONFIG });
   worker.on('completed', (job) => console.log(`✅ [Worker] Task ${job.id} done!`));
   worker.on('failed', (job, err) => console.error(`❌ [Worker] Task ${job?.id} failed:`, err));
 };
