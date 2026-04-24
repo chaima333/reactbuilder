@@ -60,17 +60,20 @@ static async updatePage(siteId, pageId, userId, input) {
   let oldPage;
   let actions;
 
-  // 🔒 DB Transaction (Keep it fast!)
+  // 🔒 DB Transaction
   await sequelize.transaction(async (t) => {
     const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
     if (!page) throw new Error("NOT_FOUND");
+    
     oldPage = page.toJSON();
     actions = PageEngine.resolveActions(oldPage, input);
     updated = await page.update(input, { transaction: t });
   });
 
-  // 🔴 1. CRITICAL (SYNC): الـ Versioning لازم يخدم توّة باش ما يضيعش
-  await cmsRegistry.emitSafe(PAGE_EVENTS.UPDATED, {
+  // 🎯 عيطة واحدة ذكية تعوض كل شيء
+  // الـ Registry باش يبعث الـ SEO للـ Queue 
+  // ويخدم الـ Versioning في الـ Sync في نفس الوقت
+  await cmsRegistry.emit(PAGE_EVENTS.UPDATED, {
     page: updated,
     oldPage,
     shouldVersion: actions.shouldVersion,
@@ -78,16 +81,8 @@ static async updatePage(siteId, pageId, userId, input) {
     siteId
   });
 
-  // 🟢 2. NON-CRITICAL (QUEUE): الـ SEO والـ Notifications لـ Redis
-  // الميثود هذي توّة تبعث لـ BullMQ والـ User ما يستناش جملة
-  await cmsRegistry.emitToQueue(PAGE_EVENTS.UPDATED, {
-    page: updated,
-    siteId
-  });
-
   return updated;
 }
-
 
   // ================= DELETE =================
   static async deletePage(siteId: number, pageId: number) {

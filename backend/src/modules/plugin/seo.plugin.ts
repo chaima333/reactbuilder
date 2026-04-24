@@ -3,23 +3,17 @@ import { PAGE_EVENTS } from "../../core/plugins/events/pageEvents";
 
 export const SEOPlugin: Plugin = {
   name: "seo-plugin",
-  events: [PAGE_EVENTS.UPDATED], // توّة الـ Error هذا باش يتنحى
+  events: [PAGE_EVENTS.UPDATED],
   priority: 5,
   enabled: true,
 
-  // 🔥 ميثود الـ Execute هي اللي باش يناديها الـ Worker لاحقاً
+  // الخدمة الثقيلة هنا بركة
   async execute(event, { page }: any) {
-    console.log(`🔍 [SEO Plugin]: Analyzing content for page: ${page.title}`);
-    // الـ Logic متاعك هنا
+    console.log(`🔍 [Worker] SEO Analyzing: ${page.title}`);
   },
 
   register({ eventBus }) {
-    const handler = async (payload: any) => {
-      // نعيطو للـ execute مباشرة
-      await this.execute!(PAGE_EVENTS.UPDATED, payload);
-    };
-
-    (handler as any).pluginName = this.name;
-    eventBus.on(PAGE_EVENTS.UPDATED, handler);
+    // الـ register تفرغ، خاطر الـ Registry هو اللي باش يتكفل بالـ Queue
+    console.log(`🔌 SEO Plugin ready for background tasks`);
   }
 };

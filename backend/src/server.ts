@@ -2,7 +2,6 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 // 1. 🔥 الـ Imports الأساسية للـ Plugins والـ Queue
-import { cmsRegistry } from "./core/plugins/plugin.registry"; 
 import { initPluginWorker } from "./core/queues/plugin.worker"; // الـ Worker اللي صنعناه
 
 import express, { Application, Request, Response } from "express";
@@ -24,7 +23,7 @@ import adminRoutes from "./modules/admin/admin.routes";
 import pageRoutes from "./modules/pages/routes/page.routes";
 import publicRoutes from "./modules/pages/routes/public.routes";
 import { bootstrapPlugins } from "./app.bootstrap";
-
+import { eventBus } from "./core/plugins/events/eventBus";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 
@@ -71,8 +70,8 @@ const startServer = async () => {
     const registry = bootstrapPlugins(); 
 
     // 🔥 توّة الـ Listeners موش باش يطلعوا فارغين
-    console.log("🔌 Active Event Listeners:", registry.eventBus.eventNames());
-
+ 
+    console.log("🔌 Active Event Listeners:", eventBus.eventNames());
     // تشغيل الـ Worker (توّة الـ Redis يخدم مريغل في Docker)
     initPluginWorker();
     
