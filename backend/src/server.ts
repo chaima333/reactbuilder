@@ -22,6 +22,7 @@ import pluginRoutes from "./modules/plugins/plugin.routes";
 import pageRoutes from "./modules/pages/routes/page.routes";
 
 import { getPublicPage } from "./modules/pages/controllers/page.controller";
+import publicRoutes from "./modules/pages/routes/public.routes";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 10000;
@@ -41,14 +42,13 @@ app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
 app.use("/api/auth", authRoutes);
 
+app.use("/", publicRoutes);
+
+
 app.get("/api/v2/magic-page/:siteId/:slug", getPublicPage);
 
 // legacy public route
 //app.use("/api/public", publicRoutes);
-
-import publicRoutes from "./modules/pages/routes/public.routes";
-
-app.use("/", publicRoutes);
 
 // ========================
 // PRIVATE LAYER (AUTH ONLY)
