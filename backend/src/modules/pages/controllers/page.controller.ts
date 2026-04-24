@@ -108,75 +108,92 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
 // ========================
 // 🟢 PUBLIC PAGE RENDERER (THE FINAL VERSION)
 // ========================
+// 1️⃣ Security First: Escape HTML function
+function escapeHTML(str: string) {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export const getPublicPage = async (req, res) => {
   try {
     const siteId = Number(req.params.siteId);
     const inputSlug = req.params.slug;
 
-    console.log(`[DEBUG] Handling Request - Site: ${siteId}, Slug: ${inputSlug}`);
-
     const result = await RedirectGraphEngine.resolve(siteId, inputSlug);
+    if (!result || !result.page) return res.status(404).send("<h1>404 Not Found</h1>");
 
-    // 1. إذا الصفحة غير موجودة
-    if (!result || !result.page) {
-      return res.status(404).send("<h1>404 - Page Not Found</h1>");
-    }
+    if (!result.isOriginal) return res.redirect(301, `/pages/${siteId}/${result.page.slug}`);
 
-    // 2. إذا كان الرابط قديم (Redirect 301)
-    if (!result.isOriginal) {
-      const target = `/pages/${siteId}/${result.page.slug}`;
-      console.log(`[DEBUG] Redirecting to target: ${target}`);
-      return res.redirect(301, target); 
-    }
+    const { page } = result;
+    const seo = SEOBuilder.build(page);
 
-    // 3. بناء الـ SEO والـ Page Data
-    const seo = SEOBuilder.build(result.page);
-    const page = result.page;
+    // 2️⃣ Dynamic Canonical & Host
+    const host = req.get("host");
+    const protocol = req.protocol;
+    const canonical = `${protocol}://${host}/pages/${siteId}/${page.slug}`;
 
-    // 4. إعداد الـ Headers (Performance)
+    // 3️⃣ Caching Strategy (1 minute)
     res.set("Cache-Control", "public, max-age=60");
 
-    // 5. إرسال HTML وليس JSON
+    // 4️⃣ The Renderer (Starting to move away from raw strings)
+    const renderMetaTags = () => `
+        <title>${seo.title}</title>
+        <meta name="description" content="${seo.description}">
+        <link rel="canonical" href="${canonical}" />
+        <meta property="og:title" content="${seo.openGraph?.title || seo.title}">
+        <meta property="og:description" content="${seo.description}">
+        <meta property="og:type" content="article">
+        <meta property="og:url" content="${canonical}">
+    `;
+
     return res.status(200).send(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${seo.title}</title>
-    <meta name="description" content="${seo.description}">
-    <link rel="canonical" href="https://yourdomain.com/pages/${siteId}/${page.slug}" />
-    <meta property="og:title" content="${seo.openGraph?.title || seo.title}">
+    ${renderMetaTags()}
     <style>
-        body { font-family: 'Segoe UI', sans-serif; padding: 2rem; line-height: 1.6; color: #333; background: #f4f7f6; }
-        .page-container { max-width: 800px; margin: auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 0.5rem; }
-        .content { font-size: 1.1rem; margin-top: 1.5rem; }
-        footer { margin-top: 2rem; font-size: 0.8rem; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 1rem; }
+        body { font-family: system-ui; padding: 2rem; line-height: 1.5; background: #fafafa; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
-    <div class="page-container">
-        <h1>${page.title}</h1>
+    <div class="container">
+        <h1>${escapeHTML(page.title)}</h1>
         <div class="content">
-            ${page.content}
+            ${escapeHTML(page.content)}
         </div>
-        <footer>
-            Site ID: ${siteId} | Page ID: ${page.id} | Rendered at: ${new Date().toLocaleTimeString()}
-        </footer>
+        <hr />
+        <div id="blocks-area">
+            ${renderBlocks(page.blocks)}
+        </div>
     </div>
 </body>
 </html>
     `);
 
   } catch (error: any) {
-    console.error("[DEBUG ERROR]", error.message);
-    if (error.message === "REDIRECT_LOOP") {
-      return res.status(508).send("<h1>508 - Loop Detected</h1>");
-    }
-    return res.status(500).send("<h1>500 - Server Error</h1>");
+    return res.status(500).send("Internal Server Error");
   }
 };
+
+// 5️⃣ الـ Seed متاع الـ Block Renderer
+function renderBlocks(blocks: any[]) {
+    if (!blocks || !blocks.length) return "";
+    return blocks.map(block => {
+        switch(block.type) {
+            case 'hero': return `<section class="hero"><h2>${escapeHTML(block.data.text)}</h2></section>`;
+            case 'text': return `<p>${escapeHTML(block.data.content)}</p>`;
+            default: return ``;
+        }
+    }).join('');
+}
 
 // ========================
 // 🟢 PUBLISH PAGE
