@@ -71,15 +71,15 @@ static async updatePage(siteId, pageId, userId, input) {
       const updated = await page.update(input, { transaction: t });
 
       // 🔥 استعمل cmsRegistry هنا:
-      console.log("📣 EMITTING EVENT: page.updated for site", siteId); 
-      cmsRegistry.emit(PAGE_EVENTS.UPDATED, {
-        page: updated,
-        oldPage,
-        shouldVersion: true, // تثبت إنك بعثت shouldVersion للـ VersionPlugin
-        userId: Number(userId), 
-        siteId: Number(siteId)
-      });
+      console.log("📣 EMITTING EVENT: page.updated for site", siteId);
 
+         await cmsRegistry.emitSafe(PAGE_EVENTS.UPDATED, {
+  page: updated,
+  oldPage,
+  shouldVersion: actions.shouldVersion,
+  userId: userId,
+  siteId: siteId
+});  
       if (actions.slugChanged) {
         // 🔥 واستعملها هنا زادة:
         cmsRegistry.emit(PAGE_EVENTS.SLUG_CHANGED, {
