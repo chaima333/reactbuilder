@@ -11,12 +11,33 @@ export const VersionPlugin: Plugin = {
 
   register({ eventBus }) {
     const handler = async (payload: any) => {
-      const { shouldVersion, oldPage, siteId, userId } = payload;
-      if (shouldVersion) {
-        console.log(`📜 [Sync] Creating snapshot for site: ${siteId}`);
-        await PageVersionRepository.create({ /* ... data ... */ });
-      }
-    };
+  const { shouldVersion, oldPage, siteId, userId } = payload;
+  
+  if (shouldVersion) {
+    console.log(`📜 [Plugin]: Creating snapshot for page: ${oldPage?.id}`);
+    
+    // 🔥 تثبّت إنو oldPage موجود وعندو ID
+    if (!oldPage?.id) {
+      console.error("❌ Cannot create version: oldPage.id is missing!", oldPage);
+      return;
+    }
+
+    try {
+      await PageVersionRepository.create({
+        pageId: Number(oldPage.id), // تأكد إنو الاسم 'id' موش '_id'
+        siteId: Number(siteId),
+        title: oldPage.title,
+        content: oldPage.content,
+        blocks: oldPage.blocks,
+        status: oldPage.status,
+        createdBy: Number(userId)
+      });
+    } catch (err: any) {
+      console.error("❌ Database Error in VersionPlugin:", err.message);
+      // ما تعملش throw err هوني باش ما يطيّحش السيرفر كامل
+    }
+  }
+};
     (handler as any).pluginName = this.name;
     eventBus.on(PAGE_EVENTS.UPDATED, handler);
   }
