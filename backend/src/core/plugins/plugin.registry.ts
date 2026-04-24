@@ -31,32 +31,42 @@ export class PluginRegistry {
 
   // src/core/plugins/plugin.registry.ts
 
+// src/core/plugins/plugin.registry.ts
+
 async emitSafe(event: string, payload: any) {
-  // 1. Validation Layer
+  // 1. Validation Layer (كيما عملناها بـ Zod)
   if (event === PAGE_EVENTS.UPDATED) {
     const result = PageUpdatedSchema.safeParse(payload);
     if (!result.success) {
       console.error(`❌ [Validation Error] Invalid payload for ${event}:`, result.error.format());
-      return; // نوقفوا قبل ما نعديو البيانات الغالطة للـ Plugins
+      return;
     }
-    payload = result.data; // البيانات توّة نظيفة ومضمونة
+    payload = result.data;
   }
 
-  // 2. Safe Execution with Priority
   const listeners = this.eventBus.listeners(event);
   
   for (const listener of listeners) {
+    const pluginName = (listener as any).pluginName || "unknown-plugin";
+    const start = performance.now(); // ⏱️ نقطة البداية
+
     try {
-      // 3. Plugin Timeout (Race)
       await Promise.race([
         listener(payload),
         new Promise((_, reject) => 
           setTimeout(() => reject(new Error("PLUGIN_TIMEOUT")), 3000)
         )
       ]);
+
+      const end = performance.now(); // ⏱️ نقطة النهاية
+      const duration = (end - start).toFixed(2);
+      
+      // 📊 Log احترافي للوقت
+      console.log(`⏱️ [Performance] ${pluginName} responded in ${duration}ms`);
+
     } catch (err) {
-      console.error(`💥 [Plugin Failure] on ${event}:`, err.message);
-      // هوني تنجم تزيد "Monitoring" بسيط: سجل الـ failure في DB أو Log file
+      const end = performance.now();
+      console.error(`💥 [Plugin Failure] ${pluginName} failed after ${(end - start).toFixed(2)}ms:`, err.message);
     }
   }
 }

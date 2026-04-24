@@ -11,30 +11,33 @@ export const VersionPlugin: Plugin = {
 
 
 register({ eventBus }) {
-  // 📂 src/modules/plugin/version.plugin.ts
-
-eventBus.on(PAGE_EVENTS.UPDATED, async (payload) => {
-  // 1. ثبت هل الـ payload فيه القيم هاذم بالرسمي؟
-  const { shouldVersion, oldPage, siteId, userId } = payload; 
-  
-  if (shouldVersion) {
-    console.log("📜 [Plugin]: Creating snapshot for site:", siteId, "by user:", userId);
-
-    try {
-      await PageVersionRepository.create({
-        pageId: Number(oldPage.id), // تأكد إنو رقم
-        siteId: Number(siteId),     // 🔥 لو الـ siteId جاي undefined يولي NaN ويخرجلك الـ Error
-        title: oldPage.title,
-        content: oldPage.content,
-        blocks: oldPage.blocks,
-        status: oldPage.status,
-        createdBy: Number(userId)   // 🔥 لو الـ userId جاي undefined يولي NaN
-      });
-      console.log("✅ [Plugin]: Snapshot saved successfully!");
-    } catch (err) {
-      console.error("❌ [Plugin Error]:", err.message);
+  // 1. نعرّفو الـ Handler في Function وحدها
+  const handler = async (payload: any) => {
+    const { shouldVersion, oldPage, siteId, userId } = payload;
+    
+    if (shouldVersion) {
+      console.log(`📜 [Plugin]: Creating snapshot for site: ${siteId}`);
+      try {
+        await PageVersionRepository.create({
+          pageId: Number(oldPage.id),
+          siteId: Number(siteId),
+          title: oldPage.title,
+          content: oldPage.content,
+          blocks: oldPage.blocks,
+          status: oldPage.status,
+          createdBy: Number(userId)
+        });
+        // ملاحظة: الـ Log متاع النجاح توّة باش يولي يظهر معاه الوقت في الـ Registry
+      } catch (err: any) {
+        throw err; // نبعثو الـ error للفوق باش الـ emitSafe يفيق بيه
+      }
     }
-  }
-});
+  };
+
+  // 2. 🔥 أهم سطر: نلصقو اسم الـ Plugin في الـ Handler
+  (handler as any).pluginName = this.name;
+
+  // 3. نربطو الـ Handler بالـ EventBus
+  eventBus.on(PAGE_EVENTS.UPDATED, handler);
 }
 };
