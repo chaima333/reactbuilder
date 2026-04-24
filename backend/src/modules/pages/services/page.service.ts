@@ -56,43 +56,52 @@ static async createPage(siteId: number, userId: number, data: any) {
 
 
 static async updatePage(siteId, pageId, userId, input) {
-  console.log("🔍 DEBUG PARAMS:", { 
-        siteId: { val: siteId, type: typeof siteId, isNaN: isNaN(siteId) },
-        userId: { val: userId, type: typeof userId, isNaN: isNaN(userId) },
-        pageId: { val: pageId, type: typeof pageId, isNaN: isNaN(pageId) }
-    });
-    return await sequelize.transaction(async (t) => {
-      const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
-      if (!page) throw new Error("NOT_FOUND");
+    // 1. تعريف متغيرات لبرّة باش نستعملوهم بعد الـ Transaction
+    let updatedRecord;
+    let oldPageData;
+    let actionResults;
 
-      const oldPage = page.toJSON();
-      const actions = PageEngine.resolveActions(oldPage, input);
-
-      const updated = await page.update(input, { transaction: t });
-
-      // 🔥 استعمل cmsRegistry هنا:
-      console.log("📣 EMITTING EVENT: page.updated for site", siteId);
-
-         await cmsRegistry.emitSafe(PAGE_EVENTS.UPDATED, {
-  page: updated,
-  oldPage,
-  shouldVersion: actions.shouldVersion,
-  userId: userId,
-  siteId: siteId
-});  
-      if (actions.slugChanged) {
-        // 🔥 واستعملها هنا زادة:
-        cmsRegistry.emit(PAGE_EVENTS.SLUG_CHANGED, {
-          siteId,
-          pageId,
-          oldSlug: oldPage.slug,
-          newSlug: input.slug
+    // 2. الـ Transaction تهتم كان بالـ DB (باش تكون سريعة)
+    await sequelize.transaction(async (t) => {
+        const page = await Page.findOne({ 
+            where: { id: pageId, siteId }, 
+            transaction: t 
         });
-      }
 
-      return updated;
+        if (!page) throw new Error("NOT_FOUND");
+
+        oldPageData = page.toJSON();
+        actionResults = PageEngine.resolveActions(oldPageData, input);
+
+        // التحديث في الداتابيز
+        updatedRecord = await page.update(input, { transaction: t });
     });
-  }
+
+    // 3. 🚀 توّة الـ Transaction كملت (COMMIT) والبيانات ثابتة
+    // نبعثو الـ Events في الـ Background (Async)
+    console.log("📣 EMITTING ASYNC EVENT: page.updated for site", siteId);
+    
+    cmsRegistry.emitAsync(PAGE_EVENTS.UPDATED, {
+        page: updatedRecord,
+        oldPage: oldPageData,
+        shouldVersion: actionResults.shouldVersion,
+        userId: userId,
+        siteId: siteId
+    });
+
+    // إذا الـ Slug تبدّل، نبعثو الـ Event الخاص بيه
+    if (actionResults.slugChanged) {
+        cmsRegistry.emitAsync(PAGE_EVENTS.SLUG_CHANGED, {
+            siteId,
+            pageId,
+            oldSlug: oldPageData.slug,
+            newSlug: input.slug
+        });
+    }
+
+    // 🏁 الـ User ياخذ الـ Response توّة (ما يستناش الـ 500ms متاع الـ Plugins)
+    return updatedRecord;
+}
 
 
   // ================= DELETE =================

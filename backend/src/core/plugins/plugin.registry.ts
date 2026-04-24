@@ -29,9 +29,6 @@ export class PluginRegistry {
     this.eventBus.emit(event, payload);
   }
 
-  // src/core/plugins/plugin.registry.ts
-
-// src/core/plugins/plugin.registry.ts
 
 async emitSafe(event: string, payload: any) {
   // 1. Validation Layer (كيما عملناها بـ Zod)
@@ -68,6 +65,29 @@ async emitSafe(event: string, payload: any) {
       const end = performance.now();
       console.error(`💥 [Plugin Failure] ${pluginName} failed after ${(end - start).toFixed(2)}ms:`, err.message);
     }
+  }
+}
+
+emitAsync(event: string, payload: any) {
+  const listeners = this.eventBus.listeners(event);
+
+  for (const listener of listeners) {
+    // 🚀 نخرجوا التنفيذ من الـ Main Request Flow
+    setImmediate(async () => {
+      const pluginName = (listener as any).pluginName || "unknown-plugin";
+      const start = performance.now();
+
+      try {
+        await Promise.race([
+          listener(payload),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 5000))
+        ]);
+        const duration = (performance.now() - start).toFixed(2);
+        console.log(`⚡ [Async Plugin] ${pluginName} finished in ${duration}ms (Background)`);
+      } catch (err) {
+        console.error(`❌ [Async Plugin Failure] ${pluginName}:`, err.message);
+      }
+    });
   }
 }
 }
