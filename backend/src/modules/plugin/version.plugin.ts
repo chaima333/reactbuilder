@@ -9,20 +9,24 @@ export const VersionPlugin: Plugin = {
   priority: 10,
   enabled: true,
 
-  register({ eventBus }) {
-    eventBus.on(PAGE_EVENTS.UPDATED, async (payload) => {
-      const { shouldVersion, oldPage } = payload;
-      
-      if (shouldVersion) {
-        console.log("📜 [Plugin]: Creating snapshot...");
-        await PageVersionRepository.create({
-          pageId: oldPage.id,
-          title: oldPage.title,
-          content: oldPage.content,
-          blocks: oldPage.blocks,
-          status: oldPage.status
-        });
-      }
-    });
-  }
+
+register({ eventBus }) {
+  eventBus.on(PAGE_EVENTS.UPDATED, async (payload) => {
+    // 🔥 لهنا المشكلة: لازم تزيد siteId و userId في السطر هذا
+    const { shouldVersion, oldPage, siteId, userId } = payload; 
+    
+    if (shouldVersion) {
+      console.log("📜 [Plugin]: Creating snapshot...");
+      await PageVersionRepository.create({
+        pageId: oldPage.id,
+        title: oldPage.title,
+        siteId: siteId,     
+        content: oldPage.content,
+        blocks: oldPage.blocks,
+        status: oldPage.status,
+        createdBy: userId    
+      });
+    }
+  });
+}
 };
