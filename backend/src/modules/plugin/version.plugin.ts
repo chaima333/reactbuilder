@@ -13,6 +13,8 @@ export const VersionPlugin: Plugin = {
 register({ eventBus }) {
   // 1. نعرّفو الـ Handler في Function وحدها
   const handler = async (payload: any) => {
+    console.log(`🔍 [SEO Plugin]: Analyzing content...`);
+    
     const { shouldVersion, oldPage, siteId, userId } = payload;
     
     if (shouldVersion) {
