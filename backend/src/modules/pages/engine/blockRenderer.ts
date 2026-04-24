@@ -1,4 +1,4 @@
-// دالة الحماية من الـ XSS
+// 1. دالة الحماية (XSS)
 export const escapeHTML = (str: string): string => {
   if (!str) return "";
   return str
@@ -9,44 +9,57 @@ export const escapeHTML = (str: string): string => {
     .replace(/'/g, "&#039;");
 };
 
-// دالة تحويل الـ Blocks لـ HTML
+// 2. قائمة الـ Renderers لكل بلوك (Scalable)
+const BLOCK_TEMPLATES: Record<string, (data: any) => string> = {
+  hero: (data) => `
+    <section class="hero" style="background:#eee; padding:40px; text-align:center; border-radius:8px;">
+      <h2>${escapeHTML(data.text)}</h2>
+    </section>`,
+    
+  text: (data) => `
+    <div class="text-block" style="margin:20px 0;">
+      <p>${escapeHTML(data.content)}</p>
+    </div>`,
+    
+  // تنجم تزيد image أو video هنا بسهولة
+};
+
 export const renderBlocks = (blocks: any[]): string => {
   if (!blocks || !blocks.length) return "";
   return blocks.map(block => {
-    switch (block.type) {
-      case 'hero': 
-        return `<section class="hero" style="background:#eee; padding:40px; text-align:center;">
-                  <h2>${escapeHTML(block.data.text)}</h2>
-                </section>`;
-      case 'text': 
-        return `<div class="text-block" style="margin:20px 0;">
-                  <p>${escapeHTML(block.data.content)}</p>
-                </div>`;
-      default: 
-        return ``;
-    }
+    const renderer = BLOCK_TEMPLATES[block.type];
+    return renderer ? renderer(block.data) : ``;
   }).join('');
 };
 
-// دالة تجميع الصفحة كاملة
+// 3. دالة تجميع الصفحة المصلحة (SEO & Theme)
 export const renderFullPage = (page: any, seo: any, canonical: string, blocksHTML: string): string => {
+  
+  // حماية حقول الـ SEO
+  const safeTitle = escapeHTML(seo.title);
+  const safeDesc = escapeHTML(seo.description);
+
   return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${seo.title}</title>
-    <meta name="description" content="${seo.description}">
+    
+    <title>${safeTitle}</title>
+    <meta name="description" content="${safeDesc}">
     <link rel="canonical" href="${canonical}" />
-    <meta property="og:title" content="${seo.openGraph?.title || seo.title}">
+    
+    <meta property="og:title" content="${safeTitle}">
+    <meta property="og:description" content="${safeDesc}">
+    <meta property="og:type" content="article">
     <meta property="og:url" content="${canonical}">
+    <meta property="og:image" content="${seo.openGraph?.image || ''}">
+
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; padding: 2rem; line-height: 1.5; background: #fafafa; color: #333; }
+        body { font-family: system-ui, sans-serif; padding: 2rem; line-height: 1.5; background: #fafafa; color: #333; }
         .container { max-width: 800px; margin: auto; background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         h1 { color: #2c3e50; border-bottom: 2px solid #f0f0f0; padding-bottom: 1rem; }
-        .content { margin-bottom: 2rem; font-size: 1.1rem; }
-        hr { border: 0; border-top: 1px solid #eee; margin: 2rem 0; }
     </style>
 </head>
 <body>
