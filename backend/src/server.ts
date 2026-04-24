@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import express from "express";
+import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import path from "path";
 
@@ -14,21 +14,18 @@ import { tenantResolver } from "./core/middleware/tenantResolver";
 import authRoutes from "./modules/auth/auth.routes";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import siteRoutes from "./modules/sites/site.routes";
-//import publicRoutes from "./modules/public/public.routes";
 import mediaRoutes from "./modules/media/media.routes";
 import userRoutes from "./modules/users/user.routes";
 import adminRoutes from "./modules/admin/admin.routes";
 import pluginRoutes from "./modules/plugins/plugin.routes";
 import pageRoutes from "./modules/pages/routes/page.routes";
-
-import { getPublicPage } from "./modules/pages/controllers/page.controller";
 import publicRoutes from "./modules/pages/routes/public.routes";
 
-const app = express();
+const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 
 // ========================
-// GLOBAL MIDDLEWARE
+// 1. GLOBAL MIDDLEWARE
 // ========================
 app.use(cors());
 app.use(express.json());
@@ -36,22 +33,21 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // ========================
-// PUBLIC LAYER
+// 2. HEALTH CHECK & PUBLIC LAYER
 // ========================
-app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
+app.get("/api/health", (_req: Request, res: Response) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
 
+// 🔥 PUBLIC ROUTES (Redirects & Public Pages)
+// لازم تكون الفوق باش Express يلقاها طول قبل الـ Auth
+app.use("/", publicRoutes); 
+
+// AUTHENTICATION
 app.use("/api/auth", authRoutes);
 
-app.use("/", publicRoutes);
-
-
-//app.get("/api/v2/magic-page/:siteId/:slug", getPublicPage);
-
-//legacy public route
-app.use("/api/public", publicRoutes);
-
 // ========================
-// PRIVATE LAYER (AUTH ONLY)
+// 3. PRIVATE LAYER (AUTH REQUIRED)
 // ========================
 const authStack = [authenticateJWT];
 
@@ -60,10 +56,8 @@ app.use("/api/admin", authStack, adminRoutes);
 app.use("/api/dashboard", authStack, dashboardRoutes);
 
 // ========================
-// TENANT LAYER (IMPORTANT FIX)
+// 4. TENANT LAYER (AUTH + SITE_ID REQUIRED)
 // ========================
-
-// ⚠️ FIX: tenantResolver لازم يكون هنا قبل pages
 const tenantStack = [authenticateJWT, tenantResolver];
 
 app.use("/api/sites/:siteId/pages", tenantStack, pageRoutes);
@@ -72,15 +66,27 @@ app.use("/api/sites/:siteId/plugins", tenantStack, pluginRoutes);
 app.use("/api/sites/:siteId/settings", tenantStack, siteRoutes);
 
 // ========================
-// START SERVER
+// 5. 404 & ERROR HANDLING
+// ========================
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({ success: false, message: "Route not found" });
+});
+
+// ========================
+// 6. START SERVER
 // ========================
 const startServer = async () => {
   try {
+    // تأكد من الاتصال بالقاعدة قبل التشغيل
     await sequelize.authenticate();
     console.log("✅ DB Connection: OK");
 
+    // Sync models if needed (Optional)
+    // await sequelize.sync({ alter: false });
+
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 Node Server running on port ${PORT}`);
+      console.log(`🌍 Public Access: http://localhost:${PORT}/pages/:siteId/:slug`);
     });
   } catch (err) {
     console.error("❌ DB Error:", err);
