@@ -8,9 +8,16 @@ export const SEOPlugin: Plugin = {
   enabled: true,
 
   register({ eventBus }) {
-    eventBus.on(PAGE_EVENTS.UPDATED, async ({ page }) => {
+    // 1. تعريف الـ handler كمتغيّر منفصل
+    const handler = async ({ page }: any) => {
       console.log(`🔍 [SEO Plugin]: Analyzing content for page: ${page.title}`);
-      // هنا تزيد الـ Logic متاع الـ Sitemap أو الـ Meta Tags
-    });
+      // الـ Logic متاعك هنا (Sitemap, Metadata, etc.)
+    };
+
+    // 2. 🔥 ربط الهوية: لصّق اسم الـ Plugin في الـ handler
+    (handler as any).pluginName = this.name;
+
+    // 3. التسجيل في الـ Event Bus
+    eventBus.on(PAGE_EVENTS.UPDATED, handler);
   }
 };
