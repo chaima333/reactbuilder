@@ -1,25 +1,27 @@
+// 📂 src/queues/plugin.queue.ts
 import { Queue } from 'bullmq';
 import { REDIS_CONFIG } from './config';
 
-// صنع الـ Queue اللي باش تتسجل فيها الـ Tasks
 export const pluginQueue = new Queue('plugin-tasks', {
   connection: REDIS_CONFIG
 });
 
-// 📂 src/queues/plugin.queue.ts
 export const addToQueue = async (pluginName: string, event: string, payload: any) => {
+  // 🛡️ صنع ID فريد يمنع التكرار (Plugin + Event + PageId)
+  const uniqueJobId = `${pluginName}-${event}-${payload.page?.id || 'no-id'}`;
+
   await pluginQueue.add(
     pluginName, 
     { pluginName, event, payload },
     {
-      // 🛡️ الـ Hardening Layer
-      attempts: 5, // جرب 5 مرات قبل ما تستسلم
+      jobId: uniqueJobId, // 🔥 أهم سطر: BullMQ يقتل الـ Duplicates آلياً
+      attempts: 5,
       backoff: {
         type: 'exponential',
-        delay: 2000, // استنى 2ث، 4ث، 8ث... هكا ما نتعبوش الـ CPU
+        delay: 2000,
       },
-      removeOnComplete: true, // نظف الـ Redis كي تكمل
-      removeOnFail: false,    // خلي الفاشلين باش نراجعوهم (Dead Letter Queue)
+      removeOnComplete: true,
+      removeOnFail: false,
     }
   );
 };
