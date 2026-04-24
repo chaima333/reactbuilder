@@ -3,21 +3,23 @@ import { PAGE_EVENTS } from "../../core/plugins/events/pageEvents";
 
 export const SEOPlugin: Plugin = {
   name: "seo-plugin",
-  events: [PAGE_EVENTS.UPDATED],
+  events: [PAGE_EVENTS.UPDATED], // توّة الـ Error هذا باش يتنحى
   priority: 5,
   enabled: true,
 
+  // 🔥 ميثود الـ Execute هي اللي باش يناديها الـ Worker لاحقاً
+  async execute(event, { page }: any) {
+    console.log(`🔍 [SEO Plugin]: Analyzing content for page: ${page.title}`);
+    // الـ Logic متاعك هنا
+  },
+
   register({ eventBus }) {
-    // 1. تعريف الـ handler كمتغيّر منفصل
-    const handler = async ({ page }: any) => {
-      console.log(`🔍 [SEO Plugin]: Analyzing content for page: ${page.title}`);
-      // الـ Logic متاعك هنا (Sitemap, Metadata, etc.)
+    const handler = async (payload: any) => {
+      // نعيطو للـ execute مباشرة
+      await this.execute!(PAGE_EVENTS.UPDATED, payload);
     };
 
-    // 2. 🔥 ربط الهوية: لصّق اسم الـ Plugin في الـ handler
     (handler as any).pluginName = this.name;
-
-    // 3. التسجيل في الـ Event Bus
     eventBus.on(PAGE_EVENTS.UPDATED, handler);
   }
 };
