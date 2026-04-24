@@ -4,22 +4,17 @@ import { PAGE_EVENTS } from "../../core/plugins/events/pageEvents";
 export const NotificationPlugin: Plugin = {
   name: "notification-plugin",
   events: [PAGE_EVENTS.UPDATED],
-  priority: 1, 
   enabled: true,
 
+  // 1. هذي الخدمة اللي باش تولي تخدم في الـ Background
+  async execute(event, payload) {
+    const { page, userId } = payload;
+    console.log(`🔔 [Async Worker]: Sending notification for ${page.title}...`);
+    // حط الـ logic متاع الـ Notification هوني
+  },
+
   register({ eventBus }) {
-    // 1. نعرّفو الـ Handler لبرّة باش نتحكمو فيه
-    const handler = async (payload: any) => {
-      const { page, userId } = payload;
-      console.log(`🔔 [Notification]: Page "${page.title}" was updated by User ID: ${userId}`);
-      
-      // مثال: await EmailService.sendAdminAlert(...);
-    };
-
-    // 2. 🔥 نلصقو الاسم (هذا اللي يخلّي الـ Performance log يطلع فيه "notification-plugin")
-    (handler as any).pluginName = this.name;
-
-    // 3. نربطوه بالـ EventBus
-    eventBus.on(PAGE_EVENTS.UPDATED, handler);
+    // خليها فارغة أو حط فيها Log بركة
+    console.log("🔌 Notification Plugin registered (Async)");
   }
 };

@@ -12,20 +12,24 @@ class PluginRegistry {
   }
 
   async emit(event: string, payload: any) {
-    const interestedPlugins = this.plugins.filter(p => p.events.includes(event));
+  const interestedPlugins = this.plugins.filter(p => p.events.includes(event));
 
-    for (const plugin of interestedPlugins) {
-      // 1. المهمة الخلفية (Async)
+  for (const plugin of interestedPlugins) {
+    try {
       if (plugin.execute) {
-        console.log(`🚀 Offloading ${plugin.name} to Redis...`);
-        await addToQueue(plugin.name, event, payload); 
+        // نبعثو للـ Queue ونكملو طول، ما نستناوش!
+        addToQueue(plugin.name, event, payload).catch(err => 
+          console.error(`❌ Queue Error [${plugin.name}]:`, err)
+        );
       }
+    } catch (err) {
+      console.error(`💥 Registry Error:`, err);
     }
-
-    // 2. 🔥 السطر السحري: تفيق الـ Plugins اللي يخدموا Sync (عن طريق الـ handle)
-    // الـ Plugins اللي عملوا eventBus.on في ميثود الـ register متاعهم باش يفيقوا توّة
-    eventBus.emit(event, payload);
   }
+
+  // الـ Sync الوحيد اللي يبقى (للمهمات المستعجلة كيف الـ Versioning)
+  eventBus.emit(event, payload);
+}
 
   init(context: any) {
     this.plugins.forEach(p => p.register(context));
