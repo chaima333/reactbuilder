@@ -3,7 +3,6 @@ import { REDIS_CONFIG } from './config';
 import { cmsRegistry } from '../plugins/plugin.registry'; 
 
 export const initPluginWorker = () => {
- // 📂 src/queues/plugin.worker.ts
 const worker = new Worker('plugin-tasks', async (job) => {
   const { pluginName, event, payload } = job.data;
   
@@ -14,7 +13,6 @@ const worker = new Worker('plugin-tasks', async (job) => {
     }
   } catch (error) {
     console.error(`💥 [Worker Error] Job ${job.id} for ${pluginName} failed:`, error);
-    // نبعثو الـ Error للـ BullMQ باش يعرف اللي لازم يعاود الـ Attempt
     throw error; 
   }
 }, { connection: REDIS_CONFIG });
