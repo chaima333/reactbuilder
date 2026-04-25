@@ -14,27 +14,19 @@ export const VersionPlugin: ICmsPlugin = {
   },
 
 async execute(event: string, payload: any) {
-  const { shouldVersion, oldPage, siteId, userId } = payload;
+  const { oldPage, shouldVersion, siteId, userId } = payload;
 
-  // 🛡️ لو الـ Data ناقصة، ما تخليهوش يوصل للـ Repository.create
-  if (!shouldVersion || !oldPage || !oldPage.id) {
-    console.log("⚠️ [VersionPlugin]: Skipping, missing required data", { 
-      shouldVersion, 
-      hasOldPage: !!oldPage, 
-      id: oldPage?.id 
-    });
-    return;
-  }
-
-  try {
+  if (shouldVersion && oldPage) {
     await PageVersionRepository.create({
-      pageId: Number(oldPage.id), // 👈 تأكد إنو الرقم موجود هنا
-      siteId: Number(siteId),
-      title: oldPage.title,
-      // ... بقية الـ data
+      pageId: oldPage.id,
+      siteId: siteId,
+      title: oldPage.title,      // 👈 توّة الـ title ماهوش null
+      content: oldPage.content,  // 👈 توّة الـ content ماهوش null
+      blocks: oldPage.blocks,    // 👈 توّة الـ blocks ماهوش null
+      createdBy: userId,
+      versionTag: `v_${Date.now()}`
     });
-  } catch (err) {
-    console.error("💥 [VersionPlugin DB Error]:", err.message);
+    console.log(`✅ [VersionPlugin]: Full Snapshot saved for page ${oldPage.id}`);
   }
 }
 };
