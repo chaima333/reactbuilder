@@ -166,7 +166,6 @@ export const restorePageVersion = async (req: AuthRequest, res: Response) => {
     const { pageId, versionId } = req.params;
     const { siteId } = req.siteContext;
 
-    // 🔥 نعيطوا للـ Service اللي وريتهولي توّة
     const restoredPage = await PageVersionService.restoreVersion(
       Number(siteId),
       Number(pageId),

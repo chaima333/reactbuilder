@@ -2,10 +2,12 @@ import { Table, Column, Model, DataType, ForeignKey } from "sequelize-typescript
 import { Page } from "./page";
 
 @Table({ tableName: "page_versions", timestamps: true })
-export class PageVersion extends Model { // 👈 الـ Model هذا توّة هو الصحيح
+export class PageVersion extends Model { 
   @ForeignKey(() => Page)
   @Column({ type: DataType.INTEGER, allowNull: false })
   pageId!: number;
+  @Column({ type: DataType.INTEGER, allowNull: false })
+  siteId!: number;
 
   @Column(DataType.STRING)
   title!: string;
