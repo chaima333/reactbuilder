@@ -5,17 +5,19 @@ import { cmsRegistry } from "./plugin.registry";
 export class EventDispatcher {
   private static processedIds = new Set<string>();
 
-  static async dispatch(event: string, payload: any, source: string) {
-    const eventId = payload._meta?.eventId;
+// src/core/plugins/event.dispatcher.ts
 
-    if (this.processedIds.has(eventId)) {
-        // 🔥 هون السر: اطبع سطر فاشل باش تعرف اللي الـ Gatekeeper خدم
-        console.log(`🚫 [Dispatcher] Prevented Duplicate: ${eventId}`);
-        return; // نخرجوا هون وما نكلموش الـ Registry أصلاً
-    }
+static async dispatch(event: string, payload: any, source: string) {
+  const eventId = payload._meta?.eventId;
 
-    this.processedIds.add(eventId);
-    // ...
-    await cmsRegistry.emit(event, payload, source);
+  if (this.processedIds.has(eventId)) {
+    console.log(`🚫 [Dispatcher] Preventive Block: ${eventId}`);
+    return;
+  }
+
+  this.processedIds.add(eventId);
+  
+  // 👈 تأكد إن الـ payload هوني هو الـ object اللي فيه الـ _meta
+  await cmsRegistry.emit(event, payload); 
 }
 }

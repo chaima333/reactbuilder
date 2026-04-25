@@ -6,24 +6,27 @@ import { PageMapper } from "../mappers/page.mapper";
 import { cmsRegistry } from "../../../core/plugins/plugin.registry";
 import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
 
-// 📡 Central Dispatcher to handle service events
+// 📡 Central Dispatcher: توا ولى "بواب" بالرسمي
 const dispatchEvent = async (result: any, source: string) => {
+  // 1. تثبت هل فما Event أصلاً وهل لازم يخرج
   if (result?.event?.shouldEmit) {
-    await cmsRegistry.emit(
-      result.event.type,
-      result.event.payload,
-      source
-    );
-  }
-};
-// src/modules/pages/controllers/page.controller.ts
-
-const handleServiceResult = async (result: any, source: string) => {
-  if (result?.event) {
+    
+    // 🛡️ نكلموا الـ EventDispatcher (العسّاس) موش الـ Registry
     await EventDispatcher.dispatch(
       result.event.type,
       result.event.payload,
       source
+    );
+
+  }
+};
+const handleEventDispatch = async (result: any, source: string) => {
+  if (result?.event) {
+    // 👈 هوني الـ Fix: نبعثوا الـ 3 Arguments للـ Dispatcher
+    await EventDispatcher.dispatch(
+      result.event.type,    // 1. نوع الحدث (مثلاً page.updated)
+      result.event.payload, // 2. الـ Payload (اللي فيه الـ _meta)
+      source                // 3. اسم الـ Controller اللي بعث
     );
   }
 };
@@ -38,7 +41,7 @@ export const createPage = async (req: AuthRequest, res: Response) => {
       req.user.id,
       req.body
     );
-    await dispatchEvent(result, "PageController.createPage");
+    await handleEventDispatch(result, "PageController.createPage");
     return res.status(201).json({ success: true, data: PageMapper.toDTO(result.data) });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
@@ -70,7 +73,7 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
     );
 
     // 🔥 الإطلاق يصير هنا فقط
-    await handleServiceResult(result, "PageController.updatePage");
+    await handleEventDispatch(result, "PageController.updatePage");
 
     return res.json({ success: true, data: PageMapper.toDTO(result.data) });
   } catch (err: any) {
@@ -87,7 +90,7 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
       req.siteContext.siteId,
       Number(req.params.pageId)
     );
-    await dispatchEvent(result, "PageController.deletePage");
+    await handleEventDispatch(result, "PageController.deletePage");
     return res.json({ success: true, message: "Page deleted" });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
@@ -105,7 +108,7 @@ export const publishPageController = async (req: AuthRequest, res: Response) => 
       req.siteContext.role,
       req.user.id
     );
-    await dispatchEvent(result, "PageController.publishPage");
+    await handleEventDispatch(result, "PageController.publishPage");
     return res.json({ success: true, data: PageMapper.toDTO(result.data) });
   } catch (err: any) {
     const status = err.message === "FORBIDDEN" ? 403 : err.message === "INVALID_TRANSITION" ? 400 : 500;
@@ -125,7 +128,7 @@ export const restorePageVersion = async (req: AuthRequest, res: Response) => {
       req.user.id
     );
 
-    await handleServiceResult(result, "PageController.restorePageVersion");
+    await handleEventDispatch(result, "PageController.restorePageVersion");
 
     return res.json({ success: true, data: PageMapper.toDTO(result.data) });
   } catch (err: any) {
