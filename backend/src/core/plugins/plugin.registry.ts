@@ -59,33 +59,59 @@ export class PluginRegistry {
     eventBus.emit(event, enrichedPayload);
   }
 
+
+
+
+
+// 1. زيد هذي الفوق في وسط الكلاس (PluginsRegistry)
+private processedEvents = new Set<string>(); 
+
 private async orchestrate(event: string, payload: any) {
-    const eventId = payload._meta.eventId;
+  const eventId = payload._meta.eventId;
 
-    // 1️⃣ [Hard Idempotency Check] 🛡️
-    // هوني لازمك تزيد check في الـ DB مستقبلاً، توّة نخلّيوها Cache
-    if ((global as any).processedEvents?.has(eventId)) return;
+  // 1️⃣ [Hard Idempotency Check] 🛡️
+  // نثبتوا أول ما تدخل الـ Request
+  if (this.processedEvents.has(eventId)) {
+    console.warn(`⚠️ [Idempotency Guard] Event ${eventId} already being processed or finished. Blocking duplicate.`);
+    return;
+  }
 
-    const activePlugins = Array.from(this.plugins.values())
-      .filter(p => p.enabled && p.instance.events.includes(event))
-      .sort((a, b) => b.priority - a.priority);
+  // 2️⃣ "التطبيع" المبكر (Optimistic Locking) 🔒
+  // نقيدو الـ ID "قبل" ما نبداو الـ loop متاع الـ Plugins
+  // هكا لو تجي Request ثانية توة، تلقى الباب مسكر
+  this.processedEvents.add(eventId);
 
-    for (const { instance } of activePlugins) {
-      const start = Date.now();
-      try {
-        // 2️⃣ Execution with Isolation & Timeout
-        await this.runWithTimeout(instance.execute(event, payload), 5000);
-        console.log(`[Trace][${eventId.slice(0,8)}] 🏁 ${instance.name} Done | ${Date.now() - start}ms`);
-      } catch (err: any) {
-        console.error(`💥 [Failure][${instance.name}]: ${err.message}`);
-        if (instance.isCritical) throw new Error(`CRITICAL_FAILURE: ${instance.name}`);
+  const activePlugins = Array.from(this.plugins.values())
+    .filter(p => p.enabled && p.instance.events.includes(event))
+    .sort((a, b) => b.priority - a.priority);
+
+  for (const { instance } of activePlugins) {
+    const start = Date.now();
+    try {
+      // 3️⃣ Execution with Isolation & Timeout
+      await this.runWithTimeout(instance.execute(event, payload), 5000);
+      console.log(`[Trace][${eventId.slice(0,8)}] 🏁 ${instance.name} Done | ${Date.now() - start}ms`);
+    } catch (err: any) {
+      console.error(`💥 [Failure][${instance.name}]: ${err.message}`);
+      
+      // لو الـ Plugin كرتيكال وطاح، لازم نمسحو الـ ID باش نجمو نعاودو (Retry)
+      if (instance.isCritical) {
+        this.processedEvents.delete(eventId); 
+        throw new Error(`CRITICAL_FAILURE: ${instance.name}`);
       }
     }
-
-    // 3️⃣ تذكّر الـ ID باش ما تعاودش
-    if (!(global as any).processedEvents) (global as any).processedEvents = new Set();
-    (global as any).processedEvents.add(eventId);
   }
+  
+  // (اختياري) تنظيف الـ Cache بعد مدة باش ما تكبرش الـ RAM
+  // setTimeout(() => this.processedEvents.delete(eventId), 300000); // 5 دقائق
+}
+
+
+
+
+
+
+
 
 private runWithTimeout(promise: Promise<any>, ms: number) {
   return Promise.race([
