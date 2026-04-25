@@ -62,22 +62,16 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
   let oldPage;
   let actions;
 
-  // 1. Transaction لحماية الـ Update
   await sequelize.transaction(async (t) => {
     const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
     if (!page) throw new Error("PAGE_NOT_FOUND");
     
     oldPage = page.toJSON();
     
-    // حساب الـ Actions (Versioning, SEO changes, etc.)
     actions = PageEngine.resolveActions(oldPage, input);
-    
-    // تنفيذ الـ Update
+
     updated = await page.update(input, { transaction: t });
 
-    // 🔥 الـ Emit داخل الـ Transaction (لو تحب الـ Critical Plugins يوقفو الـ Update لو فشلوا)
-    // أو خلّيها لبرّة لو تحب الـ Update يتعدّى مهما صار في الـ Plugins.
-    // القرار ليك: أنا ننصح بالـ Emit داخل الـ Transaction للـ Data Integrity.
     await cmsRegistry.emit(
       PAGE_EVENTS.UPDATED, 
       {
