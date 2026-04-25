@@ -1,36 +1,52 @@
+// 📂 src/modules/plugin/plugin.worker.ts
 import { Worker } from 'bullmq';
 import { REDIS_CONFIG } from './config';
 import { cmsRegistry } from '../plugins/plugin.registry'; 
 
 export const initPluginWorker = () => {
+  const worker = new Worker('plugin-tasks', async (job) => {
+    const { pluginName, event, payload } = job.data;
+    const start = Date.now();
 
-const worker = new Worker('plugin-tasks', async (job) => {
-  const { pluginName, event, payload } = job.data;
-  const plugin = cmsRegistry.getPlugin(pluginName);
+    console.log(`📦 [JOB START]: ${pluginName} | ID: ${job.id}`);
 
-  if (!plugin || !plugin.execute) return;
+    try {
+      const plugin = cmsRegistry.getPlugin(pluginName);
+      
+      // 🛡️ تثبّت إنو الـ Plugin موجود ومفعّل
+      if (!plugin || !plugin.enabled) {
+        console.warn(`⚠️ [Worker]: Plugin ${pluginName} skipped (Not found or disabled)`);
+        return;
+      }
 
-  // 🛡️ 1. Timeout Protection: ما نخليوش Plugin مبلّوك يطيح الـ Worker
-  const timeout = 10000; // 10 ثواني
-  return Promise.race([
-    plugin.execute(event, payload),
-    new Promise((_, reject) => 
-      setTimeout(() => reject(new Error(`Timeout: Plugin ${pluginName} took too long`)), timeout)
-    )
-  ]);
-}, { connection: REDIS_CONFIG });
+      // 🛡️ Timeout Protection (5 ثواني)
+      await Promise.race([
+        plugin.execute(event, payload),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error(`TIMEOUT: ${pluginName} took too long`)), 5000)
+        )
+      ]);
 
-// 🛡️ 2. Global Monitoring: تسجيل الفشل والنجاح بوضوح
-worker.on('completed', (job) => {
-  console.log(`✅ [Job Completed]: ${job.id}`);
-});
+      const duration = Date.now() - start;
+      console.log(`✅ [JOB DONE]: ${pluginName} | Time: ${duration}ms`);
+      
+    } catch (error: any) {
+      console.error(`💥 [JOB ERROR]: ${pluginName} failed! | Reason: ${error.message}`);
+      throw error; // باش BullMQ يعمل الـ Retries
+    }
+  }, { connection: REDIS_CONFIG });
 
-worker.on('failed', (job, err) => {
-  console.error(`💥 [Job Failed] ID: ${job?.id} | Attempts: ${job?.attemptsMade}/${job?.opts.attempts}`, {
-    error: err.message,
-    stack: err.stack
+  // 🛡️ Global Monitoring
+  worker.on('completed', (job) => {
+    console.log(`✅ [Worker Monitor]: Job ${job.id} finished successfully`);
   });
-  // هوني تنجم تزيد Notification لـ Discord أو Slack باش تفيق اللي فمة مشكلة
-});
-  
+
+  worker.on('failed', (job, err) => {
+    console.error(`💥 [Worker Monitor]: Job ${job?.id} failed definitely!`, {
+      attempts: `${job?.attemptsMade}/${job?.opts.attempts}`,
+      error: err.message
+    });
+  });
+
+  return worker;
 };
