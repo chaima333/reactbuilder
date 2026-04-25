@@ -1,28 +1,16 @@
-import { ICmsPlugin } from "../../core/plugins/plugin.types";
+import { ICmsPlugin } from "../../core/plugins/plugin.interface";
 
 export const VersionPlugin: ICmsPlugin = {
   name: "version-plugin",
   mode: "sync",
   priority: 100,
-  isCritical: true,
   events: ["page.updated", "page.restored"],
   enabled: true,
 
-  register() {
-    console.log("🔌 VersionPlugin ready");
-  },
+  async execute(event, payload) {
+    if (!payload.flags?.shouldVersion) return;
 
-  async execute(event: string, payload: any) {
-    const { current, previous, flags } = payload;
-
-    if (!flags?.shouldVersion) {
-      console.log("🛑 versioning disabled");
-      return;
-    }
-
-    console.log("📦 Creating version snapshot...");
-
-    // هنا بعد تضيف DB logic
-    // await PageVersionRepository.create(...)
+    console.log("📦 Version snapshot");
+    console.log(payload.previous?.id, payload.current?.id);
   }
 };

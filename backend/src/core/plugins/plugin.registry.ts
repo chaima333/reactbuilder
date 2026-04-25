@@ -21,7 +21,7 @@ export class PluginRegistry {
 
     this.plugins.set(plugin.name, {
       instance: plugin,
-      priority: plugin.priority || priority,
+      priority: plugin.priority ?? priority,
       enabled,
     });
 
@@ -46,27 +46,25 @@ export class PluginRegistry {
       .sort((a, b) => b.priority - a.priority);
 
     for (const { instance } of activePlugins) {
-      await instance.execute(event, payload);
+      try {
+        await instance.execute(event, payload);
+      } catch (err) {
+        console.error(`💥 Plugin error [${instance.name}]`, err);
+      }
     }
   }
 
   // ======================
-  // GET SINGLE PLUGIN
+  // DEBUG HELPERS
   // ======================
-  public getPlugin(name: string): ICmsPlugin | undefined {
+  public getPlugin(name: string) {
     return this.plugins.get(name)?.instance;
   }
 
-  // ======================
-  // ALL PLUGINS (DEBUG)
-  // ======================
   public getPlugins(): string[] {
-    return Array.from(this.plugins.values()).map(p => p.instance.name);
+    return [...this.plugins.keys()];
   }
 
-  // ======================
-  // PLUGINS FOR EVENT (FIXED NAME)
-  // ======================
   public getPluginsForEvent(event: string): string[] {
     return Array.from(this.plugins.values())
       .filter(p => p.instance.events.includes(event))

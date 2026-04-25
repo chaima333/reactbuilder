@@ -1,15 +1,14 @@
-import { EventEmitter } from "events";
-
-export interface PluginContext {
-  eventBus: EventEmitter;
-}
-
-export interface ICmsPlugin {
+export interface ICmsPlugin<
+  Events extends Record<string, any> = any
+> {
   name: string;
   priority: number;
-  mode: 'sync' | 'async';
-  events: string[];
+  mode: "sync" | "async";
+  events: (keyof Events)[];
   enabled: boolean;
-  register(ctx: PluginContext): void;
-  execute(event: string, payload: any): Promise<void>;
+
+  execute<K extends keyof Events>(
+    event: K,
+    payload: Events[K]
+  ): Promise<void>;
 }
