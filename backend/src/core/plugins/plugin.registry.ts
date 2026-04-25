@@ -33,38 +33,46 @@ export class PluginRegistry {
     console.log(`🔌 [Registry]: ${plugin.name} registered.`);
   }
 
-  // ✅ الـ Emit توا ولات تخدم خدمتها الأصلية: تبعث للـ Bus فقط
-  // ما عادش تطبع وحدها ولا تعمل في Dispatching يدوي
-  async emit(event: string, payload: any, source: string) {
-    // نبعثوا الـ Event للـ Bus.. والـ Bus توا يكلم الـ orchestrate
-    eventBus.emit(event, payload);
+  // src/core/plugins/plugin.registry.ts
+
+async emit(event: string, payload: any) {
+  // 1️⃣ تأكد إن الـ Payload فيه الـ Meta صحيحة قبل ما تبعث
+  if (!payload._meta || !payload._meta.eventId) {
+    console.error("🚨 [Bus] Attempted to emit event without eventId!", event);
+    return;
   }
 
-  // 🚀 الـ Orchestrate توا هي الـ Main Engine
-  private async orchestrate(event: string, payload: any) {
-    const eventId = payload._meta?.eventId || 'unknown';
+  // 2️⃣ ابعث للـ Bus العادي
+  eventBus.emit(event, payload);
+}
 
-    // 🎯 نجلبوا الـ Plugins المعنيين بالترتيب
-    const activePlugins = Array.from(this.plugins.values())
-      .filter(p => p.enabled && p.instance.events.includes(event))
-      .sort((a, b) => b.priority - a.priority);
+private async orchestrate(event: string, payload: any) {
+  const eventId = payload._meta?.eventId || 'no-id';
 
-    if (activePlugins.length === 0) return;
+  // ⚠️ إذا الـ ID موش موجود، أوقف العملية فوراً (هذا اللي منع الـ unknown)
+  if (eventId === 'no-id') return;
 
-    console.log(`📡 [Bus] Dispatching: ${event} | ID: ${eventId}`);
+  // 3️⃣ توّة نجيبوا الـ Plugins
+  const activePlugins = Array.from(this.plugins.values())
+    .filter(p => p.enabled && p.instance.events.includes(event))
+    .sort((a, b) => b.priority - a.priority);
 
-    for (const { instance } of activePlugins) {
-      const start = Date.now();
-      try {
-        // تنفيذ مع Timeout باش ما يبلوكيش السيستام
-        await this.runWithTimeout(instance.execute(event, payload), 5000);
-        console.log(`[Trace][${eventId.slice(0,8)}] 🏁 ${instance.name} Done | ${Date.now() - start}ms`);
-      } catch (err: any) {
-        console.error(`💥 [Failure][${instance.name}]: ${err.message}`);
-        if (instance.isCritical) throw new Error(`CRITICAL_FAILURE: ${instance.name}`);
-      }
+  if (activePlugins.length === 0) return;
+
+  // السطر هذا يطبع مرة وحدة بركة توّة
+  console.log(`📡 [Bus] Dispatching: ${event} | ID: ${eventId}`);
+
+  for (const { instance } of activePlugins) {
+    const start = Date.now();
+    try {
+      await this.runWithTimeout(instance.execute(event, payload), 5000);
+      console.log(`[Trace][${eventId.slice(0,8)}] 🏁 ${instance.name} Done | ${Date.now() - start}ms`);
+    } catch (err: any) {
+      console.error(`💥 [Failure][${instance.name}]: ${err.message}`);
+      if (instance.isCritical) throw err;
     }
   }
+}
 
   private runWithTimeout(promise: Promise<any>, ms: number) {
     return Promise.race([
