@@ -8,8 +8,7 @@ import { Page } from "../../../models/page";
 import { SlugMap } from "../../../models/slug_map";
 import { PageEngine } from "../engine/page.engine";
 import { PAGE_EVENTS } from "../../../core/plugins/events/pageEvents";
-import { registry as cmsRegistry } from "../../../app.bootstrap";
-
+import { cmsRegistry } from "../../../core/plugins/plugin.registry";
 const { nanoid } = require("nanoid");
 
 export class PageService {
@@ -148,44 +147,41 @@ static async publishPage(siteId, pageId, userRole, userId) {
 
   // ================= RESTORE =================
   static async restoreVersion(siteId: number, pageId: number, versionId: number, userId: number) {
-    let restored;
-    let oldPageBeforeRestore;
-
-    await sequelize.transaction(async (t) => {
-      // 1. لوج على الـ Version المطلوبة
+    return await sequelize.transaction(async (t) => {
+      // 1. جيب الـ Version
       const version = await PageVersionRepository.findById(versionId, siteId);
       if (!version) throw new Error("VERSION_NOT_FOUND");
 
-      // 2. أجلب الصفحة الحالية قبل ما تفسخها (باش نصوروها snapshot)
+      // 2. جيب الـ Page
       const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
       if (!page) throw new Error("PAGE_NOT_FOUND");
 
-      oldPageBeforeRestore = page.toJSON();
+      const oldPageSnapshot = page.toJSON();
 
-      // 3. صبّ بيانات الـ Version في الصفحة الحالية
-      restored = await page.update({
+      // 3. Update Page
+      const restored = await page.update({
         title: version.title,
         content: version.content,
         blocks: version.blocks,
-        status: PAGE_STATUS.DRAFT, // 🛡️ ديما ترجع Draft للأمان
-        userId: userId
+        status: PAGE_STATUS.DRAFT,
+        metaData: { ...page.metaData, isRestored: true, lastVersionId: versionId }
       }, { transaction: t });
-    });
 
-    // 4. 🔥 الـ Emit الموحد (The Standard Contract)
-    // نفيقو الـ Plugins الكل (Version, SEO, Cache...)
-    await cmsRegistry.emit(PAGE_EVENTS.UPDATED, {
-      page: restored,
-      oldPage: oldPageBeforeRestore,
-      siteId,
-      userId,
-      meta: {
-        shouldVersion: true, // باش السيستام يقيد الحالة اللي كانت موجودة قبل الـ restore
-        restored: true,      // 🚩 علامة إنو التغيير هذا جاي من restore
-        versionId: versionId
-      }
-    });
+      // 4. 🔥 الـ Emit الموحد
+      await cmsRegistry.emit(PAGE_EVENTS.UPDATED, {
+        page: restored,
+        oldPage: oldPageSnapshot,
+        siteId,
+        userId,
+        meta: {
+          shouldVersion: true,
+          restored: true,
+          versionId: versionId
+        }
+      });
 
-    return restored;
+      return restored;
+    });
   }
 }
+

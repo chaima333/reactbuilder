@@ -90,6 +90,15 @@ export class Page extends Model {
 })
 publishedAt!: Date;
 
+// 📂 src/models/page.ts
+
+@Column({
+  type: DataType.JSONB, 
+  allowNull: true,
+  defaultValue: {}
+})
+metaData: any; 
+
  toJSON() {
   const values = { ...this.get() };
 
