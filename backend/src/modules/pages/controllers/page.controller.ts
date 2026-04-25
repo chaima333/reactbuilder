@@ -5,32 +5,26 @@ import { PageVersionService } from "../services/pageVersion.service";
 import { PageMapper } from "../mappers/page.mapper";
 import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
 
-// 📡 Central Dispatcher: توا ولى "بواب" بالرسمي
-const dispatchEvent = async (result: any, source: string) => {
-  // 1. تثبت اللي الـ event موجود والـ payload فيه الـ _meta والـ eventId
-  if (result?.event?.payload?._meta?.eventId) {
-    
+
+// 🛡️ دالة واحدة، قوية، ومنظمة
+const handleEventDispatch = async (result: any, source: string) => {
+  // التثبت من وجود الحدث والـ ID
+  const event = result?.event;
+  const eventId = event?.payload?._meta?.eventId;
+
+  if (event && eventId) {
     await EventDispatcher.dispatch(
-      result.event.type,
-      result.event.payload, // 👈 ركز هوني: لازم تبعث الـ payload كامل موش الـ data بركة
+      event.type,
+      event.payload,
       source
     );
-
-  } else {
-    console.error(`⚠️ [Controller] Missing eventId in payload from ${source}`);
+  } else if (event) {
+    // لو فما حدث أما بلاش ID (حالة خطأ في السيرفيس)
+    console.error(`❌ [${source}]: Missing eventId! Event blocked.`);
   }
 };
 
-const handleEventDispatch = async (result: any, source: string) => {
-  if (result?.event) {
-    // 👈 هوني الـ Fix: نبعثوا الـ 3 Arguments للـ Dispatcher
-    await EventDispatcher.dispatch(
-      result.event.type,    // 1. نوع الحدث (مثلاً page.updated)
-      result.event.payload, // 2. الـ Payload (اللي فيه الـ _meta)
-      source                // 3. اسم الـ Controller اللي بعث
-    );
-  }
-};
+// 🗑️ امسح دالة dispatchEvent القديمة جملة باش ما عادش تغلط وتناديها
 
 // ========================
 // 🟢 CREATE PAGE
@@ -70,6 +64,7 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
       Number(req.siteContext.siteId),
       Number(req.params.pageId),
       req.user.id,
+
       req.body
     );
 
