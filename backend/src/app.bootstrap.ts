@@ -1,25 +1,26 @@
-
 import { cmsRegistry } from "./core/plugins/plugin.registry";
 import { SEOPlugin } from "./modules/plugin/seo.plugin";
 import { VersionPlugin } from "./modules/plugin/version.plugin";
-import { eventBus } from "./core/plugins/events/eventBus";
-
-// 📂 src/app.bootstrap.ts
 
 export const bootstrapPlugins = () => {
   cmsRegistry.register(VersionPlugin, 100);
   cmsRegistry.register(SEOPlugin, 50);
 
-  cmsRegistry.init({ eventBus });
+  // ❌ remove init completely
 
-  console.log("✅ Plugins Active:", cmsRegistry.getListeners());
+console.log("✅ Plugins Active:", cmsRegistry.getPlugins());
 
-  // 🛡️ Log إضافي باش تطمن على الـ Events
-  const eventMapping = {};
-  cmsRegistry.getListeners().forEach(name => {
-      const p = cmsRegistry.getPlugin(name);
-      eventMapping[name] = p?.events;
-  });
+  const plugins = ["version-plugin", "seo-plugin"];
+
+  const eventMapping: Record<string, string[]> = {};
+
+  for (const name of plugins) {
+    const p = cmsRegistry.getPlugin(name);
+    if (p) {
+      eventMapping[name] = p.events;
+    }
+  }
+
   console.log("📡 Event Mapping:", eventMapping);
 
   return cmsRegistry;

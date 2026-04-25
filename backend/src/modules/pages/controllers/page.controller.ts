@@ -71,13 +71,7 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
       req.body
     );
 
-    if (result.event) {
-      await cmsRegistry.emit(
-        result.event.type,
-        result.event.payload,
-        "PageController.updatePage"
-      );
-    }
+    await handleEventDispatch(result, "PageController.updatePage");
 
     return res.json({
       success: true,

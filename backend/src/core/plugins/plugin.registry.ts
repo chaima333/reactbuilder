@@ -13,6 +13,9 @@ export class PluginRegistry {
     return this.instance;
   }
 
+  // ======================
+  // REGISTER
+  // ======================
   register(plugin: ICmsPlugin, priority = 10, enabled = true) {
     if (this.plugins.has(plugin.name)) return;
 
@@ -25,23 +28,49 @@ export class PluginRegistry {
     console.log(`🔌 [Registry] ${plugin.name} registered`);
   }
 
-  async emit(event: string, payload: any) {
+  // ======================
+  // EMIT
+  // ======================
+  async emit(event: string, payload: any, source?: string) {
     const eventId = payload?._meta?.eventId;
 
     if (!eventId) {
-      console.error("🚨 Missing eventId");
+      console.error(`🚨 Missing eventId for ${event}`);
       return;
     }
 
-    const active = Array.from(this.plugins.values())
+    console.log(`📡 [Dispatcher] ${event} | ${eventId} | ${source ?? "unknown"}`);
+
+    const activePlugins = Array.from(this.plugins.values())
       .filter(p => p.enabled && p.instance.events.includes(event))
       .sort((a, b) => b.priority - a.priority);
 
-    console.log(`📡 [Bus] ${event} | ${eventId}`);
-
-    for (const { instance } of active) {
+    for (const { instance } of activePlugins) {
       await instance.execute(event, payload);
     }
+  }
+
+  // ======================
+  // GET SINGLE PLUGIN
+  // ======================
+  public getPlugin(name: string): ICmsPlugin | undefined {
+    return this.plugins.get(name)?.instance;
+  }
+
+  // ======================
+  // ALL PLUGINS (DEBUG)
+  // ======================
+  public getPlugins(): string[] {
+    return Array.from(this.plugins.values()).map(p => p.instance.name);
+  }
+
+  // ======================
+  // PLUGINS FOR EVENT (FIXED NAME)
+  // ======================
+  public getPluginsForEvent(event: string): string[] {
+    return Array.from(this.plugins.values())
+      .filter(p => p.instance.events.includes(event))
+      .map(p => p.instance.name);
   }
 }
 
