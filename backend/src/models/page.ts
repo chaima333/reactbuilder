@@ -12,6 +12,7 @@ import {
 import { User } from "./User";
 import { Site } from "./site";
 import { Seo } from "./Seo";
+import { fi } from "zod/v4/locales";
 
 // Type pour les blocs de l'éditeur
 export type Block = { type: string; content: string };
@@ -90,11 +91,9 @@ export class Page extends Model {
 })
 publishedAt!: Date;
 
-// 📂 src/models/page.ts
-
 @Column({
   type: DataType.JSONB, 
-  allowNull: true,
+  field: "meta_data", 
   defaultValue: {}
 })
 metaData: any; 
