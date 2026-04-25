@@ -1,21 +1,20 @@
-import { Plugin } from "../../core/plugins/plugin.interface";
+import { ICmsPlugin } from "../../core/plugins/plugin.interface";
 import { PAGE_EVENTS } from "../../core/plugins/events/pageEvents";
 
 import { PageVersionRepository } from "../pages/repositories/pageVersion.repository"; // ثبت في الـ path
 
 
-export const VersionPlugin: Plugin = {
+export const VersionPlugin: ICmsPlugin = {
   name: "version-plugin",
   events: [PAGE_EVENTS.UPDATED],
-  priority: 100, // نعطيوها أعلى priority
+  priority: 100,
+  mode: "sync",
   enabled: true,
 
   register({ eventBus }) {
-    // ميثود فارغة أو تستعملها لو حاجتك بـ setup أوّلي
     console.log("🔌 [VersionPlugin]: Ready for sync execution");
   },
 
-  // 🎯 هذي الميثود اللي كان الـ Engine يلوّج عليها ومالقاهاش
   async execute(event: string, payload: any) {
     const { shouldVersion, oldPage, siteId, userId } = payload;
 

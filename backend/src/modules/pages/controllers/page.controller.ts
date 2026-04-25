@@ -56,22 +56,25 @@ export const getPages = async (req: AuthRequest, res: Response) => {
 // ========================
 // 🟢 UPDATE PAGE
 // ========================
+// 📂 src/controllers/page.controller.ts
+
 export const updatePage = async (req: AuthRequest, res: Response) => {
   try {
-    const page = await PageService.updatePage(
-      req.siteContext.siteId,
-      Number(req.params.pageId),
-      req.user.id,
-      req.body
-    );
+    const { id } = req.params;
+    const { siteId } = req.siteContext;
+    const userId = req.user.id;
+
+    // 1. الأوركسترا تبدأ وتنتهي في الـ Service
+    const updatedPage = await PageService.updatePage(siteId, id, userId, req.body);
 
     return res.json({
       success: true,
-      data: PageMapper.toDTO(page)
+      data: PageMapper.toDTO(updatedPage) // Mapper يرجع داتا نظيفة للـ Front
     });
 
   } catch (err: any) {
-    return res.status(500).json({
+    // Handling Errors (Not Found, Validation, etc.)
+    return res.status(err.status || 500).json({
       success: false,
       message: err.message
     });

@@ -6,9 +6,9 @@ import { NotificationPlugin } from "./modules/plugin/notification.plugin";
 import { eventBus } from "./core/plugins/events/eventBus"; // ثبت في الـ path
 
 export const bootstrapPlugins = () => {
-  cmsRegistry.register(VersionPlugin);
-  cmsRegistry.register(SEOPlugin);
-  cmsRegistry.register(NotificationPlugin);
+  cmsRegistry.register(VersionPlugin, 100);
+  cmsRegistry.register(SEOPlugin, 50);
+  cmsRegistry.register(NotificationPlugin, 10);
 
   // نعديو الـ eventBus كـ context للـ plugins
   cmsRegistry.init({ eventBus }); 

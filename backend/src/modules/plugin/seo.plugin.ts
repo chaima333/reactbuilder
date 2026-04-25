@@ -1,10 +1,11 @@
-import { Plugin } from "../../core/plugins/plugin.interface";
 import { PAGE_EVENTS } from "../../core/plugins/events/pageEvents";
+import { ICmsPlugin } from "../../core/plugins/plugin.types";
 
-export const SEOPlugin: Plugin = {
+export const SEOPlugin: ICmsPlugin = {
   name: "seo-plugin",
   events: [PAGE_EVENTS.UPDATED],
-  priority: 5,
+  priority: 50,
+  mode: "async",
   enabled: true,
 
   // الخدمة الثقيلة هنا بركة

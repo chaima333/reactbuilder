@@ -1,8 +1,10 @@
-// 📂 src/plugins/plugin.types.ts
+// 📂 src/core/plugins/plugin.types.ts
 export interface ICmsPlugin {
   name: string;
-  events: string[]; // 👈 ردها مصفوفة (Array)
-  handle?(payload: any): Promise<void> | void;
-  execute?(event: string, payload: any): Promise<void>;
-  register(context: any): void; // 👈 زيد هذي باش الـ Registry ينجم يناديها
+  mode: 'sync' | 'async'; // 🔥 زيدها هنا
+  events: string[];
+  priority: number;
+  enabled?: boolean;
+  register(context: any): void;
+  execute(event: string, payload: any): Promise<void>;
 }

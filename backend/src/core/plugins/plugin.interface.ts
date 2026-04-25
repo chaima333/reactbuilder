@@ -1,15 +1,18 @@
+// 📂 src/core/plugins/plugin.interface.ts
+
 import { EventEmitter } from "events";
 
 export interface PluginContext {
   eventBus: EventEmitter;
 }
 
-export interface Plugin {
+// ✅ المصدر الوحيد للمعلومة توّة
+export interface ICmsPlugin {
   name: string;
-  priority?: number;
-  enabled?: boolean;
-  events: string[]; // 🔥 زيد السطر هذا هنا باش يتنحى الـ Error
+  priority: number;
+  mode: 'sync' | 'async';
+  events: string[];
+  enabled: boolean; // 🔥 زيد السطر هذا هنا باش الـ VersionPlugin يسكت
   register(ctx: PluginContext): void;
-  // زدنا هذي للـ Worker مستقبلاً
-  execute?: (event: string, payload: any) => Promise<void>; 
+  execute(event: string, payload: any): Promise<void>;
 }
