@@ -60,12 +60,12 @@ export const getPages = async (req: AuthRequest, res: Response) => {
 
 export const updatePage = async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const { pageId } = req.params;
     const { siteId } = req.siteContext;
     const userId = req.user.id;
 
     // 1. الأوركسترا تبدأ وتنتهي في الـ Service
-    const updatedPage = await PageService.updatePage(siteId, id, userId, req.body);
+    const updatedPage = await PageService.updatePage(siteId, pageId, userId, req.body);
 
     return res.json({
       success: true,
