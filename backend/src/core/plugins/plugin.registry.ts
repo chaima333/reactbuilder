@@ -1,8 +1,5 @@
-// 📂 src/core/plugins/plugin.registry.ts
 import { ICmsPlugin } from "./plugin.types";
-import { addToQueue } from "../queues/plugin.queue";
-import { eventBus } from "./events/eventBus";
-
+import crypto from 'crypto';
 export class PluginRegistry {
   private static instance: PluginRegistry;
   private plugins: Map<string, { instance: ICmsPlugin; priority: number; enabled: boolean }> = new Map();
@@ -54,41 +51,55 @@ export class PluginRegistry {
     await this.orchestrate(event, enrichedPayload);
   }
 
-  private async orchestrate(event: string, payload: any) {
-    const activePlugins = Array.from(this.plugins.values())
-      .filter(p => p.enabled && p.instance.events.includes(event))
-      .sort((a, b) => b.priority - a.priority);
 
-    for (const { instance } of activePlugins) {
-      const traceId = payload._meta.eventId.split('-')[0];
-      const start = Date.now();
+private processedEvents = new Set<string>(); // 🛡️ Idempotency Store (للتبسيط توّة)
 
-      try {
-        console.log(`[Trace][${traceId}] 🟢 Executing: ${instance.name}`);
-        
-        if (instance.mode === 'sync') {
-          await instance.execute(event, payload);
-        } else {
-          await addToQueue(instance.name, event, payload, { priority: instance.priority });
-        }
+private async orchestrate(event: string, payload: any) {
+  const eventId = payload._meta.eventId;
 
-        const duration = Date.now() - start;
-        console.log(`[Trace][${traceId}] 🏁 ${instance.name} Done | ${duration}ms`);
+  // 1️⃣ Idempotency Check
+  if (this.processedEvents.has(eventId)) {
+    console.warn(`⚠️ [Idempotency] Event ${eventId} already processed. Skipping.`);
+    return;
+  }
 
-      } catch (err: any) {
-        console.error(`💥 [Plugin Error] ${instance.name} failed:`, err.message);
-        
-        if (instance.isCritical) {
-          console.error(`🚨 CRITICAL FAILURE in ${instance.name}. Aborting chain.`);
-          throw err; 
-        }
+  const activePlugins = Array.from(this.plugins.values())
+    .filter(p => p.enabled && p.instance.events.includes(event))
+    .sort((a, b) => b.priority - a.priority);
+
+  for (const { instance } of activePlugins) {
+    const start = Date.now();
+    try {
+      // 2️⃣ Execution with Timeout (5 seconds)
+      await this.runWithTimeout(instance.execute(event, payload), 5000);
+      
+      console.log(`[Trace] 🏁 ${instance.name} Done | ${Date.now() - start}ms`);
+    } catch (err: any) {
+      console.error(`💥 [Failure] ${instance.name}: ${err.message}`);
+      
+      // 3️⃣ Failure Strategy (Retry or Abort)
+      if (instance.isCritical) {
+        throw new Error(`CRITICAL_PLUGIN_FAILURE: ${instance.name}`);
       }
     }
   }
+
+  // 4️⃣ Mark as Processed
+  this.processedEvents.add(eventId);
+}
+
+private runWithTimeout(promise: Promise<any>, ms: number) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), ms))
+  ]);
+}
   getListeners(): string[] {
     // نرجعو فقط قائمة الأسامي (Keys) متاع الـ Plugins اللي مسجلين عندنا
     return Array.from(this.plugins.keys());
   }
+
+  
 }
 
 export const cmsRegistry = PluginRegistry.getInstance();
