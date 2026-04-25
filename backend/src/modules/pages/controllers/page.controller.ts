@@ -69,7 +69,7 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
 
     return res.json({
       success: true,
-      data: PageMapper.toDTO(updatedPage) // Mapper يرجع داتا نظيفة للـ Front
+      data: history
     });
 
   } catch (err: any) {
