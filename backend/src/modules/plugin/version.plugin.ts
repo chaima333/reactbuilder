@@ -13,10 +13,19 @@ export const VersionPlugin: ICmsPlugin = {
     console.log("🔌 [VersionPlugin]: Registered for sync snapshots");
   },
 
-async execute(event: string, payload: any) {
-  const { oldPage, meta } = payload;
+// 📂 src/modules/plugin/version.plugin.ts
 
-  // 🛡️ الـ Strict Rule:
+async execute(event: string, payload: any) {
+  // 1️⃣ استخراج الـ Context الجديد
+  const { oldPage, meta, action } = payload; 
+
+  // 🛡️ الـ Predictable Rule:
+  // لو الـ Action هي Restore، ما نصنعوش Snapshot جديدة توّة (خاطرنا ديجا رجعنا نسخة قديمة)
+  if (action === 'restore') {
+     console.log("📸 [VersionPlugin]: Restore detected, skipping snapshot to avoid loops.");
+     return;
+  }
+
   const hasContent = oldPage?.content || (oldPage?.blocks && oldPage.blocks.length > 0);
   const isExplicitVersion = meta?.shouldVersion === true;
 
@@ -28,7 +37,7 @@ async execute(event: string, payload: any) {
       content: oldPage.content,
       blocks: oldPage.blocks,
       createdBy: payload.userId,
-      versionTag: meta?.restored ? `restored_from_${meta.versionId}` : `v_${Date.now()}`
+      versionTag: `v_${Date.now()}`
     });
     console.log(`✅ [VersionPlugin]: Clean Snapshot saved.`);
   }

@@ -25,24 +25,31 @@ export class PluginRegistry {
   // 🔥 أهم ميثود: تويّة الـ Registry تربط الـ Plugins بالـ Bus بالرسمي
   init(context: any) {
     console.log("🛠️ [Registry]: Wiring Plugins to Central EventBus...");
-    
-    this.plugins.forEach(({ instance, enabled }) => {
+
+    // 1️⃣ حوّل الـ Map لـ Array ورتبهم حسب الـ Priority (من الأكبر للأصغر)
+    const sortedPlugins = Array.from(this.plugins.values())
+      .sort((a, b) => b.priority - a.priority);
+
+    // 2️⃣ نربطوهم بالـ Bus وهوما مترتبين
+    sortedPlugins.forEach(({ instance, enabled }) => {
       if (!enabled) return;
 
-      // تنفيذ الـ register الخاص بالـ plugin (لتمرير الـ context)
       if (typeof instance.register === 'function') {
         instance.register(context);
       }
 
-      // 🎯 ربط كل Event بالـ Dispatcher متاعنا
       instance.events.forEach(eventName => {
         eventBus.on(eventName, async (payload) => {
+          // 3️⃣ نزيدو Trace ID بسيط (بما إنك مازلت ما استعملتش UUID)
+          const traceId = Math.random().toString(36).substring(7);
+          console.log(`[Trace][${traceId}] Running ${instance.name} on ${eventName}`);
+          
           await this.dispatch(instance, eventName, payload);
         });
       });
     });
 
-    console.log("✅ [Registry]: Reactive Wiring Complete. Listeners active:", eventBus.eventNames());
+    console.log("✅ [Registry]: Reactive Wiring Complete.");
   }
 
   // 🧠 الـ Execution Engine: هو المسؤول عن الـ Sync والـ Async

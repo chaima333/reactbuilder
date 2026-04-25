@@ -168,17 +168,19 @@ static async publishPage(siteId, pageId, userRole, userId) {
       }, { transaction: t });
 
       // 4. 🔥 الـ Emit الموحد
-      await cmsRegistry.emit(PAGE_EVENTS.UPDATED, {
-        page: restored,
-        oldPage: oldPageSnapshot,
-        siteId,
-        userId,
-        meta: {
-          shouldVersion: true,
-          restored: true,
-          versionId: versionId
-        }
-      });
+      // في وسط الـ restoreVersion
+await cmsRegistry.emit(PAGE_EVENTS.RESTORED, {
+  context: {
+    eventId: crypto.randomUUID(),
+    timestamp: Date.now(),
+    action: 'restore',
+    userId,
+    siteId
+  },
+  current: restored.toJSON(),
+  previous: oldPageSnapshot,
+  changes: ['content', 'blocks', 'metaData']
+});
 
       return restored;
     });
