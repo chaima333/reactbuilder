@@ -13,8 +13,6 @@ export const VersionPlugin: ICmsPlugin = {
     console.log("🔌 [VersionPlugin]: Registered for sync snapshots");
   },
 
-// 📂 src/modules/plugins/version.plugin.ts
-
 async execute(event: string, payload: any) {
   try {
     // 📥 1. نجبدو الداتا حسب الـ Contract الجديد

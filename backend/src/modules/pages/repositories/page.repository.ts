@@ -43,7 +43,6 @@ export class PageRepository {
     );
   }
 
-  // 📂 src/modules/pages/repositories/page.repository.ts
 
 static async getHistory(pageId: number, siteId: number) {
   return await PageVersion.findAll({
