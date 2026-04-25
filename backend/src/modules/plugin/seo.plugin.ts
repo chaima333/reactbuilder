@@ -1,5 +1,5 @@
 import { PAGE_EVENTS } from "../../core/plugins/events/pageEvents";
-import { ICmsPlugin } from "../../core/plugins/plugin.types"; // زدت حرف الـ S في لخر باش يقرأ الملف الصحيح
+import { ICmsPlugin } from "../../core/plugins/plugin.types";
 
 export const SEOPlugin: ICmsPlugin = {
   name: "seo-plugin",
@@ -13,15 +13,38 @@ export const SEOPlugin: ICmsPlugin = {
     console.log("🔌 [SEOPlugin]: Registered for async analysis");
   },
 
- // inside SEOPlugin.ts
-async execute(event: string, payload: any) {
-  // يقرأ مالـ newPage إذا موجودة، وإلا مالـ payload طول
-  const data = payload.newPage || payload; 
-  
-  if (!data.title || !data.content) {
-    console.warn(`⚠️ [SEO-Worker] Missing Data:`, payload);
-    return;
+  async execute(event: string, payload: any) {
+    const page = payload?.data?.new;
+
+    if (!page) {
+      console.warn("⚠️ [SEO] Invalid payload structure:", payload?._meta?.eventId);
+      return;
+    }
+
+    if (!page.title || !page.content) {
+      console.warn("⚠️ [SEO] Missing SEO fields:", {
+        id: page.id,
+        event: event
+      });
+      return;
+    }
+
+    // ======================
+    // SEO LOGIC CORE
+    // ======================
+
+    const seoTitle = `${page.title} | My App`;
+    const slug = page.slug;
+
+    console.log("🔍 [SEO] Processing page:", {
+      id: page.id,
+      title: seoTitle,
+      slug
+    });
+
+    // simulate async work
+    await new Promise((r) => setTimeout(r, 50));
+
+    console.log("✅ [SEO] Done:", page.id);
   }
-  // ... بقية الـ logic
-}
 };
