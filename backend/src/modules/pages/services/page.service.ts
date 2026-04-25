@@ -13,9 +13,8 @@ const { nanoid } = require("nanoid");
 
 export class PageService {
 
-  private static generateSlug(title: string) {
-    const base = slugify(title, { lower: true, strict: true });
-    return `${base}-${nanoid(5)}`;
+ private static generateSlug(title: string) {
+    return `${slugify(title, { lower: true, strict: true })}-${nanoid(5)}`;
   }
 
   // ================= CREATE =================
@@ -58,50 +57,53 @@ export class PageService {
 
   // ================= UPDATE =================
 
-static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
-  return await sequelize.transaction(async (t) => {
-    // 1. لوج على الـ Page
-    const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
-    if (!page) throw new Error("PAGE_NOT_FOUND");
+  static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
+    return sequelize.transaction(async (t) => {
 
-    // 2. سجل الحالة القديمة (قبل التعديل) للـ Versioning
-    const oldPage = page.toJSON();
+      const page = await Page.findOne({
+        where: { id: pageId, siteId },
+        transaction: t
+      });
 
-    // 3. طبق التعديلات
-    // ملاحظة: استعملت updatedPage باش تكون واضحة
-    const updatedPage = await page.update(input, { transaction: t });
+      if (!page) throw new Error("PAGE_NOT_FOUND");
 
-    // 4. بناء الـ Payload متاع الـ Event بذكاء
-    // هوني الـ Logic اللي يخلي الـ Bus يعرف شنوة يعمل
-    return {
-  data: updatedPage,
+      const oldPage = page.toJSON();
 
-  event: {
-    type: PAGE_EVENTS.UPDATED,
-    shouldEmit: true,
+      const updatedPage = await page.update(input, { transaction: t });
 
-    payload: {
-      data: {
-        current: updatedPage.toJSON(),
-        previous: oldPage,
-        shouldVersion: true // أو من PageEngine
-      },
+      return {
+        data: updatedPage,
 
-      context: {
-        userId,
-        siteId
-      },
+        event: {
+          type: PAGE_EVENTS.UPDATED,
+          shouldEmit: true,
 
-      _meta: {
-        eventId: crypto.randomUUID(),
-        timestamp: Date.now(),
-        source: "PageService.updatePage"
-      }
-    }
+          payload: {
+            // 🔥 IMPORTANT: unified structure (NO confusion anymore)
+            current: updatedPage.toJSON(),
+            previous: oldPage,
+
+            context: {
+              siteId,
+              userId
+            },
+
+            flags: {
+              shouldVersion: true,
+              shouldSEO: true
+            },
+
+            _meta: {
+              eventId: crypto.randomUUID(),
+              timestamp: Date.now(),
+              source: "PageService.updatePage"
+            }
+          }
+        }
+      };
+    });
   }
-};
-  });
-}
+
 
 
   // ================= DELETE =================

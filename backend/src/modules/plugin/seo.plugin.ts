@@ -1,4 +1,3 @@
-import { PAGE_EVENTS } from "../../core/plugins/events/pageEvents";
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
 
 export const SEOPlugin: ICmsPlugin = {
@@ -6,45 +5,21 @@ export const SEOPlugin: ICmsPlugin = {
   mode: "async",
   priority: 50,
   isCritical: false,
-  events: [PAGE_EVENTS.UPDATED, PAGE_EVENTS.RESTORED],
+  events: ["page.updated", "page.restored"],
   enabled: true,
 
   register() {
-    console.log("🔌 [SEOPlugin]: Registered for async analysis");
+    console.log("🔌 SEOPlugin ready");
   },
 
   async execute(event: string, payload: any) {
-    const page = payload?.data?.new;
+    const data = payload.current; // 👈 fixed contract
 
-    if (!page) {
-      console.warn("⚠️ [SEO] Invalid payload structure:", payload?._meta?.eventId);
+    if (!data?.title || !data?.content) {
+      console.warn("⚠️ SEO skip: invalid payload");
       return;
     }
 
-    if (!page.title || !page.content) {
-      console.warn("⚠️ [SEO] Missing SEO fields:", {
-        id: page.id,
-        event: event
-      });
-      return;
-    }
-
-    // ======================
-    // SEO LOGIC CORE
-    // ======================
-
-    const seoTitle = `${page.title} | My App`;
-    const slug = page.slug;
-
-    console.log("🔍 [SEO] Processing page:", {
-      id: page.id,
-      title: seoTitle,
-      slug
-    });
-
-    // simulate async work
-    await new Promise((r) => setTimeout(r, 50));
-
-    console.log("✅ [SEO] Done:", page.id);
+    console.log("🔍 SEO processing:", data.title);
   }
 };
