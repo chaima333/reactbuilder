@@ -20,7 +20,6 @@ const dispatchEvent = async (result: any, source: string) => {
 
 const handleServiceResult = async (result: any, source: string) => {
   if (result?.event) {
-    // ✋ نكلمو الـ Dispatcher موش الـ Registry
     await EventDispatcher.dispatch(
       result.event.type,
       result.event.payload,
