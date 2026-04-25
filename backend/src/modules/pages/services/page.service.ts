@@ -19,7 +19,6 @@ export class PageService {
   }
 
   // ================= CREATE =================
- // PageService.ts
 static async createPage(siteId: number, userId: number, data: any) {
   const existing = await PageRepository.findByTitle(siteId, data.title);
   if (existing) throw new Error("PAGE_ALREADY_EXISTS");
@@ -53,7 +52,7 @@ static async createPage(siteId: number, userId: number, data: any) {
 
   // ================= UPDATE =================
 
-static async updatePage(siteId, pageId, userId, input) {
+static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
   if (!pageId) {
     console.error("❌ [Service Error]: pageId is undefined!");
     throw new Error("PAGE_ID_REQUIRED");
@@ -63,27 +62,38 @@ static async updatePage(siteId, pageId, userId, input) {
   let oldPage;
   let actions;
 
+  // 1. Transaction لحماية الـ Update
   await sequelize.transaction(async (t) => {
     const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
-    if (!page) throw new Error("NOT_FOUND");
+    if (!page) throw new Error("PAGE_NOT_FOUND");
     
     oldPage = page.toJSON();
+    
+    // حساب الـ Actions (Versioning, SEO changes, etc.)
     actions = PageEngine.resolveActions(oldPage, input);
+    
+    // تنفيذ الـ Update
     updated = await page.update(input, { transaction: t });
-  });
 
-  // 🎯 الـ Emit توّة مريغل
-  await cmsRegistry.emit(PAGE_EVENTS.UPDATED, {
-    page: updated,
-    oldPage,
-    shouldVersion: actions.shouldVersion,
-    userId,
-    siteId
+    // 🔥 الـ Emit داخل الـ Transaction (لو تحب الـ Critical Plugins يوقفو الـ Update لو فشلوا)
+    // أو خلّيها لبرّة لو تحب الـ Update يتعدّى مهما صار في الـ Plugins.
+    // القرار ليك: أنا ننصح بالـ Emit داخل الـ Transaction للـ Data Integrity.
+    await cmsRegistry.emit(
+      PAGE_EVENTS.UPDATED, 
+      {
+        page: updated.toJSON(),
+        oldPage,
+        meta: { shouldVersion: actions.shouldVersion }, // 🧠 بعثنا الـ meta كـ Contract واضح
+        userId,
+        siteId,
+        action: 'update'
+      },
+      "PageService.updatePage" // 👈 الـ Source الحقيقي
+    );
   });
 
   return updated;
 }
-
   // ================= DELETE =================
   static async deletePage(siteId: number, pageId: number) {
 
@@ -147,43 +157,44 @@ static async publishPage(siteId, pageId, userRole, userId) {
 
   // ================= RESTORE =================
   static async restoreVersion(siteId: number, pageId: number, versionId: number, userId: number) {
-    return await sequelize.transaction(async (t) => {
-      // 1. جيب الـ Version
-      const version = await PageVersionRepository.findById(versionId, siteId);
-      if (!version) throw new Error("VERSION_NOT_FOUND");
+  return await sequelize.transaction(async (t) => {
+    // 1. جيب الـ Version
+    const version = await PageVersionRepository.findById(versionId, siteId);
+    if (!version) throw new Error("VERSION_NOT_FOUND");
 
-      // 2. جيب الـ Page
-      const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
-      if (!page) throw new Error("PAGE_NOT_FOUND");
+    // 2. جيب الـ Page
+    const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
+    if (!page) throw new Error("PAGE_NOT_FOUND");
 
-      const oldPageSnapshot = page.toJSON();
+    // نأخذ Snapshot قبل التعديل
+    const oldPageSnapshot = page.toJSON();
 
-      // 3. Update Page
-      const restored = await page.update({
-        title: version.title,
-        content: version.content,
-        blocks: version.blocks,
-        status: PAGE_STATUS.DRAFT,
-        metaData: { ...page.metaData, isRestored: true, lastVersionId: versionId }
-      }, { transaction: t });
+    // 3. Update Page
+    const restored = await page.update({
+      title: version.title,
+      content: version.content,
+      blocks: version.blocks,
+      status: PAGE_STATUS.DRAFT,
+      metaData: { ...page.metaData, isRestored: true, lastVersionId: versionId }
+    }, { transaction: t });
 
-      // 4. 🔥 الـ Emit الموحد
-      // في وسط الـ restoreVersion
-await cmsRegistry.emit(PAGE_EVENTS.RESTORED, {
-  context: {
-    eventId: crypto.randomUUID(),
-    timestamp: Date.now(),
-    action: 'restore',
-    userId,
-    siteId
-  },
-  current: restored.toJSON(),
-  previous: oldPageSnapshot,
-  changes: ['content', 'blocks', 'metaData']
-});
+    // 4. 🔥 الـ Emit الموحد داخل الـ Transaction
+    // ملاحظة: استعملنا restored و oldPageSnapshot اللي عرفناهم الفوق
+    await cmsRegistry.emit(
+      PAGE_EVENTS.RESTORED, 
+      { 
+        current: restored.toJSON(), 
+        oldPage: oldPageSnapshot, 
+        action: 'restore',
+        siteId,
+        userId
+      },
+      "PageService.restoreVersion"
+    );
 
-      return restored;
-    });
-  }
+    return restored;
+  });
 }
+}
+
 

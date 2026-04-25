@@ -62,9 +62,13 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
     const { siteId } = req.siteContext;
     const userId = req.user.id;
 
-    // 1. الأوركسترا تبدأ وتنتهي في الـ Service
-    const updatedPage = await PageService.updatePage(siteId, pageId, userId, req.body);
 
+const updatedPage = await PageService.updatePage(
+  Number(siteId), 
+  Number(pageId), 
+  Number(userId), 
+  req.body
+);
     return res.json({
       success: true,
       data: PageMapper.toDTO(updatedPage) // 🔥 رجّع الصفحة اللي تعدلت موش كلمة history!

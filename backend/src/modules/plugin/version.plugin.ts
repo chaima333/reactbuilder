@@ -1,11 +1,12 @@
-import { ICmsPlugin } from "../../core/plugins/plugin.interface";
 import { PAGE_EVENTS } from "../../core/plugins/events/pageEvents";
 import { PageVersionRepository } from "../pages/repositories/pageVersion.repository";
+import { ICmsPlugin } from "../../core/plugins/plugin.types"; // زدت حرف الـ S في لخر باش يقرأ الملف الصحيح
 
 export const VersionPlugin: ICmsPlugin = {
   name: "version-plugin",
   mode: "sync",
   priority: 100,
+  isCritical: true,
   events: [PAGE_EVENTS.UPDATED, PAGE_EVENTS.RESTORED], // 👈 يسمع الزوز توّة
   enabled: true,
 

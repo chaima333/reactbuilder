@@ -1,10 +1,12 @@
-// 📂 src/core/plugins/plugin.types.ts
+// 📂 src/core/plugins/plugin.types.ts (تأكد من المسار)
+
 export interface ICmsPlugin {
   name: string;
-  mode: 'sync' | 'async'; // 🔥 زيدها هنا
-  events: string[];
+  mode: 'sync' | 'async';
   priority: number;
-  enabled?: boolean;
-  register(context: any): void;
+  isCritical: boolean; // <--- لازم تكون مكتوبة هكّا بالظبط
+  events: string[];
+  enabled: boolean;
+  register?(context: any): void;
   execute(event: string, payload: any): Promise<void>;
 }
