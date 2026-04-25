@@ -33,46 +33,30 @@ class PluginRegistry {
   }
 
   // 🧠 الـ Execution Engine: هو المسؤول عن توزيع المهام
-  async dispatch(event: string, payload: any) {
-    const activePlugins = Array.from(this.plugins.values())
-      .filter(p => p.enabled && p.instance.events.includes(event))
-      .sort((a, b) => b.priority - a.priority);
 
-    console.log(`🚀 [Engine]: Dispatching ${event} to ${activePlugins.length} plugins`);
+async dispatch(event: string, payload: any) {
+  const activePlugins = Array.from(this.plugins.values())
+    .filter(p => p.enabled && p.instance.events.includes(event))
+    .sort((a, b) => b.priority - a.priority);
 
-    for (const entry of activePlugins) {
-      const { instance, priority } = entry;
-      
-      // 🛡️ Guard: التأكد من وجود ميثود التنفيذ
-      if (typeof instance.execute !== 'function') {
-        console.warn(`⚠️ [Engine]: Plugin ${instance.name} is missing 'execute' method. Skipping...`);
-        continue; 
+  for (const entry of activePlugins) {
+    const { instance, priority } = entry;
+    
+    if (typeof instance.execute !== 'function') continue;
+
+    try {
+      // 🎯 الفرز حسب الـ Mode موش حسب الاسم
+      if (instance.mode === 'sync') {
+        await instance.execute(event, payload);
+      } else {
+        await addToQueue(instance.name, event, payload, { priority });
       }
-
-      try {
-        // 1. التنفيذ المتزامن للـ Versioning (لأنها حرجة للداتا)
-        if (instance.name.includes('version')) {
-          console.log(`📜 [Sync Execution]: ${instance.name}`);
-          await instance.execute(event, payload);
-        } 
-        // 2. ترحيل بقية المهام للـ Queue (SEO, Notifications...)
-        else {
-          console.log(`📦 [Offloading]: ${instance.name} to Queue (Priority: ${priority})`);
-          await addToQueue(instance.name, event, payload, { priority });
-        }
-      } catch (err: any) {
-        console.error(`💥 [Engine Error] in ${instance.name}:`, err.message);
-        
-        // إذا فشل الـ Versioning، نوقّف العملية لأنها Critical
-        if (instance.name.includes('version')) {
-            throw err; 
-        }
-      }
+    } catch (err: any) {
+      console.error(`💥 [Engine Error] ${instance.name}:`, err.message);
+      if (instance.mode === 'sync') throw err; 
     }
-
-    // الـ EventBus يبقى كـ Backup للمراقبة أو لمهام أخرى
-    eventBus.emit(event, payload);
   }
+}
 
   // 🛠️ ميثود الـ getPlugin يحتاجها الـ Background Worker لجلب الـ Logic
   getPlugin(name: string) {

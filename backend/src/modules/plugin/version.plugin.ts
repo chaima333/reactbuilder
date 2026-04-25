@@ -1,31 +1,21 @@
 import { ICmsPlugin } from "../../core/plugins/plugin.interface";
 import { PAGE_EVENTS } from "../../core/plugins/events/pageEvents";
-
-import { PageVersionRepository } from "../pages/repositories/pageVersion.repository"; // ثبت في الـ path
-
+import { PageVersionRepository } from "../pages/repositories/pageVersion.repository";
 
 export const VersionPlugin: ICmsPlugin = {
   name: "version-plugin",
-  events: [PAGE_EVENTS.UPDATED],
-  priority: 100,
   mode: "sync",
+  priority: 100,
+  events: [PAGE_EVENTS.UPDATED],
   enabled: true,
 
   register({ eventBus }) {
-    console.log("🔌 [VersionPlugin]: Ready for sync execution");
+    console.log("🔌 [VersionPlugin]: Registered for sync snapshots");
   },
 
   async execute(event: string, payload: any) {
     const { shouldVersion, oldPage, siteId, userId } = payload;
-
-    if (!shouldVersion) return;
-
-    console.log(`📜 [Plugin]: Creating snapshot for page: ${oldPage?.id}`);
-
-    if (!oldPage?.id) {
-      console.error("❌ Cannot create version: oldPage.id is missing!");
-      return;
-    }
+    if (!shouldVersion || !oldPage?.id) return;
 
     try {
       await PageVersionRepository.create({
@@ -40,7 +30,7 @@ export const VersionPlugin: ICmsPlugin = {
       console.log(`✅ [VersionPlugin]: Snapshot saved for page ${oldPage.id}`);
     } catch (err: any) {
       console.error("❌ Database Error in VersionPlugin:", err.message);
-      throw err; // نبعثوه للـ Engine باش يعرف اللي فمة مشكلة حرجة
+      throw err; // يوقّف الـ Execution لو فمة غلطة
     }
   }
 };
