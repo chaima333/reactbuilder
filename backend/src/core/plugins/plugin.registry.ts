@@ -33,46 +33,49 @@ export class PluginRegistry {
     console.log(`🔌 [Registry]: ${plugin.name} registered.`);
   }
 
-  // src/core/plugins/plugin.registry.ts
+ async emit(event: string, payload: any, source?: string) {
+    // 1. التثبت من الـ ID (Idempotency Guard)
+    const eventId = payload?._meta?.eventId;
 
-async emit(event: string, payload: any) {
-  // 1️⃣ تأكد إن الـ Payload فيه الـ Meta صحيحة قبل ما تبعث
-  if (!payload._meta || !payload._meta.eventId) {
-    console.error("🚨 [Bus] Attempted to emit event without eventId!", event);
-    return;
+    if (!eventId) {
+      console.error(`🚨 [Bus] Blocked: Event ${event} from ${source || 'unknown'} missing eventId!`);
+      return;
+    }
+
+    // 2. توزيع المهام على الـ Plugins
+    await this.orchestrate(event, payload);
   }
-
-  // 2️⃣ ابعث للـ Bus العادي
-  eventBus.emit(event, payload);
-}
 
 private async orchestrate(event: string, payload: any) {
-  const eventId = payload._meta?.eventId || 'no-id';
+    const eventId = payload._meta.eventId;
+    
+    // نجيبوا الـ Plugins المهتمين بالـ Event هذا
+    const activePlugins = Array.from(this.plugins.values())
+      .filter(p => p.enabled && p.instance.events.includes(event))
+      .sort((a, b) => b.priority - a.priority);
 
-  // ⚠️ إذا الـ ID موش موجود، أوقف العملية فوراً (هذا اللي منع الـ unknown)
-  if (eventId === 'no-id') return;
+    if (activePlugins.length === 0) return;
 
-  // 3️⃣ توّة نجيبوا الـ Plugins
-  const activePlugins = Array.from(this.plugins.values())
-    .filter(p => p.enabled && p.instance.events.includes(event))
-    .sort((a, b) => b.priority - a.priority);
+    // طباعة سطر واحد فقط في الـ Bus
+    console.log(`📡 [Bus] Dispatching: ${event} | ID: ${eventId}`);
 
-  if (activePlugins.length === 0) return;
-
-  // السطر هذا يطبع مرة وحدة بركة توّة
-  console.log(`📡 [Bus] Dispatching: ${event} | ID: ${eventId}`);
-
-  for (const { instance } of activePlugins) {
-    const start = Date.now();
-    try {
-      await this.runWithTimeout(instance.execute(event, payload), 5000);
-      console.log(`[Trace][${eventId.slice(0,8)}] 🏁 ${instance.name} Done | ${Date.now() - start}ms`);
-    } catch (err: any) {
-      console.error(`💥 [Failure][${instance.name}]: ${err.message}`);
-      if (instance.isCritical) throw err;
+    for (const { instance } of activePlugins) {
+      const start = Date.now();
+      try {
+        // تنفيذ الـ Plugin مع Timeout 5 ثواني
+        await Promise.race([
+          instance.execute(event, payload),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+        ]);
+        
+        console.log(`[Trace][${eventId.slice(0, 8)}] 🏁 ${instance.name} Done | ${Date.now() - start}ms`);
+      } catch (err: any) {
+        console.error(`💥 [Failure][${instance.name}]: ${err.message}`);
+        if (instance.isCritical) throw err;
+      }
     }
   }
-}
+
 
   private runWithTimeout(promise: Promise<any>, ms: number) {
     return Promise.race([
