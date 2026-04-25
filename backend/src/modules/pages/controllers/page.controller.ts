@@ -56,8 +56,6 @@ export const getPages = async (req: AuthRequest, res: Response) => {
 // ========================
 // 🟢 UPDATE PAGE
 // ========================
-// 📂 src/controllers/page.controller.ts
-
 export const updatePage = async (req: AuthRequest, res: Response) => {
   try {
     const { pageId } = req.params;
@@ -165,21 +163,21 @@ export const getPageHistory = async (req: AuthRequest, res: Response) => {
 // ========================
 export const restorePageVersion = async (req: AuthRequest, res: Response) => {
   try {
-    const page = await PageWorkflowService.restoreVersion(
-      req.siteContext.siteId,
-      Number(req.params.pageId),
-      Number(req.params.versionId)
+    const { pageId, versionId } = req.params;
+    const { siteId } = req.siteContext;
+
+    // 🔥 نعيطوا للـ Service اللي وريتهولي توّة
+    const restoredPage = await PageVersionService.restoreVersion(
+      Number(siteId),
+      Number(pageId),
+      Number(versionId)
     );
 
     return res.json({
       success: true,
-      data: PageMapper.toDTO(page)
+      data: PageMapper.toDTO(restoredPage)
     });
-
   } catch (err: any) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
