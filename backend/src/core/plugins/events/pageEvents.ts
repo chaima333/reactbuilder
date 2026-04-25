@@ -1,5 +1,6 @@
 export const PAGE_EVENTS = {
   UPDATED: "page.updated",
+  RESTORED: "page.restored", // 👈 هذي تفرق في الـ Logic
   VERSION_CREATE: "page.version.create",
   SLUG_CHANGED: "slug.changed"
 };

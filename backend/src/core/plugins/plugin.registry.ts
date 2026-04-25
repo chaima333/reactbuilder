@@ -1,13 +1,12 @@
 // 📂 src/core/plugins/plugin.registry.ts
-
 import { ICmsPlugin } from "./plugin.types";
 import { addToQueue } from "../queues/plugin.queue";
+import { eventBus } from "./events/eventBus";
 
 export class PluginRegistry {
   private static instance: PluginRegistry;
   private plugins: Map<string, { instance: ICmsPlugin; priority: number; enabled: boolean }> = new Map();
 
-  // Constructor Private باش نمنعو الـ new لبرا
   private constructor() {}
 
   public static getInstance(): PluginRegistry {
@@ -23,37 +22,58 @@ export class PluginRegistry {
     console.log(`🔌 [Registry]: ${plugin.name} registered`);
   }
 
+  // 🔥 أهم ميثود: تويّة الـ Registry تربط الـ Plugins بالـ Bus بالرسمي
   init(context: any) {
-    this.plugins.forEach(p => {
-      if (typeof p.instance.register === 'function') p.instance.register(context);
+    console.log("🛠️ [Registry]: Wiring Plugins to Central EventBus...");
+    
+    this.plugins.forEach(({ instance, enabled }) => {
+      if (!enabled) return;
+
+      // تنفيذ الـ register الخاص بالـ plugin (لتمرير الـ context)
+      if (typeof instance.register === 'function') {
+        instance.register(context);
+      }
+
+      // 🎯 ربط كل Event بالـ Dispatcher متاعنا
+      instance.events.forEach(eventName => {
+        eventBus.on(eventName, async (payload) => {
+          await this.dispatch(instance, eventName, payload);
+        });
+      });
     });
+
+    console.log("✅ [Registry]: Reactive Wiring Complete. Listeners active:", eventBus.eventNames());
   }
 
-  async emit(event: string, payload: any) {
-    const activePlugins = Array.from(this.plugins.values())
-      .filter(p => p.enabled && p.instance.events.includes(event))
-      .sort((a, b) => b.priority - a.priority);
-
-    for (const entry of activePlugins) {
-      const { instance, priority } = entry;
-      try {
-        if (instance.mode === 'sync') {
-          await instance.execute(event, payload);
-        } else {
-          await addToQueue(instance.name, event, payload, { priority });
-        }
-      } catch (err: any) {
-        console.error(`💥 [Engine Error] ${instance.name}:`, err.message);
+  // 🧠 الـ Execution Engine: هو المسؤول عن الـ Sync والـ Async
+  private async dispatch(instance: ICmsPlugin, event: string, payload: any) {
+    try {
+      if (instance.mode === 'sync') {
+        // 🔥 تنفيذ مباشر (Blocking)
+        await instance.execute(event, payload);
+      } else {
+        // 🚀 دفع للـ Queue (Non-blocking)
+        const priority = this.plugins.get(instance.name)?.priority || 10;
+        await addToQueue(instance.name, event, payload, { priority });
       }
+    } catch (err: any) {
+      console.error(`💥 [Engine Error] ${instance.name} on ${event}:`, err.message);
     }
   }
-getPlugin(name: string) {
+
+  // الـ emit توّة تولي "عفوية" عبر الـ Bus
+  async emit(event: string, payload: any) {
+    console.log(`📡 [Bus]: Emitting ${event}`);
+    eventBus.emit(event, payload);
+  }
+
+  getPlugin(name: string) {
     return this.plugins.get(name)?.instance;
   }
+
   getListeners() {
     return Array.from(this.plugins.keys());
   }
 }
 
-// 🎯 نخرجو النسخة الوحيدة
 export const cmsRegistry = PluginRegistry.getInstance();

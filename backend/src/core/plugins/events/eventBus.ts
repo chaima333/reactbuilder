@@ -1,9 +1,14 @@
+// 📂 src/core/plugins/events/eventBus.ts
 import { EventEmitter } from 'events';
 
-// نصنعو Instance وحدة ونخرجوها للناس الكل
-export const eventBus = new EventEmitter();
+class CentralBus extends EventEmitter {}
 
-// نزيدو هذي باش نسهلو الخدمة في الـ Plugins
-export const emitSafe = (event: string, payload: any) => {
-  eventBus.emit(event, payload);
+export const eventBus = new CentralBus();
+
+// ميثود مساعدة للتأكد من الـ Listeners
+export const debugBus = () => {
+  return {
+    events: eventBus.eventNames(),
+    totalListeners: eventBus.getMaxListeners()
+  };
 };
