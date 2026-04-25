@@ -8,6 +8,8 @@ import { SlugResolver } from "../services/slugResolver.service";
 import { SEOBuilder } from "../engine/seoBuilder";
 import { PageMapper } from "../mappers/page.mapper";
 import { RedirectGraphEngine } from "../engine/redirectGraph.engine";
+import { cmsRegistry } from "../../../core/plugins/plugin.registry";
+import { PAGE_EVENTS } from "../../../core/plugins/events/pageEvents";
 
 // ========================
 // 🟢 CREATE PAGE
@@ -60,25 +62,31 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
   try {
     const { pageId } = req.params;
     const { siteId } = req.siteContext;
-    const userId = req.user.id;
 
+    // 1. تنفيذ الـ Business Logic (Pure DB)
+    const result = await PageService.updatePage(
+      Number(siteId), 
+      Number(pageId), 
+      req.body
+    );
 
-const updatedPage = await PageService.updatePage(
-  Number(siteId), 
-  Number(pageId), 
-  Number(userId), 
-  req.body
-);
-    return res.json({
-      success: true,
-      data: PageMapper.toDTO(updatedPage) // 🔥 رجّع الصفحة اللي تعدلت موش كلمة history!
-    });
+    // 2. الـ Orchestration: الـ Controller يقرر يخرج الـ Event توا
+    // هكا نضمنوا إنو الـ Transaction متاع الـ DB سكرت صايي
+    await cmsRegistry.emit(
+      PAGE_EVENTS.UPDATED, 
+      {
+        page: result.updated,
+        oldPage: result.oldPage,
+        meta: { shouldVersion: result.shouldVersion },
+        userId: req.user.id,
+        siteId
+      },
+      "PageController.updatePage"
+    );
 
+    return res.json({ success: true, data: result.updated });
   } catch (err: any) {
-    return res.status(err.status || 500).json({
-      success: false,
-      message: err.message
-    });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -169,27 +177,28 @@ export const restorePageVersion = async (req: AuthRequest, res: Response) => {
   try {
     const { pageId, versionId } = req.params;
     const { siteId } = req.siteContext;
-    const userId = req.user.id; // 👈 لازمنا الـ userId باش نقيدو شكون عمل الـ restore
 
-    // 🎯 نندهو للـ PageService موش الـ PageVersionService
-    // خاطر الـ PageService هي اللي فاها الـ Logic متاع الـ Update والـ Events
-    const restoredPage = await PageService.restoreVersion(
+    // 1. Pure Restore
+    const result = await PageService.restoreVersion(
       Number(siteId),
       Number(pageId),
-      Number(versionId),
-      userId
+      Number(versionId)
     );
 
-    return res.json({
-      success: true,
-      data: PageMapper.toDTO(restoredPage)
-    });
-    
+    // 2. Explicit Emit
+    await cmsRegistry.emit(
+      PAGE_EVENTS.RESTORED, 
+      { 
+        current: result.restored, 
+        oldPage: result.oldPage, 
+        siteId,
+        userId: req.user.id
+      },
+      "PageController.restoreVersion"
+    );
+
+    return res.json({ success: true, data: result.restored });
   } catch (err: any) {
-    console.error("❌ [Restore Controller Error]:", err.message);
-    return res.status(500).json({ 
-      success: false, 
-      message: err.message 
-    });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };

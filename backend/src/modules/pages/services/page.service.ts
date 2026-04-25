@@ -52,42 +52,23 @@ static async createPage(siteId: number, userId: number, data: any) {
 
   // ================= UPDATE =================
 
-static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
-  if (!pageId) {
-    console.error("❌ [Service Error]: pageId is undefined!");
-    throw new Error("PAGE_ID_REQUIRED");
-  }
+static async updatePage(siteId: number, pageId: number, input: any) {
+    return await sequelize.transaction(async (t) => {
+      const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
+      if (!page) throw new Error("PAGE_NOT_FOUND");
+      
+      const oldPage = page.toJSON();
+      const actions = PageEngine.resolveActions(oldPage, input);
+      const updated = await page.update(input, { transaction: t });
 
-  let updated;
-  let oldPage;
-  let actions;
-
-  await sequelize.transaction(async (t) => {
-    const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
-    if (!page) throw new Error("PAGE_NOT_FOUND");
-    
-    oldPage = page.toJSON();
-    
-    actions = PageEngine.resolveActions(oldPage, input);
-
-    updated = await page.update(input, { transaction: t });
-
-    await cmsRegistry.emit(
-      PAGE_EVENTS.UPDATED, 
-      {
-        page: updated.toJSON(),
+      // نرجعوا كل شي للـ Controller وهو يتصرف
+      return {
+        updated: updated.toJSON(),
         oldPage,
-        meta: { shouldVersion: actions.shouldVersion }, // 🧠 بعثنا الـ meta كـ Contract واضح
-        userId,
-        siteId,
-        action: 'update'
-      },
-      "PageService.updatePage" // 👈 الـ Source الحقيقي
-    );
-  });
-
-  return updated;
-}
+        shouldVersion: actions.shouldVersion
+      };
+    });
+  }
   // ================= DELETE =================
   static async deletePage(siteId: number, pageId: number) {
 
@@ -150,45 +131,30 @@ static async publishPage(siteId, pageId, userRole, userId) {
   }
 
   // ================= RESTORE =================
-  static async restoreVersion(siteId: number, pageId: number, versionId: number, userId: number) {
-  return await sequelize.transaction(async (t) => {
-    // 1. جيب الـ Version
-    const version = await PageVersionRepository.findById(versionId, siteId);
-    if (!version) throw new Error("VERSION_NOT_FOUND");
+static async restoreVersion(siteId: number, pageId: number, versionId: number) {
+    return await sequelize.transaction(async (t) => {
+      const version = await PageVersionRepository.findById(versionId, siteId);
+      if (!version) throw new Error("VERSION_NOT_FOUND");
 
-    // 2. جيب الـ Page
-    const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
-    if (!page) throw new Error("PAGE_NOT_FOUND");
+      const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
+      if (!page) throw new Error("PAGE_NOT_FOUND");
 
-    // نأخذ Snapshot قبل التعديل
-    const oldPageSnapshot = page.toJSON();
+      const oldPage = page.toJSON();
 
-    // 3. Update Page
-    const restored = await page.update({
-      title: version.title,
-      content: version.content,
-      blocks: version.blocks,
-      status: PAGE_STATUS.DRAFT,
-      metaData: { ...page.metaData, isRestored: true, lastVersionId: versionId }
-    }, { transaction: t });
+      const restored = await page.update({
+        title: version.title,
+        content: version.content,
+        blocks: version.blocks,
+        status: PAGE_STATUS.DRAFT,
+        metaData: { ...page.metaData, isRestored: true, lastVersionId: versionId }
+      }, { transaction: t });
 
-    // 4. 🔥 الـ Emit الموحد داخل الـ Transaction
-    // ملاحظة: استعملنا restored و oldPageSnapshot اللي عرفناهم الفوق
-    await cmsRegistry.emit(
-      PAGE_EVENTS.RESTORED, 
-      { 
-        current: restored.toJSON(), 
-        oldPage: oldPageSnapshot, 
-        action: 'restore',
-        siteId,
-        userId
-      },
-      "PageService.restoreVersion"
-    );
-
-    return restored;
-  });
-}
+      return {
+        restored: restored.toJSON(),
+        oldPage
+      };
+    });
+  }
 }
 
 
