@@ -17,7 +17,7 @@ export class EventDispatcher {
     this.processedIds.add(eventId);
     
     // تنظيف الـ Cache بعد فترة (اختياري حسب الـ Load)
-    setTimeout(() => this.processedIds.delete(eventId), 30000);
+    setTimeout(() => this.processedIds.delete(eventId), 60000);
 
     // توّة بركة الـ Event يخرج للـ Bus
     await cmsRegistry.emit(event, payload, source);
