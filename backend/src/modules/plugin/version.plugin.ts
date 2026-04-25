@@ -21,45 +21,34 @@ export const VersionPlugin: ICmsPlugin = {
     console.log("🔌 [VersionPlugin]: Ready and Trusting the Dispatcher");
   },
 
-  async execute(event: string, payload: any) {
-    const { oldPage, meta, action, siteId, userId, _meta } = payload;
-    
-    // الـ EventId جاي من الـ Dispatcher كـ Single Source of Truth
-    const eventId = _meta?.eventId || 'no-id';
-    const shortId = eventId.slice(0, 8);
-
-    // بناء الـ Version Tag لسهولة البحث والـ Rollback
-    const versionTag = action === 'restore' 
-      ? `restored_ref_${shortId}` 
-      : `v_ref_${shortId}`;
-
-    /**
-     * شروط الحفظ:
-     * - الـ Engine قرر إنو لازم Version (تغيير محتوى حقيقي).
-     * - أو العملية هي Restore (باش نوثقوا الحالة اللي رجعنا منها).
-     * - والتأكد إنو الـ Page القديمة فيها محتوى باش ما نسجلوش "فراغ".
-     */
-    const shouldSave = (meta?.shouldVersion || action === 'restore') && 
-                       (oldPage?.content || (oldPage?.blocks && oldPage.blocks.length > 0));
-
-    if (shouldSave) {
-      try {
-        await PageVersionRepository.create({
-          pageId: oldPage.id,
-          siteId: siteId,
-          title: oldPage.title,
-          content: oldPage.content,
-          blocks: oldPage.blocks,
-          createdBy: userId,
-          versionTag: versionTag 
-        });
-        
-        console.log(`✅ [VersionPlugin] Snapshot created: ${versionTag}`);
-      } catch (error) {
-        console.error(`❌ [VersionPlugin] Failed to save snapshot:`, error);
-        // بما أن الـ Plugin هو isCritical، الخطأ هنا سيتم التعامل معه في الـ Bus
-        throw error;
-      }
-    }
+async execute(event: string, payload: any) {
+  console.log("-----------------------------------------");
+  console.log("🔥 [VersionPlugin] DEBUG START");
+  console.log("📍 Event Received:", event);
+  console.log("📦 Full Payload Meta:", JSON.stringify(payload._meta, null, 2));
+  console.log("📄 Has NewPage Data?:", !!payload.newPage);
+  
+  // التشخيص القاتل:
+  if (event !== 'page.updated' && event !== 'page.restored') {
+    console.log("🛑 [VersionPlugin] Skip: Event name mismatch!");
+    return;
   }
+
+  if (!payload.newPage) {
+    console.log("🛑 [VersionPlugin] Skip: No newPage data in payload!");
+    return;
+  }
+
+  try {
+    const startDB = Date.now();
+    // هوني حط الكود القديم متاع الـ Version.create(...)
+    // مثلاً:
+    // await PageVersion.create({ ... });
+    console.log(`✅ [VersionPlugin] DB Write Success | Time: ${Date.now() - startDB}ms`);
+  } catch (err) {
+    console.error("💥 [VersionPlugin] DB Write Error:", err);
+  }
+  console.log("🔥 [VersionPlugin] DEBUG END");
+  console.log("-----------------------------------------");
+}
 };
