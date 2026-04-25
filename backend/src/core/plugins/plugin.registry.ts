@@ -90,6 +90,10 @@ export class PluginRegistry {
     });
     this.isInitialized = true;
   }
+  public getPlugin(name: string): ICmsPlugin | undefined {
+    const entry = this.plugins.get(name);
+    return entry ? entry.instance : undefined;
+}
 
   getListeners(): string[] {
     return eventBus.eventNames() as string[]; 
