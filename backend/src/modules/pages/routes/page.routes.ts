@@ -24,7 +24,7 @@ router.use(authenticateJWT);
 // 📄 CRUD
 router.get("/", requirePermission(PERMISSIONS.SITE_READ), getPages);
 router.post("/", requirePermission(PERMISSIONS.PAGE_CREATE), createPage);
-router.put("/:id", requirePermission(PERMISSIONS.PAGE_UPDATE), updatePage);
+router.put("/:pageId", requirePermission(PERMISSIONS.PAGE_UPDATE), updatePage);
 router.delete("/:pageId", requirePermission(PERMISSIONS.PAGE_DELETE), deletePage);
 
 // 🚀 lifecycle
