@@ -7,6 +7,7 @@ import { Page } from "../../../models/page";
 import { SlugMap } from "../../../models/slug_map";
 import { PAGE_EVENTS } from "../../../core/plugins/events/pageEvents";
 import crypto from 'crypto';
+import PageVersion from "../../../models/pageVersion";
 
 const { nanoid } = require("nanoid");
 
@@ -150,29 +151,41 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
   }
 
   // ================= RESTORE =================
-  static async restoreVersion(siteId: number, pageId: number, versionId: number, userId: number) {
-    return await sequelize.transaction(async (t) => {
-      const version = await PageVersionRepository.findById(versionId, siteId);
-      if (!version) throw new Error("VERSION_NOT_FOUND");
+ static async restoreVersion(siteId: number, pageId: number, versionId: number, userId: number) {
+  return await sequelize.transaction(async (t) => {
+    // ... Logic الجلب والـ Restore ...
+    const version = await PageVersion.findOne({ where: { id: versionId, pageId }, transaction: t });
+    if (!version) throw new Error("VERSION_NOT_FOUND");
 
-      const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
-      if (!page) throw new Error("PAGE_NOT_FOUND");
+    const page = await Page.findByPk(pageId, { transaction: t });
+    const oldPage = page.toJSON();
 
-      const oldPageSnapshot = page.toJSON();
-      const restored = await page.update({
-        title: version.title,
-        content: version.content,
-        blocks: version.blocks,
-        status: PAGE_STATUS.DRAFT
-      }, { transaction: t });
+    // عملية الـ Restore الفعلية
+    await page.update({ 
+      content: version.content, 
+      title: version.title,
+      blocks: version.blocks 
+    }, { transaction: t });
 
-      return {
-        data: restored,
-        event: {
-          type: PAGE_EVENTS.RESTORED,
-          payload: { current: restored.toJSON(), oldPage: oldPageSnapshot, siteId, userId }
+    return {
+      data: page,
+      event: {
+        type: "page.restored", // 👈 نوع الحدث
+        shouldEmit: true,
+        payload: {
+          siteId,
+          userId,
+          oldPage,
+          newPage: page.toJSON(),
+          versionId,
+          _meta: { 
+            eventId: crypto.randomUUID(), // 🛡️ الطابع البريدي
+            timestamp: Date.now(),
+            source: "PageService.restoreVersion"
+          }
         }
-      };
-    });
-  }
+      }
+    };
+  });
+}
 }

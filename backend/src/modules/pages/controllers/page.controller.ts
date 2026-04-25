@@ -13,10 +13,6 @@ const handleEventDispatch = async (result: any, source: string) => {
   }
 };
 
-// 🗑️ تأكد إنك فسخت دالة "dispatchEvent" جملة مالملف
-
-// 🗑️ امسح دالة dispatchEvent القديمة جملة باش ما عادش تغلط وتناديها
-
 // ========================
 // 🟢 CREATE PAGE
 // ========================
@@ -116,6 +112,7 @@ export const restorePageVersion = async (req: AuthRequest, res: Response) => {
       req.user.id
     );
 
+    // ✅ نداء واحد بركة للـ Dispatcher النظيف متاعنا
     await handleEventDispatch(result, "PageController.restorePageVersion");
 
     return res.json({ success: true, data: PageMapper.toDTO(result.data) });
