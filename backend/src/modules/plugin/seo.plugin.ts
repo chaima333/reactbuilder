@@ -13,21 +13,15 @@ export const SEOPlugin: ICmsPlugin = {
     console.log("🔌 [SEOPlugin]: Registered for async analysis");
   },
 
-  // 1️⃣ نقبلو الـ payload كامل كـ Object واحد باش ما يصيرش Crash في الـ Destructuring
-  async execute(event: string, payload: any) {
-    
-    // 2️⃣ نلوجو على الداتا وين ما كانت (Contract القديم أو الجديد)
-    // نثبتو في payload.current (الجديد) أو payload.page (القديم) أو الـ payload بيدو لو مبعوث غالط
-    const targetPage = payload?.current || payload?.page || payload;
-
-    // 3️⃣ الحماية القصوى (Failsafe)
-    if (!targetPage || !targetPage.title) {
-      console.error(`⚠️ [SEO-Worker] Missing Data: Payload structure is not recognized.`, payload);
-      return; 
-    }
-
-    console.log(`🔍 [SEO-Worker] Analyzing ${event} for: ${targetPage.title}`);
-
-   
+ // inside SEOPlugin.ts
+async execute(event: string, payload: any) {
+  // يقرأ مالـ newPage إذا موجودة، وإلا مالـ payload طول
+  const data = payload.newPage || payload; 
+  
+  if (!data.title || !data.content) {
+    console.warn(`⚠️ [SEO-Worker] Missing Data:`, payload);
+    return;
   }
+  // ... بقية الـ logic
+}
 };
