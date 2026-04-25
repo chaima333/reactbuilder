@@ -42,4 +42,14 @@ export class PageRepository {
       { transaction }
     );
   }
+
+  // 📂 src/modules/pages/repositories/page.repository.ts
+
+static async getHistory(pageId: number, siteId: number) {
+  return await PageVersion.findAll({
+    where: { pageId, siteId },
+    order: [["createdAt", "DESC"]], // من الأحدث للأقدم
+    limit: 30
+  });
+}
 }

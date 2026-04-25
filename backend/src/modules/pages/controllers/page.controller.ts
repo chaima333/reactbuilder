@@ -69,11 +69,10 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
 
     return res.json({
       success: true,
-      data: history
+      data: PageMapper.toDTO(updatedPage) // 🔥 رجّع الصفحة اللي تعدلت موش كلمة history!
     });
 
   } catch (err: any) {
-    // Handling Errors (Not Found, Validation, etc.)
     return res.status(err.status || 500).json({
       success: false,
       message: err.message
