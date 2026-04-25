@@ -145,4 +145,47 @@ static async publishPage(siteId, pageId, userRole, userId) {
       throw err;
     }
   }
+
+  // ================= RESTORE =================
+  static async restoreVersion(siteId: number, pageId: number, versionId: number, userId: number) {
+    let restored;
+    let oldPageBeforeRestore;
+
+    await sequelize.transaction(async (t) => {
+      // 1. لوج على الـ Version المطلوبة
+      const version = await PageVersionRepository.findById(versionId, siteId);
+      if (!version) throw new Error("VERSION_NOT_FOUND");
+
+      // 2. أجلب الصفحة الحالية قبل ما تفسخها (باش نصوروها snapshot)
+      const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
+      if (!page) throw new Error("PAGE_NOT_FOUND");
+
+      oldPageBeforeRestore = page.toJSON();
+
+      // 3. صبّ بيانات الـ Version في الصفحة الحالية
+      restored = await page.update({
+        title: version.title,
+        content: version.content,
+        blocks: version.blocks,
+        status: PAGE_STATUS.DRAFT, // 🛡️ ديما ترجع Draft للأمان
+        userId: userId
+      }, { transaction: t });
+    });
+
+    // 4. 🔥 الـ Emit الموحد (The Standard Contract)
+    // نفيقو الـ Plugins الكل (Version, SEO, Cache...)
+    await cmsRegistry.emit(PAGE_EVENTS.UPDATED, {
+      page: restored,
+      oldPage: oldPageBeforeRestore,
+      siteId,
+      userId,
+      meta: {
+        shouldVersion: true, // باش السيستام يقيد الحالة اللي كانت موجودة قبل الـ restore
+        restored: true,      // 🚩 علامة إنو التغيير هذا جاي من restore
+        versionId: versionId
+      }
+    });
+
+    return restored;
+  }
 }

@@ -165,18 +165,27 @@ export const restorePageVersion = async (req: AuthRequest, res: Response) => {
   try {
     const { pageId, versionId } = req.params;
     const { siteId } = req.siteContext;
+    const userId = req.user.id; // 👈 لازمنا الـ userId باش نقيدو شكون عمل الـ restore
 
-    const restoredPage = await PageVersionService.restoreVersion(
+    // 🎯 نندهو للـ PageService موش الـ PageVersionService
+    // خاطر الـ PageService هي اللي فاها الـ Logic متاع الـ Update والـ Events
+    const restoredPage = await PageService.restoreVersion(
       Number(siteId),
       Number(pageId),
-      Number(versionId)
+      Number(versionId),
+      userId
     );
 
     return res.json({
       success: true,
       data: PageMapper.toDTO(restoredPage)
     });
+    
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+    console.error("❌ [Restore Controller Error]:", err.message);
+    return res.status(500).json({ 
+      success: false, 
+      message: err.message 
+    });
   }
 };

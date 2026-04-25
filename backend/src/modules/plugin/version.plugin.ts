@@ -13,20 +13,43 @@ export const VersionPlugin: ICmsPlugin = {
     console.log("🔌 [VersionPlugin]: Registered for sync snapshots");
   },
 
-async execute(event: string, payload: any) {
-  const { oldPage, shouldVersion, siteId, userId } = payload;
+// 📂 src/modules/plugins/version.plugin.ts
 
-  if (shouldVersion && oldPage) {
+async execute(event: string, payload: any) {
+  try {
+    // 📥 1. نجبدو الداتا حسب الـ Contract الجديد
+    const { oldPage, siteId, userId, meta } = payload;
+    
+    // نثبتو في الـ Meta (لو Meta مش موجودة، نعتبروها false)
+    const shouldVersion = meta?.shouldVersion || false;
+    const isRestored = meta?.restored || false;
+
+    // 🛡️ 2. التحصين ضد الـ Garbage (الخردة)
+    // ما نصوروش (Snapshot) لو:
+    // - الـ meta قالت لا
+    // - أو الـ oldPage ما جتناش أصلاً
+    // - أو الـ oldPage فارغة (مافيهاش لا content لا blocks)
+    if (!shouldVersion || !oldPage || (!oldPage.content && !oldPage.blocks)) {
+      console.log(`⚠️ [VersionPlugin]: Snapshot skipped for page ${oldPage?.id || 'unknown'}`);
+      return;
+    }
+
+    // 💾 3. تسجيل الـ Version
     await PageVersionRepository.create({
       pageId: oldPage.id,
       siteId: siteId,
-      title: oldPage.title,      // 👈 توّة الـ title ماهوش null
-      content: oldPage.content,  // 👈 توّة الـ content ماهوش null
-      blocks: oldPage.blocks,    // 👈 توّة الـ blocks ماهوش null
+      title: oldPage.title,
+      content: oldPage.content,
+      blocks: oldPage.blocks,
       createdBy: userId,
-      versionTag: `v_${Date.now()}`
+      // نزيدو ملاحظة لو كان الـ version هذي جاية من عملية restore
+      versionTag: isRestored ? `restored_from_${meta.versionId}` : `v_${Date.now()}`
     });
-    console.log(`✅ [VersionPlugin]: Full Snapshot saved for page ${oldPage.id}`);
+
+    console.log(`✅ [VersionPlugin]: Full Snapshot saved for page ${oldPage.id} (Mode: ${isRestored ? 'Restore' : 'Update'})`);
+
+  } catch (err: any) {
+    console.error("❌ [VersionPlugin Critical Error]:", err.message);
   }
 }
 };
