@@ -6,8 +6,8 @@ export const pluginQueue = new Queue('plugin-tasks', {
   connection: REDIS_CONFIG
 });
 
-// 📂 src/queues/plugin.queue.ts
-export const addToQueue = async (pluginName: string, event: string, payload: any) => {
+
+export const addToQueue = async (pluginName: string, event: string, payload: any, options: { priority?: number } = {}) => {
   const uniqueJobId = `${pluginName}-${event}-${payload.page?.id}`;
 
   await pluginQueue.add(
@@ -15,13 +15,9 @@ export const addToQueue = async (pluginName: string, event: string, payload: any
     { pluginName, event, payload },
     {
       jobId: uniqueJobId,
-      attempts: 3, // جرب 3 مرات
-      backoff: {
-        type: 'exponential',
-        delay: 5000, // ابدأ بـ 5 ثواني (5ث، 10ث، 20ث...)
-      },
-      removeOnComplete: { age: 3600 }, // خلي المهام الناجحة ساعة للـ Debugging
-      removeOnFail: { age: 24 * 3600 }, // خلي المهام الفاشلة يوم كامل باش نراجعوها
+      priority: options.priority || 10, // 🔥 BullMQ يرتب الـ Jobs حسب هذا الرقم
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 2000 }
     }
   );
 };

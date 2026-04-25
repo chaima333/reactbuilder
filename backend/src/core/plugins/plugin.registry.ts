@@ -17,37 +17,32 @@ class PluginRegistry {
   }
 
   // 🧠 الـ Execution Engine
-  async dispatch(event: string, payload: any) {
-    const pluginsArray = Array.from(this.plugins.values())
-      .filter(p => p.enabled && p.events.includes(event))
-      .sort((a, b) => b.priority - a.priority); // ترتيب من الأهم للأقل أهمية
 
-    console.log(`🚀 [Engine]: Dispatching ${event} to ${pluginsArray.length} plugins`);
+async dispatch(event: string, payload: any) {
+  const activePlugins = Array.from(this.plugins.values())
+    .filter(p => p.enabled && p.events.includes(event))
+    .sort((a, b) => b.priority - a.priority);
 
-    for (const plugin of pluginsArray) {
-      // 1. المهمات الحرجة (Core) تخدم Sync
+  for (const plugin of activePlugins) {
+    try {
+      // 🛡️ Isolation Layer: كل Plugin في Try-Catch وحدو
       if (plugin.name.includes('version')) {
-        try {
-          console.log(`📜 [Sync Execution]: ${plugin.name}`);
-          if (plugin.execute) await plugin.execute(event, payload); 
-        } catch (err) {
-          console.error(`❌ Critical Plugin Failed: ${plugin.name}`, err);
-          throw err; // يوقف الـ Request باش نضمنوا الـ Data Integrity
-        }
-      } 
-      // 2. المهمات الثانوية تمشي للـ Queue
-      else {
-        console.log(`📦 [Offloading]: ${plugin.name} to Queue`);
-        // ما نستعملوش await هوني باش ما نعطلوش الـ User
-        addToQueue(plugin.name, event, payload).catch(err => 
-          console.error(`❌ Queue Error [${plugin.name}]:`, err)
-        );
+        await plugin.execute(event, payload);
+      } else {
+        // 🚀 نبعثو الـ Priority للـ Queue (BullMQ يحترمها)
+        await addToQueue(plugin.name, event, payload, { 
+          priority: plugin.priority 
+        });
       }
+    } catch (err) {
+      // 💥 الـ Versioning هو الوحيد اللي يوقف الـ Request (Critical)
+      if (plugin.name.includes('version')) throw err;
+      
+      // البقية نكتفيو بالـ Log باش ما نوقفوش الـ Flow
+      console.error(`⚠️ [Engine]: Plugin ${plugin.name} failed to dispatch:`, err.message);
     }
-
-    // نخليوا الـ EventBus للمهمات القديمة أو الـ Internal Monitoring
-    eventBus.emit(event, payload);
   }
+}
 
   // 🛠️ ميثودات مساعدة يحتاجها الـ Worker والـ Bootstrap
   getPlugin(name: string) {
