@@ -2,6 +2,13 @@ import { PAGE_EVENTS } from "../../core/plugins/events/pageEvents";
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
 import { PageVersionRepository } from "../pages/repositories/pageVersion.repository";
 
+/**
+ * VersionPlugin
+ * دور الـ Plugin هذا توّة تقني بحت:
+ * 1. يستقبل الـ Event النظيف من الـ Dispatcher.
+ * 2. يعمل Snapshot (نسخة احتياطية) للـ Page قبل التعديل.
+ * 3. يربط النسخة بـ Tag موحد (correlation ID) للتدقيق.
+ */
 export const VersionPlugin: ICmsPlugin = {
   name: "version-plugin",
   mode: "sync",
@@ -11,40 +18,48 @@ export const VersionPlugin: ICmsPlugin = {
   enabled: true,
 
   register() {
-    // ✅ غيرنا الـ Log ليعكس الواقع الجديد: الـ Plugin أصبح Lean
-    console.log("🔌 [VersionPlugin]: Registered for Clean Event Stream");
+    console.log("🔌 [VersionPlugin]: Ready and Trusting the Dispatcher");
   },
 
   async execute(event: string, payload: any) {
-    // 🛡️ الملاحظة: الـ _meta توّة جاية من الـ Bus كـ Trace فقط
-    const { oldPage, meta, action, siteId, userId, _meta } = payload; 
+    const { oldPage, meta, action, siteId, userId, _meta } = payload;
+    
+    // الـ EventId جاي من الـ Dispatcher كـ Single Source of Truth
     const eventId = _meta?.eventId || 'no-id';
-
-    // 🎯 الـ Tag يبقى مفيد للـ Audit (التدقيق) باش نربط النسخة بالـ Event
     const shortId = eventId.slice(0, 8);
+
+    // بناء الـ Version Tag لسهولة البحث والـ Rollback
     const versionTag = action === 'restore' 
       ? `restored_ref_${shortId}` 
       : `v_ref_${shortId}`;
 
-    // حساب هل يجب الحفظ؟ 
-    // (إذا كانت هناك تغييرات تستحق، أو إذا كانت عملية Restore)
+    /**
+     * شروط الحفظ:
+     * - الـ Engine قرر إنو لازم Version (تغيير محتوى حقيقي).
+     * - أو العملية هي Restore (باش نوثقوا الحالة اللي رجعنا منها).
+     * - والتأكد إنو الـ Page القديمة فيها محتوى باش ما نسجلوش "فراغ".
+     */
     const shouldSave = (meta?.shouldVersion || action === 'restore') && 
                        (oldPage?.content || (oldPage?.blocks && oldPage.blocks.length > 0));
 
     if (shouldSave) {
-      // ✅ لا يوجد هنا أي check لـ "isAlreadyProcessed"
-      // لأن الـ Single Source of Truth (Controller) ضمن لنا عدم التكرار
-      await PageVersionRepository.create({
-        pageId: oldPage.id,
-        siteId: siteId,
-        title: oldPage.title,
-        content: oldPage.content,
-        blocks: oldPage.blocks,
-        createdBy: userId,
-        versionTag: versionTag 
-      });
-      
-      console.log(`✅ [VersionPlugin] Snapshot created: ${versionTag}`);
+      try {
+        await PageVersionRepository.create({
+          pageId: oldPage.id,
+          siteId: siteId,
+          title: oldPage.title,
+          content: oldPage.content,
+          blocks: oldPage.blocks,
+          createdBy: userId,
+          versionTag: versionTag 
+        });
+        
+        console.log(`✅ [VersionPlugin] Snapshot created: ${versionTag}`);
+      } catch (error) {
+        console.error(`❌ [VersionPlugin] Failed to save snapshot:`, error);
+        // بما أن الـ Plugin هو isCritical، الخطأ هنا سيتم التعامل معه في الـ Bus
+        throw error;
+      }
     }
   }
 };

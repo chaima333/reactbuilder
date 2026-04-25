@@ -4,6 +4,7 @@ import { PageService } from "../services/page.service";
 import { PageVersionService } from "../services/pageVersion.service";
 import { PageMapper } from "../mappers/page.mapper";
 import { cmsRegistry } from "../../../core/plugins/plugin.registry";
+import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
 
 // 📡 Central Dispatcher to handle service events
 const dispatchEvent = async (result: any, source: string) => {
@@ -15,9 +16,12 @@ const dispatchEvent = async (result: any, source: string) => {
     );
   }
 };
+// src/modules/pages/controllers/page.controller.ts
+
 const handleServiceResult = async (result: any, source: string) => {
   if (result?.event) {
-    await cmsRegistry.emit(
+    // ✋ نكلمو الـ Dispatcher موش الـ Registry
+    await EventDispatcher.dispatch(
       result.event.type,
       result.event.payload,
       source
