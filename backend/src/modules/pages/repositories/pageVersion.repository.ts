@@ -15,9 +15,9 @@ export class PageVersionRepository {
     });
   }
 
-  static findById(id: number, pageId: number) {
+  static findById(id: number, siteId: number) {
     return PageVersion.findOne({
-      where: { id, pageId }
+      where: { id, siteId }
     });
   }
 }
