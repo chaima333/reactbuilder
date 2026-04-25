@@ -56,27 +56,28 @@ export class PageService {
   }
 
   // ================= UPDATE =================
-  static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
+
+static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
     return await sequelize.transaction(async (t) => {
       const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
       if (!page) throw new Error("PAGE_NOT_FOUND");
-      
+
       const oldPage = page.toJSON();
       const actions = PageEngine.resolveActions(oldPage, input);
       const updated = await page.update(input, { transaction: t });
 
+      // ✅ نرجعوا الـ Data والـ Event المعرّف بوضوح
       return {
         data: updated,
         event: {
           type: PAGE_EVENTS.UPDATED,
-          payload: {
-            page: updated.toJSON(),
-            oldPage,
-            userId,
-            siteId,
-            meta: { shouldVersion: actions.shouldVersion }
-          },
-          shouldEmit: true
+          payload: { 
+            page: updated.toJSON(), 
+            oldPage, 
+            userId, 
+            siteId, 
+            meta: { shouldVersion: actions.shouldVersion } 
+          }
         }
       };
     });
@@ -146,21 +147,18 @@ export class PageService {
       if (!page) throw new Error("PAGE_NOT_FOUND");
 
       const oldPageSnapshot = page.toJSON();
-
       const restored = await page.update({
         title: version.title,
         content: version.content,
         blocks: version.blocks,
-        status: PAGE_STATUS.DRAFT,
-        metaData: { ...page.metaData, isRestored: true, lastVersionId: versionId }
+        status: PAGE_STATUS.DRAFT
       }, { transaction: t });
 
       return {
         data: restored,
         event: {
           type: PAGE_EVENTS.RESTORED,
-          payload: { current: restored.toJSON(), oldPage: oldPageSnapshot, siteId, userId },
-          shouldEmit: true
+          payload: { current: restored.toJSON(), oldPage: oldPageSnapshot, siteId, userId }
         }
       };
     });

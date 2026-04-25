@@ -1,4 +1,3 @@
-
 import { PAGE_EVENTS } from "../../core/plugins/events/pageEvents";
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
 import { PageVersionRepository } from "../pages/repositories/pageVersion.repository";
@@ -12,25 +11,29 @@ export const VersionPlugin: ICmsPlugin = {
   enabled: true,
 
   register() {
-    console.log("🔌 [VersionPlugin]: Registered with Idempotency Guard");
+    // ✅ غيرنا الـ Log ليعكس الواقع الجديد: الـ Plugin أصبح Lean
+    console.log("🔌 [VersionPlugin]: Registered for Clean Event Stream");
   },
 
   async execute(event: string, payload: any) {
-    // 🛡️ ركز هوني: جبدنا الـ _meta اللي فيها الـ eventId والـ source
+    // 🛡️ الملاحظة: الـ _meta توّة جاية من الـ Bus كـ Trace فقط
     const { oldPage, meta, action, siteId, userId, _meta } = payload; 
     const eventId = _meta?.eventId || 'no-id';
 
-    // 🎯 توّة الـ Tag مابقاش تاريخ عشوائي، ولى مربوط بالـ ID متاع العملية
-    // الـ slice(0, 8) فقط باش الـ Tag ما يكونش طويل برشة في الـ DB
+    // 🎯 الـ Tag يبقى مفيد للـ Audit (التدقيق) باش نربط النسخة بالـ Event
     const shortId = eventId.slice(0, 8);
     const versionTag = action === 'restore' 
       ? `restored_ref_${shortId}` 
       : `v_ref_${shortId}`;
 
+    // حساب هل يجب الحفظ؟ 
+    // (إذا كانت هناك تغييرات تستحق، أو إذا كانت عملية Restore)
     const shouldSave = (meta?.shouldVersion || action === 'restore') && 
                        (oldPage?.content || (oldPage?.blocks && oldPage.blocks.length > 0));
 
     if (shouldSave) {
+      // ✅ لا يوجد هنا أي check لـ "isAlreadyProcessed"
+      // لأن الـ Single Source of Truth (Controller) ضمن لنا عدم التكرار
       await PageVersionRepository.create({
         pageId: oldPage.id,
         siteId: siteId,
@@ -38,10 +41,10 @@ export const VersionPlugin: ICmsPlugin = {
         content: oldPage.content,
         blocks: oldPage.blocks,
         createdBy: userId,
-        versionTag: versionTag // 👈 هوني تضمن إنو الـ Action هذي توثقت مرة وحدة
+        versionTag: versionTag 
       });
       
-      console.log(`✅ [VersionPlugin] Snapshot locked with ID: ${versionTag}`);
+      console.log(`✅ [VersionPlugin] Snapshot created: ${versionTag}`);
     }
   }
 };

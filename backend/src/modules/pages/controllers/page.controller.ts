@@ -15,6 +15,15 @@ const dispatchEvent = async (result: any, source: string) => {
     );
   }
 };
+const handleServiceResult = async (result: any, source: string) => {
+  if (result?.event) {
+    await cmsRegistry.emit(
+      result.event.type,
+      result.event.payload,
+      source
+    );
+  }
+};
 
 // ========================
 // 🟢 CREATE PAGE
@@ -53,13 +62,16 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
     const result = await PageService.updatePage(
       Number(req.siteContext.siteId),
       Number(req.params.pageId),
-      Number(req.user.id),
+      req.user.id,
       req.body
     );
-    await dispatchEvent(result, "PageController.updatePage");
+
+    // 🔥 الإطلاق يصير هنا فقط
+    await handleServiceResult(result, "PageController.updatePage");
+
     return res.json({ success: true, data: PageMapper.toDTO(result.data) });
   } catch (err: any) {
-    return res.status(err.status || 500).json({ success: false, message: err.message });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -109,7 +121,9 @@ export const restorePageVersion = async (req: AuthRequest, res: Response) => {
       Number(req.params.versionId),
       req.user.id
     );
-    await dispatchEvent(result, "PageController.restorePageVersion");
+
+    await handleServiceResult(result, "PageController.restorePageVersion");
+
     return res.json({ success: true, data: PageMapper.toDTO(result.data) });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
