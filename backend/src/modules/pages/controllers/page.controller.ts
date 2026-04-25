@@ -4,13 +4,30 @@ import { PageService } from "../services/page.service";
 import { PageVersionService } from "../services/pageVersion.service";
 import { PageMapper } from "../mappers/page.mapper";
 import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
+import { cmsRegistry } from "../../../core/plugins/plugin.registry";
 
 // 🛡️ هذه الدالة الوحيدة اللي تقعد في الملف الفوق
-const handleEventDispatch = async (result: any, source: string) => {
+export const handleEventDispatch = async (
+  result: any,
+  source: string
+) => {
   const event = result?.event;
-  if (event?.payload?._meta?.eventId) {
-    await EventDispatcher.dispatch(event.type, event.payload, source);
+
+  // 🛑 guard 1
+  if (!event) return;
+
+  // 🛑 guard 2
+  if (!event.shouldEmit) return;
+
+  const payload = event.payload;
+
+  // 🛑 guard 3
+  if (!payload?._meta?.eventId) {
+    console.error("🚨 Invalid payload: missing _meta.eventId");
+    return;
   }
+
+  await EventDispatcher.dispatch(event.type, payload, source);
 };
 
 // ========================
@@ -51,18 +68,28 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
       Number(req.siteContext.siteId),
       Number(req.params.pageId),
       req.user.id,
-
       req.body
     );
 
-    // 🔥 الإطلاق يصير هنا فقط
-    await handleEventDispatch(result, "PageController.updatePage");
+    if (result.event) {
+      await cmsRegistry.emit(
+        result.event.type,
+        result.event.payload,
+        "PageController.updatePage"
+      );
+    }
 
-    return res.json({ success: true, data: PageMapper.toDTO(result.data) });
+    return res.json({
+      success: true,
+      data: PageMapper.toDTO(result.data)
+    });
+
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
-  
 };
 
 // ========================

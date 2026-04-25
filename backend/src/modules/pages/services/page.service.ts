@@ -74,24 +74,32 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
     // 4. بناء الـ Payload متاع الـ Event بذكاء
     // هوني الـ Logic اللي يخلي الـ Bus يعرف شنوة يعمل
     return {
-      data: updatedPage,
-      event: {
-        type: PAGE_EVENTS.UPDATED,
-        shouldEmit: true, // الـ Controller يثبت في هذي
-        payload: {
-          siteId,
-          userId,
-          oldPage, 
-          newPage: updatedPage.toJSON(),
-          // 🛡️ هوني "الطابع البريدي" اللي كان ناقصك
-          _meta: {
-            eventId: crypto.randomUUID(), // توليد ID فريد للعملية
-            timestamp: Date.now(),
-            source: "PageService.updatePage"
-          }
-        }
+  data: updatedPage,
+
+  event: {
+    type: PAGE_EVENTS.UPDATED,
+    shouldEmit: true,
+
+    payload: {
+      data: {
+        current: updatedPage.toJSON(),
+        previous: oldPage,
+        shouldVersion: true // أو من PageEngine
+      },
+
+      context: {
+        userId,
+        siteId
+      },
+
+      _meta: {
+        eventId: crypto.randomUUID(),
+        timestamp: Date.now(),
+        source: "PageService.updatePage"
       }
-    };
+    }
+  }
+};
   });
 }
 

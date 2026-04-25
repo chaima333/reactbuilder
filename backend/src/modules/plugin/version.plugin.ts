@@ -2,13 +2,6 @@ import { PAGE_EVENTS } from "../../core/plugins/events/pageEvents";
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
 import { PageVersionRepository } from "../pages/repositories/pageVersion.repository";
 
-/**
- * VersionPlugin
- * دور الـ Plugin هذا توّة تقني بحت:
- * 1. يستقبل الـ Event النظيف من الـ Dispatcher.
- * 2. يعمل Snapshot (نسخة احتياطية) للـ Page قبل التعديل.
- * 3. يربط النسخة بـ Tag موحد (correlation ID) للتدقيق.
- */
 export const VersionPlugin: ICmsPlugin = {
   name: "version-plugin",
   mode: "sync",
@@ -21,34 +14,67 @@ export const VersionPlugin: ICmsPlugin = {
     console.log("🔌 [VersionPlugin]: Ready and Trusting the Dispatcher");
   },
 
-async execute(event: string, payload: any) {
-  console.log("-----------------------------------------");
-  console.log("🔥 [VersionPlugin] DEBUG START");
-  console.log("📍 Event Received:", event);
-  console.log("📦 Full Payload Meta:", JSON.stringify(payload._meta, null, 2));
-  console.log("📄 Has NewPage Data?:", !!payload.newPage);
-  
-  // التشخيص القاتل:
-  if (event !== 'page.updated' && event !== 'page.restored') {
-    console.log("🛑 [VersionPlugin] Skip: Event name mismatch!");
-    return;
-  }
+  async execute(event: string, payload: any) {
+    const eventId = payload?._meta?.eventId;
 
-  if (!payload.newPage) {
-    console.log("🛑 [VersionPlugin] Skip: No newPage data in payload!");
-    return;
-  }
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("🔥 [VersionPlugin] START");
+    console.log("📍 Event:", event);
+    console.log("🆔 EventID:", eventId);
 
-  try {
-    const startDB = Date.now();
-    // هوني حط الكود القديم متاع الـ Version.create(...)
-    // مثلاً:
-    // await PageVersion.create({ ... });
-    console.log(`✅ [VersionPlugin] DB Write Success | Time: ${Date.now() - startDB}ms`);
-  } catch (err) {
-    console.error("💥 [VersionPlugin] DB Write Error:", err);
+    // 1️⃣ Guard: event validation (strict)
+    if (![PAGE_EVENTS.UPDATED, PAGE_EVENTS.RESTORED].includes(event)) {
+      console.log("🛑 Skip: unsupported event");
+      return;
+    }
+
+    // 2️⃣ Guard: must have versioning flag (IMPORTANT FIX)
+    if (!payload?.versioning?.enabled) {
+      console.log("🛑 Skip: versioning disabled by service");
+      return;
+    }
+
+    // 3️⃣ Guard: prevent missing data
+    const page = payload.newPage || payload.restored;
+    if (!page) {
+      console.log("🛑 Skip: no page data found");
+      return;
+    }
+
+    try {
+      const start = Date.now();
+
+      // 4️⃣ Normalize version type
+      const versionType =
+        event === PAGE_EVENTS.RESTORED ? "RESTORE" : "UPDATE";
+
+      // 5️⃣ Create snapshot (REAL LOGIC)
+      const version = await PageVersionRepository.create({
+        pageId: page.id,
+        siteId: payload.siteId,
+        title: page.title,
+        content: page.content,
+        blocks: page.blocks,
+        status: page.status,
+        createdBy: payload.userId,
+
+        versionTag: `${versionType.toLowerCase()}_${eventId?.slice(0, 8)}`,
+        meta: {
+          eventId,
+          type: versionType,
+          source: payload._meta?.source
+        }
+      });
+
+      console.log(
+        `📦 Snapshot CREATED | ID: ${version.id} | ${Date.now() - start}ms`
+      );
+    } catch (err) {
+      console.error("💥 VersionPlugin ERROR:", err);
+      if (this.isCritical) throw err;
+    }
+
+    console.log("🔥 [VersionPlugin] END");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   }
-  console.log("🔥 [VersionPlugin] DEBUG END");
-  console.log("-----------------------------------------");
-}
 };
