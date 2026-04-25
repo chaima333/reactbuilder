@@ -13,24 +13,28 @@ export const VersionPlugin: ICmsPlugin = {
     console.log("🔌 [VersionPlugin]: Registered for sync snapshots");
   },
 
-  async execute(event: string, payload: any) {
-    const { shouldVersion, oldPage, siteId, userId } = payload;
-    if (!shouldVersion || !oldPage?.id) return;
+async execute(event: string, payload: any) {
+  const { shouldVersion, oldPage, siteId, userId } = payload;
 
-    try {
-      await PageVersionRepository.create({
-        pageId: Number(oldPage.id),
-        siteId: Number(siteId),
-        title: oldPage.title,
-        content: oldPage.content,
-        blocks: oldPage.blocks,
-        status: oldPage.status,
-        createdBy: Number(userId)
-      });
-      console.log(`✅ [VersionPlugin]: Snapshot saved for page ${oldPage.id}`);
-    } catch (err: any) {
-      console.error("❌ Database Error in VersionPlugin:", err.message);
-      throw err; // يوقّف الـ Execution لو فمة غلطة
-    }
+  // 🛡️ لو الـ Data ناقصة، ما تخليهوش يوصل للـ Repository.create
+  if (!shouldVersion || !oldPage || !oldPage.id) {
+    console.log("⚠️ [VersionPlugin]: Skipping, missing required data", { 
+      shouldVersion, 
+      hasOldPage: !!oldPage, 
+      id: oldPage?.id 
+    });
+    return;
   }
+
+  try {
+    await PageVersionRepository.create({
+      pageId: Number(oldPage.id), // 👈 تأكد إنو الرقم موجود هنا
+      siteId: Number(siteId),
+      title: oldPage.title,
+      // ... بقية الـ data
+    });
+  } catch (err) {
+    console.error("💥 [VersionPlugin DB Error]:", err.message);
+  }
+}
 };

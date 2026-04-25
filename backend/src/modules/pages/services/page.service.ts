@@ -54,13 +54,16 @@ static async createPage(siteId: number, userId: number, data: any) {
 
   // ================= UPDATE =================
 
-
 static async updatePage(siteId, pageId, userId, input) {
+  if (!pageId) {
+    console.error("❌ [Service Error]: pageId is undefined!");
+    throw new Error("PAGE_ID_REQUIRED");
+  }
+
   let updated;
   let oldPage;
   let actions;
 
-  // 🔒 DB Transaction
   await sequelize.transaction(async (t) => {
     const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
     if (!page) throw new Error("NOT_FOUND");
@@ -70,9 +73,7 @@ static async updatePage(siteId, pageId, userId, input) {
     updated = await page.update(input, { transaction: t });
   });
 
-  // 🎯 عيطة واحدة ذكية تعوض كل شيء
-  // الـ Registry باش يبعث الـ SEO للـ Queue 
-  // ويخدم الـ Versioning في الـ Sync في نفس الوقت
+  // 🎯 الـ Emit توّة مريغل
   await cmsRegistry.emit(PAGE_EVENTS.UPDATED, {
     page: updated,
     oldPage,
