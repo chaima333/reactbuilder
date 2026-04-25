@@ -5,8 +5,8 @@ import { PageVersionRepository } from "../repositories/pageVersion.repository";
 import { sequelize } from "../../../core/database/connection";
 import { Page } from "../../../models/page";
 import { SlugMap } from "../../../models/slug_map";
-import { PageEngine } from "../engine/page.engine";
 import { PAGE_EVENTS } from "../../../core/plugins/events/pageEvents";
+import crypto from 'crypto';
 
 const { nanoid } = require("nanoid");
 
@@ -58,30 +58,42 @@ export class PageService {
   // ================= UPDATE =================
 
 static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
-    return await sequelize.transaction(async (t) => {
-      const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
-      if (!page) throw new Error("PAGE_NOT_FOUND");
+  return await sequelize.transaction(async (t) => {
+    // 1. لوج على الـ Page
+    const page = await Page.findOne({ where: { id: pageId, siteId }, transaction: t });
+    if (!page) throw new Error("PAGE_NOT_FOUND");
 
-      const oldPage = page.toJSON();
-      const actions = PageEngine.resolveActions(oldPage, input);
-      const updated = await page.update(input, { transaction: t });
+    // 2. سجل الحالة القديمة (قبل التعديل) للـ Versioning
+    const oldPage = page.toJSON();
 
-      // ✅ نرجعوا الـ Data والـ Event المعرّف بوضوح
-      return {
-        data: updated,
-        event: {
-          type: PAGE_EVENTS.UPDATED,
-          payload: { 
-            page: updated.toJSON(), 
-            oldPage, 
-            userId, 
-            siteId, 
-            meta: { shouldVersion: actions.shouldVersion } 
+    // 3. طبق التعديلات
+    // ملاحظة: استعملت updatedPage باش تكون واضحة
+    const updatedPage = await page.update(input, { transaction: t });
+
+    // 4. بناء الـ Payload متاع الـ Event بذكاء
+    // هوني الـ Logic اللي يخلي الـ Bus يعرف شنوة يعمل
+    return {
+      data: updatedPage,
+      event: {
+        type: PAGE_EVENTS.UPDATED,
+        shouldEmit: true, // الـ Controller يثبت في هذي
+        payload: {
+          siteId,
+          userId,
+          oldPage, 
+          newPage: updatedPage.toJSON(),
+          // 🛡️ هوني "الطابع البريدي" اللي كان ناقصك
+          _meta: {
+            eventId: crypto.randomUUID(), // توليد ID فريد للعملية
+            timestamp: Date.now(),
+            source: "PageService.updatePage"
           }
         }
-      };
-    });
-  }
+      }
+    };
+  });
+}
+
 
   // ================= DELETE =================
   static async deletePage(siteId: number, pageId: number) {

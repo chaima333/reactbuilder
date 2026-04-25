@@ -3,23 +3,24 @@ import { AuthRequest } from "../../../shared/auth.util";
 import { PageService } from "../services/page.service";
 import { PageVersionService } from "../services/pageVersion.service";
 import { PageMapper } from "../mappers/page.mapper";
-import { cmsRegistry } from "../../../core/plugins/plugin.registry";
 import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
 
 // 📡 Central Dispatcher: توا ولى "بواب" بالرسمي
 const dispatchEvent = async (result: any, source: string) => {
-  // 1. تثبت هل فما Event أصلاً وهل لازم يخرج
-  if (result?.event?.shouldEmit) {
+  // 1. تثبت اللي الـ event موجود والـ payload فيه الـ _meta والـ eventId
+  if (result?.event?.payload?._meta?.eventId) {
     
-    // 🛡️ نكلموا الـ EventDispatcher (العسّاس) موش الـ Registry
     await EventDispatcher.dispatch(
       result.event.type,
-      result.event.payload,
+      result.event.payload, // 👈 ركز هوني: لازم تبعث الـ payload كامل موش الـ data بركة
       source
     );
 
+  } else {
+    console.error(`⚠️ [Controller] Missing eventId in payload from ${source}`);
   }
 };
+
 const handleEventDispatch = async (result: any, source: string) => {
   if (result?.event) {
     // 👈 هوني الـ Fix: نبعثوا الـ 3 Arguments للـ Dispatcher
@@ -79,6 +80,7 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
   }
+  
 };
 
 // ========================
