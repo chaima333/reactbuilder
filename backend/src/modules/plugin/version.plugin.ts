@@ -6,40 +6,37 @@ export const VersionPlugin: ICmsPlugin = {
   name: "version-plugin",
   mode: "sync",
   priority: 100,
-  events: [PAGE_EVENTS.UPDATED],
+  events: [PAGE_EVENTS.UPDATED, PAGE_EVENTS.RESTORED], // 👈 يسمع الزوز توّة
   enabled: true,
 
-  register({ eventBus }) {
+  register() {
     console.log("🔌 [VersionPlugin]: Registered for sync snapshots");
   },
 
-// 📂 src/modules/plugin/version.plugin.ts
+  async execute(event: string, payload: any) {
+    const { oldPage, meta, action, siteId, userId } = payload; 
 
-async execute(event: string, payload: any) {
-  // 1️⃣ استخراج الـ Context الجديد
-  const { oldPage, meta, action } = payload; 
+    // 🛡️ Logic الترقيع:
+    // في الـ Restore، نحبو Snapshot توثق اللحظة اللي رجعنا فيها
+    const versionTag = action === 'restore' 
+      ? `restored_at_${Date.now()}` 
+      : `v_${Date.now()}`;
 
-  // 🛡️ الـ Predictable Rule:
-  // لو الـ Action هي Restore، ما نصنعوش Snapshot جديدة توّة (خاطرنا ديجا رجعنا نسخة قديمة)
-  if (action === 'restore') {
-     console.log("📸 [VersionPlugin]: Restore detected, skipping snapshot to avoid loops.");
-     return;
+    // الـ Snapshot تتسجل لو فمة content ولو الـ meta طلبت هذا (أو لو هو restore)
+    const shouldSave = (meta?.shouldVersion || action === 'restore') && 
+                     (oldPage?.content || (oldPage?.blocks && oldPage.blocks.length > 0));
+
+    if (shouldSave) {
+      await PageVersionRepository.create({
+        pageId: oldPage.id,
+        siteId: siteId,
+        title: oldPage.title,
+        content: oldPage.content,
+        blocks: oldPage.blocks,
+        createdBy: userId,
+        versionTag: versionTag
+      });
+      console.log(`✅ [VersionPlugin]: Snapshot saved with tag: ${versionTag}`);
+    }
   }
-
-  const hasContent = oldPage?.content || (oldPage?.blocks && oldPage.blocks.length > 0);
-  const isExplicitVersion = meta?.shouldVersion === true;
-
-  if (isExplicitVersion && hasContent) {
-    await PageVersionRepository.create({
-      pageId: oldPage.id,
-      siteId: payload.siteId,
-      title: oldPage.title,
-      content: oldPage.content,
-      blocks: oldPage.blocks,
-      createdBy: payload.userId,
-      versionTag: `v_${Date.now()}`
-    });
-    console.log(`✅ [VersionPlugin]: Clean Snapshot saved.`);
-  }
-}
 };
