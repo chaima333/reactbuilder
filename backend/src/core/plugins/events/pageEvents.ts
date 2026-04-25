@@ -2,7 +2,10 @@ export const PAGE_EVENTS = {
   UPDATED: "page.updated",
   RESTORED: "page.restored", // 👈 هذي تفرق في الـ Logic
   VERSION_CREATE: "page.version.create",
-  SLUG_CHANGED: "slug.changed"
+  SLUG_CHANGED: "slug.changed",
+  CREATED: 'page.created',
+  PUBLISHED: 'page.published',
+  DELETED: 'page.deleted',
 };
 
 import { z } from "zod";

@@ -1,203 +1,145 @@
 import { Response } from "express";
 import { AuthRequest } from "../../../shared/auth.util";
-
 import { PageService } from "../services/page.service";
 import { PageVersionService } from "../services/pageVersion.service";
-import { PageWorkflowService } from "../services/PageWorkflowService";
-import { SlugResolver } from "../services/slugResolver.service";
-import { SEOBuilder } from "../engine/seoBuilder";
 import { PageMapper } from "../mappers/page.mapper";
-import { RedirectGraphEngine } from "../engine/redirectGraph.engine";
 import { cmsRegistry } from "../../../core/plugins/plugin.registry";
-import { PAGE_EVENTS } from "../../../core/plugins/events/pageEvents";
+
+/**
+ * 🧠 Global Event Dispatcher
+ */
+const dispatchEvent = async (result: any) => {
+  if (result && result.event) {
+    await cmsRegistry.emit(
+      result.event.type,
+      result.event.payload,
+      result.event.source || "GlobalDispatcher"
+    );
+  }
+};
 
 // ========================
 // 🟢 CREATE PAGE
 // ========================
 export const createPage = async (req: AuthRequest, res: Response) => {
   try {
-    const page = await PageService.createPage(
+    const result = await PageService.createPage(
       req.siteContext.siteId,
       req.user.id,
       req.body
     );
 
+    await dispatchEvent(result);
+
     return res.status(201).json({
       success: true,
-      data: PageMapper.toDTO(page)
+      data: PageMapper.toDTO(result.data || result)
     });
-
-  } catch (err: any) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
-  }
-};
-
-// ========================
-// 🟢 GET PAGES
-// ========================
-export const getPages = async (req: AuthRequest, res: Response) => {
-  try {
-    const pages = await PageService.getPages(req.siteContext.siteId);
-
-    return res.json({
-      success: true,
-      data: PageMapper.toListDTO(pages)
-    });
-
-  } catch (err: any) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
-  }
-};
-
-// ========================
-// 🟢 UPDATE PAGE
-// ========================
-export const updatePage = async (req: AuthRequest, res: Response) => {
-  try {
-    const { pageId } = req.params;
-    const { siteId } = req.siteContext;
-
-    // 1. تنفيذ الـ Business Logic (Pure DB)
-    const result = await PageService.updatePage(
-      Number(siteId), 
-      Number(pageId), 
-      req.body
-    );
-
-    // 2. الـ Orchestration: الـ Controller يقرر يخرج الـ Event توا
-    // هكا نضمنوا إنو الـ Transaction متاع الـ DB سكرت صايي
-    await cmsRegistry.emit(
-      PAGE_EVENTS.UPDATED, 
-      {
-        page: result.updated,
-        oldPage: result.oldPage,
-        meta: { shouldVersion: result.shouldVersion },
-        userId: req.user.id,
-        siteId
-      },
-      "PageController.updatePage"
-    );
-
-    return res.json({ success: true, data: result.updated });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// ========================
-// 🟢 DELETE PAGE
-// ========================
-export const deletePage = async (req: AuthRequest, res: Response) => {
+// 🟢 UPDATE PAGE Fix
+export const updatePage = async (req: AuthRequest, res: Response) => {
   try {
-    await PageService.deletePage(
-      req.siteContext.siteId,
-      Number(req.params.pageId)
+    const result = await PageService.updatePage(
+      Number(req.siteContext.siteId),
+      Number(req.params.pageId),
+      req.body,
+      req.user.id
     );
 
-    return res.json({
-      success: true,
-      message: "Page deleted"
-    });
+    await dispatchEvent(result);
 
-  } catch (err: any) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
+    // ✅ التغيير هنا: استعمل result.data موش result.updated
+    return res.json({ 
+      success: true, 
+      data: PageMapper.toDTO(result.data) 
     });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
+// 🟢 RESTORE VERSION Fix
+export const restorePageVersion = async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await PageService.restoreVersion(
+      Number(req.siteContext.siteId),
+      Number(req.params.pageId),
+      Number(req.params.versionId),
+      req.user.id
+    );
 
+    await dispatchEvent(result);
+
+    // ✅ التغيير هنا: استعمل result.data موش result.restored
+    return res.json({ 
+      success: true, 
+      data: PageMapper.toDTO(result.data) 
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
 // ========================
 // 🟢 PUBLISH PAGE
 // ========================
 export const publishPageController = async (req: AuthRequest, res: Response) => {
   try {
-    const page = await PageService.publishPage(
+    const result = await PageService.publishPage(
       req.siteContext.siteId,
       Number(req.params.pageId),
-      req.siteContext.role,
-      req.user.id
+      req.user.id,
+      req.siteContext.role
     );
 
-    return res.json({
-      success: true,
-      data: PageMapper.toDTO(page)
-    });
+    await dispatchEvent(result);
 
+    return res.json({ 
+      success: true, 
+      // ✅ التغيير هنا: استعمل result.data فقط
+      data: PageMapper.toDTO(result.data) 
+    });
   } catch (err: any) {
-    if (err.message === "FORBIDDEN") {
-      return res.status(403).json({ success: false, message: "Forbidden" });
-    }
-
-    if (err.message === "INVALID_TRANSITION") {
-      return res.status(400).json({ success: false, message: "Invalid transition" });
-    }
-
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    const status = err.message === "FORBIDDEN" ? 403 : err.message === "INVALID_TRANSITION" ? 400 : 500;
+    return res.status(status).json({ success: false, message: err.message });
   }
 };
 
 // ========================
-// 🟢 HISTORY
+// 🟢 READ ONLY ACTIONS (No Events)
 // ========================
+export const getPages = async (req: AuthRequest, res: Response) => {
+  try {
+    const pages = await PageService.getPages(req.siteContext.siteId);
+    return res.json({ success: true, data: PageMapper.toListDTO(pages) });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 export const getPageHistory = async (req: AuthRequest, res: Response) => {
   try {
     const history = await PageVersionService.getPageHistory(
       Number(req.params.pageId),
       req.siteContext.siteId
     );
-
-    return res.json({
-      success: true,
-      data: history
-    });
-
+    return res.json({ success: true, data: history });
   } catch (err: any) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// ========================
-// 🟢 RESTORE VERSION
-// ========================
-export const restorePageVersion = async (req: AuthRequest, res: Response) => {
+export const deletePage = async (req: AuthRequest, res: Response) => {
   try {
-    const { pageId, versionId } = req.params;
-    const { siteId } = req.siteContext;
-
-    // 1. Pure Restore
-    const result = await PageService.restoreVersion(
-      Number(siteId),
-      Number(pageId),
-      Number(versionId)
+    const result = await PageService.deletePage(
+      req.siteContext.siteId,
+      Number(req.params.pageId)
     );
-
-    // 2. Explicit Emit
-    await cmsRegistry.emit(
-      PAGE_EVENTS.RESTORED, 
-      { 
-        current: result.restored, 
-        oldPage: result.oldPage, 
-        siteId,
-        userId: req.user.id
-      },
-      "PageController.restoreVersion"
-    );
-
-    return res.json({ success: true, data: result.restored });
+    await dispatchEvent(result);
+    return res.json({ success: true, message: "Page deleted" });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
   }
