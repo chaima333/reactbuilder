@@ -78,31 +78,31 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
     const hasChanges = Object.keys(changes).length > 0;
 
     return {
-      data: updatedPage,
+  data: updatedPage,
 
-      _event: {
-        type: PAGE_EVENTS.UPDATED,
-        shouldEmit: hasChanges,
+  _event: {
+    type: PAGE_EVENTS.UPDATED,
+    shouldEmit: true, // 👈 خليها true دائماً هنا
 
-        payload: {
-          current: updatedPage.toJSON(),
-          previous: oldPage,
+    payload: {
+      current: updatedPage.toJSON(),
+      previous: oldPage,
 
-          context: { siteId, userId },
+      context: { siteId, userId },
 
-          flags: {
-            shouldVersion: !!changes.content || !!changes.blocks,
-            shouldSEO: !!changes.title
-          },
+      flags: {
+        shouldVersion: true,
+        shouldSEO: true
+      },
 
-          _meta: {
-            eventId: crypto.randomUUID(),
-            timestamp: Date.now(),
-            source: "PageService.updatePage"
-          }
-        }
+      _meta: {
+        eventId: crypto.randomUUID(),
+        timestamp: Date.now(),
+        source: "PageService.updatePage"
       }
-    };
+    }
+  }
+};
   });
 }
 
