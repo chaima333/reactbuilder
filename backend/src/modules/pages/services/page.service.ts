@@ -72,15 +72,15 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
 
     const updatedPage = await page.update(input, { transaction: t });
 
-    // 🔥 real change detection
-    const changes = detectChanges(input, oldPage);
+    const newPage = updatedPage.toJSON();
+    const changes = detectChanges(newPage, oldPage);
 
     const hasChanges = Object.keys(changes).length > 0;
 
     return {
       data: updatedPage,
 
-      event: {
+      _event: {
         type: PAGE_EVENTS.UPDATED,
         shouldEmit: hasChanges,
 
@@ -88,12 +88,8 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
           current: updatedPage.toJSON(),
           previous: oldPage,
 
-          context: {
-            siteId,
-            userId
-          },
+          context: { siteId, userId },
 
-          // 🔥 SMART FLAGS (IMPORTANT FIX)
           flags: {
             shouldVersion: !!changes.content || !!changes.blocks,
             shouldSEO: !!changes.title

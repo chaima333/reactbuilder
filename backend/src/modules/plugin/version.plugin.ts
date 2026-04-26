@@ -16,7 +16,13 @@ export const VersionPlugin: ICmsPlugin = {
     const previous = data?.previous;
 
     if (!flags?.shouldVersion) return;
-    if (!current || !context) return;
+    if (!current || !previous || !context) return;
+
+    // 🔥 real check (correct variables)
+    if (current.updatedAt === previous.updatedAt) {
+      console.log("🟡 No real update → skip version log");
+      return;
+    }
 
     await PageVersionRepository.create({
       pageId: current.id,
@@ -29,6 +35,6 @@ export const VersionPlugin: ICmsPlugin = {
       createdBy: context.userId
     });
 
-    console.log("📦 Version created:", previous?.id, "→", current.id);
+    console.log("📦 Version created:", previous.id, "→", current.id);
   }
 };
