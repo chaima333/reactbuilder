@@ -5,7 +5,6 @@ class CentralBus extends EventEmitter {}
 export const eventBus = new CentralBus();
 
 
-  //change-detector
 
 export const detectChanges = (oldData: any, newData: any): string[] => {
   const changes: string[] = [];
