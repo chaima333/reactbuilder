@@ -175,38 +175,42 @@ const hasChanges = changes.length > 0; // حطها طول هكا خاطرها Ar
   }
 
   // ================= RESTORE =================
- static async restoreVersion(siteId: number, pageId: number, versionId: number, userId: number) {
+static async restoreVersion(siteId: number, pageId: number, versionId: number, userId: number) {
   return await sequelize.transaction(async (t) => {
-    // ... Logic الجلب والـ Restore ...
+    // 1. جلب البيانات
     const version = await PageVersion.findOne({ where: { id: versionId, pageId }, transaction: t });
     if (!version) throw new Error("VERSION_NOT_FOUND");
 
     const page = await Page.findByPk(pageId, { transaction: t });
     const oldPage = page.toJSON();
 
-    // عملية الـ Restore الفعلية
+    // 2. عملية الـ Restore الفعلية
     await page.update({ 
       content: version.content, 
       title: version.title,
       blocks: version.blocks 
     }, { transaction: t });
 
+    const updatedPage = page.toJSON();
+
+    // 3. الميثاق الجديد (The New Event Contract) 🛡️
     return {
       data: page,
       event: {
-        type: "page.restored", // 👈 نوع الحدث
+        type: "page.restored",
         shouldEmit: true,
         payload: {
-          siteId,
-          userId,
-          oldPage,
-          newPage: page.toJSON(),
-          versionId,
-          _meta: { 
-            eventId: crypto.randomUUID(), // 🛡️ الطابع البريدي
+          context: {
+            eventId: crypto.randomUUID(), // الطابع البريدي الرسمي
             timestamp: Date.now(),
-            source: "PageService.restoreVersion"
-          }
+            action: "restore",
+            userId: userId,
+            siteId: siteId
+          },
+          current: updatedPage,  // الصفحة بعد ما رجعت (كانت اسمها newPage)
+          previous: oldPage,    // الصفحة قبل ما تتبدل (كانت اسمها oldPage)
+          changes: ["title", "content", "blocks"], // في الـ restore نعتبروا كل شيء تبدل
+          versionId: versionId // معلومة إضافية تنفعنا
         }
       }
     };
