@@ -4,30 +4,36 @@ import { PageService } from "../services/page.service";
 import { PageVersionService } from "../services/pageVersion.service";
 import { PageMapper } from "../mappers/page.mapper";
 import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
-import { cmsRegistry } from "../../../core/plugins/plugin.registry";
 
 // 🛡️ هذه الدالة الوحيدة اللي تقعد في الملف الفوق
 export const handleEventDispatch = async (
   result: any,
   source: string
 ) => {
-  const event = result?.event;
+  const event = result?._event;
 
-  // 🛑 guard 1
-  if (!event) return;
-
-  // 🛑 guard 2
-  if (!event.shouldEmit) return;
-
-  const payload = event.payload;
-
-  // 🛑 guard 3
-  if (!payload?._meta?.eventId) {
-    console.error("🚨 Invalid payload: missing _meta.eventId");
+  if (!event) {
+    console.log("🟡 No event to dispatch");
     return;
   }
 
-  await EventDispatcher.dispatch(event.type, payload, source);
+  if (!event.shouldEmit) {
+    console.log("🟡 Event blocked by shouldEmit");
+    return;
+  }
+
+  const payload = event.payload;
+
+  if (!payload?._meta?.eventId) {
+    console.error("🚨 Missing eventId");
+    return;
+  }
+
+  await EventDispatcher.dispatch(
+    event.type,
+    payload,
+    source
+  );
 };
 
 // ========================
