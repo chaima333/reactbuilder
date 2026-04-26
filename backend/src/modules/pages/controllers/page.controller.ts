@@ -6,19 +6,11 @@ import { PageMapper } from "../mappers/page.mapper";
 import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
 
 // 🛡️ هذه الدالة الوحيدة اللي تقعد في الملف الفوق
-export const handleEventDispatch = async (
-  result: any,
-  source: string
-) => {
-  const event = result?._event;
+export const handleEventDispatch = async (result: any, source: string) => {
+  const event = result?.event;
 
-  if (!event) {
-    console.log("🟡 No event to dispatch");
-    return;
-  }
-
-  if (!event.shouldEmit) {
-    console.log("🟡 Event blocked by shouldEmit");
+  if (!event?.shouldEmit) {
+    console.log("🟡 Event not emitted");
     return;
   }
 
@@ -29,11 +21,7 @@ export const handleEventDispatch = async (
     return;
   }
 
-  await EventDispatcher.dispatch(
-    event.type,
-    payload,
-    source
-  );
+  await EventDispatcher.dispatch(event.type, payload, source);
 };
 
 // ========================
@@ -77,22 +65,13 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
       req.body
     );
 
-    const event = result.event;
+    await handleEventDispatch(result, "PageController.updatePage");
 
-    // 🔥 dispatch مباشرة
-    await EventDispatcher.dispatch(
-      event.type,
-      event.payload,
-      "PageController.updatePage"
-    );
-
-   return res.json({
-  success: true,
-  data: PageMapper.toDTO(result.data),
-  meta: {
-    eventId: result.event.payload._meta.eventId
-  }
-});
+    return res.json({
+      success: true,
+      data: PageMapper.toDTO(result.data),
+      eventId: result.event?.payload?._meta?.eventId
+    });
 
   } catch (err: any) {
     return res.status(500).json({
