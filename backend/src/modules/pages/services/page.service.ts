@@ -8,6 +8,7 @@ import { SlugMap } from "../../../models/slug_map";
 import { PAGE_EVENTS } from "../../../core/plugins/events/pageEvents";
 import crypto from 'crypto';
 import PageVersion from "../../../models/pageVersion";
+import { detectChanges } from "../../../core/plugins/events/eventBus";
 
 const { nanoid } = require("nanoid");
 
@@ -57,7 +58,7 @@ export class PageService {
 
   // ================= UPDATE =================
 
- static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
+static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
   return sequelize.transaction(async (t) => {
 
     const page = await Page.findOne({
@@ -71,16 +72,17 @@ export class PageService {
 
     const updatedPage = await page.update(input, { transaction: t });
 
-    // 🔥 CHANGE DETECTION (important)
-    const changed =
-      JSON.stringify(updatedPage.toJSON()) !== JSON.stringify(oldPage);
+    // 🔥 real change detection
+    const changes = detectChanges(input, oldPage);
+
+    const hasChanges = Object.keys(changes).length > 0;
 
     return {
       data: updatedPage,
 
       event: {
         type: PAGE_EVENTS.UPDATED,
-        shouldEmit: true,
+        shouldEmit: hasChanges,
 
         payload: {
           current: updatedPage.toJSON(),
@@ -91,10 +93,10 @@ export class PageService {
             userId
           },
 
-          // 🔥 FIXED LOGIC
+          // 🔥 SMART FLAGS (IMPORTANT FIX)
           flags: {
-            shouldVersion: changed,
-            shouldSEO: changed
+            shouldVersion: !!changes.content || !!changes.blocks,
+            shouldSEO: !!changes.title
           },
 
           _meta: {
@@ -107,7 +109,6 @@ export class PageService {
     };
   });
 }
-
 
 
   // ================= DELETE =================
