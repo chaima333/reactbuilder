@@ -1,4 +1,5 @@
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
+import { PageVersionRepository } from "../pages/repositories/pageVersion.repository";
 
 export const VersionPlugin: ICmsPlugin = {
   name: "version-plugin",
@@ -11,7 +12,14 @@ export const VersionPlugin: ICmsPlugin = {
   async execute(event, payload) {
     if (!payload.flags?.shouldVersion) return;
 
-    console.log("📦 Version snapshot");
-    console.log(payload.previous?.id, payload.current?.id);
+   await PageVersionRepository.create({
+  pageId: payload.data.current.id,
+  siteId: payload.context.siteId,
+  title: payload.data.current.title,
+  content: payload.data.current.content,
+  blocks: payload.data.current.blocks,
+  status: payload.data.current.status,
+  createdBy: payload.context.userId
+});    console.log(payload.previous?.id, payload.current?.id);
   }
 };

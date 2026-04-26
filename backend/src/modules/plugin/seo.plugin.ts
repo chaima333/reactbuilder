@@ -13,6 +13,9 @@ export const SEOPlugin: ICmsPlugin = {
 
     if (!data?.title || !data?.content) return;
 
-    console.log("🔍 SEO:", data.title);
+    const score = data.content.length > 100 ? "GOOD" : "BAD";
+
+    console.log(`📊 SEO Score: ${score}`);
+
   }
 };
