@@ -13,6 +13,12 @@ export const SEOPlugin: ICmsPlugin = {
     const { data, flags } = payload;
 
     const current = data?.current;
+    const previous = data?.previous;
+    const hasSEOImpact =
+  current.title !== previous.title ||
+  current.content !== previous.content;
+
+if (!hasSEOImpact) return;
 
     if (!flags?.shouldSEO) return;
     if (!current?.title || !current?.content) return;

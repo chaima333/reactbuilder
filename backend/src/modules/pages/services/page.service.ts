@@ -82,33 +82,18 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
       oldPage.status !== newPage.status;
 
     return {
-      data: updatedPage,
-
-      event: {
-        type: PAGE_EVENTS.UPDATED,
-
-        // 🔥 IMPORTANT: ما تربطهاش بـ detectChanges
-        shouldEmit: true, // خليه true دائمًا، وخلي القرار في flags
-
-        payload: {
-          current: newPage,
-          previous: oldPage,
-
-          context: { siteId, userId },
-
-          flags: {
-            shouldVersion: hasChanges,
-            shouldSEO: hasChanges
-          },
-
-          _meta: {
-            eventId: crypto.randomUUID(),
-            timestamp: Date.now(),
-            source: "PageService.updatePage"
-          }
-        }
-      }
-    };
+  data: updatedPage,
+  event: {
+    type: PAGE_EVENTS.UPDATED,
+    shouldEmit: true,
+    payload: {
+      current: newPage,
+      previous: oldPage,
+      context: { siteId, userId },
+      _meta: { eventId: crypto.randomUUID() }
+    }
+  }
+};
   });
 }
 

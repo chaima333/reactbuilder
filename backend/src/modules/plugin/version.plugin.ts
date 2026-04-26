@@ -18,9 +18,15 @@ export const VersionPlugin: ICmsPlugin = {
     if (!flags?.shouldVersion) return;
     if (!current || !previous || !context) return;
 
-    // 🔥 real check (correct variables)
-    if (current.updatedAt === previous.updatedAt) {
-      console.log("🟡 No real update → skip version log");
+    // 🔥 REAL CHANGE CHECK (correct way)
+    const hasRealChange =
+      current.title !== previous.title ||
+      current.content !== previous.content ||
+      JSON.stringify(current.blocks) !== JSON.stringify(previous.blocks) ||
+      current.status !== previous.status;
+
+    if (!hasRealChange) {
+      console.log("🟡 No real change → skip version log");
       return;
     }
 
