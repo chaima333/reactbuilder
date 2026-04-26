@@ -9,25 +9,28 @@ import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
 export const handleEventDispatch = async (result: any, source: string) => {
   const event = result?.event;
 
-  // 1️⃣ التثبت من الـ Decision Layer (المنع الذكي)
-  if (!event || event.shouldEmit === false) {
+  if (!event) {
+    console.log(`🟡 [Bus] No event from ${source}`);
+    return;
+  }
+
+  if (event.shouldEmit === false) {
     console.log(`🟡 [Bus] Blocked: No significant changes from ${source}`);
     return;
   }
 
   const payload = event.payload;
-
-  // 2️⃣ التثبت من الـ eventId في بلاصته الجديدة (داخل context)
   const eventId = payload?.context?.eventId;
 
   if (!eventId) {
-    console.error(`🚨 [Bus] Error: Missing eventId in payload for ${event.type}`);
+    console.error(`🚨 [Bus] Missing eventId for ${event.type}`, payload);
     return;
   }
 
-  // 3️⃣ إطلاق الحدث للـ Dispatcher
-await EventDispatcher.dispatch(event.type, event.payload, source);};
+  console.log(`📤 [Bus] Dispatching ${event.type} | ${eventId}`);
 
+  await EventDispatcher.dispatch(event.type, payload, source);
+};
 // ========================
 // 🟢 CREATE PAGE
 // ========================
