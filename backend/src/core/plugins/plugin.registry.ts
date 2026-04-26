@@ -31,7 +31,7 @@ export class PluginRegistry {
   // ======================
   // EMIT
   // ======================
- async emit(event: string, payload: any, source?: string) {
+async emit(event: string, payload: any, source?: string) {
   const eventId = payload?._meta?.eventId;
 
   if (!eventId) {
@@ -39,13 +39,11 @@ export class PluginRegistry {
     return;
   }
 
-  console.log(`📡 [Dispatcher] ${event} | ${eventId} | ${source ?? "unknown"}`);
-
   const activePlugins = Array.from(this.plugins.values())
     .filter(p => p.enabled && p.instance.events.includes(event))
     .sort((a, b) => b.priority - a.priority);
 
-  const results: any[] = []; // 👈 الجديد
+  const results: any[] = [];
 
   for (const { instance } of activePlugins) {
     const start = Date.now();
@@ -68,8 +66,9 @@ export class PluginRegistry {
     }
   }
 
-  // 👇 أهم حاجة
   console.log("📊 EVENT SUMMARY:", results);
+
+  return results;
 }
 
   // ======================

@@ -28,7 +28,7 @@ export const VersionPlugin: ICmsPlugin = {
     await PageVersionRepository.create({
   pageId: current.id,
   siteId: context.siteId,
-  versionNumber: Date.now(), // أو increment
+  versionNumber: Date.now(), 
   title: current.title,
   content: current.content,
   blocks: current.blocks,
