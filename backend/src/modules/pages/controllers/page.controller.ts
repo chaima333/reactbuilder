@@ -77,11 +77,19 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
       req.body
     );
 
-    await handleEventDispatch(result, "PageController.updatePage");
+    const event = result.event;
+
+    // 🔥 dispatch مباشرة
+    await EventDispatcher.dispatch(
+      event.type,
+      event.payload,
+      "PageController.updatePage"
+    );
 
     return res.json({
       success: true,
-      data: PageMapper.toDTO(result.data)
+      data: PageMapper.toDTO(result.data),
+      eventId: event.payload.meta.eventId
     });
 
   } catch (err: any) {
@@ -91,7 +99,6 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
     });
   }
 };
-
 // ========================
 // 🟢 DELETE PAGE
 // ========================

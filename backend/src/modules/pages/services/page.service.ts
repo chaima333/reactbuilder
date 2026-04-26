@@ -77,25 +77,20 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
 
     const hasChanges = Object.keys(changes).length > 0;
 
-    return {
+return {
   data: updatedPage,
-
-  _event: {
+  event: {
     type: PAGE_EVENTS.UPDATED,
-    shouldEmit: true, // 👈 خليها true دائماً هنا
-
+    shouldEmit: true,
     payload: {
       current: updatedPage.toJSON(),
       previous: oldPage,
-
       context: { siteId, userId },
-
       flags: {
         shouldVersion: true,
         shouldSEO: true
       },
-
-      _meta: {
+      meta: {
         eventId: crypto.randomUUID(),
         timestamp: Date.now(),
         source: "PageService.updatePage"
