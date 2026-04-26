@@ -58,50 +58,56 @@ export class PageService {
 
   // ================= UPDATE =================
 
-  static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
-    return sequelize.transaction(async (t) => {
+static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
+  return sequelize.transaction(async (t) => {
 
-      const page = await Page.findOne({
-        where: { id: pageId, siteId },
-        transaction: t
-      });
+    const page = await Page.findOne({
+      where: { id: pageId, siteId },
+      transaction: t
+    });
 
-      if (!page) throw new Error("PAGE_NOT_FOUND");
+    if (!page) throw new Error("PAGE_NOT_FOUND");
 
-      const oldPage = page.toJSON();
+    // 1️⃣ Snapshot قبل التعديل
+    const oldPage = page.get({ plain: true });
 
-      const updatedPage = await page.update(input, { transaction: t });
+    // 2️⃣ التحديث في الـ Database
+    const updatedPage = await page.update(input, { transaction: t });
 
-      const newPage = updatedPage.toJSON();
+    // 3️⃣ Snapshot بعد التعديل
+    const newPage = updatedPage.get({ plain: true });
 
-      const changes = detectChanges(oldPage, newPage);
+    // 4️⃣ حساب التغييرات الحقيقية
+    const changes = detectChanges(oldPage, newPage);
+    const hasChanges = changes.length > 0; // حطها طول هكا خاطرها Array
 
-      const hasChanges = changes.length > 0;
-
-      return {
-        data: updatedPage,
-
-        event: {
-          type: PAGE_EVENTS.UPDATED,
-          shouldEmit: hasChanges,
-
-          payload: {
-            context: {
-              eventId: crypto.randomUUID(),
-              timestamp: Date.now(),
-              action: "update",
-              userId,
-              siteId
-            },
-
-            current: newPage,
-            previous: oldPage,
-            changes
+    return {
+      data: newPage, 
+      event: {
+        type: PAGE_EVENTS.UPDATED,
+        shouldEmit: hasChanges,
+        payload: {
+          current: newPage,
+          previous: oldPage,
+          changes: changes,
+          // 🎯 الـ Context توة فيه كل المعلومات التعريفية
+          context: {
+            userId,
+            siteId,
+            eventId: crypto.randomUUID(), // الـ ID يتولد هوني مرة وحدة
+            action: "update",
+            timestamp: Date.now()
+          },
+          // 🎯 الـ Flags باش الـ Plugins يعرفوا رواحهم يخدموا ولا لا
+          flags: {
+            shouldVersion: changes.includes("content") || changes.includes("blocks"),
+            shouldSEO: changes.includes("title")
           }
         }
-      };
-    });
-  }
+      }
+    };
+  });
+}
 
 
 

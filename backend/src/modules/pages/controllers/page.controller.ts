@@ -9,18 +9,23 @@ import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
 export const handleEventDispatch = async (result: any, source: string) => {
   const event = result?.event;
 
-  if (!event?.shouldEmit) {
-    console.log("🟡 Event blocked (no real changes)");
+  // 1️⃣ التثبت من الـ Decision Layer (المنع الذكي)
+  if (!event || event.shouldEmit === false) {
+    console.log(`🟡 [Bus] Blocked: No significant changes from ${source}`);
     return;
   }
 
   const payload = event.payload;
 
-  if (!payload?.context?.eventId) {
-    console.error("🚨 Missing eventId");
+  // 2️⃣ التثبت من الـ eventId في بلاصته الجديدة (داخل context)
+  const eventId = payload?.context?.eventId;
+
+  if (!eventId) {
+    console.error(`🚨 [Bus] Error: Missing eventId in payload for ${event.type}`);
     return;
   }
 
+  // 3️⃣ إطلاق الحدث للـ Dispatcher
   await EventDispatcher.dispatch(event.type, payload, source);
 };
 
@@ -65,12 +70,14 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
       req.body
     );
 
+    // نداء الـ Dispatcher بالـ Logic الجديد
     await handleEventDispatch(result, "PageController.updatePage");
 
     return res.json({
       success: true,
       data: PageMapper.toDTO(result.data),
-      eventId: result.event?.payload?.context?.eventId
+      // نرجعو الـ ID باش نعرفو نتبعو الـ Trace في الـ Terminal
+      eventId: result.event?.payload?.context?.eventId 
     });
 
   } catch (err: any) {
