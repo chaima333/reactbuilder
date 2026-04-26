@@ -9,8 +9,13 @@ import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
 export const handleEventDispatch = async (result: any, source: string) => {
   const event = result?.event;
 
-  if (!event?.shouldEmit) {
-    console.log("🟡 Event blocked");
+  if (!event) {
+    console.log("🟡 No event");
+    return;
+  }
+
+  if (!event.shouldEmit) {
+    console.log("🟡 Event blocked by shouldEmit");
     return;
   }
 

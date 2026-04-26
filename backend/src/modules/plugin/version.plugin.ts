@@ -10,17 +10,22 @@ export const VersionPlugin: ICmsPlugin = {
   events: ["page.updated", "page.restored"],
   enabled: true,
 
- async execute(event, payload: PageEventPayload) {
+async execute(event, payload: PageEventPayload) {
   const { current, previous, context, flags } = payload;
 
-  if (!context || !current) return;
+  if (!current || !previous || !context) return;
   if (!flags?.shouldVersion) return;
 
   const hasRealChange =
-    current.title !== previous?.title ||
-    current.content !== previous?.content;
+    current.title !== previous.title ||
+    current.content !== previous.content ||
+    current.status !== previous.status ||
+    JSON.stringify(current.blocks) !== JSON.stringify(previous.blocks);
 
-  if (!hasRealChange) return;
+  if (!hasRealChange) {
+    console.log("🟡 No real change → skip version");
+    return;
+  }
 
   await PageVersionRepository.create({
     pageId: current.id,
@@ -33,6 +38,6 @@ export const VersionPlugin: ICmsPlugin = {
     createdBy: context.userId
   });
 
-  console.log("📦 Version created");
+  console.log("📦 Version created:", current.id);
 }
 };

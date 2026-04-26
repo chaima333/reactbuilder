@@ -74,15 +74,11 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
 
     const newPage = updatedPage.toJSON();
 
-    // 🔥 compute real diff
-    const changes: Record<string, boolean> = {
-      title: oldPage.title !== newPage.title,
-      content: oldPage.content !== newPage.content,
-      status: oldPage.status !== newPage.status,
-      blocks: JSON.stringify(oldPage.blocks) !== JSON.stringify(newPage.blocks)
-    };
+    const changes = detectChanges(newPage, oldPage);
+    const hasChanges = Object.keys(changes).length > 0;
 
-    const hasChanges = Object.values(changes).some(Boolean);
+    console.log("DEBUG changes:", changes);
+    console.log("DEBUG hasChanges:", hasChanges);
 
     return {
       data: updatedPage,
@@ -103,9 +99,12 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
           current: newPage,
           previous: oldPage,
 
-          changes: Object.entries(changes)
-            .filter(([_, v]) => v)
-            .map(([k]) => k)
+          changes: Object.keys(changes),
+
+          flags: {
+            shouldVersion: !!changes.content || !!changes.blocks,
+            shouldSEO: !!changes.title
+          }
         }
       }
     };
