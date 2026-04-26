@@ -90,10 +90,10 @@ return {
         shouldVersion: true,
         shouldSEO: true
       },
-      meta: {
-        eventId: crypto.randomUUID(),
-        timestamp: Date.now(),
-        source: "PageService.updatePage"
+     _meta: {
+       eventId: crypto.randomUUID(),
+     timestamp: Date.now(),
+     source: "PageService.updatePage"
       }
     }
   }

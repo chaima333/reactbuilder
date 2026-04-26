@@ -5,8 +5,7 @@ export class EventDispatcher {
   private static processed = new Set<string>();
 
   static async dispatch(event: string, payload: any, source: string) {
-    const eventId = payload?.meta?.eventId;
-
+    const eventId = payload?._meta?.eventId;
     if (!eventId) return;
 
     if (this.processed.has(eventId)) return;
