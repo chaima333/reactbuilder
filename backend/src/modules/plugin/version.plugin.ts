@@ -14,15 +14,19 @@ export const VersionPlugin: ICmsPlugin = {
     const { current, previous, context, changes } = payload;
 
     if (!context || !current || !previous) return;
-    if (!changes || changes.length === 0) return;
+    
+    // 🎯 الفلتر الذكي: نثبّتوا في التغييرات "المهمة" فقط
+    const hasMeaningfulChange = 
+      changes.includes('title') || 
+      changes.includes('content') || 
+      changes.includes('status');
 
-    const hasRealChange = changes.length > 0;
-
-    if (!hasRealChange) {
-      console.log("🟡 No real change → skip version");
+    if (!hasMeaningfulChange) {
+      console.log("🟡 [VersionPlugin] Skip: Blocks-only update (No version created)");
       return;
     }
 
+    // 📦 إذا التغيير مستاهل، نصنعوا الـ Version
     await PageVersionRepository.create({
       pageId: current.id,
       siteId: context.siteId,
@@ -34,6 +38,6 @@ export const VersionPlugin: ICmsPlugin = {
       createdBy: context.userId
     });
 
-    console.log("📦 Version created:", previous.id, "→", current.id);
+    console.log(`✅ [VersionPlugin] Version created for Page ${current.id} (Triggered by: ${changes.join(', ')})`);
   }
 };
