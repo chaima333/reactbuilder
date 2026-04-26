@@ -10,28 +10,20 @@ export const eventBus = new CentralBus();
 export const detectChanges = (oldData: any, newData: any): string[] => {
   const changes: string[] = [];
 
-  // حماية من الـ Null
-  if (!oldData || !newData) return ["initial_payload"];
+  // 1️⃣ دالة تنظيف الـ Blocks (ترتيب الـ Keys وتحويلها لنص ثابت)
+  const normalize = (data: any) => {
+    if (!data) return "[]";
+    // ترتيب الـ Keys يضمن إنو المقارنة ديما صحيحة مهما كان ترتيب الـ Object
+    return JSON.stringify(data, Object.keys(data).sort());
+  };
 
-  // 🎯 حدد قايمة الحقول اللي تهمّك بالرسمي في الـ SaaS متاعك
-  const monitoredFields = ["title", "content", "status", "slug", "seoTitle", "seoDescription"];
+  // 2️⃣ مقارنة الحقول العادية
+  if (oldData.title !== newData.title) changes.push("title");
+  if (oldData.content !== newData.content) changes.push("content");
+  if (oldData.status !== newData.status) changes.push("status");
 
-  monitoredFields.forEach(field => {
-    // نجبدو القيم ونثبتو إنها موش undefined
-    const oldVal = oldData[field];
-    const newVal = newData[field];
-
-    if (oldVal !== newVal) {
-      console.log(`🔍 Diff Detected in [${field}]: "${oldVal}" -> "${newVal}"`);
-      changes.push(field);
-    }
-  });
-
-  // 🧱 حماية الـ Blocks (Arrays)
-  const oldBlocks = JSON.stringify(oldData.blocks ?? []);
-  const newBlocks = JSON.stringify(newData.blocks ?? []);
-  
-  if (oldBlocks !== newBlocks) {
+  // 3️⃣ مقارنة الـ Blocks بعد التنظيف
+  if (normalize(oldData.blocks) !== normalize(newData.blocks)) {
     changes.push("blocks");
   }
 
