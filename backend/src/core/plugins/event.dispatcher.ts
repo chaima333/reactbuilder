@@ -15,6 +15,8 @@ export class EventDispatcher {
 
     console.log(`📡 ${event} | ${eventId} | ${source}`);
 
-    await cmsRegistry.emit(event, payload, source);
-  }
+await cmsRegistry.emit(event, {
+  data: payload,   // 👈 force wrapper
+  event,
+}, source);  }
 }

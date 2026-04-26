@@ -10,18 +10,23 @@ export const SEOPlugin: ICmsPlugin = {
   enabled: true,
 
   async execute(event, payload) {
-    const { data, flags } = payload;
+    const current =
+      payload?.data?.current ||
+      payload?.current ||
+      payload?.page;
 
-    const current = data?.current;
-    const previous = data?.previous;
-    const hasSEOImpact =
-  current.title !== previous.title ||
-  current.content !== previous.content;
+    const previous =
+      payload?.data?.previous ||
+      payload?.previous;
 
-if (!hasSEOImpact) return;
+    const flags = payload?.flags;
 
     if (!flags?.shouldSEO) return;
-    if (!current?.title || !current?.content) return;
+
+    if (!current?.title || !current?.content) {
+      console.log("🟡 SEO skipped: missing data");
+      return;
+    }
 
     console.log("🔍 SEO processing:", current.title);
   }
