@@ -73,36 +73,42 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
     const updatedPage = await page.update(input, { transaction: t });
 
     const newPage = updatedPage.toJSON();
-    const changes = detectChanges(newPage, oldPage);
 
-    const hasChanges = Object.keys(changes).length > 0;
+    // 🔥 REAL CHANGE DETECTION (simple & reliable)
+    const hasChanges =
+      oldPage.title !== newPage.title ||
+      oldPage.content !== newPage.content ||
+      JSON.stringify(oldPage.blocks) !== JSON.stringify(newPage.blocks) ||
+      oldPage.status !== newPage.status;
 
-             return {
-  data: updatedPage,
+    return {
+      data: updatedPage,
 
-  event: {
-    type: PAGE_EVENTS.UPDATED,
-    shouldEmit: hasChanges,
+      event: {
+        type: PAGE_EVENTS.UPDATED,
 
-    payload: {
-      current: updatedPage.toJSON(),
-      previous: oldPage,
+        // 🔥 IMPORTANT: ما تربطهاش بـ detectChanges
+        shouldEmit: true, // خليه true دائمًا، وخلي القرار في flags
 
-      context: { siteId, userId },
+        payload: {
+          current: newPage,
+          previous: oldPage,
 
-      flags: {
-        shouldVersion: !!changes.content || !!changes.blocks,
-        shouldSEO: !!changes.title
-      },
+          context: { siteId, userId },
 
-      _meta: {
-        eventId: crypto.randomUUID(),
-        timestamp: Date.now(),
-        source: "PageService.updatePage"
+          flags: {
+            shouldVersion: hasChanges,
+            shouldSEO: hasChanges
+          },
+
+          _meta: {
+            eventId: crypto.randomUUID(),
+            timestamp: Date.now(),
+            source: "PageService.updatePage"
+          }
+        }
       }
-    }
-  }
-};
+    };
   });
 }
 
