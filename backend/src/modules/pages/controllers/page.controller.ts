@@ -9,13 +9,8 @@ import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
 export const handleEventDispatch = async (result: any, source: string) => {
   const event = result?.event;
 
-  if (!event) {
-    console.log("🟡 No event");
-    return;
-  }
-
-  if (!event.shouldEmit) {
-    console.log("🟡 Event blocked by shouldEmit");
+  if (!event?.shouldEmit) {
+    console.log("🟡 Event blocked (no real changes)");
     return;
   }
 
@@ -73,10 +68,10 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
     await handleEventDispatch(result, "PageController.updatePage");
 
     return res.json({
-  success: true,
-  data: PageMapper.toDTO(result.data),
-  eventId: result.event?.payload?.context?.eventId
-});
+      success: true,
+      data: PageMapper.toDTO(result.data),
+      eventId: result.event?.payload?.context?.eventId
+    });
 
   } catch (err: any) {
     return res.status(500).json({

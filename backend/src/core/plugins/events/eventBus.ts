@@ -7,25 +7,21 @@ export const eventBus = new CentralBus();
 
   //change-detector
 
-export function detectChanges(current: any, previous: any) {
-  const changes: any = {};
+export const detectChanges = (oldData: any, newData: any): string[] => {
+  const changes: string[] = [];
 
-  if (!current || !previous) return changes;
+  if (!oldData || !newData) return ["full"];
 
-  if (current.title !== previous.title) {
-    changes.title = true;
-  }
-
-  if (current.content !== previous.content) {
-    changes.content = true;
-  }
+  if (oldData.title !== newData.title) changes.push("title");
+  if (oldData.content !== newData.content) changes.push("content");
+  if (oldData.status !== newData.status) changes.push("status");
 
   if (
-    JSON.stringify(current.blocks || []) !==
-    JSON.stringify(previous.blocks || [])
+    JSON.stringify(oldData.blocks ?? []) !==
+    JSON.stringify(newData.blocks ?? [])
   ) {
-    changes.blocks = true;
+    changes.push("blocks");
   }
 
   return changes;
-}
+};

@@ -58,58 +58,51 @@ export class PageService {
 
   // ================= UPDATE =================
 
-static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
-  return sequelize.transaction(async (t) => {
+  static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
+    return sequelize.transaction(async (t) => {
 
-    const page = await Page.findOne({
-      where: { id: pageId, siteId },
-      transaction: t
-    });
+      const page = await Page.findOne({
+        where: { id: pageId, siteId },
+        transaction: t
+      });
 
-    if (!page) throw new Error("PAGE_NOT_FOUND");
+      if (!page) throw new Error("PAGE_NOT_FOUND");
 
-    const oldPage = page.toJSON();
+      const oldPage = page.toJSON();
 
-    const updatedPage = await page.update(input, { transaction: t });
+      const updatedPage = await page.update(input, { transaction: t });
 
-    const newPage = updatedPage.toJSON();
+      const newPage = updatedPage.toJSON();
 
-    const changes = detectChanges(newPage, oldPage);
-    const hasChanges = Object.keys(changes).length > 0;
+      const changes = detectChanges(oldPage, newPage);
 
-    console.log("DEBUG changes:", changes);
-    console.log("DEBUG hasChanges:", hasChanges);
+      const hasChanges = changes.length > 0;
 
-    return {
-      data: updatedPage,
+      return {
+        data: updatedPage,
 
-      event: {
-        type: PAGE_EVENTS.UPDATED,
-        shouldEmit: hasChanges,
+        event: {
+          type: PAGE_EVENTS.UPDATED,
+          shouldEmit: hasChanges,
 
-        payload: {
-          context: {
-            eventId: crypto.randomUUID(),
-            timestamp: Date.now(),
-            action: "update",
-            userId,
-            siteId
-          },
+          payload: {
+            context: {
+              eventId: crypto.randomUUID(),
+              timestamp: Date.now(),
+              action: "update",
+              userId,
+              siteId
+            },
 
-          current: newPage,
-          previous: oldPage,
-
-          changes: Object.keys(changes),
-
-          flags: {
-            shouldVersion: !!changes.content || !!changes.blocks,
-            shouldSEO: !!changes.title
+            current: newPage,
+            previous: oldPage,
+            changes
           }
         }
-      }
-    };
-  });
-}
+      };
+    });
+  }
+
 
 
   // ================= DELETE =================

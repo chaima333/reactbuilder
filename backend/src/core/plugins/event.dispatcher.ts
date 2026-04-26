@@ -1,6 +1,4 @@
-import { PageUpdatedSchema } from "./events/pageEvents";
 import { cmsRegistry } from "./plugin.registry";
-
 
 export class EventDispatcher {
   private static processed = new Set<string>();
@@ -10,7 +8,7 @@ export class EventDispatcher {
     const eventId = payload?.context?.eventId;
 
     if (!eventId) {
-      console.error("🚨 Missing eventId in context");
+      console.error("🚨 Missing eventId");
       return;
     }
 
