@@ -78,8 +78,18 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
     const newPage = updatedPage.get({ plain: true });
 
     // 4️⃣ حساب التغييرات الحقيقية
-    const changes = detectChanges(oldPage, newPage);
-    const hasChanges = changes.length > 0; // حطها طول هكا خاطرها Array
+// في PageService.updatePage
+const changes = detectChanges(oldPage, newPage);
+
+console.log("-----------------------------------------");
+console.log("🕵️ DIFF ANALYZER:");
+console.log("OLD TITLE:", oldPage.title);
+console.log("NEW TITLE:", newPage.title);
+console.log("DETECTED CHANGES:", changes);
+console.log("EVENT WILL EMIT?:", changes.length > 0);
+console.log("-----------------------------------------");
+
+const hasChanges = changes.length > 0; // حطها طول هكا خاطرها Array
 
     return {
       data: newPage, 
