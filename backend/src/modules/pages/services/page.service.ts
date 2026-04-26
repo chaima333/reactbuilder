@@ -97,6 +97,7 @@ const hasChanges = changes.length > 0; // حطها طول هكا خاطرها Ar
         type: PAGE_EVENTS.UPDATED,
         shouldEmit: hasChanges,
         payload: {
+          source: "update",
           current: newPage,
           previous: oldPage,
           changes: changes,
@@ -207,6 +208,7 @@ static async restoreVersion(siteId: number, pageId: number, versionId: number, u
             userId: userId,
             siteId: siteId
           },
+          source:"restore",
           current: updatedPage,  // الصفحة بعد ما رجعت (كانت اسمها newPage)
           previous: oldPage,    // الصفحة قبل ما تتبدل (كانت اسمها oldPage)
           changes: ["title", "content", "blocks"], // في الـ restore نعتبروا كل شيء تبدل
