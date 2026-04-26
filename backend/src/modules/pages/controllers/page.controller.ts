@@ -73,11 +73,10 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
 
     await handleEventDispatch(result, "PageController.updatePage");
 
-   return res.json({
-  success: true,
-  data: PageMapper.toDTO(result.data),
-  eventId: result.event.payload._meta.eventId
-});
+    return res.json({
+      success: true,
+      data: PageMapper.toDTO(result.data)
+    });
 
   } catch (err: any) {
     return res.status(500).json({
