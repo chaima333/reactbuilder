@@ -10,24 +10,26 @@ export const SEOPlugin: ICmsPlugin = {
   enabled: true,
 
   async execute(event, payload) {
-    const current =
-      payload?.data?.current ||
-      payload?.current ||
-      payload?.page;
+    // 🎯 اقتناص البيانات مباشرة من الـ Contract الجديد
+    const { current, context, flags } = payload;
 
-    const previous =
-      payload?.data?.previous ||
-      payload?.previous;
-
-    const flags = payload?.flags;
-
-    if (!flags?.shouldSEO) return;
-
-    if (!current?.title || !current?.content) {
-      console.log("🟡 SEO skipped: missing data");
+    // 🛑 التثبت من الـ ID (باش ما يطلّعش Error)
+    if (!context?.eventId) {
+      console.error("🚨 SEOPlugin: Identifiant d'événement manquant");
       return;
     }
 
-    console.log("🔍 SEO processing:", current.title);
+    // 🚦 التثبت من الـ Flag اللي بعثناه من السيرفس
+    if (!flags?.shouldSEO) {
+      // console.log("🟡 SEO skipped: No title change");
+      return;
+    }
+
+    if (!current?.title) {
+      console.log("🟡 SEO skipped: missing title");
+      return;
+    }
+
+    console.log(`🔍 SEO processing: ${current.title} | Event: ${context.eventId}`);
   }
 };
