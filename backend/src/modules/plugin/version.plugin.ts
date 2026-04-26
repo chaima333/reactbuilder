@@ -10,32 +10,35 @@ export const VersionPlugin: ICmsPlugin = {
   enabled: true,
 
  async execute(event, payload) {
-  const current = payload.current;
-  const previous = payload.previous;
-  const context = payload.context;
-  const flags = payload.flags;
+  const { data, context, flags } = payload;
 
-  if (flags?.shouldVersion === false) {
-    console.log("🛑 versioning disabled");
+  const current = data?.current;
+  const previous = data?.previous;
+
+  if (!flags?.shouldVersion) return;
+
+  if (!current || !previous || !context) return;
+
+  // 🔥 IMPORTANT: ignore if no real change
+  const changed =
+    JSON.stringify(current) !== JSON.stringify(previous);
+
+  if (!changed) {
+    console.log("🟡 No changes → skip version");
     return;
   }
 
-  if (!current || !context) {
-    console.error("❌ Invalid payload structure");
-    return;
-  }
+  await PageVersionRepository.create({
+    pageId: current.id,
+    siteId: context.siteId,
+    versionNumber: Date.now(),
+    title: current.title,
+    content: current.content,
+    blocks: current.blocks,
+    status: current.status,
+    createdBy: context.userId
+  });
 
-    await PageVersionRepository.create({
-  pageId: current.id,
-  siteId: context.siteId,
-  versionNumber: Date.now(), 
-  title: current.title,
-  content: current.content,
-  blocks: current.blocks,
-  status: current.status,
-  createdBy: context.userId
-});
-
-  console.log("📦 Version created:", previous?.id, "→", current.id);
+  console.log("📦 Version created:", previous.id, "→", current.id);
 }
 };

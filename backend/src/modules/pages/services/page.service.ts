@@ -57,52 +57,56 @@ export class PageService {
 
   // ================= UPDATE =================
 
-  static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
-    return sequelize.transaction(async (t) => {
+ static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
+  return sequelize.transaction(async (t) => {
 
-      const page = await Page.findOne({
-        where: { id: pageId, siteId },
-        transaction: t
-      });
+    const page = await Page.findOne({
+      where: { id: pageId, siteId },
+      transaction: t
+    });
 
-      if (!page) throw new Error("PAGE_NOT_FOUND");
+    if (!page) throw new Error("PAGE_NOT_FOUND");
 
-      const oldPage = page.toJSON();
+    const oldPage = page.toJSON();
 
-      const updatedPage = await page.update(input, { transaction: t });
+    const updatedPage = await page.update(input, { transaction: t });
 
-      return {
-        data: updatedPage,
+    // 🔥 CHANGE DETECTION (important)
+    const changed =
+      JSON.stringify(updatedPage.toJSON()) !== JSON.stringify(oldPage);
 
-        event: {
-          type: PAGE_EVENTS.UPDATED,
-          shouldEmit: true,
+    return {
+      data: updatedPage,
 
-          payload: {
-            // 🔥 IMPORTANT: unified structure (NO confusion anymore)
-            current: updatedPage.toJSON(),
-            previous: oldPage,
+      event: {
+        type: PAGE_EVENTS.UPDATED,
+        shouldEmit: true,
 
-            context: {
-              siteId,
-              userId
-            },
+        payload: {
+          current: updatedPage.toJSON(),
+          previous: oldPage,
 
-            flags: {
-              shouldVersion: true,
-              shouldSEO: true
-            },
+          context: {
+            siteId,
+            userId
+          },
 
-            _meta: {
-              eventId: crypto.randomUUID(),
-              timestamp: Date.now(),
-              source: "PageService.updatePage"
-            }
+          // 🔥 FIXED LOGIC
+          flags: {
+            shouldVersion: changed,
+            shouldSEO: changed
+          },
+
+          _meta: {
+            eventId: crypto.randomUUID(),
+            timestamp: Date.now(),
+            source: "PageService.updatePage"
           }
         }
-      };
-    });
-  }
+      }
+    };
+  });
+}
 
 
 
