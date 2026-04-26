@@ -74,26 +74,41 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
 
     const newPage = updatedPage.toJSON();
 
-    // 🔥 REAL CHANGE DETECTION (simple & reliable)
-    const hasChanges =
-      oldPage.title !== newPage.title ||
-      oldPage.content !== newPage.content ||
-      JSON.stringify(oldPage.blocks) !== JSON.stringify(newPage.blocks) ||
-      oldPage.status !== newPage.status;
+    // 🔥 compute real diff
+    const changes: Record<string, boolean> = {
+      title: oldPage.title !== newPage.title,
+      content: oldPage.content !== newPage.content,
+      status: oldPage.status !== newPage.status,
+      blocks: JSON.stringify(oldPage.blocks) !== JSON.stringify(newPage.blocks)
+    };
+
+    const hasChanges = Object.values(changes).some(Boolean);
 
     return {
-  data: updatedPage,
-  event: {
-    type: PAGE_EVENTS.UPDATED,
-    shouldEmit: true,
-    payload: {
-      current: newPage,
-      previous: oldPage,
-      context: { siteId, userId },
-      _meta: { eventId: crypto.randomUUID() }
-    }
-  }
-};
+      data: updatedPage,
+
+      event: {
+        type: PAGE_EVENTS.UPDATED,
+        shouldEmit: hasChanges,
+
+        payload: {
+          context: {
+            eventId: crypto.randomUUID(),
+            timestamp: Date.now(),
+            action: "update",
+            userId,
+            siteId
+          },
+
+          current: newPage,
+          previous: oldPage,
+
+          changes: Object.entries(changes)
+            .filter(([_, v]) => v)
+            .map(([k]) => k)
+        }
+      }
+    };
   });
 }
 

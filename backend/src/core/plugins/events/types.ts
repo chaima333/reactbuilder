@@ -7,8 +7,19 @@ export interface EventContext {
 }
 
 export interface PageEventPayload {
-  context: EventContext;
-  current: any;       // الداتا الجديدة
-  previous?: any;    // الداتا قبل التعديل (مهمة للـ Versioning)
-  changes?: string[]; // شنوة اللي تبدل بالظبط
+  context: {
+    eventId: string;
+    timestamp: number;
+    action: 'update' | 'restore' | 'publish' | 'delete';
+    userId: number;
+    siteId: number;
+  };
+
+  current: any;
+  previous?: any;
+  changes?: string[];
+  flags?: {
+    shouldVersion?: boolean;
+    shouldSEO?: boolean;
+  };
 }

@@ -5,18 +5,18 @@ import { PageVersionService } from "../services/pageVersion.service";
 import { PageMapper } from "../mappers/page.mapper";
 import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
 
-// 🛡️ هذه الدالة الوحيدة اللي تقعد في الملف الفوق
+
 export const handleEventDispatch = async (result: any, source: string) => {
   const event = result?.event;
 
   if (!event?.shouldEmit) {
-    console.log("🟡 Event not emitted");
+    console.log("🟡 Event blocked");
     return;
   }
 
   const payload = event.payload;
 
-  if (!payload?._meta?.eventId) {
+  if (!payload?.context?.eventId) {
     console.error("🚨 Missing eventId");
     return;
   }
@@ -68,10 +68,10 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
     await handleEventDispatch(result, "PageController.updatePage");
 
     return res.json({
-      success: true,
-      data: PageMapper.toDTO(result.data),
-      eventId: result.event?.payload?._meta?.eventId
-    });
+  success: true,
+  data: PageMapper.toDTO(result.data),
+  eventId: result.event?.payload?.context?.eventId
+});
 
   } catch (err: any) {
     return res.status(500).json({
