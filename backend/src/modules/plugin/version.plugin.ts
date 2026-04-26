@@ -9,30 +9,30 @@ export const VersionPlugin: ICmsPlugin = {
   events: ["page.updated", "page.restored"],
   enabled: true,
 
-  async execute(event, payload) {
-  const data = payload.data;
+ async execute(event, payload) {
+  const current = payload.current;
+  const previous = payload.previous;
+  const context = payload.context;
+  const flags = payload.flags;
 
-  if (!data?.shouldVersion) {
+  if (flags?.shouldVersion === false) {
     console.log("🛑 versioning disabled");
     return;
   }
 
-  const current = data.current;
-  const previous = data.previous;
-
-  if (!current) {
+  if (!current || !context) {
     console.error("❌ Invalid payload structure");
     return;
   }
 
   await PageVersionRepository.create({
     pageId: current.id,
-    siteId: payload.context.siteId,
+    siteId: context.siteId,
     title: current.title,
     content: current.content,
     blocks: current.blocks,
     status: current.status,
-    createdBy: payload.context.userId
+    createdBy: context.userId
   });
 
   console.log("📦 Version created:", previous?.id, "→", current.id);

@@ -9,13 +9,13 @@ export const SEOPlugin: ICmsPlugin = {
   enabled: true,
 
   async execute(event, payload) {
-    const data = payload.current;
+  const current = payload.current;
 
-    if (!data?.title || !data?.content) return;
-
-    const score = data.content.length > 100 ? "GOOD" : "BAD";
-
-    console.log(`📊 SEO Score: ${score}`);
-
+  if (!current?.title || !current?.content) {
+    console.warn("⚠️ SEO skip: invalid payload");
+    return;
   }
+
+  console.log("🔍 SEO processing:", current.title);
+}
 };
