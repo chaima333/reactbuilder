@@ -25,15 +25,16 @@ export const VersionPlugin: ICmsPlugin = {
     return;
   }
 
-  await PageVersionRepository.create({
-    pageId: current.id,
-    siteId: context.siteId,
-    title: current.title,
-    content: current.content,
-    blocks: current.blocks,
-    status: current.status,
-    createdBy: context.userId
-  });
+    await PageVersionRepository.create({
+  pageId: current.id,
+  siteId: context.siteId,
+  versionNumber: Date.now(), // أو increment
+  title: current.title,
+  content: current.content,
+  blocks: current.blocks,
+  status: current.status,
+  createdBy: context.userId
+});
 
   console.log("📦 Version created:", previous?.id, "→", current.id);
 }
