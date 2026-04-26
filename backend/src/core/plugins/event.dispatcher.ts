@@ -11,9 +11,10 @@ export class EventDispatcher {
     const eventId = payload?.context?.eventId;
 
     if (!eventId) {
-      console.error(`🚨 [Dispatcher] Error: No eventId found in payload context for ${event}`);
-      return;
-    }
+    console.error(`🚨 [Dispatcher] Missing ID for event: ${event}`);
+    console.log("DEBUG PAYLOAD:", JSON.stringify(payload, null, 2)); // باش تفضح وين ضاع الـ ID
+    return;
+  }
 
     // لمنع التكرار (Idempotency)
     if (this.processed.has(eventId)) return;
