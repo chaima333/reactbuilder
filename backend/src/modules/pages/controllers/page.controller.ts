@@ -26,8 +26,7 @@ export const handleEventDispatch = async (result: any, source: string) => {
   }
 
   // 3️⃣ إطلاق الحدث للـ Dispatcher
-  await EventDispatcher.dispatch(event.type, payload, source);
-};
+await EventDispatcher.dispatch(event.type, event.payload, source);};
 
 // ========================
 // 🟢 CREATE PAGE
