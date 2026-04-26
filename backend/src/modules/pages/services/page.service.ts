@@ -69,8 +69,8 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
     if (!page) throw new Error("PAGE_NOT_FOUND");
 
     // 1️⃣ Snapshot قبل التعديل
-    const oldPage = page.get({ plain: true });
-
+const oldPage = { ...page.get({ plain: true }) };
+await page.update(input, { transaction: t });
     // 2️⃣ التحديث في الـ Database
     const updatedPage = await page.update(input, { transaction: t });
 
@@ -118,7 +118,6 @@ const hasChanges = changes.length > 0; // حطها طول هكا خاطرها Ar
     };
   });
 }
-
 
 
   // ================= DELETE =================
