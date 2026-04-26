@@ -4,19 +4,21 @@ import { cmsRegistry } from "./plugin.registry";
 export class EventDispatcher {
   private static processed = new Set<string>();
 
-  static async dispatch(event: string, payload: any, source: string) {
-    const eventId = payload?._meta?.eventId;
-    if (!eventId) return;
+static async dispatch(event: string, payload: any, source: string) {
+  const eventId = payload?._meta?.eventId;
 
-    if (this.processed.has(eventId)) return;
+  if (!eventId) {
+    console.error("🚨 Missing eventId", payload);
+    return;
+  }
 
-    this.processed.add(eventId);
-    setTimeout(() => this.processed.delete(eventId), 60000);
+  if (this.processed.has(eventId)) return;
 
-    console.log(`📡 ${event} | ${eventId} | ${source}`);
+  this.processed.add(eventId);
+  setTimeout(() => this.processed.delete(eventId), 60000);
 
-await cmsRegistry.emit(event, {
-  data: payload,   // 👈 force wrapper
-  event,
-}, source);  }
+  console.log(`📡 ${event} | ${eventId} | ${source}`);
+
+  await cmsRegistry.emit(event, payload, source);
+}
 }

@@ -9,21 +9,29 @@ export const VersionPlugin: ICmsPlugin = {
   events: ["page.updated", "page.restored"],
   enabled: true,
 
-  async execute(event, payload) {
-    const { data, context, flags } = payload;
+async execute(event, payload) {
+  const current = payload?.current;
+  const previous = payload?.previous;
+  const context = payload?.context;
+  const flags = payload?.flags;
 
-    const current = data?.current;
-    const previous = data?.previous;
+  if (!current || !previous || !context || !flags) {
+    console.error("🚨 Invalid payload structure", payload);
+    return;
+  }
+
 
     if (!flags?.shouldVersion) return;
     if (!current || !previous || !context) return;
 
     // 🔥 REAL CHANGE CHECK (correct way)
-    const hasRealChange =
-      current.title !== previous.title ||
-      current.content !== previous.content ||
-      JSON.stringify(current.blocks) !== JSON.stringify(previous.blocks) ||
-      current.status !== previous.status;
+  const hasRealChange =
+  current.title !== previous.title ||
+  current.content !== previous.content ||
+  current.status !== previous.status ||
+  Array.isArray(current.blocks) &&
+  Array.isArray(previous.blocks) &&
+  current.blocks.length !== previous.blocks.length;
 
     if (!hasRealChange) {
       console.log("🟡 No real change → skip version log");
