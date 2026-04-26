@@ -32,8 +32,7 @@ export class PluginRegistry {
   // EMIT
   // ======================
 async emit(event: string, payload: any, source?: string) {
-  const eventId = payload?._meta?.eventId;
-
+const eventId = payload?.context?.eventId;
   if (!eventId) {
     console.error(`🚨 Missing eventId for ${event}`);
     return;
