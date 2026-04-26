@@ -31,28 +31,46 @@ export class PluginRegistry {
   // ======================
   // EMIT
   // ======================
-  async emit(event: string, payload: any, source?: string) {
-    const eventId = payload?._meta?.eventId;
+ async emit(event: string, payload: any, source?: string) {
+  const eventId = payload?._meta?.eventId;
 
-    if (!eventId) {
-      console.error(`🚨 Missing eventId for ${event}`);
-      return;
-    }
+  if (!eventId) {
+    console.error(`🚨 Missing eventId for ${event}`);
+    return;
+  }
 
-    console.log(`📡 [Dispatcher] ${event} | ${eventId} | ${source ?? "unknown"}`);
+  console.log(`📡 [Dispatcher] ${event} | ${eventId} | ${source ?? "unknown"}`);
 
-    const activePlugins = Array.from(this.plugins.values())
-      .filter(p => p.enabled && p.instance.events.includes(event))
-      .sort((a, b) => b.priority - a.priority);
+  const activePlugins = Array.from(this.plugins.values())
+    .filter(p => p.enabled && p.instance.events.includes(event))
+    .sort((a, b) => b.priority - a.priority);
 
-    for (const { instance } of activePlugins) {
-      try {
-        await instance.execute(event, payload);
-      } catch (err) {
-        console.error(`💥 Plugin error [${instance.name}]`, err);
-      }
+  const results: any[] = []; // 👈 الجديد
+
+  for (const { instance } of activePlugins) {
+    const start = Date.now();
+
+    try {
+      await instance.execute(event, payload);
+
+      results.push({
+        plugin: instance.name,
+        success: true,
+        duration: Date.now() - start
+      });
+
+    } catch (err: any) {
+      results.push({
+        plugin: instance.name,
+        success: false,
+        error: err.message
+      });
     }
   }
+
+  // 👇 أهم حاجة
+  console.log("📊 EVENT SUMMARY:", results);
+}
 
   // ======================
   // DEBUG HELPERS
