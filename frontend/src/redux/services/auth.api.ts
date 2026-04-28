@@ -1,18 +1,39 @@
 import { api } from '../api/api';
 
+type AuthResponse = {
+  user: {
+    id: number;
+    email: string;
+    role: string;
+  };
+  accessToken: string;
+  refreshToken: string;
+};
+
 export const authApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    login: builder.mutation<any, any>({
-      query: (credentials) => ({ url: '/auth/login', method: 'POST', body: credentials }),
+
+    login: builder.mutation<AuthResponse, { email: string; password: string }>({
+      query: (credentials) => ({
+        url: '/auth/login',
+        method: 'POST',
+        body: credentials,
+      }),
     }),
-    getProfile: builder.query<any, void>({
+
+    getProfile: builder.query<AuthResponse['user'], void>({
       query: () => '/auth/profile',
-      providesTags: ['User'],
+      providesTags: [{ type: 'User', id: 'PROFILE' }],
     }),
-    googleLogin: builder.mutation<any, { token: string }>({
-      query: (data) => ({ url: '/auth/google-login', method: 'POST', body: data }),
+
+    googleLogin: builder.mutation<AuthResponse, { token: string }>({
+      query: (data) => ({
+        url: '/auth/google-login',
+        method: 'POST',
+        body: data,
+      }),
     }),
-    // ... بقية الـ auth endpoints
+
   }),
 });
 

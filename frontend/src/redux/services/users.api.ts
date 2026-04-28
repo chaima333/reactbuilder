@@ -1,54 +1,86 @@
 import { api } from '../api/api';
 
+type User = {
+  id: number;
+  name: string;
+  email: string;
+  role: 'ADMIN' | 'EDITOR' | 'VIEWER' | 'OWNER';
+  isApproved?: boolean;
+};
+
 export const usersApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    // 1️⃣ لازم تزيد الـ Profile هنا باش الـ Hooks يخدموا لوطة
-    getProfile: builder.query<any, void>({
+
+    getProfile: builder.query<User, void>({
       query: () => '/auth/profile',
-      providesTags: ['User'],
+      providesTags: [{ type: 'User', id: 'PROFILE' }],
     }),
 
-    updateProfile: builder.mutation<any, any>({
+    updateProfile: builder.mutation<User, Partial<User>>({
       query: (data) => ({
         url: '/auth/profile',
         method: 'PUT',
         body: data,
       }),
-      invalidatesTags: ['User', 'Users'],
+      invalidatesTags: [{ type: 'User', id: 'PROFILE' }],
     }),
 
-    // باقي الـ Endpoints متاعك...
-    getUsers: builder.query<any, void>({
+    getUsers: builder.query<User[], void>({
       query: () => '/users',
-      providesTags: ['Users'],
-    }),
-    
-    createUser: builder.mutation<any, any>({
-      query: (data) => ({ url: "/users", method: "POST", body: data }),
-      invalidatesTags: ['Users', 'Stats'],
-    }),
-
-    updateUser: builder.mutation<any, { id: number; [key: string]: any }>({
-      query: ({ id, ...data }) => ({ url: `/users/${id}`, method: "PUT", body: data }),
-      invalidatesTags: ['Users'],
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map((u) => ({ type: 'Users' as const, id: u.id })),
+              { type: 'Users', id: 'LIST' },
+            ]
+          : [{ type: 'Users', id: 'LIST' }],
     }),
 
-    changeUserRole: builder.mutation<any, { id: number; role: string }>({
-      query: ({ id, role }) => ({ url: `/users/${id}/role`, method: "PATCH", body: { role } }),
-      invalidatesTags: ['Users'],
+    createUser: builder.mutation<User, Partial<User>>({
+      query: (data) => ({
+        url: '/users',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: [{ type: 'Users', id: 'LIST' }],
     }),
 
-    deleteUser: builder.mutation<any, number>({
-      query: (id) => ({ url: `/users/${id}`, method: 'DELETE' }),
-      invalidatesTags: ['Users', 'Stats'],
+    updateUser: builder.mutation<User, { id: number; data: Partial<User> }>({
+      query: ({ id, data }) => ({
+        url: `/users/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Users', id },
+      ],
     }),
+
+    changeUserRole: builder.mutation<User, { id: number; role: string }>({
+      query: ({ id, role }) => ({
+        url: `/users/${id}/role`,
+        method: 'PATCH',
+        body: { role },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Users', id },
+      ],
+    }),
+
+    deleteUser: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/users/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: [{ type: 'Users', id: 'LIST' }],
+    }),
+
   }),
 });
 
-// 2️⃣ توّة الـ Hooks هاذم باش يوليوا "قاريين" خاطرهم موجودين الفوق
 export const {
-  useGetProfileQuery,      // ✅ مريغل توّة
-  useUpdateProfileMutation, // ✅ مريغل توّة
+  useGetProfileQuery,     
+  useUpdateProfileMutation,
   useGetUsersQuery,
   useCreateUserMutation,
   useUpdateUserMutation,

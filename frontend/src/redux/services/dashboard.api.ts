@@ -1,21 +1,44 @@
 import { api } from '../api/api';
 
+
+type DashboardStats = {
+  totalUsers: number;
+  totalSites: number;
+  totalPages: number;
+};
+
+type Activity = {
+  id: number;
+  action: string;
+  createdAt: string;
+};
+
+type SiteStats = {
+  views: number;
+  pages: number;
+};
+
 export const dashboardApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    getDashboardStats: builder.query<any, void>({
+
+    getDashboardStats: builder.query<DashboardStats, void>({
       query: () => '/dashboard/stats',
       providesTags: ['Stats'],
     }),
 
-    getActivityLog: builder.query<any, { limit?: number } | void>({
-      query: (params) => `/dashboard/activity?limit=${params?.limit || 50}`,
+    getActivityLog: builder.query<Activity[], { limit?: number }>({
+      query: ({ limit = 50 } = {}) => ({
+        url: '/dashboard/activity',
+        params: { limit },
+      }),
       providesTags: ['Activity'],
     }),
 
-    getSiteStats: builder.query<any, number>({
+    getSiteStats: builder.query<SiteStats, number>({
       query: (siteId) => `/dashboard/sites/${siteId}/stats`,
-      providesTags: ['Sites'],
+      providesTags: ['Stats'],
     }),
+
   }),
 });
 

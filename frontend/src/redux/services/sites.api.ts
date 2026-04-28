@@ -1,30 +1,70 @@
 import { api } from '../api/api';
 
+export type Site = {
+  id: number;
+  name: string;
+  subdomain: string;
+  title?: string;
+  description?: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export const sitesApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    getSites: builder.query<any, void>({
+
+    getSites: builder.query<Site[], void>({
       query: () => '/sites',
-      providesTags: ['Sites'],
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: 'Sites' as const, id })),
+              { type: 'Sites', id: 'LIST' },
+            ]
+          : [{ type: 'Sites', id: 'LIST' }],
     }),
-    getSiteById: builder.query<any, number>({
+
+    getSiteById: builder.query<Site, number>({
       query: (id) => `/sites/${id}`,
-      providesTags: ['Sites'],
+      providesTags: (result, error, id) => [
+        { type: 'Sites', id },
+      ],
     }),
-    createSite: builder.mutation<any, any>({
-      query: (data) => ({ url: '/sites', method: 'POST', body: data }),
-      invalidatesTags: ['Sites', 'Stats'],
+
+    createSite: builder.mutation<Site, { name: string; subdomain: string }>({
+      query: (data) => ({
+        url: '/sites',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: [{ type: 'Sites', id: 'LIST' }],
     }),
-    updateSite: builder.mutation<any, { id: number; [key: string]: any }>({
-      query: ({ id, ...data }) => ({ url: `/sites/${id}`, method: 'PUT', body: data }),
-      invalidatesTags: ['Sites', 'Stats'],
+
+    updateSite: builder.mutation<
+      Site,
+      { id: number; name?: string; title?: string; description?: string }
+    >({
+      query: ({ id, ...data }) => ({
+        url: `/sites/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Sites', id },
+      ],
     }),
-    deleteSite: builder.mutation<any, number>({
-      query: (id) => ({ url: `/sites/${id}`, method: 'DELETE' }),
-      invalidatesTags: ['Sites', 'Stats'],
+
+    deleteSite: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `/sites/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: [{ type: 'Sites', id: 'LIST' }],
     }),
+
   }),
 });
-
 export const { 
   useGetSitesQuery, 
   useGetSiteByIdQuery, 

@@ -2,22 +2,20 @@ import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { RootState } from '../store';
 import { logout, setCredentials } from '../features/authSlice';
 
+// 👇 خليها env بعدين (مش critical توّة)
 const API_URL = 'https://backend-rmfq.onrender.com/api';
-
-const getSubdomain = () => {
-  const host = window.location.hostname;
-  const parts = host.split('.');
-  if (parts.length > 1 && parts[parts.length - 1] !== 'localhost') return parts[0];
-  if (parts.length > 1 && host.includes('localhost')) return parts[0];
-  return 'ADMIN';
-};
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: API_URL,
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState).auth.accessToken;
-    if (token) headers.set('Authorization', `Bearer ${token}`);
-    headers.set('x-subdomain', getSubdomain());
+
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    // ❌ حذّفنا x-subdomain بالكامل
+
     return headers;
   },
 });
@@ -25,15 +23,21 @@ const rawBaseQuery = fetchBaseQuery({
 export const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
   let result = await rawBaseQuery(args, api, extraOptions);
 
+  // 🔁 refresh token logic
   if (result.error && (result.error.status === 401 || result.error.status === 403)) {
     const refreshToken = (api.getState() as RootState).auth.refreshToken;
+
     if (!refreshToken) {
       api.dispatch(logout());
       return result;
     }
 
     const refreshResult = await rawBaseQuery(
-      { url: '/auth/refresh_token', method: 'POST', body: { refreshToken } },
+      {
+        url: '/auth/refresh_token',
+        method: 'POST',
+        body: { refreshToken },
+      },
       api,
       extraOptions
     );
@@ -43,11 +47,15 @@ export const baseQueryWithReauth = async (args: any, api: any, extraOptions: any
       const currentUser = (api.getState() as RootState).auth.user;
 
       if (currentUser) {
-        api.dispatch(setCredentials({
-          user: currentUser,
-          accessToken,
-          refreshToken: newRefreshToken ?? refreshToken,
-        }));
+        api.dispatch(
+          setCredentials({
+            user: currentUser,
+            accessToken,
+            refreshToken: newRefreshToken ?? refreshToken,
+          })
+        );
+
+        // 🔁 retry original request
         result = await rawBaseQuery(args, api, extraOptions);
       } else {
         api.dispatch(logout());
@@ -56,5 +64,6 @@ export const baseQueryWithReauth = async (args: any, api: any, extraOptions: any
       api.dispatch(logout());
     }
   }
+
   return result;
 };

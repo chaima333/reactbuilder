@@ -12,7 +12,6 @@ import { Layout } from './app/Layout/Layout';
 import { Dashboard } from './modules/dashboard';
 import { Login } from './modules/auth/pages/Login';
 import { Sites } from './modules/sites/pages/SitesPage';
-import { PageEditor } from './modules/pageBuilder/PageEditor';
 import { SiteEditor } from './modules/sites/pages/SiteEditorPage';
 import { PublicSite } from './modules/sites/pages/PublicSitePage';
 import { Profile } from './modules/users/pages/Profile';
@@ -27,6 +26,7 @@ import { WaitingPage } from './modules/auth/pages/WaitingPage';
 
 import { LanguageProvider } from './app/providers/LanguageProvider';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { PageEditor } from './modules/pageBuilder/pages/PageEditor';
 
 const GOOGLE_CLIENT_ID = '386973697348-lm5v1bvoupl2l7t7kfqe89irlif6oo37.apps.googleusercontent.com';
 
@@ -69,15 +69,24 @@ const AppContent: React.FC = () => {
 
             {/* 🔥 THIS IS THE IMPORTANT ONE */}
             <Route path="/site/:siteId" element={<PublicSite />} />
-
-            {/* 🔒 PROTECTED ROUTES */}
-            <Route element={<ProtectedRoute />}>
-              <Route element={<Layout><Outlet /></Layout>}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/sites" element={<Sites />} />
-                <Route path="/sites/:siteId/edit" element={<SiteEditor />} />
-                <Route path="/sites/:siteId/pages/new" element={<PageEditor />} />
-                <Route path="/sites/:siteId/pages/:pageId/edit" element={<PageEditor />} />
+                 {/* 🔒 PROTECTED ROUTES */}
+<Route element={<ProtectedRoute />}>
+  <Route element={<Layout><Outlet /></Layout>}>
+    <Route path="/dashboard" element={<Dashboard />} />
+    <Route path="/sites" element={<Sites />} />
+    
+    {/* إدارة الموقع (Settings, List of pages...) */}
+    <Route path="/sites/:siteId/edit" element={<SiteEditor />} />
+    
+    {/* الـ Page Builder - فصلنا الـ Modes بوضوح */}
+    <Route 
+      path="/sites/:siteId/pages/new" 
+      element={<PageEditor mode="create" />} 
+    />
+    <Route 
+      path="/sites/:siteId/pages/:pageId/edit" 
+      element={<PageEditor mode="edit" />} 
+    />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/media" element={<Media />} />
                 <Route path="/settings" element={<Settings />} />

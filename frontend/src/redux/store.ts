@@ -10,8 +10,13 @@ export const store = configureStore({
     theme: themeReducer,
     [api.reducerPath]: api.reducer,
   },
+
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(api.middleware),
+    getDefaultMiddleware({
+      serializableCheck: false, // 🔥 مهم مع RTK Query (tokens / errors)
+    }).concat(api.middleware),
+
+  devTools: true, // 🔥 خليه توّة
 });
 
 setupListeners(store.dispatch);
