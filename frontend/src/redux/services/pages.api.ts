@@ -2,6 +2,7 @@ import { api } from '../api/api';
 import { Block } from '../../modules/pageBuilder/types/page.types';
 
 export type Page = {
+  theme: { colors: { brand: { primary: string; secondary: string; }; background: { default: string; surface: string; }; text: { primary: string; inverse: string; muted: string; }; state: { success: string; error: string; warning: string; }; border: { default: string; strong: string; }; }; spacing: { none: string; sm: string; md: string; lg: string; }; typography: { fontFamily: string; h1: string; body: string; }; };
   id: number;
   title: string;
   blocks: Block[]; 

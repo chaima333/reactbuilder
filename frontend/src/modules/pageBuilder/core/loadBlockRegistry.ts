@@ -4,13 +4,11 @@ import { ImageBlock } from "../components/blocks/ImageBlock";
 import { TitleBlock } from "../components/blocks/TitleBlock";
 import { ButtonBlock } from "../components/blocks/ButtonBlock";
 
-// 1. الماب هذي هي اللي تربط "اسم الـ Component" بالـ Code الحقيقي
 const componentMap: Record<string, any> = {
   TitleBlock,
   TextBlock,
   ImageBlock,
   ButtonBlock,
-  // أي Block جديد تزيدو مستقبلاً، تزيدو هنا بركة
 };
 
 export const loadBlockRegistry = async () => {
@@ -20,10 +18,8 @@ export const loadBlockRegistry = async () => {
     
     const dynamicBlocks = await res.json(); 
 
-    // نبدؤوا بالـ Static اللي عندك أصلاً
     const merged = { ...staticRegistry };
 
-    // نزيدو عليهم اللي جاي مالـ Backend
     dynamicBlocks.forEach((b: any) => {
       merged[b.type] = {
         component: componentMap[b.componentName], 

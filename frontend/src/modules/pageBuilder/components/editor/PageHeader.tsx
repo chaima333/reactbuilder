@@ -1,43 +1,137 @@
-// src/modules/pageBuilder/components/PageHeader.tsx
-import React from 'react';
-import { AppBar, Toolbar, TextField, Button, CircularProgress } from '@mui/material';
-import { Save as SaveIcon } from '@mui/icons-material';
+import { 
+  ToggleButton, 
+  ToggleButtonGroup, 
+  Stack, 
+  Typography, 
+  Button, 
+  IconButton, 
+  Tooltip,
+  Divider,
+  CircularProgress
+} from '@mui/material';
+import { 
+  Monitor, 
+  Tablet, 
+  Smartphone, 
+  Visibility, 
+  Save, 
+  Undo, 
+  Redo,
+  Edit
+} from '@mui/icons-material';
 
 interface PageHeaderProps {
   title: string;
-  onChange: (val: string) => void;
-  onSave: () => void;
-  loading: boolean;
+  device: "desktop" | "tablet" | "mobile";
+  onDeviceChange: (device: "desktop" | "tablet" | "mobile") => void;
   onPreview: () => void; 
   isPreview: boolean;
+  onSave: () => void;
+  loading: boolean;
+  // 🔥 الجدد: الـ History Actions
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
 }
 
-export const PageHeader: React.FC<PageHeaderProps> = ({ title, onChange, onSave, loading, onPreview, isPreview }) => {
+export const PageHeader = ({ 
+  title, 
+  device, 
+  onDeviceChange, 
+  onPreview, 
+  isPreview, 
+  onSave, 
+  loading,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo
+}: PageHeaderProps) => {
   return (
-    <AppBar position="static" color="inherit" elevation={1}>
-      <Toolbar sx={{ gap: 2 }}>
-        <TextField
-          variant="standard"
-          value={title}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Titre de la page..."
-          sx={{ flexGrow: 1 }}
-        />
-        <Button
-          variant="contained"
-          startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-          onClick={onSave}
-          disabled={loading}
+    <Stack 
+      direction="row" 
+      justifyContent="space-between" 
+      alignItems="center" 
+      sx={{ 
+        p: "8px 16px", 
+        borderBottom: '1px solid #e0e0e0', 
+        bgcolor: '#fff',
+        height: '56px'
+      }}
+    >
+      {/* 🏷️ Title & Status */}
+      <Stack direction="row" alignItems="center" spacing={2}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#333' }}>
+          {title || "Untitled Page"}
+        </Typography>
+        {loading && <CircularProgress size={16} sx={{ color: '#666' }} />}
+      </Stack>
+
+      {/* 📱 Device Switcher + 🕒 History Actions */}
+      <Stack direction="row" alignItems="center" spacing={2}>
+        <ToggleButtonGroup
+          value={device}
+          exclusive
+          onChange={(_, val) => val && onDeviceChange(val)}
+          size="small"
+          sx={{ height: '32px' }}
         >
-          {loading ? 'Enregistrement...' : 'Sauvegarder'}
-        </Button>
-        <Button
+          <ToggleButton value="desktop"><Monitor fontSize="small" /></ToggleButton>
+          <ToggleButton value="tablet"><Tablet fontSize="small" /></ToggleButton>
+          <ToggleButton value="mobile"><Smartphone fontSize="small" /></ToggleButton>
+        </ToggleButtonGroup>
+
+        <Divider orientation="vertical" flexItem sx={{ mx: 1, height: '24px', alignSelf: 'center' }} />
+
+        {/* 🕒 Undo / Redo Buttons */}
+        <Stack direction="row" spacing={0.5}>
+          <Tooltip title="Undo (Ctrl+Z)">
+            <span>
+              <IconButton onClick={onUndo} disabled={!canUndo} size="small">
+                <Undo fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title="Redo (Ctrl+Y)">
+            <span>
+              <IconButton onClick={onRedo} disabled={!canRedo} size="small">
+                <Redo fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Stack>
+      </Stack>
+
+      {/* 🚀 Actions: Preview & Save */}
+      <Stack direction="row" spacing={1.5}>
+        <Button 
+          size="small"
+          onClick={onPreview} 
           variant="outlined"
-          onClick={onPreview}
+          color="inherit"
+          startIcon={isPreview ? <Edit fontSize="small" /> : <Visibility fontSize="small" />}
+          sx={{ textTransform: 'none', borderRadius: '6px' }}
         >
-          {isPreview ? 'Quitter le mode aperçu' : 'Mode aperçu'}
+          {isPreview ? "Back to Editor" : "Preview"}
         </Button>
-      </Toolbar>
-    </AppBar>
+        
+        <Button 
+          size="small"
+          variant="contained" 
+          onClick={onSave} 
+          disabled={loading}
+          startIcon={<Save fontSize="small" />}
+          sx={{ 
+            textTransform: 'none', 
+            borderRadius: '6px',
+            boxShadow: 'none',
+            '&:hover': { boxShadow: 'none' }
+          }}
+        >
+          {loading ? "Saving..." : "Save Changes"}
+        </Button>
+      </Stack>
+    </Stack>
   );
 };

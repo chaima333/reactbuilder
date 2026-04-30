@@ -1,40 +1,16 @@
-import { useRef } from "react";
+import { useTheme } from "../../core/theme/ThemeProvider"; // جيب الـ Hook
 import { applyStyles } from "../../core/styleEngine";
 
-export const TextBlock = ({ data, onChange, preview }: any) => {
-  const ref = useRef<HTMLDivElement>(null);
-
-  const handleBlur = () => {
-    if (preview) return;
-
-    const content = ref.current?.innerText || "";
-
-    // 🟢 رجّع data كاملة (مش props فقط)
-    onChange({
-      props: {
-        ...data.props,
-        content,
-      },
-    });
-  };
+export const TextBlock = ({ data, onChange, preview, device }: any) => {
+  const { tokens } = useTheme(); // 1. أجبد الخزنة
 
   return (
     <div
-      ref={ref}
-      contentEditable={!preview}
-      suppressContentEditableWarning
       style={{
-        ...applyStyles(data.style),
+        // 2. عدي الـ tokens للـ engine كـ parameter ثالث
+        ...applyStyles(data.style, device, tokens), 
         outline: "none",
         minHeight: "1.2em",
-        cursor: preview ? "default" : "text",
-      }}
-      onBlur={handleBlur}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          document.execCommand("insertLineBreak");
-        }
       }}
     >
       {data.props?.content}

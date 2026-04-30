@@ -3,11 +3,12 @@ import { Box } from "@mui/material";
 
 interface Props {
   header: React.ReactNode;
-  left: React.ReactNode;
+  left?: React.ReactNode;
   rightSidebar?: React.ReactNode;
   sidebar?: React.ReactNode;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   hideSidebars?: boolean;
+  content?: React.ReactNode; // 👈 نزيدو هذا الـ Prop الجديد
 }
 
 export const EditorLayout: React.FC<Props> = ({
@@ -16,7 +17,8 @@ export const EditorLayout: React.FC<Props> = ({
   rightSidebar,
   sidebar,
   children,
-  hideSidebars
+  hideSidebars,
+  content
 }) => {
   return (
     <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
@@ -32,7 +34,7 @@ export const EditorLayout: React.FC<Props> = ({
         )}
 
         <Box sx={{ flex: 1, overflow: "auto" }}>
-          {children}
+          {content || children}
         </Box>
 
         {!hideSidebars && rightSidebar && (

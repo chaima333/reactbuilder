@@ -14,6 +14,7 @@ import { Box, Typography, Paper } from '@mui/material';
 
 interface MonthlyChartProps {
   data: any[];
+  isLoading: boolean;
 }
 
 // Composant personnalisé pour le tooltip
@@ -30,7 +31,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export const MonthlyChart: React.FC<MonthlyChartProps> = ({ data }) => {
+export const MonthlyChart: React.FC<MonthlyChartProps> = ({ data, isLoading }) => {
   if (!data || data.length === 0) {
     return (
       <Box py={4} textAlign="center">
