@@ -98,19 +98,17 @@ publishedAt!: Date;
 })
 metaData: any; 
 
+
+
  toJSON() {
   const values = { ...this.get() };
 
-  // استعمل الأسماء اللي عرفتها في الـ Class
   delete values.userId;
   delete values.siteId;
   delete values.createdAt;
   delete values.updatedAt;
 
-  // لو تحب تنحي الـ Associations زادة باش ما يكبرش الـ Response
-  // delete values.author;
-  // delete values.site;
-
+ 
   return values;
 }
 }
