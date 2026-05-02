@@ -3,22 +3,24 @@
 import { Response } from "express";
 import { AuthRequest } from "../../shared/auth.util";
 import * as DashboardService from "./dashboard.service";
-import { User } from "../../models/User";
-
-// modules/dashboard/dashboard.controller.ts
+import { SiteMember } from "../../models";
 
 export const getDashboardFull = async (req: AuthRequest, res: Response) => {
   try {
+    const { siteId } = req.params;
     const userId = req.user?.id;
-    // 1. استخراج الـ siteId من المسار (بما أن الرابط /api/sites/:siteId/dashboard)
-    const { siteId } = req.params; 
-
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
 
     if (!siteId) {
-      return res.status(400).json({ message: "Site ID is required" });
+      return res.status(400).json({ message: "siteId required" });
+    }
+
+    // 🔒 IMPORTANT: check access via SiteMember
+    const member = await SiteMember.findOne({
+      where: { siteId, userId }
+    });
+
+    if (!member) {
+      return res.status(403).json({ message: "No access to this site" });
     }
 
     const [
@@ -30,8 +32,7 @@ export const getDashboardFull = async (req: AuthRequest, res: Response) => {
       pluginStatus,
       liveEvents
     ] = await Promise.all([
-      // 2. مرر الـ siteId للخدمات لتعرف أي موقع تجلب بياناته
-      DashboardService.fetchStats(Number(siteId)), 
+      DashboardService.fetchStats(Number(siteId)),
       DashboardService.fetchActivity(Number(siteId)),
       DashboardService.fetchPluginsData(Number(siteId)),
       DashboardService.buildLayout(),
@@ -41,7 +42,7 @@ export const getDashboardFull = async (req: AuthRequest, res: Response) => {
     ]);
 
     return res.json({
-      success: true, // يفضل دائماً إضافة نجاح العملية
+      success: true,
       data: {
         stats,
         activity,
@@ -55,15 +56,8 @@ export const getDashboardFull = async (req: AuthRequest, res: Response) => {
       }
     });
 
-  } catch (error: any) {
-    console.error("Dashboard Error:", error);
-    return res.status(500).json({ message: error.message });
+  } catch (err: any) {
+    console.error(err);
+    return res.status(500).json({ message: err.message });
   }
 };
-
-
-
-const getPermissions = (role: string) => ({
-  canEditLayout: role === "admin",
-  canUsePlugins: true,
-});

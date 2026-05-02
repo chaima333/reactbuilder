@@ -6,113 +6,108 @@ import { sequelize } from "../../core/database/connection";
 import { QueryTypes } from "sequelize";
 import { eventStore } from "../../core/plugins/events/event.store";
 
-
-// ✅ التعديل هنا: نعتمد على siteId بدلاً من userId
+// 🔥 STATS (site scoped)
 export const fetchStats = async (siteId: number) => {
-  // 1. جلب بيانات الموقع المختار فقط
   const site = await Site.findByPk(siteId);
-  
-  // 2. حساب الصفحات التابعة لهذا الموقع فقط
+
   const totalPages = await Page.count({ where: { siteId } });
 
-  // 3. مجموع الزيارات لكل صفحات هذا الموقع
-  const totalViewsSum = await Page.sum("views", { where: { siteId } });
+  const totalViews = await Page.sum("views", {
+    where: { siteId }
+  });
 
-  // 4. إحصائيات نمو الصفحات لهذا الموقع تحديداً
   const monthlyStatsRaw = await sequelize.query(
     `
-    SELECT DATE_TRUNC('month', "created_at") as month, COUNT(*) as count 
-    FROM pages 
-    WHERE "site_id" = :siteId 
-    GROUP BY month 
-    ORDER BY month DESC 
+    SELECT DATE_TRUNC('month', "createdAt") as month, COUNT(*) as count
+    FROM pages
+    WHERE "siteId" = :siteId
+    GROUP BY month
+    ORDER BY month DESC
     LIMIT 12
     `,
-    { replacements: { siteId }, type: QueryTypes.SELECT }
+    {
+      replacements: { siteId },
+      type: QueryTypes.SELECT
+    }
   );
 
-  const chartData = (monthlyStatsRaw as any[]).map((m) => ({
-    month: m.month,
-    count: Number(m.count),
-  }));
-
   return {
-    // نرسل 1 لأننا داخل سياق موقع واحد حالياً
-    totalSites: 1, 
+    totalSites: 1,
     totalPages,
-    totalViews: totalViewsSum || 0,
+    totalViews: totalViews || 0,
     siteName: site?.name || "Unknown",
-    chartData,
+    chartData: (monthlyStatsRaw as any[]).map((m) => ({
+      month: m.month,
+      count: Number(m.count)
+    }))
   };
 };
 
+// 🔥 ACTIVITY
 export const fetchActivity = async (siteId: number) => {
-  // جلب النشاطات الخاصة بهذا الموقع فقط
-  return await ActivityLog.findAll({
+  return ActivityLog.findAll({
     where: { siteId },
     limit: 10,
     order: [["createdAt", "DESC"]],
-    include: [{ association: "user", attributes: ["id", "name"] }],
+    include: [{ association: "user", attributes: ["id", "name"] }]
   });
 };
 
+// 🔥 PLUGINS
 export const fetchPluginsData = async (siteId: number) => {
   const plugins = cmsRegistry.getAllPlugins();
+
   const results: Record<string, any> = {};
 
   for (const plugin of plugins) {
     if (plugin.getDashboardData) {
       try {
-        // تمرير الـ siteId للبلجن ليعرف أي بيانات يجلب
         results[plugin.name] = await plugin.getDashboardData(siteId);
-      } catch (e) {
+      } catch {
         results[plugin.name] = { error: "failed" };
       }
     }
   }
+
   return results;
 };
 
-// ... باقي الدوال (buildLayout, getSystemHealth, إلخ) لا تتأثر بالـ siteId مباشرة وتترك كما هي
-
-// 🔥 NEW: layout dynamic
+// 🔥 LAYOUT
 export const buildLayout = async () => {
   const plugins = cmsRegistry.getAllPlugins();
 
-  const blocks = plugins
-    .filter(p => p.meta?.dashboard)
-    .sort((a, b) => (a.meta!.dashboard!.order || 0) - (b.meta!.dashboard!.order || 0))
-    .map(p => ({
-      id: p.name,
-      type: p.meta!.dashboard!.type,
-      col: p.meta!.dashboard!.col,
-    }));
-
-  return { blocks };
-};
-// 🔥 NEW: system health check
-
-export const getSystemHealth = async () => {
   return {
-    status: "healthy",
-    queue: "running",
-    pluginEngine: "active",
-    eventBus: "connected",
-    lastCheck: new Date().toISOString()
+    blocks: plugins
+      .filter(p => p.meta?.dashboard)
+      .sort((a, b) => (a.meta!.dashboard!.order || 0) - (b.meta!.dashboard!.order || 0))
+      .map(p => ({
+        id: p.name,
+        type: p.meta!.dashboard!.type,
+        col: p.meta!.dashboard!.col
+      }))
   };
 };
 
-export const getPluginStatus = () => {
-  const plugins = cmsRegistry.getAllPlugins();
+// 🔥 SYSTEM
+export const getSystemHealth = async () => ({
+  status: "healthy",
+  queue: "running",
+  pluginEngine: "active",
+  eventBus: "connected",
+  lastCheck: new Date().toISOString()
+});
 
-  return plugins.map(p => ({
+// 🔥 PLUGINS STATUS
+export const getPluginStatus = () => {
+  return cmsRegistry.getAllPlugins().map(p => ({
     name: p.name,
     events: p.events,
     priority: p.priority,
     critical: p.isCritical || false
   }));
 };
-// 🔥 NEW: live events feed
+
+// 🔥 EVENTS
 export const fetchLiveEvents = async () => {
   return eventStore.getLatest();
 };
