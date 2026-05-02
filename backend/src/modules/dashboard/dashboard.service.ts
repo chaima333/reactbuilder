@@ -6,23 +6,29 @@ import { sequelize } from "../../core/database/connection";
 import { QueryTypes } from "sequelize";
 import { eventStore } from "../../core/plugins/events/event.store";
 
-export const fetchStats = async (userId: number) => {
-  const [totalSites, totalPages, totalViewsSum] = await Promise.all([
-    Site.count({ where: { ownerId: userId } }),
-    Page.count({ where: { userId } }),
-    Page.sum("views", { where: { userId } }),
-  ]);
 
+// ✅ التعديل هنا: نعتمد على siteId بدلاً من userId
+export const fetchStats = async (siteId: number) => {
+  // 1. جلب بيانات الموقع المختار فقط
+  const site = await Site.findByPk(siteId);
+  
+  // 2. حساب الصفحات التابعة لهذا الموقع فقط
+  const totalPages = await Page.count({ where: { siteId } });
+
+  // 3. مجموع الزيارات لكل صفحات هذا الموقع
+  const totalViewsSum = await Page.sum("views", { where: { siteId } });
+
+  // 4. إحصائيات نمو الصفحات لهذا الموقع تحديداً
   const monthlyStatsRaw = await sequelize.query(
     `
-    SELECT DATE_TRUNC('month', "createdAt") as month, COUNT(*) as count 
+    SELECT DATE_TRUNC('month', "created_at") as month, COUNT(*) as count 
     FROM pages 
-    WHERE "userId" = :userId 
+    WHERE "site_id" = :siteId 
     GROUP BY month 
     ORDER BY month DESC 
     LIMIT 12
     `,
-    { replacements: { userId }, type: QueryTypes.SELECT }
+    { replacements: { siteId }, type: QueryTypes.SELECT }
   );
 
   const chartData = (monthlyStatsRaw as any[]).map((m) => ({
@@ -31,40 +37,43 @@ export const fetchStats = async (userId: number) => {
   }));
 
   return {
-    totalSites,
+    // نرسل 1 لأننا داخل سياق موقع واحد حالياً
+    totalSites: 1, 
     totalPages,
     totalViews: totalViewsSum || 0,
+    siteName: site?.name || "Unknown",
     chartData,
   };
 };
 
-export const fetchActivity = async (userId: number) => {
+export const fetchActivity = async (siteId: number) => {
+  // جلب النشاطات الخاصة بهذا الموقع فقط
   return await ActivityLog.findAll({
-    where: { userId },
+    where: { siteId },
     limit: 10,
     order: [["createdAt", "DESC"]],
     include: [{ association: "user", attributes: ["id", "name"] }],
   });
 };
 
-// 🔥 NEW: plugins dynamic data
-export const fetchPluginsData = async (userId: number) => {
+export const fetchPluginsData = async (siteId: number) => {
   const plugins = cmsRegistry.getAllPlugins();
-
   const results: Record<string, any> = {};
 
   for (const plugin of plugins) {
     if (plugin.getDashboardData) {
       try {
-        results[plugin.name] = await plugin.getDashboardData(userId);
+        // تمرير الـ siteId للبلجن ليعرف أي بيانات يجلب
+        results[plugin.name] = await plugin.getDashboardData(siteId);
       } catch (e) {
         results[plugin.name] = { error: "failed" };
       }
     }
   }
-
   return results;
 };
+
+// ... باقي الدوال (buildLayout, getSystemHealth, إلخ) لا تتأثر بالـ siteId مباشرة وتترك كما هي
 
 // 🔥 NEW: layout dynamic
 export const buildLayout = async () => {
