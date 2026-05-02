@@ -189,3 +189,21 @@ export const deleteSite = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+export const getDefaultSite = async (req: AuthRequest, res: Response) => {
+  const userId = req.user.id;
+
+  const membership = await SiteMember.findOne({
+    where: { userId },
+    include: [{ model: Site }],
+    order: [["createdAt", "ASC"]],
+  });
+
+  if (!membership) {
+    return res.json({ success: true, data: null });
+  }
+
+  return res.json({
+    success: true,
+    data: membership.site,
+  });
+};

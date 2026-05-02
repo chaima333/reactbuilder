@@ -6,7 +6,8 @@ import {
   deleteSite,
   getSiteById,
   getSites,
-  getSiteAccess
+  getSiteAccess,
+  getDefaultSite
 } from "./site.controller";
 
 const router = Router();
@@ -21,4 +22,5 @@ router.get("/:siteId/access", getSiteAccess);
 router.get("/:siteId", getSiteById);
 router.put("/:siteId", updateSite);
 router.delete("/:siteId", deleteSite);
+router.get("/default", authenticateJWT, getDefaultSite);
 export default router;
