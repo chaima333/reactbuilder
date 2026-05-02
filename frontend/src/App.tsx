@@ -31,7 +31,7 @@ import { WaitingPage } from './modules/auth/pages/WaitingPage';
 import { LanguageProvider } from './app/providers/LanguageProvider';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { PageEditor } from './modules/pageBuilder/pages/PageEditor';
-import { PageList } from './modules/pageBuilder/pages/pageList';
+import PageList from './modules/pageBuilder/pages/pageList';
 
 const GOOGLE_CLIENT_ID = '386973697348-lm5v1bvoupl2t7t7kfqe89irlif6oo37.apps.googleusercontent.com';
 
