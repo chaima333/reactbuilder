@@ -1,6 +1,17 @@
 import { ICmsPlugin } from "./plugin.types";
 
 export class PluginRegistry {
+
+  // core/plugins/plugin.registry.ts
+
+public getAllPlugins() {
+  return Array.from(this.plugins.values())
+    .filter(p => p.enabled)
+    .map(p => p.instance);
+}
+
+
+
   private static instance: PluginRegistry;
 
   private plugins = new Map<
@@ -48,8 +59,12 @@ const eventId = payload?.context?.eventId;
     const start = Date.now();
 
     try {
-      await instance.execute(event, payload);
+const context = {
+  source: "registry",
+  timestamp: Date.now()
+};
 
+await instance.execute(event, payload, context);
       results.push({
         plugin: instance.name,
         success: true,
@@ -81,11 +96,11 @@ const eventId = payload?.context?.eventId;
     return [...this.plugins.keys()];
   }
 
-  public getPluginsForEvent(event: string): string[] {
-    return Array.from(this.plugins.values())
-      .filter(p => p.instance.events.includes(event))
-      .map(p => p.instance.name);
-  }
+  getPluginsForEvent(event: string): string[] {
+  return Array.from(this.plugins.values())
+    .filter(p => p.enabled && p.instance.events.includes(event))
+    .map(p => p.instance.name);
+}
 }
 
 export const cmsRegistry = PluginRegistry.getInstance();

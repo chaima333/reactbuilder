@@ -2,26 +2,22 @@ import { cmsRegistry } from "./core/plugins/plugin.registry";
 import { SEOPlugin } from "./modules/plugin/seo.plugin";
 import { VersionPlugin } from "./modules/plugin/version.plugin";
 
+
+let initialized = false;
+
+
 export const bootstrapPlugins = () => {
+  
+  if (initialized) return cmsRegistry;
+  initialized = true;
+
   cmsRegistry.register(VersionPlugin, 100);
   cmsRegistry.register(SEOPlugin, 50);
 
-  // ❌ remove init completely
+  console.log("✅ Plugins registered:", cmsRegistry.getPlugins());
 
-console.log("✅ Plugins Active:", cmsRegistry.getPlugins());
-
-  const plugins = ["version-plugin", "seo-plugin"];
-
-  const eventMapping: Record<string, string[]> = {};
-
-  for (const name of plugins) {
-    const p = cmsRegistry.getPlugin(name);
-    if (p) {
-      eventMapping[name] = p.events;
-    }
-  }
-
-  console.log("📡 Event Mapping:", eventMapping);
-
+console.log("✅ [Bootstrap] Plugins Active:", cmsRegistry.getPlugins());
   return cmsRegistry;
+
 };
+

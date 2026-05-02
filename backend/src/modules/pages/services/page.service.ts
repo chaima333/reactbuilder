@@ -68,50 +68,38 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
 
     if (!page) throw new Error("PAGE_NOT_FOUND");
 
-    // 1️⃣ Snapshot قبل التعديل
-const oldPage = { ...page.get({ plain: true }) };
-await page.update(input, { transaction: t });
-    // 2️⃣ التحديث في الـ Database
-    const updatedPage = await page.update(input, { transaction: t });
+    // 1. snapshot قبل
+    const oldPage = page.get({ plain: true });
 
-    // 3️⃣ Snapshot بعد التعديل
-    const newPage = updatedPage.get({ plain: true });
+    // 2. update مرة وحدة فقط (هذي الغلطة عندك)
+    await page.update(input, { transaction: t });
 
-    // 4️⃣ حساب التغييرات الحقيقية
-// في PageService.updatePage
-const changes = detectChanges(oldPage, newPage);
+    const newPage = page.get({ plain: true });
 
-console.log("-----------------------------------------");
-console.log("🕵️ DIFF ANALYZER:");
-console.log("OLD TITLE:", oldPage.title);
-console.log("NEW TITLE:", newPage.title);
-console.log("DETECTED CHANGES:", changes);
-console.log("EVENT WILL EMIT?:", changes.length > 0);
-console.log("-----------------------------------------");
-
-const hasChanges = changes.length > 0; // حطها طول هكا خاطرها Array
+    // 3. diff
+    const changes = detectChanges(oldPage, newPage);
+    const hasChanges = changes.length > 0;
 
     return {
-      data: newPage, 
+      data: newPage,
       event: {
         type: PAGE_EVENTS.UPDATED,
         shouldEmit: hasChanges,
         payload: {
-          source: "update",
           current: newPage,
           previous: oldPage,
-          changes: changes,
-          // 🎯 الـ Context توة فيه كل المعلومات التعريفية
+          changes,
+
           context: {
-            userId,
-            siteId,
-            eventId: crypto.randomUUID(), // الـ ID يتولد هوني مرة وحدة
+            eventId: crypto.randomUUID(),
+            timestamp: Date.now(),
             action: "update",
-            timestamp: Date.now()
+            userId,
+            siteId
           },
-          // 🎯 الـ Flags باش الـ Plugins يعرفوا رواحهم يخدموا ولا لا
+
           flags: {
-            shouldVersion: changes.includes("content") || changes.includes("blocks"),
+            shouldVersion: changes.includes("blocks"),
             shouldSEO: changes.includes("title")
           }
         }

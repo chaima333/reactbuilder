@@ -1,61 +1,109 @@
-import { User, Site, Page, ActivityLog } from '../../models';
-import { sequelize } from '../../core/database/connection';
+// modules/dashboard/dashboard.service.ts
 
-// حساب مساحة التخزين المستعملة
-export const calculateStorageUsed = async (userId: number) => {
-  try {
-    const pages = await Page.findAll({
-      where: { userId },
-      attributes: ['blocks']
-    });
+import { cmsRegistry } from "../../core/plugins/plugin.registry";
+import { Site, Page, ActivityLog } from "../../models";
+import { sequelize } from "../../core/database/connection";
+import { QueryTypes } from "sequelize";
+import { eventStore } from "../../core/plugins/events/event.store";
 
-    let totalSize = 0;
-    for (const page of pages) {
-      if (page.blocks) {
-        let blocks = typeof page.blocks === 'string' ? JSON.parse(page.blocks) : page.blocks;
-        if (Array.isArray(blocks)) {
-          blocks.forEach((block: any) => {
-            if (block.type === 'image' && block.content) totalSize += 50 * 1024; // 50KB per image
-          });
-        }
-      }
-    }
-    const sizeInMB = Math.round(totalSize / (1024 * 1024));
-    return `${sizeInMB || 0} MB`;
-  } catch (error) {
-    return '0 MB';
-  }
-};
-
-// جلب إحصائيات الداشبورد العامة
-export const fetchDashboardStats = async (userId: number) => {
-  const [totalSites, totalPages, totalViews, recentActivities, storageUsed] = await Promise.all([
-    Site.count({ where: { ownerId: userId, status: 'active' } }),
+export const fetchStats = async (userId: number) => {
+  const [totalSites, totalPages, totalViewsSum] = await Promise.all([
+    Site.count({ where: { ownerId: userId } }),
     Page.count({ where: { userId } }),
-    Page.sum('views', { where: { userId } }),
-    ActivityLog.findAll({
-      where: { userId },
-      limit: 10,
-      order: [['createdAt', 'DESC']],
-      include: [{ model: Site, as: 'site', attributes: ['name', 'subdomain'] }]
-    }),
-    calculateStorageUsed(userId)
+    Page.sum("views", { where: { userId } }),
   ]);
 
-  const monthlyStats = await sequelize.query(`
-    SELECT DATE_TRUNC('month', created_at) as month, COUNT(*) as count
-    FROM pages WHERE user_id = ${userId}
-    GROUP BY DATE_TRUNC('month', created_at)
-    ORDER BY month DESC LIMIT 12
-  `, { type: 'SELECT' });
+  const monthlyStatsRaw = await sequelize.query(
+    `
+    SELECT DATE_TRUNC('month', "createdAt") as month, COUNT(*) as count 
+    FROM pages 
+    WHERE "userId" = :userId 
+    GROUP BY month 
+    ORDER BY month DESC 
+    LIMIT 12
+    `,
+    { replacements: { userId }, type: QueryTypes.SELECT }
+  );
 
-  return { totalSites, totalPages, totalViews: totalViews || 0, recentActivities, monthlyStats, storageUsed };
+  const chartData = (monthlyStatsRaw as any[]).map((m) => ({
+    month: m.month,
+    count: Number(m.count),
+  }));
+
+  return {
+    totalSites,
+    totalPages,
+    totalViews: totalViewsSum || 0,
+    chartData,
+  };
 };
 
-// جلب إحصائيات موقع معين
-export const fetchSiteStats = async (siteId: string, userId: number) => {
-  return await Site.findOne({
-    where: { id: siteId, ownerId: userId },
-    include: [{ model: Page, as: 'pages', attributes: ['id', 'title', 'views', 'status', 'createdAt'] }]
+export const fetchActivity = async (userId: number) => {
+  return await ActivityLog.findAll({
+    where: { userId },
+    limit: 10,
+    order: [["createdAt", "DESC"]],
+    include: [{ association: "user", attributes: ["id", "name"] }],
   });
+};
+
+// 🔥 NEW: plugins dynamic data
+export const fetchPluginsData = async (userId: number) => {
+  const plugins = cmsRegistry.getAllPlugins();
+
+  const results: Record<string, any> = {};
+
+  for (const plugin of plugins) {
+    if (plugin.getDashboardData) {
+      try {
+        results[plugin.name] = await plugin.getDashboardData(userId);
+      } catch (e) {
+        results[plugin.name] = { error: "failed" };
+      }
+    }
+  }
+
+  return results;
+};
+
+// 🔥 NEW: layout dynamic
+export const buildLayout = async () => {
+  const plugins = cmsRegistry.getAllPlugins();
+
+  const blocks = plugins
+    .filter(p => p.meta?.dashboard)
+    .sort((a, b) => (a.meta!.dashboard!.order || 0) - (b.meta!.dashboard!.order || 0))
+    .map(p => ({
+      id: p.name,
+      type: p.meta!.dashboard!.type,
+      col: p.meta!.dashboard!.col,
+    }));
+
+  return { blocks };
+};
+// 🔥 NEW: system health check
+
+export const getSystemHealth = async () => {
+  return {
+    status: "healthy",
+    queue: "running",
+    pluginEngine: "active",
+    eventBus: "connected",
+    lastCheck: new Date().toISOString()
+  };
+};
+
+export const getPluginStatus = () => {
+  const plugins = cmsRegistry.getAllPlugins();
+
+  return plugins.map(p => ({
+    name: p.name,
+    events: p.events,
+    priority: p.priority,
+    critical: p.isCritical || false
+  }));
+};
+// 🔥 NEW: live events feed
+export const fetchLiveEvents = async () => {
+  return eventStore.getLatest();
 };

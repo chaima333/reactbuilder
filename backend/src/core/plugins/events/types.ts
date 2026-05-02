@@ -5,6 +5,10 @@ export interface EventContext {
   action: "update" | "restore" | "publish" | "create";
   userId: number;
   siteId: number;
+
+  source?: string;
+
+  meta?: Record<string, any>;
 }
 
 export interface PageEventPayload {
