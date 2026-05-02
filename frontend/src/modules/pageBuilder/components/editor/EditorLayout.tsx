@@ -3,7 +3,7 @@ import { Box } from "@mui/material";
 
 interface Props {
   header: React.ReactNode;
-  left?: React.ReactNode;
+leftSidebar?: React.ReactNode;
   rightSidebar?: React.ReactNode;
   sidebar?: React.ReactNode;
   children?: React.ReactNode;
@@ -13,7 +13,7 @@ interface Props {
 
 export const EditorLayout: React.FC<Props> = ({
   header,
-  left,
+  leftSidebar,
   rightSidebar,
   sidebar,
   children,
@@ -29,7 +29,7 @@ export const EditorLayout: React.FC<Props> = ({
         
         {!hideSidebars && (
           <Box sx={{ width: 280, borderRight: "1px solid #ddd" }}>
-            {left}
+            {leftSidebar}
           </Box>
         )}
 

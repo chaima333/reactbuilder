@@ -1,29 +1,24 @@
 export type BlockType =
+  | "section"
   | "text"
   | "image"
   | "button"
   | "title"
   | "gallery"
-  | "video"
-  | "section"; // 🔥 ما تنساش تزيد الـ section كـ نوع
+  | "video";
 
-// 1. نعرّفو الـ Column كـ Object فيه الـ Blocks متاعو
-export interface Column {
-  id: string;
-  blocks: Block[]; // هنا TypeScript باش يفهم col.blocks
-  width?: string | number; // باش تنجم تعمل Resize مبعد
-}
-
-export type Block = {
-  id: string;
-  type: BlockType;
+export interface Block {
+  id: string;           
+  type: BlockType;    
   data: {
-    props: Record<string, any>;
-    style: Record<string, any>;
+    props: Record<string, any>; 
+    style: {                   
+      desktop: Record<string, any>;
+      mobile?: Record<string, any>;
+    };
   };
-  // 2. الـ children توّة يولي Array متاع Columns
-  children?: Column[]; 
-};
+  children: Block[];    
+}
 
 export interface PageData {
   id: number;
@@ -31,3 +26,37 @@ export interface PageData {
   title: string;
   blocks: Block[];
 }
+
+
+// blockRegistry.types.ts
+import { ComponentType } from "react";
+
+export type StyleValue = Record<string, any>;
+
+export type ResponsiveStyle = {
+  desktop: StyleValue;
+  tablet?: StyleValue;
+  mobile?: StyleValue;
+};
+
+export type BlockField = {
+  key: string;
+  label: string;
+  type: "text" | "color" | "select";
+  target: "props" | "style";
+  options?: string[];
+  responsive?: boolean;
+};
+
+export type BlockConfig = {
+  component: ComponentType<any>;
+  label: string;
+  isContainer: boolean;
+  fields: BlockField[];
+  allowedChildren?: BlockType[];
+
+  defaultData: {
+    props: Record<string, any>;
+    style: ResponsiveStyle;
+  };
+};

@@ -1,70 +1,54 @@
 import { v4 as uuidv4 } from "uuid";
+import { Block } from "../../types/page.types";
 
 /**
- * 🔁 Regenerate IDs recursively (CRITICAL)
+ * 📋 Deep copy
  */
-const regenerateIds = (block: any): any => {
-  const newBlock = {
-    ...block,
-    id: uuidv4()
-  };
+export const copyBlock = (block: Block): Block => {
+  return JSON.parse(JSON.stringify(block));
+};
 
-  if (block.children?.length) {
-    newBlock.children = block.children.map((col: any[]) =>
-      col.map((child) => regenerateIds(child))
-    );
-  }
+/**
+ * 🔁 Regenerate IDs
+ */
+const regenerateIds = (block: Block): Block => {
+  const newBlock: Block = {
+    ...block,
+    id: uuidv4(),
+    children: block.children?.map(regenerateIds) || [],
+  };
 
   return newBlock;
 };
 
 /**
- * 📋 COPY (deep clone)
+ * 📌 Duplicate (copy + new ids)
  */
-export const copyBlock = (block: any): any => {
-  return JSON.parse(JSON.stringify(block));
-};
-
-/**
- * 📌 DUPLICATE (copy + new IDs)
- */
-export const duplicateBlock = (block: any): any => {
+export const duplicateBlock = (block: Block): Block => {
   return regenerateIds(copyBlock(block));
 };
 
 /**
- * 📥 PASTE INTO TREE
+ * 📥 Paste into tree
  */
 export const pasteBlockIntoTree = (
-  blocks: any[],
+  blocks: Block[],
   targetId: string,
-  newBlock: any
-): any[] => {
-
-  const insert = (list: any[]): any[] => {
-    const result: any[] = [];
-
-    for (const block of list) {
-
-      if (block.id === targetId) {
-        result.push(block, newBlock); // after
-        continue;
-      }
-
-      if (block.children?.length) {
-        result.push({
-          ...block,
-          children: block.children.map((col: any[]) =>
-            insert(col)
-          )
-        });
-      } else {
-        result.push(block);
-      }
+  newBlock: Block
+): Block[] => {
+  return blocks.map((block) => {
+    if (block.id === targetId) {
+      return {
+        ...block,
+        children: [...(block.children || []), newBlock],
+      };
     }
 
-    return result;
-  };
-
-  return insert(blocks);
+    return {
+      ...block,
+      children: block.children?.length
+        ? pasteBlockIntoTree(block.children, targetId, newBlock)
+        : [],
+    };
+  });
 };

@@ -5,17 +5,20 @@ export const useHistory = <T,>(initial: T) => {
   const [present, setPresent] = useState<T>(initial);
   const [future, setFuture] = useState<T[]>([]);
 
-  const set = (newState: T) => {
-  setPast((prev) => {
-    const updatedPast = [...prev, present];
-    return updatedPast.slice(-30); // 💡 خلي كان آخر 30 حركة بركة
-  });
-  setPresent(newState);
-  setFuture([]);
-};
+  const set = (newState: T | ((prev: T) => T)) => {
+    setPast((prev) => [...prev, present].slice(-30));
+
+    setPresent((prev) =>
+      typeof newState === "function"
+        ? (newState as (p: T) => T)(prev)
+        : newState
+    );
+
+    setFuture([]);
+  };
 
   const undo = () => {
-    if (past.length === 0) return;
+    if (!past.length) return;
 
     const previous = past[past.length - 1];
 
@@ -25,7 +28,7 @@ export const useHistory = <T,>(initial: T) => {
   };
 
   const redo = () => {
-    if (future.length === 0) return;
+    if (!future.length) return;
 
     const next = future[0];
 

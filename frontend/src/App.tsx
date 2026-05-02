@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles'; // 1. تعريب الـ MUI Theme
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Provider, useSelector } from 'react-redux';
 import { SnackbarProvider } from 'notistack';
@@ -9,7 +9,7 @@ import { store, RootState } from './redux/store';
 import { lightTheme, darkTheme } from './theme';
 import { Layout } from './app/Layout/Layout';
 
-// 🔥 الـ Provider الجديد متاع الـ SaaS Builder
+// 🔥 الـ Provider متاع الـ Builder لازم يكون محوط الـ Routes
 import { ThemeProvider as BuilderThemeProvider } from './modules/pageBuilder/core/theme/ThemeProvider';
 
 // Pages
@@ -31,8 +31,9 @@ import { WaitingPage } from './modules/auth/pages/WaitingPage';
 import { LanguageProvider } from './app/providers/LanguageProvider';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { PageEditor } from './modules/pageBuilder/pages/PageEditor';
+import { PageList } from './modules/pageBuilder/pages/pageList';
 
-const GOOGLE_CLIENT_ID = '386973697348-lm5v1bvoupl2l7t7kfqe89irlif6oo37.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '386973697348-lm5v1bvoupl2t7t7kfqe89irlif6oo37.apps.googleusercontent.com';
 
 // =====================
 // 🔒 PROTECTED ROUTES
@@ -51,22 +52,24 @@ const AdminRoute = () => {
 };
 
 // =====================
-// 🌐 APP CONTENT (Tenant Aware)
+// 🌐 APP CONTENT
 // =====================
 const AppContent: React.FC = () => {
   const themeMode = useSelector((state: RootState) => state.theme.mode);
 
   return (
-    // 🎨 MUI Theme: يتحكم في الـ Dashboard والـ Buttons متاع الـ System
     <MuiThemeProvider theme={themeMode === 'light' ? lightTheme : darkTheme}>
       <CssBaseline />
       <SnackbarProvider maxSnack={3}>
-        
-        {/* 🚀 Builder Theme: يتحكم في ألوان الـ Brand (الـ Emerald Green) متاع المواقع اللي باش تتصنع */}
+        {/* 🎨 الـ BuilderThemeProvider لازم يكون هوني باش الـ PageEditor يشوفو */}
         <BuilderThemeProvider>
-          <BrowserRouter>
+          <BrowserRouter 
+            future={{ 
+              v7_startTransition: true, 
+              v7_relativeSplatPath: true 
+            }}
+          >
             <Routes>
-
               {/* 🌍 PUBLIC ROUTES */}
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
@@ -74,8 +77,11 @@ const AppContent: React.FC = () => {
               <Route path="/waiting-approval" element={<WaitingPage />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password/:token" element={<ResetPassword />} />
-
               <Route path="/site/:siteId" element={<PublicSite />} />
+
+              {/* 🧪 TEST ROUTE (بش تجرب الـ Editor من غير مشاكل Auth) */}
+              <Route path="/test-editor" element={<PageEditor mode="edit" />} />
+              <Route path="/dashboard" element={<PageList />} />
 
               {/* 🔐 PROTECTED ROUTES */}
               <Route element={<ProtectedRoute />}>
@@ -84,15 +90,8 @@ const AppContent: React.FC = () => {
                   <Route path="/sites" element={<Sites />} />
                   <Route path="/sites/:siteId/edit" element={<SiteEditor />} />
                   
-                  {/* 🛠️ الـ Page Editor توّة يقرأ من الـ BuilderThemeProvider */}
-                  <Route 
-                    path="/sites/:siteId/pages/new" 
-                    element={<PageEditor mode="create" />} 
-                  />
-                  <Route 
-                    path="/sites/:siteId/pages/:pageId/edit" 
-                    element={<PageEditor mode="edit" />} 
-                  />
+                  <Route path="/sites/:siteId/pages/new" element={<PageEditor mode="create" />} />
+                  <Route path="/sites/:siteId/pages/:pageId/edit" element={<PageEditor mode="edit" />} />
 
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/media" element={<Media />} />
@@ -107,11 +106,9 @@ const AppContent: React.FC = () => {
 
               {/* 404 REDIRECT */}
               <Route path="*" element={<Navigate to="/" replace />} />
-
             </Routes>
           </BrowserRouter>
         </BuilderThemeProvider>
-
       </SnackbarProvider>
     </MuiThemeProvider>
   );

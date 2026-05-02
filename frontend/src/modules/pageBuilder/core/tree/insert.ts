@@ -1,60 +1,58 @@
-import { v4 as uuidv4 } from "uuid";
-
-type Block = any;
+import { Block } from "../../types/page.types";
+import { canDrop } from "../../adapters/pageAdapter"; // جيب الـ validator اللي عملناه
 
 /**
- * ➕ Insert block inside a section column OR root
+ * 🔥 Clean tree insert (With Validation & Safety)
  */
-export const addBlockToColumn = (
+export const insertBlock = (
   blocks: Block[],
-  sectionId: string,
-  columnIndex: number,
-  type: string,
-  registry: any
+  drop: any,
+  newBlock: Block
 ): Block[] => {
+  const result: Block[] = [];
 
-  return blocks.map((block) => {
+  for (const block of blocks) {
+    // 🎯 Target found (البلوك اللي سيبنا فوقه الماوس)
+    if (block.id === drop.targetId) {
 
-    // 🎯 CASE 1: FOUND SECTION
-    if (block.id === sectionId) {
-
-      const config = registry?.[type];
-      if (!config) return block;
-
-      const newBlock: Block = {
-        id: uuidv4(),
-        type,
-        data: {
-          props: { ...config.defaultData?.props },
-          style: { ...config.defaultData?.style }
+      // 🛡️ [SAFETY CHECK] 
+      // إذا كان الـ Drop "inside"، لازم نثبتوا هل الـ Target يقبل الـ NewBlock
+      if (drop.type === "inside") {
+        if (!canDrop(block.type, newBlock.type)) {
+          console.warn(`🚫 Validation: ${newBlock.type} cannot be added inside ${block.type}`);
+          result.push(block); // نرجّع البلوك كيما هو بدون الـ newBlock
+          continue;
         }
-      };
 
-      const currentCols = block.children || [];
+        result.push({
+          ...block,
+          children: [...(block.children || []), newBlock]
+        });
+      }
 
-      const updatedCols = [...currentCols];
+      // إذا كان BEFORE أو AFTER، البلوك الجديد باش يولي "خو" (Sibling) للـ Target
+      // الـ Validation هنا أصعب شوية (لازم تثبت في الـ Parent)، 
+      // لكن حالياً نركزو إنهم يتحطو مريڤلين
+      if (drop.type === "before") {
+        result.push(newBlock, block);
+      }
 
-      updatedCols[columnIndex] = [
-        ...(updatedCols[columnIndex] || []),
-        newBlock
-      ];
+      if (drop.type === "after") {
+        result.push(block, newBlock);
+      }
 
-      return {
-        ...block,
-        children: updatedCols
-      };
+      continue;
     }
 
-    // 🔁 CASE 2: RECURSIVE SEARCH
-    if (block.children?.length) {
-      return {
-        ...block,
-        children: block.children.map((col: Block[]) =>
-          addBlockToColumn(col, sectionId, columnIndex, type, registry)
-        )
-      };
-    }
+    // 🔁 Recursion clean
+    // نلوجو في وسط الـ children بعمق (Recursive search)
+    result.push({
+      ...block,
+      children: block.children
+        ? insertBlock(block.children, drop, newBlock)
+        : []
+    });
+  }
 
-    return block;
-  });
+  return result;
 };

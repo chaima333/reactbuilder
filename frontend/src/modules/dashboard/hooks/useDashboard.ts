@@ -1,39 +1,19 @@
-// src/modules/dashboard/hooks/useDashboardData.ts
-import {
-  useGetDashboardStatsQuery,
-  useGetRecentActivityQuery
-} from "../../../redux/services/dashboard.api";
+import { useGetDashboardFullQuery } from "../../../redux/services/dashboard.api";
 
-export const useDashboardData = () => {
-  const statsQuery = useGetDashboardStatsQuery();
-  const activityQuery = useGetRecentActivityQuery();
+import { useEffect, useState } from "react";
 
-  return {
-    // 📊 الداتا
-    stats: statsQuery.data?.data ?? null,
-    activity: activityQuery.data?.data ?? [],
+export const useDashboard = () => {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-    // ⏳ حالات التحميل
-    loading: {
-      stats: statsQuery.isLoading,
-      activity: activityQuery.isLoading,
-      global: statsQuery.isLoading || activityQuery.isLoading,
-    },
+  useEffect(() => {
+    fetch("/api/dashboard/full")
+      .then((res) => res.json())
+      .then((res) => {
+        setData(res.data);
+        setLoading(false);
+      });
+  }, []);
 
-    // ❌ الأخطاء
-    error: {
-      stats: statsQuery.error,
-      activity: activityQuery.error,
-    },
-
-    // 🔄 تحديث الداتا يدويًا
-    refetch: {
-      all: () => {
-        statsQuery.refetch();
-        activityQuery.refetch();
-      },
-      stats: statsQuery.refetch,
-      activity: activityQuery.refetch,
-    },
-  };
+  return { data, loading };
 };

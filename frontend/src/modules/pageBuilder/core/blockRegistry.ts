@@ -2,65 +2,111 @@ import { TextBlock } from "../components/blocks/TextBlock";
 import { ImageBlock } from "../components/blocks/ImageBlock";
 import { TitleBlock } from "../components/blocks/TitleBlock";
 import { ButtonBlock } from "../components/blocks/ButtonBlock";
+import { SectionBlock } from "../components/blocks/SectionBlock";
 
-export const blockRegistry: Record<string, any> = {
+import { BlockConfig } from "../types/page.types";
+
+export const blockRegistry: Record<string, BlockConfig> = {
+
+  section: {
+    component: SectionBlock,
+    label: "Section",
+    isContainer: true,
+    allowedChildren: ["text", "image", "button", "title"],
+    fields: [
+      { key: "backgroundColor", label: "Fond", type: "color", target: "style" },
+      { key: "padding", label: "Padding", type: "text", target: "style" },
+      { key: "flexDirection", label: "Direction", type: "select", options: ["row", "column"], target: "style" }
+    ],
+    defaultData: {
+      props: {},
+      style: {
+        desktop: {
+          backgroundColor: "#ffffff",
+          padding: "40px 20px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "20px",
+          width: "100%",
+        }
+      }
+    }
+  },
+
   title: {
     component: TitleBlock,
-    label: "Titre",
-    isContainer: true,
+    label: "Title",
+    isContainer: false,
+    allowedChildren: [],
     fields: [
-      { key: "content", label: "Texte", type: "text", target: "props" },
-      { key: "fontSize", label: "Taille Police", type: "text", target: "style", responsive: true },
-      { key: "color", label: "Couleur", type: "color", target: "style" },
-      { key: "textAlign", label: "Alignement", type: "select", options: ["left", "center", "right"], target: "style", responsive: true }
+      { key: "content", label: "Text", type: "text", target: "props" },
+      { key: "color", label: "Color", type: "color", target: "style" }
     ],
     defaultData: {
-      props: { content: "Nouveau Titre" },
-      style: { desktop: { fontSize: "32px", color: "#222", textAlign: "left" } }
+      props: { content: "New Title" },
+      style: {
+        desktop: { fontSize: "32px", color: "#222" }
+      }
     }
   },
+
   text: {
     component: TextBlock,
-    label: "Texte",
-    isContainer: true,
+    label: "Text",
+    isContainer: false,
+    allowedChildren: [],
     fields: [
-      { key: "content", label: "Paragraphe", type: "text", target: "props" },
-      { key: "fontSize", label: "Taille", type: "text", target: "style", responsive: true },
-      { key: "color", label: "Couleur", type: "color", target: "style" }
+      { key: "content", label: "Text", type: "text", target: "props" }
     ],
     defaultData: {
-      props: { content: "Ceci est un paragraphe..." },
-      style: { desktop: { fontSize: "16px", color: "#555" } }
+      props: { content: "Paragraph..." },
+      style: {
+        desktop: { fontSize: "16px", color: "#555" }
+      }
     }
   },
+
   image: {
     component: ImageBlock,
     label: "Image",
-    isContainer: true,
+    isContainer: false,
+    allowedChildren: [],
     fields: [
-      { key: "url", label: "Lien Image", type: "text", target: "props" },
-      { key: "borderRadius", label: "Arrondi (px)", type: "text", target: "style" }
+      { key: "url", label: "Image URL", type: "text", target: "props" }
     ],
     defaultData: {
-      props: { url: "https://via.placeholder.com/400x200", alt: "Image" },
-      style: { desktop: { borderRadius: "0px" } }
+      props: {
+        url: "https://via.placeholder.com/300",
+        alt: "image"
+      },
+      style: {
+        desktop: {
+          width: "100%"
+        }
+      }
     }
   },
+
   button: {
     component: ButtonBlock,
-    label: "Bouton",
-    isContainer: true,
+    label: "Button",
+    isContainer: false,
+    allowedChildren: [],
     fields: [
-      { key: "label", label: "Texte Bouton", type: "text", target: "props" },
-      { key: "url", label: "Lien (URL)", type: "text", target: "props" },
-      { key: "backgroundColor", label: "Fond", type: "color", target: "style" },
-      { key: "color", label: "Texte Color", type: "color", target: "style" }
+      { key: "label", label: "Label", type: "text", target: "props" }
     ],
     defaultData: {
-      props: { label: "Cliquez ici", url: "#" },
-      style: { desktop: { backgroundColor: "#1976d2", color: "#fff", padding: "12px 24px" } }
+      props: {
+        label: "Click me",
+        url: "#"
+      },
+      style: {
+        desktop: {
+          backgroundColor: "#1976d2",
+          color: "#fff",
+          padding: "12px 20px"
+        }
+      }
     }
   }
 };
-
-export const getBlockComponent = (type: string) => blockRegistry[type]?.component;

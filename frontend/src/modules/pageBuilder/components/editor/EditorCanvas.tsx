@@ -1,36 +1,29 @@
-import React from "react";
 import { Box } from "@mui/material";
-import { SortableBlock } from "./SortableBlock";
+import { BlockRenderer } from "./BlockRenderer";
 
 export const EditorCanvas = ({
-  blocks, registry, onUpdate, onDelete, onSelect, selectedId, device,
-  hoverData, setHoverData // 🔥
+  blocks,
+  registry,
+  onUpdate,
+  onDelete,
+  onSelect,
+  selectedId,
+  device,
 }: any) => {
   return (
-    <Box sx={{ p: 4, minHeight: '80vh' }}>
-      {blocks.map((block: any) => {
-        const config = registry[block.type];
-        if (!config) return null;
-        const Component = config.component;
-
-        return (
-          <SortableBlock
-            key={block.id}
-            id={block.id}
-            isSelected={selectedId === block.id}
-            onClick={() => onSelect(block.id)}
-            onDelete={() => onDelete(block.id)}
-            setHoverData={setHoverData} // 🔥
-            hoverData={hoverData}       // 🔥
-          >
-            <Component
-              data={block.data}
-              device={device}
-              onChange={(data: any) => onUpdate(block.id, data)}
-            />
-          </SortableBlock>
-        );
-      })}
+    <Box sx={{ p: 4 }}>
+      {blocks.map((block: any) => (
+        <BlockRenderer
+          key={block.id}
+          block={block}
+          registry={registry}
+          device={device}
+          onUpdate={onUpdate}
+          onDelete={onDelete}
+          onSelect={onSelect}
+          selectedId={selectedId}
+        />
+      ))}
     </Box>
   );
 };

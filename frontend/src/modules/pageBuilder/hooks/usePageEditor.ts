@@ -1,29 +1,49 @@
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
-import { useGetPageByIdQuery, useUpdatePageMutation } from '../../../redux/services/pages.api';
-import { blockRegistry as staticRegistry } from '../core/blockRegistry';
-import { loadBlockRegistry } from '../core/loadBlockRegistry';
-import { Block } from '../types/page.types';
-import { useHistory } from '../core/history/useHistory';
-import { moveBlockInTree } from '../core/tree/move';
-import { copyBlock, duplicateBlock, pasteBlockIntoTree } from '../core/tree/clipboard';
-import { defaultTokens } from '../core/theme/tokens';
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useParams } from "react-router-dom";
+import { v4 as uuidv4 } from "uuid";
+
+import {
+  useGetPageByIdQuery,
+  useUpdatePageMutation,
+} from "../../../redux/services/pages.api";
+
+import { blockRegistry as staticRegistry } from "../core/blockRegistry";
+import { loadBlockRegistry } from "../core/loadBlockRegistry";
+
+import { Block, BlockType } from "../types/page.types";
+
+import { useHistory } from "../core/history/useHistory"; // تأكد أن هذا الـ Hook يطبق الـ Logic اللي حكينا عليه
+import { moveBlockInTree } from "../core/tree/move";
+import {
+  copyBlock,
+  duplicateBlock,
+  pasteBlockIntoTree,
+} from "../core/tree/clipboard";
+
+import { defaultTokens } from "../core/theme/tokens";
+import { fromAPIToUI, fromUIToAPI } from "../adapters/pageAdapter";
 
 export const usePageEditor = (mode: "create" | "edit") => {
   const { siteId, pageId } = useParams<{ siteId: string; pageId: string }>();
   const isEdit = mode === "edit";
 
   const [pageTitle, setPageTitle] = useState("");
-  const [registry, setRegistry] = useState<Record<string, any>>(staticRegistry);
+  const [registry, setRegistry] = useState(staticRegistry);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [clipboard, setClipboard] = useState<any | null>(null);
-
-  // 1️⃣ الـ State متاع الـ Blocks والـ Tokens (الألوان والخطوط)
-  const { state: blocks, set: setBlocks, undo, redo, canUndo, canRedo } = useHistory<Block[]>([]);
   const [tokens, setTokens] = useState(defaultTokens);
 
-  const { data: pageData, isLoading: isPageLoading } = useGetPageByIdQuery(
+  // 1. إعداد الـ History
+  const {
+    state: blocks,
+    set: setBlocks,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useHistory<Block[]>([]);
+
+  const { data: pageData, isLoading } = useGetPageByIdQuery(
     { siteId: Number(siteId), pageId: Number(pageId) },
     { skip: !isEdit || !pageId }
   );
@@ -31,172 +51,192 @@ export const usePageEditor = (mode: "create" | "edit") => {
   const [updatePage, { isLoading: isSaving }] = useUpdatePageMutation();
 
   useEffect(() => {
-    loadBlockRegistry().then(r => setRegistry(r));
+    loadBlockRegistry().then(setRegistry);
   }, []);
 
-  // 📥 2️⃣ LOAD: جلب البيانات من الداتابيز (Blocks + Theme)
   useEffect(() => {
     if (isEdit && pageData?.data && blocks.length === 0) {
       setPageTitle(pageData.data.title || "");
-      setBlocks(pageData.data.blocks || []);
-      // تحميل الـ Theme المخزن أو استعمال الـ Default
+      // ملاحظة: setBlocks هوني باش تزيد أول Snapshot في الـ History
+      setBlocks(fromAPIToUI(pageData.data.blocks || []));
       setTokens(pageData.data.theme || defaultTokens);
     }
-  }, [pageData, isEdit, blocks.length, setBlocks]);
+  }, [pageData, isEdit, setBlocks]);
 
-  const findBlockInTree = (tree: Block[], id: string): Block | null => {
+  const findBlockInTree = useCallback((tree: Block[], id: string): Block | null => {
     for (const node of tree) {
       if (node.id === id) return node;
-      if (node.children) {
-        for (const col of node.children) {
-          const found = findBlockInTree(col.blocks, id);
-          if (found) return found;
-        }
+      if (node.children?.length) {
+        const found = findBlockInTree(node.children, id);
+        if (found) return found;
       }
     }
     return null;
-  };
+  }, []);
 
-  const selectedBlock = findBlockInTree(blocks, selectedBlockId || "");
+  const selectedBlock = useMemo(() => 
+    findBlockInTree(blocks, selectedBlockId || ""), 
+    [blocks, selectedBlockId, findBlockInTree]
+  );
 
-  // 🔥 دالة تحديث الـ Tokens بذكاء (خارج الـ actions لكنها تُستعمل فيها)
   const updateToken = (path: string, value: string) => {
     setTokens((prev: any) => {
-      const newTokens = JSON.parse(JSON.stringify(prev)); 
+      const copy = structuredClone(prev);
       const keys = path.split(".");
-      let current = newTokens;
-
+      let cur = copy;
       for (let i = 0; i < keys.length - 1; i++) {
-        current = current[keys[i]];
+        cur = cur[keys[i]];
       }
-      current[keys[keys.length - 1]] = value;
-      
-      return newTokens;
+      cur[keys[keys.length - 1]] = value;
+      return copy;
     });
   };
 
+  // =========================
+  // 🛠️ ACTIONS ENGINE
+  // =========================
   const actions = {
-    addBlock: (type: string) => {
+    updateTree: (newBlocks: Block[]) => {
+      setBlocks(newBlocks);
+    },
+
+    // ✅ تطوير الـ addBlock لدعم الـ Precise Positioning
+    addBlock: (type: string, targetId?: string, position: "before" | "after" | "inside" = "inside") => {
       const config = registry[type];
-      if (!config) return;
-      const newBlock: Block = { 
-        id: uuidv4(), 
-        type: type as any, 
-        data: { 
-          props: { ...config.defaultData?.props }, 
-          style: { ...config.defaultData?.style } 
-        } 
+      const newBlock: Block = {
+        id: uuidv4(),
+        type: type as BlockType,
+        data: {
+          props: { ...config?.defaultData?.props },
+          style: { ...config?.defaultData?.style },
+        },
+        children: [],
       };
-      setBlocks([...blocks, newBlock]);
+
+      if (!targetId) {
+        setBlocks([...blocks, newBlock]);
+      } else {
+        // نستعملوا الـ move logic لزيادة البلوك الجديد في المكان الصحيح
+        // بما أن الـ moveBlockInTree مصممة للتحريك، يمكننا استغلالها أو عمل insert logic
+        const insertIntoTree = (tree: Block[]): Block[] => {
+          return tree.flatMap((b) => {
+            if (b.id === targetId) {
+              if (position === "before") return [newBlock, b];
+              if (position === "after") return [b, newBlock];
+              if (position === "inside") {
+                return [{ ...b, children: [...(b.children || []), newBlock] }];
+              }
+            }
+            return [{
+              ...b,
+              children: b.children ? insertIntoTree(b.children) : []
+            }];
+          });
+        };
+        setBlocks(insertIntoTree(blocks));
+      }
       setSelectedBlockId(newBlock.id);
     },
 
     updateBlock: (id: string, newData: any) => {
-      const updateRecursive = (tree: Block[]): Block[] => {
-        return tree.map(b => {
+      const update = (tree: Block[]): Block[] =>
+        tree.map((b) => {
           if (b.id === id) {
             return {
               ...b,
               data: {
+                ...b.data,
                 props: { ...b.data.props, ...(newData.props || {}) },
-                style: { ...b.data.style, ...(newData.style || {}) }
-              }
+                style: {
+                  ...b.data.style,
+                  desktop: { ...b.data.style?.desktop, ...newData.style?.desktop },
+                  mobile: { ...b.data.style?.mobile, ...newData.style?.mobile },
+                },
+              },
             };
           }
-          if (b.children) {
-            return {
-              ...b,
-              children: b.children.map(col => ({
-                ...col,
-                blocks: updateRecursive(col.blocks)
-              }))
-            };
-          }
-          return b;
+          return {
+            ...b,
+            children: b.children ? update(b.children) : [],
+          };
         });
-      };
-      setBlocks(updateRecursive(blocks));
+      setBlocks(update(blocks));
     },
 
     deleteBlock: (id: string) => {
-      const deleteRecursive = (tree: Block[]): Block[] => {
-        return tree
-          .filter(b => b.id !== id)
-          .map(b => (b.children ? {
+      const remove = (tree: Block[]): Block[] =>
+        tree
+          .filter((b) => b.id !== id)
+          .map((b) => ({
             ...b,
-            children: b.children.map(col => ({
-              ...col,
-              blocks: deleteRecursive(col.blocks)
-            }))
-          } : b));
-      };
-      setBlocks(deleteRecursive(blocks));
+            children: b.children ? remove(b.children) : [],
+          }));
+
+      setBlocks(remove(blocks));
       if (selectedBlockId === id) setSelectedBlockId(null);
     },
 
-    copy: (id: string) => {
-      const block = findBlockInTree(blocks, id);
-      if (block) {
-        const cloned = copyBlock(block);
-        setClipboard(cloned);
-        localStorage.setItem("editor_clipboard", JSON.stringify(cloned));
-      }
+    // ✅ التحريك يستعمل الـ History توّة
+    moveBlock: (activeId: string, dropInfo: any) => {
+      const updated = moveBlockInTree(blocks, activeId, dropInfo);
+      setBlocks(updated);
     },
 
     duplicate: (id: string) => {
       const block = findBlockInTree(blocks, id);
-      if (block) {
-        const newBlock = duplicateBlock(block);
-        const newTree = pasteBlockIntoTree(blocks, id, newBlock);
-        setBlocks(newTree);
-      }
+      if (!block) return;
+      const newBlock = duplicateBlock(block);
+      const updated = pasteBlockIntoTree(blocks, id, newBlock);
+      setBlocks(updated);
+    },
+
+    copy: (id: string) => {
+      const block = findBlockInTree(blocks, id);
+      if (!block) return;
+      const cloned = copyBlock(block);
+      setClipboard(cloned);
+      localStorage.setItem("editor_clipboard", JSON.stringify(cloned));
     },
 
     paste: (targetId: string) => {
       const saved = localStorage.getItem("editor_clipboard");
-      const dataToPaste = clipboard || (saved ? JSON.parse(saved) : null);
-      if (dataToPaste) {
-        const newBlock = duplicateBlock(dataToPaste);
-        const newTree = pasteBlockIntoTree(blocks, targetId, newBlock);
-        setBlocks(newTree);
-      }
-    },
-
-    moveBlock: (activeId: string, dropInfo: any) => {
-      const newTree = moveBlockInTree(blocks, activeId, dropInfo);
-      setBlocks(newTree);
+      const data = clipboard || (saved ? JSON.parse(saved) : null);
+      if (!data) return;
+      const newBlock = duplicateBlock(data);
+      const updated = pasteBlockIntoTree(blocks, targetId, newBlock);
+      setBlocks(updated);
     },
 
     undo,
     redo,
 
-    // 📤 3️⃣ SAVE: حفظ الـ Blocks والـ Theme مع بعضهم
     save: async () => {
-      const payload = { 
-        title: pageTitle, 
-        blocks, 
-        theme: tokens, 
-        siteId: Number(siteId) 
-      };
-      await updatePage({ ...payload, pageId: Number(pageId) });
+      await updatePage({
+        title: pageTitle,
+        blocks: fromUIToAPI(blocks),
+        theme: tokens,
+        siteId: Number(siteId) || 1, 
+        pageId: Number(pageId) || 1,
+      });
     },
   };
 
-  return { 
-    blocks, 
-    selectedBlock, 
-    selectedBlockId, 
-    setSelectedBlockId, 
-    actions, 
-    registry, 
-    pageTitle, 
+  return {
+    blocks,
+    selectedBlock,
+    selectedBlockId,
+    setSelectedBlockId,
+    actions,
+    registry,
+    pageTitle,
     setPageTitle,
     canUndo,
     canRedo,
-    isLoading: isPageLoading,
+    isLoading,
     isSaving,
-    tokens,     
-    setTokens, 
-    updateToken, // 🔥 توّة ولات تخرج نظيفة للـ UI
+    tokens,
+    setTokens,
+    updateToken,
+    findBlockInTree
   };
 };
