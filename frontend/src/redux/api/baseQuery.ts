@@ -7,17 +7,25 @@ const API_URL = 'https://backend-rmfq.onrender.com/api';
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: API_URL,
-  prepareHeaders: (headers, { getState }) => {
-    const token = (getState() as RootState).auth.accessToken;
+ // src/redux/services/baseQuery.ts
 
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
+prepareHeaders: (headers, { getState }) => {
+  
+  const state = getState() as RootState;
 
-    // ❌ حذّفنا x-subdomain بالكامل
+  const token = state.auth.accessToken;
+  
+  const siteId = state.site.currentSite?.id;
 
-    return headers;
-  },
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  if (siteId) {
+    headers.set('x-site-id', String(siteId));
+  }
+
+  return headers;
+},
 });
 
 export const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {

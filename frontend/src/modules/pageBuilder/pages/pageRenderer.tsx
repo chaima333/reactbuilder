@@ -13,12 +13,16 @@ interface PageRendererProps {
 export const PageRenderer: React.FC<PageRendererProps> = ({ blocks, registry, device }) => {
   return (
     <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: '#fff' }}>
-      <BlockRenderer 
-        blocks={blocks} 
-        registry={registry}
-        device={device} // 🟢 توّة الـ BlockRenderer باش يعرف أما Style يفرز
-        preview={true} 
-      />
+      {/* 🟢 نعديو بالواحد بالواحد باستعمال map */}
+      {blocks.map((b) => (
+        <BlockRenderer 
+          key={b.id} // 👈 مهم جداً للـ React
+          block={b}  
+          registry={registry}
+          device={device}
+          preview={true} 
+        />
+      ))}
     </Box>
   );
 };

@@ -42,8 +42,8 @@ export const Profile: React.FC = () => {
   const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
 
   useEffect(() => {
-    if (profileData?.user || user) {
-      const currentUser = profileData?.user || user;
+    if ((profileData as any)?.user || user) {
+      const currentUser = (profileData as any)?.user || user;
       setFormData({
         name: currentUser?.name || '',
         email: currentUser?.email || '',
@@ -62,9 +62,9 @@ export const Profile: React.FC = () => {
   const handleSave = async () => {
     try {
       const result = await updateProfile(formData).unwrap();
-      if (result.success && result.user) {
+      if (result.success && result.User) {
         dispatch(setCredentials({
-          user: result.user,
+          user: result.User,
           accessToken: localStorage.getItem('accessToken') || '',
           refreshToken: localStorage.getItem('refreshToken') || '',
         }));

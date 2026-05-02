@@ -1,6 +1,7 @@
 import { api } from '../api/api';
 
 type User = {
+  [x: string]: any;
   id: number;
   name: string;
   email: string;

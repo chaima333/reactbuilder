@@ -55,12 +55,12 @@ export const usePageEditor = (mode: "create" | "edit") => {
   }, []);
 
   useEffect(() => {
-    if (isEdit && pageData?.data && blocks.length === 0) {
-      setPageTitle(pageData.data.title || "");
-      // ملاحظة: setBlocks هوني باش تزيد أول Snapshot في الـ History
-      setBlocks(fromAPIToUI(pageData.data.blocks || []));
-      setTokens(pageData.data.theme || defaultTokens);
-    }
+    if (isEdit && (pageData as any)?.data && blocks.length === 0) {
+  const data = (pageData as any).data;
+  setPageTitle(data.title || "");
+  setBlocks(fromAPIToUI(data.blocks || []));
+  setTokens(data.theme || defaultTokens);
+}
   }, [pageData, isEdit, setBlocks]);
 
   const findBlockInTree = useCallback((tree: Block[], id: string): Block | null => {

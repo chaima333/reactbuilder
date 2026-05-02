@@ -70,7 +70,8 @@ export const Users: React.FC = () => {
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
   const [changeRole] = useChangeUserRoleMutation();
 
-  const users = data?.data || [];
+  // ✅ تغيير الاسم لـ allUsers لتجنب التداخل مع اسم الـ Component (Users)
+  const allUsers = (data as any)?.data || [];
 
   // --- API CALLS MANUELS (PENDING USERS) ---
   
@@ -157,11 +158,20 @@ export const Users: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
+      const payload = {
+        ...formData,
+        role: formData.role.toUpperCase(), // "Admin" -> "ADMIN"
+      };
+
       if (editingUser) {
-        await updateUser({ id: editingUser.id, ...formData }).unwrap();
+        // ✅ إصلاح الهيكل: { id, data }
+        await updateUser({ 
+          id: Number(editingUser.id), 
+          data: payload as any 
+        }).unwrap();
         enqueueSnackbar('Utilisateur mis à jour', { variant: 'success' });
       } else {
-        await createUser(formData).unwrap();
+        await createUser(payload as any).unwrap();
         enqueueSnackbar('Utilisateur créé', { variant: 'success' });
       }
       handleCloseDialog();
@@ -190,7 +200,7 @@ export const Users: React.FC = () => {
     const nextRole = roles[(currentIndex + 1) % roles.length];
     
     try {
-      await changeRole({ id, role: nextRole }).unwrap();
+      await changeRole({ id, role: nextRole.toUpperCase() as any }).unwrap();
       enqueueSnackbar(`Rôle changé en ${nextRole}`, { variant: 'success' });
       refetch();
     } catch (error) {
@@ -286,7 +296,8 @@ export const Users: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {users.map((user: any) => (
+            {/* ✅ تم استبدال Users بـ allUsers هنا */}
+            {allUsers.map((user: any) => (
               <TableRow key={user.id} hover>
                 <TableCell sx={{ fontWeight: 500 }}>{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
@@ -301,7 +312,6 @@ export const Users: React.FC = () => {
                   />
                 </TableCell>
                 
-                {/* ✅ Correction : Utilisation de siteCount renvoyé par le backend */}
                 <TableCell align="center">
                   <Chip 
                     label={user.siteCount || 0} 
@@ -358,7 +368,7 @@ export const Users: React.FC = () => {
             onChange={(e) => setFormData({ ...formData, role: e.target.value })}
           >
             <MenuItem value="Admin">Administrateur</MenuItem>
-            <MenuItem value="Editor">Éditeur</MenuItem>
+            <MenuItem value="Editor">Éدiteur</MenuItem>
             <MenuItem value="Viewer">Visiteur</MenuItem>
           </TextField>
         </DialogContent>

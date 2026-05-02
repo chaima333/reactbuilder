@@ -1,5 +1,6 @@
 import { api } from '../api/api';
 
+// src/types/site.ts
 export type Site = {
   id: number;
   name: string;
@@ -11,11 +12,25 @@ export type Site = {
   updatedAt: string;
 };
 
+export type SitesResponse = {
+  success: boolean;
+  data: Site[];
+};
+
 export const sitesApi = api.injectEndpoints({
   endpoints: (builder) => ({
 
     getSites: builder.query<Site[], void>({
       query: () => '/sites',
+
+      transformResponse: (response: any) => {
+        if (!response || !response.data) {
+          console.warn("Invalid sites response:", response);
+          return [];
+        }
+        return response.data;
+      },
+
       providesTags: (result) =>
         result
           ? [
@@ -65,6 +80,7 @@ export const sitesApi = api.injectEndpoints({
 
   }),
 });
+
 export const { 
   useGetSitesQuery, 
   useGetSiteByIdQuery, 

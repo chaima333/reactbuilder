@@ -15,13 +15,14 @@ export interface DashboardFullResponse {
   status?: string;
 }
 
+
 export const dashboardApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    getDashboardFull: builder.query<DashboardFullResponse['data'], void>({
-      query: () => "/dashboard/full",
-      transformResponse: (response: DashboardFullResponse) => response.data,
-      providesTags: ['Stats', 'Activity'], 
-    }),
+   getDashboardFull: builder.query<any, number>({
+  query: (siteId) => `/sites/${siteId}/dashboard/full`,
+  transformResponse: (res: any) => res.data,
+  providesTags: ["Stats", "Activity"],
+}),
   }),
 });
 

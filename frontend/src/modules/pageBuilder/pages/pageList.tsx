@@ -1,39 +1,68 @@
 // frontend/src/modules/dashboard/pages/pageList.tsx
 import React from "react";
-import { Box, Typography, Button, Card, CardContent, Stack, Alert, CircularProgress } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  Card,
+  CardContent,
+  Stack,
+  Alert,
+  CircularProgress,
+} from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { 
-  useGetPagesQuery, 
-  useCreatePageMutation, 
-  useDeletePageMutation, 
-  usePublishPageMutation 
+
+import {
+  useGetPagesQuery,
+  useCreatePageMutation,
+  useDeletePageMutation,
+  usePublishPageMutation,
 } from "../../../redux/services/pages.api";
+
+import { useSelector } from "react-redux";
+import { RootState } from "../../../redux/store";
 
 export const PageList: React.FC = () => {
   const navigate = useNavigate();
-  const siteId = 1;
 
-  // 1. جلب البيانات (لاحظ أننا نأخذ pages مباشرة لأننا استعملنا transformResponse)
-  const { data: pages, isLoading, error } = useGetPagesQuery(siteId);
+  // ✅ tenant source of truth (NO HARDCODE)
+  const siteId = useSelector(
+    (state: RootState) => state.site.currentSite?.id
+  );
 
-  // 2. العمليات (Mutations)
-  const [createPageAction, { isLoading: isCreating }] = useCreatePageMutation();
+  // 🚨 guard: SaaS rule
+  const { data: pages, isLoading, error } = useGetPagesQuery(siteId!, {
+    skip: !siteId,
+  });
+
+  const [createPageAction, { isLoading: isCreating }] =
+    useCreatePageMutation();
+
   const [deletePageAction] = useDeletePageMutation();
   const [publishPageAction] = usePublishPageMutation();
 
   const handleCreate = async () => {
+    if (!siteId) return;
+
     try {
-      // نرسل مصفوفة فارغة للـ blocks كما هو معرف في الـ Type
-      const res = await createPageAction({ siteId, title: "Nouvelle Page", blocks: [] }).unwrap();
-      // التوكن والـ Refresh سيعملان تلقائياً هنا بفضل الـ baseQuery
-      if (res?.id) navigate(`/editor/${res.id}`);
-    } catch (err) { 
-      console.error("Erreur de création:", err); 
+      const res = await createPageAction({
+        siteId,
+        title: "Nouvelle Page",
+        blocks: [],
+      }).unwrap();
+
+      if (res?.id) {
+        navigate(`/editor/${res.id}`);
+      }
+    } catch (err) {
+      console.error("Erreur de création:", err);
     }
   };
 
   const handleDelete = async (pageId: number) => {
-    if (window.confirm("Voulez-vous vraiment supprimer cette page ?")) {
+    if (!siteId) return;
+
+    if (window.confirm("Supprimer cette page ?")) {
       try {
         await deletePageAction({ siteId, pageId }).unwrap();
       } catch (err) {
@@ -43,6 +72,8 @@ export const PageList: React.FC = () => {
   };
 
   const handlePublish = async (pageId: number) => {
+    if (!siteId) return;
+
     try {
       await publishPageAction({ siteId, pageId }).unwrap();
     } catch (err) {
@@ -50,78 +81,134 @@ export const PageList: React.FC = () => {
     }
   };
 
-  if (isLoading) return (
-    <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
-      <CircularProgress />
-    </Box>
-  );
+  // 🔥 tenant not selected state
+  if (!siteId) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Alert severity="warning">
+          Sélectionnez un site pour gérer les pages
+        </Alert>
+      </Box>
+    );
+  }
+
+  // loading state
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ p: 4 }}>
+      {/* HEADER */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
-        <Typography variant="h4" fontWeight="bold">Gestion des Pages</Typography>
-        <Button 
-          variant="contained" 
-          onClick={handleCreate} 
+        <Typography variant="h4" fontWeight="bold">
+          Gestion des Pages
+        </Typography>
+
+        <Button
+          variant="contained"
+          onClick={handleCreate}
           disabled={isCreating}
         >
           {isCreating ? "Création..." : "+ Créer une Page"}
         </Button>
       </Stack>
 
+      {/* ERROR */}
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
-          Impossible من تحميل الصفحات. تأكد من اتصالك أو صلاحياتك.
+          Impossible de charger les pages
         </Alert>
       )}
 
-      <Stack spacing={2}>
-        {!pages || pages.length === 0 ? (
-          <Typography align="center" color="textSecondary" sx={{ py: 5 }}>
-            Aucune page trouvée. ابدأ بإنشاء صفحتك الأولى!
-          </Typography>
-        ) : (
-          pages.map((page) => (
-            <Card key={page.id} variant="outlined" sx={{ '&:hover': { boxShadow: 3, borderColor: 'primary.main' }, transition: '0.3s' }}>
+      {/* EMPTY STATE */}
+      {!pages || pages.length === 0 ? (
+        <Typography align="center" sx={{ py: 5 }} color="text.secondary">
+          Aucune page trouvée
+        </Typography>
+      ) : (
+        <Stack spacing={2}>
+          {pages.map((page: any) => (
+            <Card
+              key={page.id}
+              variant="outlined"
+              sx={{
+                "&:hover": {
+                  boxShadow: 3,
+                  borderColor: "primary.main",
+                },
+                transition: "0.3s",
+              }}
+            >
               <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
+                  {/* INFO */}
                   <Box>
                     <Typography variant="h6">{page.title}</Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      /{page.slug} — 
-                      <Box component="span" sx={{ 
-                        ml: 1, px: 1, borderRadius: 1, 
-                        bgcolor: page.status === 'published' ? 'success.main' : 'warning.main',
-                        color: 'white', fontSize: '0.7rem', fontWeight: 'bold'
-                      }}>
-                        {page.status?.toUpperCase() || 'DRAFT'}
+                    <Typography variant="body2" color="text.secondary">
+                      /{page.slug}
+                      <Box
+                        component="span"
+                        sx={{
+                          ml: 1,
+                          px: 1,
+                          borderRadius: 1,
+                          fontSize: "0.7rem",
+                          fontWeight: "bold",
+                          color: "white",
+                          bgcolor:
+                            page.status === "published"
+                              ? "success.main"
+                              : "warning.main",
+                        }}
+                      >
+                        {page.status?.toUpperCase() || "DRAFT"}
                       </Box>
                     </Typography>
                   </Box>
 
+                  {/* ACTIONS */}
                   <Stack direction="row" spacing={1}>
-                    <Button variant="outlined" size="small" onClick={() => navigate(`/editor/${page.id}`)}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => navigate(`/editor/${page.id}`)}
+                    >
                       Éditer
                     </Button>
-                    <Button 
-                      variant="outlined" 
-                      color="success" 
-                      size="small" 
+
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="success"
+                      disabled={page.status === "published"}
                       onClick={() => handlePublish(page.id)}
-                      disabled={page.status === 'published'}
                     >
-                      {page.status === 'published' ? 'Publiée' : 'Publier'}
+                      {page.status === "published" ? "Publiée" : "Publier"}
                     </Button>
-                    <Button variant="text" color="error" size="small" onClick={() => handleDelete(page.id)}>
+
+                    <Button
+                      size="small"
+                      color="error"
+                      onClick={() => handleDelete(page.id)}
+                    >
                       Supprimer
                     </Button>
                   </Stack>
                 </Stack>
               </CardContent>
             </Card>
-          ))
-        )}
-      </Stack>
+          ))}
+        </Stack>
+      )}
     </Box>
   );
 };

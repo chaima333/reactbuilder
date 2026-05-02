@@ -94,6 +94,14 @@ export interface DashboardFullResponse {
   };
   message?: string;
   status?: string;
+    
+  loading?: {
+    stats: boolean;
+    activity: boolean;
+    global?: boolean;
+  };
+
+
 }
 
 // --- 6. الـ SEO Plugin Specific Types (كمثال على Plugin) ---

@@ -1,37 +1,57 @@
-// src/pages/DashboardPage.tsx
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom"; // 🔥 استعمل هذي
-import DashboardRenderer from "./DashboardRenderer";
+import React from "react";
+import { Box, CircularProgress, Alert, Typography } from "@mui/material";
+import { useSelector } from "react-redux";
+import { RootState } from "../../../redux/store";
+import { useGetDashboardFullQuery } from "../../../redux/services/dashboard.api";
+import DashboardRenderer from "../pages/DashboardRenderer";
 
-export default function DashboardPage() {
-  const { siteId } = useParams<{ siteId: string }>(); // يقرأ الـ ID من الرابط
-  const [dashboard, setDashboard] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
+export const DashboardPage: React.FC = () => {
+  const siteId = useSelector(
+    (state: RootState) => state.site.currentSite?.id
+  );
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
+  const {
+    data,
+    isLoading,
+    error,
+  } = useGetDashboardFullQuery(siteId!, {
+    skip: !siteId,
+  });
 
-    // نطلبوا الـ API باستعمال الـ siteId اللي في الرابط
-    fetch(`/api/sites/${siteId}/dashboard/full`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
-      .then(res => {
-        if (!res.ok) throw new Error("Forbidden or Not Found");
-        return res.json();
-      })
-      .then(res => setDashboard(res.data))
-      .catch(err => setError(err.message));
-  }, [siteId]); // كل ما يتبدل الـ siteId في الرابط، الـ Dashboard يتبدل
+  if (!siteId) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Alert severity="warning">
+          اختر موقع أولاً من Site Selector
+        </Alert>
+      </Box>
+    );
+  }
 
-  if (error) return <div className="text-red-500">Error: {error} (Check your membership)</div>;
-  if (!dashboard) return <div>Loading Dashboard for Site {siteId}...</div>;
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress />
+        <Typography sx={{ ml: 2 }}>Loading dashboard...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Alert severity="error">
+          Dashboard failed to load
+        </Alert>
+      </Box>
+    );
+  }
 
   return (
-    <DashboardRenderer
-      layout={dashboard.layout}
-      context={dashboard.data}
-    />
+    <Box sx={{ p: 3 }}>
+      <DashboardRenderer layout={data?.layout} context={data} />
+    </Box>
   );
-}
+};
+
+export default DashboardPage;

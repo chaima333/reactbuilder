@@ -30,14 +30,14 @@ export const SiteEditor: React.FC = () => {
 
   // Remplir le formulaire avec les données du site
   useEffect(() => {
-    if (siteData?.data) {
-      const site = siteData.data;
-      setName(site.name || '');
-      setTitle(site.title || '');
-      setDescription(site.description || '');
-      setLanguage(site.language || 'fr');
-      setTimezone(site.timezone || 'Europe/Paris');
-    }
+    if ((siteData as any)?.data) {
+  const site = (siteData as any).data;
+  setName(site.name || '');
+  setTitle(site.title || '');
+  setDescription(site.description || '');
+  setLanguage(site.language || 'fr');
+  setTimezone(site.timezone || 'Europe/Paris');
+}
   }, [siteData]);
 
   const handleSave = async () => {
@@ -54,7 +54,7 @@ export const SiteEditor: React.FC = () => {
         description,
         language,
         timezone,
-      }).unwrap();
+      }as any ).unwrap();
       
       enqueueSnackbar('Site mis à jour avec succès!', { variant: 'success' });
       navigate('/sites');

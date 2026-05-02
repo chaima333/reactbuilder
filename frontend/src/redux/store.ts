@@ -3,11 +3,14 @@ import { setupListeners } from '@reduxjs/toolkit/query';
 import { api } from './api/api';
 import authReducer from './features/authSlice';
 import themeReducer from './features/themeSlice';
+import siteReducer from './features/siteSlice';
+
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     theme: themeReducer,
+    site: siteReducer,
     [api.reducerPath]: api.reducer,
   },
 

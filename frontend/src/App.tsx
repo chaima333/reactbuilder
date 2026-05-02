@@ -1,3 +1,4 @@
+// src/App.tsx
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
@@ -9,8 +10,13 @@ import { store, RootState } from './redux/store';
 import { lightTheme, darkTheme } from './theme';
 import { Layout } from './app/Layout/Layout';
 
-// 🔥 الـ Provider متاع الـ Builder لازم يكون محوط الـ Routes
+// Providers
 import { ThemeProvider as BuilderThemeProvider } from './modules/pageBuilder/core/theme/ThemeProvider';
+import { LanguageProvider } from './app/providers/LanguageProvider';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+
+import { useAppBootstrap  } from './modules/dashboard/hooks/useBootstrap';
+
 
 // Pages
 import { Dashboard } from './modules/dashboard';
@@ -27,50 +33,44 @@ import { ForgotPassword } from './modules/auth/pages/ForgotPassword';
 import { ResetPassword } from './modules/auth/pages/ResetPassword';
 import Users from './modules/users/pages/Users';
 import { WaitingPage } from './modules/auth/pages/WaitingPage';
-
-import { LanguageProvider } from './app/providers/LanguageProvider';
-import { GoogleOAuthProvider } from '@react-oauth/google';
 import { PageEditor } from './modules/pageBuilder/pages/PageEditor';
-import PageList from './modules/pageBuilder/pages/pageList';
 
-const GOOGLE_CLIENT_ID = '386973697348-lm5v1bvoupl2t7t7kfqe89irlif6oo37.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = 'xxx';
 
 // =====================
-// 🔒 PROTECTED ROUTES
+// ROUTES GUARDS
 // =====================
 const ProtectedRoute = () => {
-  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return <Outlet />;
+  const isAuthenticated = useSelector((s: RootState) => s.auth.isAuthenticated);
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
 const AdminRoute = () => {
-  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, user } = useSelector((s: RootState) => s.auth);
+
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (user?.role !== 'Admin') return <Navigate to="/dashboard" replace />;
+
   return <Outlet />;
 };
 
 // =====================
-// 🌐 APP CONTENT
+// APP CONTENT
 // =====================
 const AppContent: React.FC = () => {
-  const themeMode = useSelector((state: RootState) => state.theme.mode);
+  
+  const themeMode = useSelector((s: RootState) => s.theme.mode);
+    useAppBootstrap ();
 
   return (
     <MuiThemeProvider theme={themeMode === 'light' ? lightTheme : darkTheme}>
       <CssBaseline />
       <SnackbarProvider maxSnack={3}>
-        {/* 🎨 الـ BuilderThemeProvider لازم يكون هوني باش الـ PageEditor يشوفو */}
         <BuilderThemeProvider>
-          <BrowserRouter 
-            future={{ 
-              v7_startTransition: true, 
-              v7_relativeSplatPath: true 
-            }}
-          >
+          <BrowserRouter>
             <Routes>
-              {/* 🌍 PUBLIC ROUTES */}
+
+              {/* 🌍 PUBLIC */}
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
@@ -78,18 +78,14 @@ const AppContent: React.FC = () => {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password/:token" element={<ResetPassword />} />
               <Route path="/site/:siteId" element={<PublicSite />} />
-
-              {/* 🧪 TEST ROUTE (بش تجرب الـ Editor من غير مشاكل Auth) */}
               <Route path="/test-editor" element={<PageEditor mode="edit" />} />
-              <Route path="/dashboard" element={<PageList />} />
 
-              {/* 🔐 PROTECTED ROUTES */}
+              {/* 🔐 PROTECTED */}
               <Route element={<ProtectedRoute />}>
-                <Route element={<Layout><Outlet /></Layout>}>
+                  <Route element={<Layout />}>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/sites" element={<Sites />} />
                   <Route path="/sites/:siteId/edit" element={<SiteEditor />} />
-                  
                   <Route path="/sites/:siteId/pages/new" element={<PageEditor mode="create" />} />
                   <Route path="/sites/:siteId/pages/:pageId/edit" element={<PageEditor mode="edit" />} />
 
@@ -97,15 +93,15 @@ const AppContent: React.FC = () => {
                   <Route path="/media" element={<Media />} />
                   <Route path="/settings" element={<Settings />} />
 
-                  {/* 👮 ADMIN ROUTES */}
                   <Route element={<AdminRoute />}>
                     <Route path="/users" element={<Users />} />
                   </Route>
+
                 </Route>
               </Route>
 
-              {/* 404 REDIRECT */}
               <Route path="*" element={<Navigate to="/" replace />} />
+
             </Routes>
           </BrowserRouter>
         </BuilderThemeProvider>
@@ -114,6 +110,9 @@ const AppContent: React.FC = () => {
   );
 };
 
+// =====================
+// ROOT APP
+// =====================
 function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
