@@ -7,6 +7,5 @@ const router = Router();
 router.use(authenticateJWT);
 
 // 🔥 SINGLE SOURCE OF TRUTH
-router.get("/dashboard/full", getDashboardFull);
-
+router.get("/full", getDashboardFull);
 export default router;
