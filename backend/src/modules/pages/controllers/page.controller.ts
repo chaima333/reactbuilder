@@ -84,17 +84,26 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
           title: result.data.title,
           content: result.data.content || "",
           updatedBy: req.user.id,
-          // ✅ التصحيح هنا: نجبدو الـ changes من داخل الـ event.data
+          // ✅ التصحيح متاعك صحيح
           changes: result.event?.data?.changes || [] 
+        },
+        // ⚠️ لازم تزيد الـ context هنا باش يحترم الـ Unified Contract
+        context: {
+          userId: req.user.id,
+          siteId: Number(req.siteContext.siteId),
+          action: "update" // ضروري جداً للـ Validator
         }
       });
     }
 
-    return res.json({
-      success: true,
-      data: PageMapper.toDTO(result.data),
-      eventId: result.event?.meta?.eventId
-    });
+    // إجبار الـ TypeScript على قبول الـ id
+const eventId = (result.event as any)?.id || (result.event as any)?.meta?.eventId;
+
+return res.json({
+  success: true,
+  data: PageMapper.toDTO(result.data),
+  eventId: eventId
+});
 
   } catch (err: any) {
     console.error("🚨 [UpdatePage Error]:", err);

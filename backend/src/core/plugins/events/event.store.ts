@@ -1,19 +1,13 @@
 import Redis from "ioredis";
 import { REDIS_CONFIG } from "../../queues/config";
-
+import { UnifiedEvent } from "./contracts/pageUpdated.event"
 const redis = new Redis(REDIS_CONFIG);
 
-export type EventItem = {
-  id: string;
-  type: string;
-  timestamp: number;
-  payload: any;
-};
 
 class EventStore {
   private readonly KEY = "dashboard:runtime:events";
 
-  async add(event: EventItem) {
+  async add(event: UnifiedEvent) {
     try {
       console.log(`📝 [Redis] Adding event: ${event.type}`);
       const data = JSON.stringify(event);

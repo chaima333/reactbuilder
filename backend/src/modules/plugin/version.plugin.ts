@@ -1,4 +1,3 @@
-import { PageEventPayload } from "../../core/plugins/events/types";
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
 import { PageVersionRepository } from "../pages/repositories/pageVersion.repository";
 

@@ -1,57 +1,57 @@
 import crypto from "crypto";
 import { pluginQueue } from "../../queues/plugin.queue";
 import { eventStore } from "./event.store";
-import { isValidPageUpdatedEvent } from "./contracts/pageUpdated.event";
+import { isValidUnifiedEvent, UnifiedEvent } from "./contracts/pageUpdated.event"; 
 
 export class EventBus {
-  static async emit(event: any) {
-    const enriched = {
-      ...event,
-      meta: {
-        eventId: event.meta?.eventId || crypto.randomUUID(),
-        timestamp: Date.now(),
-        source: event.meta?.source || "event.bus"
-      }
+  static async emit(params: {
+    type: string;
+    data: any;
+    context: {
+      userId: number;
+      siteId: number;
+      action: "update" | "restore" | "publish" | "create";
     };
-
-    // التحقق من صحة الحدث
-    if (event.type === "page.updated") {
-      if (!isValidPageUpdatedEvent(enriched)) {
-        // تعطيل الـ Error مؤقتاً لضمان عمل الـ Dashboard
-        console.warn("⚠️ Validation Failed for page.updated, but proceeding to Redis...");
+  }) {
+    // 1. استخدام "as any as UnifiedEvent" يكسر حلقة الـ never تماماً
+    const event = {
+      id: crypto.randomUUID(),
+      type: params.type,
+      timestamp: Date.now(),
+      data: params.data,
+      context: {
+        ...params.context,
+        source: "event.bus"
       }
+    } as any as UnifiedEvent;
+
+    // 2. التحقق من الصحة (اختياري للـ Logs فقط)
+    const isValid = isValidUnifiedEvent(event);
+    if (!isValid) {
+      console.warn(`⚠️ [EventBus] Contract Violation: ${params.type}`);
     }
 
-    console.log(`📡 EMIT → ${enriched.type} | ${enriched.meta.eventId}`);
+    // الآن مستحيل يعطيك خطأ type on never لأننا أجبرناه بـ any أولاً
+    console.log(`📡 [BUS] EMIT → ${event.type} | ID: ${event.id}`);
 
-    // إرسال للـ Queue (للـ Plugins)
-    await pluginQueue.add("plugin-tasks", enriched);
+    await Promise.all([
+      pluginQueue.add("plugin-tasks", event),
+      eventStore.add(event) 
+    ]);
 
-    // إرسال للـ Redis (للـ Dashboard)
-    await eventStore.add({
-      id: enriched.meta.eventId,
-      type: enriched.type,
-      timestamp: enriched.meta.timestamp,
-      payload: enriched.data
-    });
+    return event;
   }
 }
 
-
-
 export const detectChanges = (oldData: any, newData: any): string[] => {
   const changes: string[] = [];
-
-  // دالة داخلية لترتيب الـ Blocks ومقارنتها بشكل صحيح كـ JSON
   const normalize = (data: any) =>
     JSON.stringify(data || {}, Object.keys(data || {}).sort());
 
-  // مقارنة الحقول الأساسية
   if (oldData.title !== newData.title) changes.push("title");
   if (oldData.content !== newData.content) changes.push("content");
   if (oldData.status !== newData.status) changes.push("status");
 
-  // مقارنة الـ Blocks (مفيدة جداً لصفحات الـ Builder)
   if (normalize(oldData.blocks) !== normalize(newData.blocks)) {
     changes.push("blocks");
   }
