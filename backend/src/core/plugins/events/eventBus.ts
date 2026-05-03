@@ -1,38 +1,42 @@
-import { EventEmitter } from "events";
+import crypto from "crypto";
 import { pluginQueue } from "../../queues/plugin.queue";
 import { isValidPageUpdatedEvent } from "./contracts/pageUpdated.event";
 
-class CentralBus extends EventEmitter {}
-
-
-
 export class EventBus {
-  // استعمل الـ pluginQueue المستورد مباشرة
+
   static async emit(event: string, payload: any) {
-    
+
+    const enrichedEvent = {
+      type: event,
+
+      data: payload.data ?? payload,
+
+      context: payload.context ?? {},
+
+      meta: {
+        eventId: crypto.randomUUID(),
+        timestamp: Date.now(),
+        source: "event.bus"
+      }
+    };
+
     if (event === "page.updated") {
-      if (!isValidPageUpdatedEvent(payload)) {
+      if (!isValidPageUpdatedEvent(enrichedEvent)) {
         throw new Error("Invalid PageUpdatedEvent payload");
       }
     }
 
-    console.log("📡 EMIT Event to Queue:", event);
+    console.log("📡 EMIT Event:", event);
 
-    // ✅ استعمل pluginQueue هنا مباشرة
-    await pluginQueue.add("plugin-tasks", {
-      event,
-      payload,
-    });
+    await pluginQueue.add("plugin-tasks", enrichedEvent);
   }
 }
 
 export const detectChanges = (oldData: any, newData: any): string[] => {
   const changes: string[] = [];
 
-  const normalize = (data: any) => {
-    if (!data) return "[]";
-    return JSON.stringify(data, Object.keys(data).sort());
-  };
+  const normalize = (data: any) =>
+    JSON.stringify(data || {}, Object.keys(data || {}).sort());
 
   if (oldData.title !== newData.title) changes.push("title");
   if (oldData.content !== newData.content) changes.push("content");

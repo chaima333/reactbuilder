@@ -79,7 +79,7 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
       success: true,
       data: PageMapper.toDTO(result.data),
       // نرجعو الـ ID باش نعرفو نتبعو الـ Trace في الـ Terminal
-      eventId: result.event?.payload?.context?.eventId 
+      eventId: result.event?.envelope?.context?.eventId
     });
 
   } catch (err: any) {

@@ -80,23 +80,36 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
     const changes = detectChanges(oldPage, newPage);
     const hasChanges = changes.length > 0;
 
-    return {
+ return {
   data: newPage,
   event: {
     type: PAGE_EVENTS.UPDATED,
+
     shouldEmit: hasChanges,
-    payload: {
-      current: newPage,
-      previous: oldPage,
-      changes,
-      flags: {
-        shouldVersion: changes.includes("blocks"),
-        shouldSEO: changes.includes("title")
+
+    envelope: {
+      type: PAGE_EVENTS.UPDATED,
+
+      data: {
+        current: newPage,
+        previous: oldPage,
+        changes,
+        flags: {
+          shouldVersion: changes.includes("blocks"),
+          shouldSEO: changes.includes("title")
+        }
+      },
+
+      context: {
+        eventId: crypto.randomUUID(),
+        userId,
+        siteId
+      },
+
+      meta: {
+        timestamp: Date.now(),
+        source: "page.service"
       }
-    },
-    context: {
-      userId,
-      siteId
     }
   }
 };
