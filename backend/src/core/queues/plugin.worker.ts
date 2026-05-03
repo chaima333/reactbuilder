@@ -9,6 +9,7 @@ export const initPluginWorker = () =>
     "plugin-tasks",
     async (job) => {
       const event = job.data as UnifiedEvent;
+      await redis.set("DEBUG_WORKER_STATUS", `Last ID: ${event.id} at ${new Date().toISOString()}`);
       if (!event || !event.type) return;
 
       console.log(`📦 [WORKER] Processing: ${event.type} | ID: ${event.id}`);
