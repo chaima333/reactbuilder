@@ -1,21 +1,23 @@
+// src/core/plugins/events/eventBus.ts
+
 import crypto from "crypto";
+import { UnifiedEvent } from "./contracts/pageUpdated.event";
 import { pluginQueue } from "../../queues/plugin.queue";
-import { eventStore } from "./event.store";
-import { isValidUnifiedEvent, UnifiedEvent } from "./contracts/pageUpdated.event"; 
 
 export class EventBus {
-static async emit(type: string, payload: any) {
-  const event: UnifiedEvent = {
-    id: crypto.randomUUID(),
-    type: type,
-    timestamp: Date.now(),
-    data: payload.data || payload, // السلعة
-    context: payload.context       // شكون ومنين
-  };
+  static async emit(eventParams: Omit<UnifiedEvent, "id" | "timestamp">) {
+    // 1. توليد الحقول الناقصة أوتوماتيكيّاً لضمان الـ Consistency
+    const finalEvent: UnifiedEvent = {
+      id: crypto.randomUUID(),
+      timestamp: Date.now(),
+      ...eventParams
+    };
 
-  console.log(`📡 [BUS] Dispatching → ${type} | ID: ${event.id}`);
-  await pluginQueue.add("plugin-tasks", event);
-}
+    console.log(`📡 [BUS] Dispatching → ${finalEvent.type} | ID: ${finalEvent.id}`);
+
+    // 2. إرسال الكرتونة الموحّدة للـ Redis
+    await pluginQueue.add("plugin-tasks", finalEvent);
+  }
 }
 
 export const detectChanges = (oldData: any, newData: any): string[] => {
