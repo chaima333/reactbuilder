@@ -21,28 +21,22 @@ export const updatePageHandler = async (command) => {
   const newData = page.get({ plain: true });
   const changes = detectChanges(oldData, newData);
 
-  console.log(`🔍 Changes detected for Page ${payload.pageId}:`, changes);
+// 2. 🚨 منع الـ "Spam" (Decision Maker)
+if (changes.length === 0) {
+    console.log("ℹ️ No changes detected. Skipping EventBus.");
+    return { success: true, updated: false };
+}
 
-  if (changes.length > 0) {
-    await EventBus.emit({
-      type: "page.updated",
-      data: {
-        current: newData,
-        previous: oldData,
-        changes,
-        flags: {
-          shouldVersion: changes.includes("blocks"),
-          shouldSEO: changes.includes("title")
-        }
-      },
-      // ✅ التصحيح هنا: إضافة الحقول المطلوبة وحذف meta
-      context: {
+// 3. الإرسال بالعقد الجديد (Barameter واحد منظم)
+await EventBus.emit({
+    type: "page.updated",
+    data: { current: newData, previous: oldData, changes },
+    context: {
         userId: Number(context.userId),
         siteId: Number(context.siteId),
-        action: "update" // 👈 هذا هو الحقل اللي كان ناقص وعمل الخطأ
-      }
-    });
-  }
+        action: "update"
+    }
+});
 
   return {
     success: true,

@@ -1,22 +1,31 @@
 // src/core/plugins/events/eventBus.ts
 
 import crypto from "crypto";
-import { UnifiedEvent } from "./contracts/pageUpdated.event";
 import { pluginQueue } from "../../queues/plugin.queue";
 
 export class EventBus {
-  static async emit(eventParams: Omit<UnifiedEvent, "id" | "timestamp">) {
-    // 1. توليد الحقول الناقصة أوتوماتيكيّاً لضمان الـ Consistency
-    const finalEvent: UnifiedEvent = {
+  // نبعثوا بارامتر واحد موحد
+  static async emit(params: {
+    type: string;
+    data: any;
+    context: { userId: number; siteId: number; action: string };
+  }) {
+    // التصنيع النهائي والوحيد للـ Event يكون هنا
+    const enrichedEvent = {
       id: crypto.randomUUID(),
+      type: params.type,
       timestamp: Date.now(),
-      ...eventParams
+      data: params.data,
+      context: {
+        ...params.context,
+        source: "event.bus" // ديما نعرفوا شكون المنظم
+      }
     };
 
-    console.log(`📡 [BUS] Dispatching → ${finalEvent.type} | ID: ${finalEvent.id}`);
-
-    // 2. إرسال الكرتونة الموحّدة للـ Redis
-    await pluginQueue.add("plugin-tasks", finalEvent);
+    console.log(`📡 [BUS] Dispatching → ${enrichedEvent.type} | ID: ${enrichedEvent.id}`);
+    
+    // بعث الـ Object كامل للـ Queue
+    await pluginQueue.add("plugin-tasks", enrichedEvent);
   }
 }
 
