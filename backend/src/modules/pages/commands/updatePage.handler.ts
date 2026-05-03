@@ -1,19 +1,28 @@
-import { eventBus } from "../../../core/plugins/events/eventBus";
+// modules/pages/commands/updatePage.handler.ts
 import { Page } from "../../../models/page";
+import { pluginQueue } from "../../../core/queues/plugin.queue"; // 🔥 استورد الـ Queue
 
 export const updatePageHandler = async (command) => {
   const { payload, context } = command;
 
-  const page = await Page.update(
+  // 1. تحديث البيانات الحقيقية
+  await Page.update(
     { title: payload.title },
     { where: { id: payload.pageId, siteId: context.siteId } }
   );
 
-  // 🔥 IMPORTANT: emit event
-  await eventBus.emit("page.updated", {
-    pageId: payload.pageId,
+  console.log("🔥 PAGE UPDATED IN DB:", payload.pageId);
+
+  // 2. تفعيل الـ Pipeline (الـ Plugins توّة باش تبدا تخدم) 🚀
+  // نبعثو الـ Job للـ BullMQ
+  await pluginQueue.add("plugin-execution", {
+    event: "page.updated",
     siteId: context.siteId,
-    userId: context.userId
+    userId: context.userId,
+    payload: {
+      pageId: payload.pageId,
+      title: payload.title
+    }
   });
 
   return {
