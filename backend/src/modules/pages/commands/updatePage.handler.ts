@@ -5,52 +5,51 @@ import { EventBus, detectChanges } from "../../../core/plugins/events/eventBus";
 export const updatePageHandler = async (command) => {
   const { payload, context } = command;
 
-  // 1. جلب البيانات القديمة (قبل التعديل)
+  // 1. جلب البيانات الأصلية قبل أي تعديل
   const page = await Page.findOne({
     where: { id: payload.pageId, siteId: context.siteId }
   });
 
-  if (!page) throw new Error("Page not found or access denied");
+  if (!page) throw new Error("Page not found");
 
-  // 🛡️ هوني السر: نصنعوا نسخة مستقلة تماماً في الذاكرة (Deep Copy)
+  // 🛡️ الـ Architect Move: تجميد البيانات القديمة تماماً (Deep Copy)
   const oldData = JSON.parse(JSON.stringify(page.get({ plain: true })));
 
-  // 2. التنفيذ
+  // 2. التحديث
   await page.update({
     title: payload.title,
     content: payload.content,
     blocks: payload.blocks
   });
 
-  // 🛡️ نجلبوا البيانات الجديدة بعد الـ Update لضمان الدقة
-  const newData = page.get({ plain: true });
+  // 🔥 الـ Reload الإجباري لضمان مزامنة الـ Memory مع الـ DB
+  await page.reload();
+  const currentData = page.get({ plain: true });
 
-  // 3. كشف التغييرات
-  const changes = detectChanges(oldData, newData);
+  // 3. حساب التغييرات الحقيقية
+  const changes = detectChanges(oldData, currentData);
 
-  // 🧪 TEST LOGS (نحيهم بعد ما تتأكد إنها خدمت)
-  console.log("-----------------------------------------");
-  console.log(`🧪 [DIFF] Old Title: "${oldData.title}" | New Title: "${newData.title}"`);
-  console.log(`🧪 [DIFF] Changes detected:`, changes);
-  console.log("-----------------------------------------");
+  // 🧪 Debugging Brutal
+  console.log(`🧪 [DIFF CHECK] Old: "${oldData.title}" | New: "${currentData.title}"`);
+  console.log(`🧪 [CHANGES]:`, changes);
 
-  // 4. 🚨 الـ Guard (منع الـ Spam)
+  // 4. الـ Guard: متبعثش event لو ما فماش تغيير حقيقي
   if (changes.length === 0) {
-    console.log("ℹ️ Skipping EventBus: No actual changes in data.");
-    return { 
-        success: true, 
-        updated: false, 
-        message: "No changes detected" 
-    };
+    console.log("ℹ️ No meaningful changes. Skipping EventBus.");
+    return { success: true, updated: false };
   }
 
-  // 5. الإرسال بالعقد الموحد (UnifiedEvent)
+  // 5. الإرسال بالعقد الجديد (Unified Data Structure)
   await EventBus.emit({
     type: "page.updated",
     data: { 
-        current: newData, 
-        previous: oldData, 
-        changes 
+      current: currentData, 
+      previous: oldData, 
+      changes,
+      flags: {
+        shouldVersion: changes.includes("blocks") || changes.includes("content"),
+        shouldSEO: changes.includes("title")
+      }
     },
     context: {
       userId: Number(context.userId),
