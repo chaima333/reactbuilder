@@ -1,13 +1,11 @@
-// routes/command.routes.ts
-
-import { Router, Response } from "express"; // 🔥 زدنا Response
+import { Router } from "express";
+import { authenticateJWT, AuthRequest } from "../../../shared/auth.util";
 import { CommandBus } from "../../../core/commands/command.bus";
-import { authenticateJWT, AuthRequest } from "../../../shared/auth.util"; // 🔥 استوردنا AuthRequest
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
-// استعمل الـ Middleware
-router.post("/:siteId/command", authenticateJWT, async (req: AuthRequest, res: Response) => {
+// 🔥 IMPORTANT: route = "/"
+router.post("/", authenticateJWT, async (req: AuthRequest, res) => {
   try {
     const { siteId } = req.params;
 
@@ -16,14 +14,14 @@ router.post("/:siteId/command", authenticateJWT, async (req: AuthRequest, res: R
       payload: req.body.payload,
       context: {
         userId: req.user!.id,
-        siteId: Number(siteId)
-      }
+        siteId: Number(siteId),
+      },
     });
 
-    res.json({ success: true, result });
+    return res.json({ success: true, result });
 
   } catch (e: any) {
-    res.status(400).json({ error: e.message });
+    return res.status(400).json({ success: false, message: e.message });
   }
 });
 
