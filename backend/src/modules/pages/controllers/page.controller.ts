@@ -6,7 +6,6 @@ import { PageMapper } from "../mappers/page.mapper";
 import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
 
 
-// PageController.ts
 export const handleEventDispatch = async (result: any, source: string) => {
   const eventPayload = result?.event;
 
@@ -23,8 +22,12 @@ export const handleEventDispatch = async (result: any, source: string) => {
       timestamp: Date.now()
     }
   };
-
-  await EventDispatcher.dispatch(envelope, source);
+// ✅ الصحيح: فكك المحتويات حسب ما يطلبه الـ Dispatcher
+await EventDispatcher.dispatch(
+  envelope.type, // 1. اسم الحدث (مثلاً "page.updated") -> هذا هو الـ String المطلوب
+  envelope,      // 2. المحتوى كامل (الـ Object)
+  source         // 3. المصدر (مثلاً "page.controller")
+);
 };
 
 // ========================

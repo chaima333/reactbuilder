@@ -1,22 +1,33 @@
 import { addToQueue } from "../queues/plugin.queue";
 import { eventStore } from "./events/event.store";
-import crypto from "crypto";
 
-// core/plugins/event.dispatcher.ts
+// src/core/plugins/event.dispatcher.ts
+
 export class EventDispatcher {
-  static async dispatch(envelope: any, source = "system") {
-    // التأكد من وجود المعرف الفريد في أي مكان (meta أو context)
-    const eventId = envelope?.meta?.eventId || envelope?.context?.eventId;
+  private static processed = new Set<string>();
+
+  // أضفنا "= 'system'" لجعل الوسيط اختيارياً ومنع خطأ الـ Build
+  static async dispatch(event: string, payload: any, source: string = 'system') {
+    const eventId = payload?.meta?.eventId || payload?.context?.eventId;
 
     if (!eventId) {
-      console.error("🚨 Missing eventId in envelope:", envelope);
+      console.error(`🚨 [Dispatcher] Missing ID for event: ${event}`);
       return;
     }
 
-    console.log(`📡 [Dispatcher] ${envelope.type} | ${eventId} | Source: ${source}`);
+    if (this.processed.has(eventId)) return;
+    this.processed.add(eventId);
+    setTimeout(() => this.processed.delete(eventId), 60000);
 
-    // نرسل الـ envelope كما هو بالضبط للـ Queue
-    // الـ Worker سيتعامل مع job.data كـ envelope كامل
-    await addToQueue("plugin-tasks", envelope);
+    console.log(`📡 [Dispatcher] → ${event} | ID: ${eventId} | Source: ${source}`);
+
+    // إرسال البيانات للـ Queue
+    await addToQueue("plugin-tasks", { 
+      type: event, // تأكد أن الـ Worker يقرأ 'type' أو 'event'
+      data: payload, 
+      context: payload.context,
+      meta: payload.meta,
+      source 
+    });
   }
 }
