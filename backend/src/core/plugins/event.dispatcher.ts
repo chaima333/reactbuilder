@@ -1,30 +1,25 @@
 import { addToQueue } from "../queues/plugin.queue";
 import { eventStore } from "./events/event.store";
+import crypto from "crypto";
 
 export class EventDispatcher {
-  private static processed = new Set<string>();
+  static async dispatch(event: any, source = "system") {
 
-  static async dispatch(event: string, payload: any, source: string = "system") {
-
-    const eventId = payload?.context?.eventId;
+    const eventId = event?.meta?.eventId;
 
     if (!eventId) {
-      console.error(`🚨 Missing eventId for ${event}`);
+      console.error("🚨 Missing eventId");
       return;
     }
 
-    if (this.processed.has(eventId)) return;
-    this.processed.add(eventId);
-
-    setTimeout(() => this.processed.delete(eventId), 60000);
-
-    console.log(`📡 ${event} | ${eventId} | ${source}`);
+    console.log(`📡 ${event.type} | ${eventId} | ${source}`);
 
     await addToQueue("plugin-tasks", {
-      event,
-      payload,
-      source,
-      eventId
+      type: event.type,
+      data: event.data,
+      context: event.context,
+      meta: event.meta,
+      source
     });
   }
 }

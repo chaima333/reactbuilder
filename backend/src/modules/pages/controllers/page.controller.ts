@@ -9,29 +9,25 @@ import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
 export const handleEventDispatch = async (result: any, source: string) => {
   const event = result?.event;
 
-  if (!event) {
-    console.log(`🟡 [Bus] No event from ${source}`);
-    return;
-  }
+  if (!event?.shouldEmit) return;
 
-  if (event.shouldEmit === false) {
-    console.log(`🟡 [Bus] Blocked: No significant changes from ${source}`);
-    return;
-  }
+  const fullEvent = {
+    type: event.type,
+    data: event.data,
+    context: event.context,
+    meta: event.meta
+  };
 
-  const payload = event.envelope; // ✅ FIX
-
-  const eventId = payload?.context?.eventId;
+  const eventId = fullEvent.meta?.eventId;
 
   if (!eventId) {
-    console.error(`🚨 [Bus] Missing eventId for ${event.type}`, payload);
+    console.error("🚨 Missing eventId", fullEvent);
     return;
   }
 
-  console.log(`📤 [Bus] Dispatching ${event.type} | ${eventId}`);
-
-  await EventDispatcher.dispatch(event.type, payload, source);
+  await EventDispatcher.dispatch(fullEvent, source);
 };
+
 // ========================
 // 🟢 CREATE PAGE
 // ========================
@@ -73,14 +69,14 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
       req.body
     );
 
-    // نداء الـ Dispatcher بالـ Logic الجديد
     await handleEventDispatch(result, "PageController.updatePage");
 
     return res.json({
       success: true,
       data: PageMapper.toDTO(result.data),
-      // نرجعو الـ ID باش نعرفو نتبعو الـ Trace في الـ Terminal
-      eventId: result.event?.envelope?.context?.eventId
+
+      // ✅ الصحيح
+      eventId: result.event?.meta?.eventId
     });
 
   } catch (err: any) {

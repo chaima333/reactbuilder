@@ -81,40 +81,35 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
    // const hasChanges = changes.length > 0;
    const hasChanges = true;
 
- return {
+return {
   data: newPage,
   event: {
     type: PAGE_EVENTS.UPDATED,
+    shouldEmit: true,
 
-    shouldEmit: hasChanges,
-
-    envelope: {
-      type: PAGE_EVENTS.UPDATED,
-
-      data: {
-        current: newPage,
-        previous: oldPage,
-        changes,
-        flags: {
-          shouldVersion: changes.includes("blocks"),
-          shouldSEO: changes.includes("title")
-        }
-      },
-
-      context: {
-        eventId: crypto.randomUUID(),
-        userId,
-        siteId
-      },
-
-      meta: {
-        timestamp: Date.now(),
-        source: "page.service"
+    data: {
+      current: newPage,
+      previous: oldPage,
+      changes,
+      flags: {
+        shouldVersion: changes.includes("blocks"),
+        shouldSEO: changes.includes("title")
       }
+    },
+
+    context: {
+      userId,
+      siteId
+    },
+
+    meta: {
+      eventId: crypto.randomUUID(),
+      timestamp: Date.now(),
+      source: "page.service"
     }
   }
 };
-  });
+});
 }
 
 
