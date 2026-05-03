@@ -39,7 +39,7 @@ export const updatePageHandler = async (command) => {
     data: { 
       current: currentData, 
       previous: oldData, 
-      changes,
+      changes: changes,
       flags: {
         shouldVersion: changes.includes("blocks") || changes.includes("content"),
         shouldSEO: changes.includes("title")

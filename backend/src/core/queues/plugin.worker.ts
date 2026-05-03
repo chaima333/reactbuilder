@@ -2,7 +2,7 @@
 import { Worker } from "bullmq";
 import { cmsRegistry } from "../plugins/plugin.registry";
 import { REDIS_CONFIG, redis } from "./config"; 
-import { UnifiedEvent } from "../../core/plugins/events/contracts/pageUpdated.event";
+import { PageUpdateData, UnifiedEvent, validateEvent } from "../../core/plugins/events/contracts/pageUpdated.event";
 
 // مفاتيح موحدة لضمان عدم التشتت
 const HISTORY_KEY = "dashboard:runtime:events";
@@ -11,15 +11,20 @@ const DLQ_KEY = "dashboard:dead:letters"; // صندوق الأحداث التا�
 export const initPluginWorker = () =>
   new Worker(
     "plugin-tasks",
-    async (job) => {
-      // 1. Validation Stage: هل الـ Event مطابق للمواصفات عند الدخول؟
-      const event = job.data as UnifiedEvent;
-      
-      if (!event?.id || !event?.type || !event?.data) {
-        console.error(`❌ [WORKER] Rejected corrupted event:`, job.id);
-        await redis.lpush(DLQ_KEY, JSON.stringify({ job: job.id, raw: job.data, reason: "Incomplete Shape" }));
-        return;
-      }
+   // داخل الـ Worker
+async (job) => {
+  const event = job.data;
+  const validation = validateEvent(event);
+
+  if (!validation.isValid) {
+    console.error(`☢️ [REJECTED] Job ${job.id} | Reason: ${validation.error}`);
+    // نبعثوه للـ Dead Letter Queue باش نصلحو الـ Bug اللي بعثه
+    await redis.lpush("dashboard:dead:letters", JSON.stringify({ job: job.id, event, error: validation.error }));
+    return;
+  }
+
+  //const validEvent = event as UnifiedEvent<PageUpdateData>;
+
 
       console.log(`📦 [WORKER] Start: ${event.type} | ID: ${event.id}`);
 
