@@ -1,33 +1,33 @@
-// modules/pages/commands/updatePage.handler.ts
+import { detectChanges, eventBus } from "../../../core/plugins/events/eventBus";
 import { Page } from "../../../models/page";
-import { pluginQueue } from "../../../core/queues/plugin.queue"; // 🔥 استورد الـ Queue
 
 export const updatePageHandler = async (command) => {
   const { payload, context } = command;
 
-  // 1. تحديث البيانات الحقيقية
+  // 1️⃣ جيب الداتا القديمة قبل التحديث (ضروري للمقارنة)
+  const oldPage = await Page.findByPk(payload.pageId);
+  if (!oldPage) throw new Error("Page not found");
+
+  // 2️⃣ التحديث في قاعدة البيانات
   await Page.update(
-    { title: payload.title },
+    { title: payload.title, content: payload.content, blocks: payload.blocks },
     { where: { id: payload.pageId, siteId: context.siteId } }
   );
 
-  console.log("🔥 PAGE UPDATED IN DB:", payload.pageId);
+  // 3️⃣ استعمل الدالة متاعك باش تطلع الـ Diff
+  const changes = detectChanges(oldPage.toJSON(), payload);
 
-  // 2. تفعيل الـ Pipeline (الـ Plugins توّة باش تبدا تخدم) 🚀
-  // نبعثو الـ Job للـ BullMQ
-  await pluginQueue.add("plugin-execution", {
-    event: "page.updated",
-    siteId: context.siteId,
-    userId: context.userId,
-    payload: {
-      pageId: payload.pageId,
-      title: payload.title
-    }
-  });
+  console.log("🔍 Changes detected:", changes);
 
-  return {
-    success: true,
-    updated: true,
-    pageId: payload.pageId
-  };
+  // 4️⃣ ابعث للـ EventBus (وهو يتصرف مع الـ Queue)
+  if (changes.length > 0) {
+    await eventBus.emit("page.updated", {
+      siteId: context.siteId,
+      userId: context.userId,
+      payload: { pageId: payload.pageId, ...payload },
+      changes: changes // الـ Plugins توّة يعرفو بالضبط شنوّة تبدل
+    });
+  }
+
+  return { success: true, updated: true, pageId: payload.pageId };
 };

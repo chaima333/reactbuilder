@@ -1,9 +1,23 @@
 import { EventEmitter } from "events";
+import { pluginQueue } from "../../queues/plugin.queue";
 
 class CentralBus extends EventEmitter {}
 
-export const eventBus = new CentralBus();
 
+export const eventBus = {
+  // دالة واحدة لبعث أي حدث للنظام بالكامل
+  async emit(event: string, data: any) {
+    console.log(`📡 Dispatching System Event: ${event}`);
+    
+    await pluginQueue.add("plugin-execution", {
+      event,
+      siteId: data.siteId,
+      userId: data.userId,
+      payload: data.payload,
+      changes: data.changes || [] // هنا نستعملو الـ detectChanges اللي صنعتها
+    });
+  }
+};
 
 
 export const detectChanges = (oldData: any, newData: any): string[] => {
