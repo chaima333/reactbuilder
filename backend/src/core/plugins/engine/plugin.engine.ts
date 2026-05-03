@@ -1,4 +1,4 @@
-import { cmsRegistry } from "../plugin.registry";
+/*mport { cmsRegistry } from "../plugin.registry";
 
 export class PluginEngine {
 
@@ -8,4 +8,4 @@ export class PluginEngine {
       .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
   }
 
-}
+}*/

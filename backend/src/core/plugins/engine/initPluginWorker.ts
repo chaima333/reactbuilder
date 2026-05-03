@@ -1,4 +1,4 @@
-import { Worker } from "bullmq";
+/*import { Worker } from "bullmq";
 import { cmsRegistry } from "../plugin.registry";
 import { REDIS_CONFIG } from "../../queues/config";
 
@@ -78,4 +78,4 @@ export const initPluginWorker = () => {
       connection: REDIS_CONFIG,
     }
   );
-};
+};*/
