@@ -2,44 +2,44 @@
 import { Page } from "../../../models/page";
 import { EventBus, detectChanges } from "../../../core/plugins/events/eventBus";
 
+// modules/pages/commands/updatePage.handler.ts
 export const updatePageHandler = async (command) => {
   const { payload, context } = command;
 
-  // 1. جلب البيانات الأصلية قبل أي تعديل
   const page = await Page.findOne({
     where: { id: payload.pageId, siteId: context.siteId }
   });
 
   if (!page) throw new Error("Page not found");
 
-  // 🛡️ الـ Architect Move: تجميد البيانات القديمة تماماً (Deep Copy)
+  // 🛡️ تجميد البيانات القديمة (Deep Copy) لضمان عدم تأثرها بالـ Update
   const oldData = JSON.parse(JSON.stringify(page.get({ plain: true })));
 
-  // 2. التحديث
+  // التنفيذ
   await page.update({
     title: payload.title,
     content: payload.content,
     blocks: payload.blocks
   });
 
-  // 🔥 الـ Reload الإجباري لضمان مزامنة الـ Memory مع الـ DB
+  // 🔥 الـ Reload الإجباري: إجبار Sequelize على قراءة الحقيقة من الـ DB
   await page.reload();
   const currentData = page.get({ plain: true });
 
-  // 3. حساب التغييرات الحقيقية
+  // حساب التغييرات
   const changes = detectChanges(oldData, currentData);
 
-  // 🧪 Debugging Brutal
-  console.log(`🧪 [DIFF CHECK] Old: "${oldData.title}" | New: "${currentData.title}"`);
+  // 🧪 Brutal Debugging
+  console.log(`🧪 [DIFF] Old: "${oldData.title}" | New: "${currentData.title}"`);
   console.log(`🧪 [CHANGES]:`, changes);
 
-  // 4. الـ Guard: متبعثش event لو ما فماش تغيير حقيقي
+  // 🛑 Guard Clause: متبعثش Event لو ما فماش تغيير حقيقي
   if (changes.length === 0) {
-    console.log("ℹ️ No meaningful changes. Skipping EventBus.");
+    console.log("ℹ️ Skipping EventBus: No actual changes.");
     return { success: true, updated: false };
   }
 
-  // 5. الإرسال بالعقد الجديد (Unified Data Structure)
+  // الإرسال بالعقد الجديد الموحد (Unified Event Data)
   await EventBus.emit({
     type: "page.updated",
     data: { 
@@ -47,7 +47,7 @@ export const updatePageHandler = async (command) => {
       previous: oldData, 
       changes,
       flags: {
-        shouldVersion: changes.includes("blocks") || changes.includes("content"),
+        shouldVersion: changes.includes("blocks"),
         shouldSEO: changes.includes("title")
       }
     },
@@ -58,9 +58,5 @@ export const updatePageHandler = async (command) => {
     }
   });
 
-  return {
-    success: true,
-    updated: true,
-    pageId: payload.pageId
-  };
+  return { success: true, updated: true, pageId: payload.pageId };
 };
