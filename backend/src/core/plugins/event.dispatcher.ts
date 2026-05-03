@@ -5,18 +5,26 @@ export class EventDispatcher {
   private static processed = new Set<string>();
 
 static async dispatch(event: string, payload: any, source: string = 'system') {
-    console.log(`[1] Dispatcher received: ${event}`); // هل تظهر هذه؟
+    console.log(`🚀 [Step 1] Dispatcher started for: ${event}`);
 
-    const job = await addToQueue("plugin-tasks", { 
-        type: event, 
-        data: payload.data || payload, 
-        context: payload.context,
-        meta: payload.meta,
-        source 
-    });
+    try {
+        const job = await addToQueue("plugin-tasks", { 
+            type: event, 
+            data: payload.data || payload,
+            context: payload.context,
+            meta: payload.meta,
+            source 
+        });
 
-    if (job) {
-        console.log(`[2] Job added to Redis with ID: ${job.id}`); // هل تظهر هذه؟
+        // سيختفي خطأ الـ void الآن لأننا أضفنا return في ملف الـ Queue
+        if (job) {
+            console.log(`✅ [Step 2] Job created in Redis! ID: ${job.id}`);
+        } else {
+            console.error(`⚠️ [Step 2] Job was added but returned no result!`);
+        }
+    } catch (error) {
+        console.error(`🚨 [Step 2] Connection Error:`, error);
     }
+
 }
 }
