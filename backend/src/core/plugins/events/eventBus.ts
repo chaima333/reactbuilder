@@ -2,30 +2,40 @@
 
 import crypto from "crypto";
 import { pluginQueue } from "../../queues/plugin.queue";
+import { UnifiedEvent } from "./contracts/pageUpdated.event";
 
+// src/core/events/event-bus.ts
 export class EventBus {
-  // نبعثوا بارامتر واحد موحد
-  static async emit(params: {
-    type: string;
-    data: any;
-    context: { userId: number; siteId: number; action: string };
-  }) {
-    // التصنيع النهائي والوحيد للـ Event يكون هنا
-    const enrichedEvent = {
+  private static validate(params: any) {
+    const requiredContext = ['userId', 'siteId', 'action'];
+    if (!params.type || !params.data || !params.context) {
+      throw new Error(`[BUS_VALIDATION_ERROR] Missing core fields (type, data, or context)`);
+    }
+    for (const field of requiredContext) {
+      if (!(field in params.context)) {
+        throw new Error(`[BUS_VALIDATION_ERROR] Missing context field: ${field}`);
+      }
+    }
+  }
+
+  static async emit(params: { type: string; data: any; context: any }) {
+    // 1. Enforcement
+    this.validate(params);
+
+    // 2. Normalization (The Only Place where IDs are born)
+    const event: UnifiedEvent = {
       id: crypto.randomUUID(),
       type: params.type,
       timestamp: Date.now(),
       data: params.data,
       context: {
         ...params.context,
-        source: "event.bus" // ديما نعرفوا شكون المنظم
+        source: "event.bus"
       }
     };
 
-    console.log(`📡 [BUS] Dispatching → ${enrichedEvent.type} | ID: ${enrichedEvent.id}`);
-    
-    // بعث الـ Object كامل للـ Queue
-    await pluginQueue.add("plugin-tasks", enrichedEvent);
+    console.log(`📡 [BUS] Dispatched & Validated: ${event.type}`);
+    await pluginQueue.add("plugin-tasks", event);
   }
 }
 
