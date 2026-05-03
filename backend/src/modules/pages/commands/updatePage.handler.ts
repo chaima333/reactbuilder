@@ -2,6 +2,7 @@
 import { Page } from "../../../models/page";
 import { EventBus, detectChanges } from "../../../core/plugins/events/eventBus";
 
+
 export const updatePageHandler = async (command) => {
   const { payload, context } = command;
 
@@ -11,46 +12,43 @@ export const updatePageHandler = async (command) => {
 
   if (!page) throw new Error("Page not found");
 
-  // 🛡️ الـ Deep Copy لضمان استقرار الـ diff
   const oldData = JSON.parse(JSON.stringify(page.get({ plain: true })));
 
-  // التحديث
   await page.update({
     title: payload.title,
     content: payload.content,
     blocks: payload.blocks
   });
 
-  // 🔥 الـ Reload لضمان قراءة الداتا الجديدة من الـ DB
   await page.reload();
+
   const currentData = page.get({ plain: true });
 
   const changes = detectChanges(oldData, currentData);
 
-  // 🛑 Guard Clause
   if (changes.length === 0) {
-    console.log("ℹ️ Skipping: No actual changes.");
+    console.log("ℹ️ No changes detected");
     return { success: true, updated: false };
   }
 
-  // الإرسال بالعقد الجديد
   await EventBus.emit({
     type: "page.updated",
-    data: { 
-      current: currentData, 
-      previous: oldData, 
-      changes: changes,
+    data: {
+      current: currentData,
+      previous: oldData,
+      changes,
       flags: {
-        shouldVersion: changes.includes("blocks") || changes.includes("content"),
+        shouldVersion: changes.includes("blocks"),
         shouldSEO: changes.includes("title")
       }
     },
     context: {
       userId: Number(context.userId),
       siteId: Number(context.siteId),
-      action: "update"
+      action: "update",
+      source: "page.handler" // 🔥 mandatory now
     }
   });
 
-  return { success: true, updated: true, pageId: payload.pageId };
+  return { success: true, updated: true };
 };

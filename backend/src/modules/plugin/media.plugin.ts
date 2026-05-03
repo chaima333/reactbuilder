@@ -1,6 +1,6 @@
 // modules/plugin/media.plugin.ts
 
-import { UnifiedEvent } from "../../core/plugins/events/contracts/pageUpdated.event";
+import { UnifiedEvent } from "../../core/plugins/events/contracts/unified.contract.ts";
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
 import { Media } from "../../models";
 

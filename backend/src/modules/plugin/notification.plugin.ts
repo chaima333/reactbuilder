@@ -1,6 +1,6 @@
 // modules/plugin/notification.plugin.ts
 
-import { UnifiedEvent } from "../../core/plugins/events/contracts/pageUpdated.event";
+import { UnifiedEvent } from "../../core/plugins/events/contracts/unified.contract.ts";
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
 
 export const NotificationPlugin: ICmsPlugin = {

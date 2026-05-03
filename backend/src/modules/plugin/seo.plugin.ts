@@ -1,5 +1,5 @@
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
-import { UnifiedEvent } from "../../core/plugins/events/contracts/pageUpdated.event"; // استورد النوع الموحد
+import { UnifiedEvent } from "../../core/plugins/events/contracts/unified.contract.ts"; // استورد النوع الموحد
 
 
 export const SEOPlugin: ICmsPlugin = {

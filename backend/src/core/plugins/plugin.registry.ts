@@ -1,4 +1,4 @@
-import { UnifiedEvent } from "./events/contracts/pageUpdated.event";
+import { UnifiedEvent } from "./events/contracts/unified.contract.ts";
 import { ICmsPlugin } from "./plugin.types";
 
 export class PluginRegistry {

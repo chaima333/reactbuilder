@@ -1,6 +1,6 @@
 import Redis from "ioredis";
 import { REDIS_CONFIG } from "../../queues/config";
-import { UnifiedEvent } from "./contracts/pageUpdated.event"
+import { UnifiedEvent } from "./contracts/unified.contract.ts"
 const redis = new Redis(REDIS_CONFIG);
 
 

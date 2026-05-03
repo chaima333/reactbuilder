@@ -2,39 +2,24 @@
 
 import crypto from "crypto";
 import { pluginQueue } from "../../queues/plugin.queue";
-import { UnifiedEvent } from "./contracts/pageUpdated.event";
+import { UnifiedEvent } from "./contracts/unified.contract.ts";
 
-// src/core/events/event-bus.ts
 export class EventBus {
-  private static validate(params: any) {
-    const requiredContext = ['userId', 'siteId', 'action'];
-    if (!params.type || !params.data || !params.context) {
-      throw new Error(`[BUS_VALIDATION_ERROR] Missing core fields (type, data, or context)`);
-    }
-    for (const field of requiredContext) {
-      if (!(field in params.context)) {
-        throw new Error(`[BUS_VALIDATION_ERROR] Missing context field: ${field}`);
-      }
-    }
-  }
+  static async emit(params: Omit<UnifiedEvent, "id" | "timestamp">) {
 
-  static async emit(params: { type: string; data: any; context: any }) {
-    // 1. Enforcement
-    this.validate(params);
-
-    // 2. Normalization (The Only Place where IDs are born)
     const event: UnifiedEvent = {
       id: crypto.randomUUID(),
-      type: params.type,
       timestamp: Date.now(),
+      type: params.type,
       data: params.data,
       context: {
         ...params.context,
-        source: "event.bus"
+        source: params.context.source ?? "event.bus"
       }
     };
 
-    console.log(`📡 [BUS] Dispatched & Validated: ${event.type}`);
+    console.log(`📡 BUS → ${event.type} | ${event.id}`);
+
     await pluginQueue.add("plugin-tasks", event);
   }
 }

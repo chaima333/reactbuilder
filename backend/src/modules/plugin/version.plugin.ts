@@ -1,6 +1,6 @@
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
 import { PageVersionRepository } from "../pages/repositories/pageVersion.repository";
-import { UnifiedEvent } from "../../core/plugins/events/contracts/pageUpdated.event"; // استورد النوع الموحد
+import { UnifiedEvent } from "../../core/plugins/events/contracts/unified.contract.ts"; // استورد النوع الموحد
 
 export const VersionPlugin: ICmsPlugin = {
   name: "version-plugin",

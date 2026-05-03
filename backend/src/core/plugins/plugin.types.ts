@@ -1,4 +1,4 @@
-import { UnifiedEvent } from "../../core/plugins/events/contracts/pageUpdated.event"; // استورد النوع الموحد
+import { UnifiedEvent } from "./events/contracts/unified.contract.ts"; // استورد النوع الموحد
 
 export interface ICmsPlugin {
   name: string;
