@@ -1,3 +1,6 @@
+// modules/plugin/notification.plugin.ts
+
+import { UnifiedEvent } from "../../core/plugins/events/contracts/pageUpdated.event";
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
 
 export const NotificationPlugin: ICmsPlugin = {
@@ -8,7 +11,11 @@ export const NotificationPlugin: ICmsPlugin = {
   events: ["page.updated"],
   enabled: true,
 
-  async execute(event, payload) {
-    console.log("🔔 notify:", payload.current?.title);
+  // ✅ التعديل هنا: استخدام event.data للوصول للمعلومات
+  async execute(event: UnifiedEvent) {
+    const { data, id } = event;
+    
+    // لاحظ أننا نصل لـ title عبر data.current
+    console.log(`🔔 notify: ${data.current?.title} | Event ID: ${id}`);
   }
 };

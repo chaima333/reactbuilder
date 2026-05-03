@@ -1,3 +1,4 @@
+import { UnifiedEvent } from "./events/contracts/pageUpdated.event";
 import { ICmsPlugin } from "./plugin.types";
 
 export class PluginRegistry {
@@ -42,48 +43,43 @@ public getAllPlugins() {
   // ======================
   // EMIT
   // ======================
-async emit(event: string, payload: any, source?: string) {
-const eventId = payload?.context?.eventId;
-  if (!eventId) {
-    console.error(`🚨 Missing eventId for ${event}`);
-    return;
-  }
 
-  const activePlugins = Array.from(this.plugins.values())
-    .filter(p => p.enabled && p.instance.events.includes(event))
-    .sort((a, b) => b.priority - a.priority);
+  async emit(event: UnifiedEvent) {
+    // 1. تصفية الـ Plugins بناءً على الحدث الموحد
+    const activePlugins = Array.from(this.plugins.values())
+      .filter(p => p.enabled && p.instance.events.includes(event.type))
+      .sort((a, b) => b.priority - a.priority);
 
-  const results: any[] = [];
+    const results: any[] = [];
 
-  for (const { instance } of activePlugins) {
-    const start = Date.now();
+    for (const { instance } of activePlugins) {
+      const start = Date.now();
 
-    try {
-const context = {
-  source: "registry",
-  timestamp: Date.now()
-};
+      try {
+        // ✅ التعديل الجذري: نمرر كائن الـ event كاملاً
+        await instance.execute(event); 
 
-await instance.execute(event, payload, context);
-      results.push({
-        plugin: instance.name,
-        success: true,
-        duration: Date.now() - start
-      });
+        results.push({
+          plugin: instance.name,
+          success: true,
+          duration: Date.now() - start
+        });
 
-    } catch (err: any) {
-      results.push({
-        plugin: instance.name,
-        success: false,
-        error: err.message
-      });
+      } catch (err: any) {
+        console.error(`❌ Plugin [${instance.name}] failed:`, err.message);
+        results.push({
+          plugin: instance.name,
+          success: false,
+          error: err.message
+        });
+      }
     }
+
+    console.log("📊 EVENT SUMMARY:", results);
+    return results;
   }
 
-  console.log("📊 EVENT SUMMARY:", results);
-
-  return results;
-}
+ 
 
   // ======================
   // DEBUG HELPERS
