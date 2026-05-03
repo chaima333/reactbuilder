@@ -17,20 +17,16 @@ export class PageExecutionGate {
 
     if (event?.shouldEmit) {
 
-      const envelope = event.envelope;
-
       await EventDispatcher.dispatch(
-        event.type,
         {
-          data: envelope.data,
-
+          type: event.type,
+          data: event.data,
           context: {
-            ...envelope.context,
-            eventId: envelope.context?.eventId || crypto.randomUUID(),
+            ...event.context,
+            eventId: event.meta?.eventId || crypto.randomUUID(),
             source: "page.gate"
           },
-
-          meta: envelope.meta
+          meta: event.meta
         },
         "page.gate"
       );
