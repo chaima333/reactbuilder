@@ -4,6 +4,7 @@ import { PageService } from "../services/page.service";
 import { PageVersionService } from "../services/pageVersion.service";
 import { PageMapper } from "../mappers/page.mapper";
 import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
+import { EventBus } from "../../../core/plugins/events/eventBus";
 
 
 export const handleEventDispatch = async (result: any, source: string) => {
@@ -73,15 +74,26 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
 
     await handleEventDispatch(result, "PageController.updatePage");
 
+    if (result.data) {      
+      await EventBus.emit({
+  type: "page.updated",
+  data: {
+    id: result.data.id,
+    title: result.data.title,
+    updatedBy: req.user.id,
+    changes: (result as any).changes || [] // الـ Type Cast هذا يحيّد الخطأ
+  }
+} as any);
+    }
+
     return res.json({
       success: true,
       data: PageMapper.toDTO(result.data),
-
-      // ✅ الصحيح
       eventId: result.event?.meta?.eventId
     });
 
   } catch (err: any) {
+    console.error("🚨 [UpdatePage Error]:", err);
     return res.status(500).json({
       success: false,
       message: err.message
