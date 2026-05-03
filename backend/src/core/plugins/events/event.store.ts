@@ -12,18 +12,27 @@ import { REDIS_CONFIG } from "../../queues/config";
 // صنع الـ Client اللي باش يتكلم مع Redis
 const redis = new Redis(REDIS_CONFIG);
 
+// core/plugins/events/event.store.ts
+
 class EventStore {
   private readonly KEY = "dashboard:runtime:events";
 
   async add(event: EventItem) {
     try {
-      // ✅ نخدمو بـ redis (الـ client) مش الـ config
-      await redis.lpush(this.KEY, JSON.stringify(event));
+      // نثبتو إنو الـ Redis متصل قبل ما نبعثو
+      if (redis.status !== "ready") {
+        await new Promise((resolve) => redis.once("ready", resolve));
+      }
+      
+      const result = await redis.lpush(this.KEY, JSON.stringify(event));
       await redis.ltrim(this.KEY, 0, 49);
+      
+      console.log(`✅ [EventStore] Saved! New list length: ${result}`);
     } catch (err) {
       console.error("🚨 [EventStore] Redis Push Error:", err);
     }
   }
+  
 
   async getLatest() {
     try {
