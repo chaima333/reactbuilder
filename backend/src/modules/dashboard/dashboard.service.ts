@@ -10,17 +10,16 @@ import { eventStore } from "../../core/plugins/events/event.store";
 export const fetchStats = async (siteId: number) => {
   const site = await Site.findByPk(siteId);
 
+  // Sequelize هنا يحول التسمية تلقائياً، فلا خوف منها
   const totalPages = await Page.count({ where: { siteId } });
+  const totalViews = await Page.sum("views", { where: { siteId } });
 
-  const totalViews = await Page.sum("views", {
-    where: { siteId }
-  });
-
+  // 🛠️ الإصلاح الجذري هنا: تغيير الأسماء لتطابق قاعدة البيانات (snake_case)
   const monthlyStatsRaw = await sequelize.query(
     `
-    SELECT DATE_TRUNC('month', "createdAt") as month, COUNT(*) as count
+    SELECT DATE_TRUNC('month', "created_at") as month, COUNT(*) as count
     FROM pages
-    WHERE "siteId" = :siteId
+    WHERE "site_id" = :siteId
     GROUP BY month
     ORDER BY month DESC
     LIMIT 12
@@ -48,15 +47,14 @@ export const fetchActivity = async (siteId: number) => {
   return ActivityLog.findAll({
     where: { siteId },
     limit: 10,
-    order: [["createdAt", "DESC"]],
+    order: [["createdAt", "DESC"]], // Sequelize سيهتم بالتحويل لـ created_at
     include: [{ association: "user", attributes: ["id", "name"] }]
   });
 };
 
-// 🔥 PLUGINS
+// باقي الدوال تبقى كما هي لأنها لا تستخدم Raw SQL
 export const fetchPluginsData = async (siteId: number) => {
   const plugins = cmsRegistry.getAllPlugins();
-
   const results: Record<string, any> = {};
 
   for (const plugin of plugins) {
@@ -68,14 +66,11 @@ export const fetchPluginsData = async (siteId: number) => {
       }
     }
   }
-
   return results;
 };
 
-// 🔥 LAYOUT
 export const buildLayout = async () => {
   const plugins = cmsRegistry.getAllPlugins();
-
   return {
     blocks: plugins
       .filter(p => p.meta?.dashboard)
@@ -88,7 +83,6 @@ export const buildLayout = async () => {
   };
 };
 
-// 🔥 SYSTEM
 export const getSystemHealth = async () => ({
   status: "healthy",
   queue: "running",
@@ -97,7 +91,6 @@ export const getSystemHealth = async () => ({
   lastCheck: new Date().toISOString()
 });
 
-// 🔥 PLUGINS STATUS
 export const getPluginStatus = () => {
   return cmsRegistry.getAllPlugins().map(p => ({
     name: p.name,
@@ -107,7 +100,6 @@ export const getPluginStatus = () => {
   }));
 };
 
-// 🔥 EVENTS
 export const fetchLiveEvents = async () => {
   return eventStore.getLatest();
 };
