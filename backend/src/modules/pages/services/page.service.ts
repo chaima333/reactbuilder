@@ -78,7 +78,8 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
 
     // 3. diff
     const changes = detectChanges(oldPage, newPage);
-    const hasChanges = changes.length > 0;
+   // const hasChanges = changes.length > 0;
+   const hasChanges = true;
 
  return {
   data: newPage,
