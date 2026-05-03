@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { pluginQueue } from "../../queues/plugin.queue";
 import { BaseEvent, isValidPageUpdatedEvent } from "./contracts/pageUpdated.event";
+import { eventStore } from "./event.store";
 
 export class EventBus {
 
@@ -21,10 +22,19 @@ export class EventBus {
       }
     }
 
-    console.log(`📡 EMIT → ${enriched.type} | ${enriched.meta.eventId}`);
+    // داخل الـ EventBus.emit
+console.log(`📡 EMIT → ${enriched.type} | ${enriched.meta.eventId}`);
 
-    await pluginQueue.add("plugin-tasks", enriched);
+await pluginQueue.add("plugin-tasks", enriched);
+
+await eventStore.add({
+  id: enriched.meta.eventId, // استعمل الـ enriched ID أحسن
+  type: enriched.type,
+  timestamp: enriched.meta.timestamp,
+  payload: enriched.data
+});
   }
+  
 }
 /**
  * دالة مقارنة البيانات (Diffing)
