@@ -3,13 +3,18 @@
 import { Command } from "../../../core/commands/command.types";
 import { PageExecutionGate } from "../../../core/gate/PageExecutionGate";
 
-export const updatePageHandler = async (command: Command) => {
-  const { pageId, data } = command.payload;
+import { eventBus } from "../../../core/plugins/events/eventBus";
 
-  return await PageExecutionGate.updatePage({
-    pageId,
-    siteId: command.context.siteId!,
-    userId: command.context.userId,
-    data,
+export const updatePageHandler = async (command: Command) => {
+  const { payload, context } = command;
+
+  // update page...
+
+  await eventBus.emit("page.updated", {
+    siteId: context.siteId,
+    userId: context.userId,
+    pageId: payload.id
   });
+
+  return { success: true };
 };

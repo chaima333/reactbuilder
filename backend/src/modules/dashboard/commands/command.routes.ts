@@ -7,15 +7,16 @@ import { authenticateJWT, AuthRequest } from "../../../shared/auth.util"; // �
 const router = Router();
 
 // استعمل الـ Middleware
-router.post("/command", authenticateJWT, async (req: AuthRequest, res: Response) => { // 🔥 حددنا النوع هنا
+router.post("/:siteId/command", authenticateJWT, async (req: AuthRequest, res: Response) => {
   try {
-    // توّة TypeScript باش يعرف إنو req.user موجود
+    const { siteId } = req.params;
+
     const result = await CommandBus.execute({
       type: req.body.type,
       payload: req.body.payload,
       context: {
-        userId: req.user!.id, // استعمل ! للتأكيد إنو موجود بعد الـ auth
-        siteId: req.body.siteId
+        userId: req.user!.id,
+        siteId: Number(siteId)
       }
     });
 

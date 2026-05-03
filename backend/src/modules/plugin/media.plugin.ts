@@ -18,8 +18,8 @@ export const MediaPlugin: ICmsPlugin = {
     }
   },
 
-  async getDashboardData(userId: number) {
-    const totalFiles = await Media.count({ where: { userId } });
+  async getDashboardData(siteId: number) {
+    const totalFiles = await Media.count({ where: { siteId } });
 
     return {
       totalFiles

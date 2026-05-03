@@ -81,8 +81,10 @@ app.use("/api/admin", authStack, adminRoutes);
 /* ========================
    COMMANDS / PLUGINS
 ======================== */
+
 registerCommands();
-app.use("/api/command", authStack, commandRoutes);
+app.use("/api/sites/:siteId/commands", commandRoutes);
+
 
 /* ========================
    404 HANDLER
