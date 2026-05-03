@@ -12,17 +12,17 @@ export interface PageUpdatedEvent {
   };
 
   context: {
-    
     userId: number;
     siteId: number;
-  };
-
-  meta: {
     eventId: string;
     timestamp: number;
     source: string;
   };
 }
+
+//
+
+
 export const isValidPageUpdatedEvent = (
   payload: any
 ): payload is PageUpdatedEvent => {
@@ -31,6 +31,7 @@ export const isValidPageUpdatedEvent = (
     payload.type === "page.updated" &&
     payload.data?.current !== undefined &&
     typeof payload.context?.userId === "number" &&
-    typeof payload.meta?.eventId === "string"
+    typeof payload.context?.eventId === "string" &&
+    typeof payload.context?.timestamp === "number"
   );
 };
