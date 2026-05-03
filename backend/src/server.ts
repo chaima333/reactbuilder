@@ -68,8 +68,7 @@ app.use("/api/sites", authStack, siteRoutes);
    TENANT ROUTES (SaaS CORE)
 ======================== */
 const tenantStack = [authenticateJWT, tenantResolver];
-
-app.use("/api/sites/:siteId/dashboard", tenantStack, dashboardRoutes);
+app.use("/api/sites/:siteId/dashboard", authenticateJWT, dashboardRoutes);
 app.use("/api/sites/:siteId/pages", tenantStack, pageRoutes);
 app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
 
