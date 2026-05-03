@@ -19,7 +19,8 @@ export const handleEventDispatch = async (result: any, source: string) => {
     return;
   }
 
-  const payload = event.payload;
+  const payload = event.envelope; // ✅ FIX
+
   const eventId = payload?.context?.eventId;
 
   if (!eventId) {
