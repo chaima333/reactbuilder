@@ -28,6 +28,7 @@ import { cmsRegistry } from "./core/plugins/plugin.registry";
 import { initPluginWorker } from "./core/queues/plugin.worker";
 import commandRoutes from "./modules/dashboard/commands/command.routes";
 import { registerCommands } from "./core/commands/register";
+import { redis } from "./core/queues/config";
 
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
@@ -101,12 +102,19 @@ app.use((_req: Request, res: Response) => {
 ======================== */
 const startServer = async () => {
   try {
+    // 1. اتصـال الـ Database
     await sequelize.authenticate();
+    console.log("🗄️ Database connected.");
 
+    // 2. الـ Nuclear Clean-up (إجباري لتنظيف الخردة القديمة)
+    // ملاحظة: الـ flushall يمسح كل شي في الـ Redis
+    await redis.flushall();
+    console.log("🧹 [Redis] Global Flush Success. Legacy data purged.");
+
+    // 3. تشغيل الـ Plugins والـ Worker
     bootstrapPlugins();
-    console.log("✅ Plugins loaded:", cmsRegistry.getPlugins());
-
     initPluginWorker();
+    console.log("✅ Plugins & Workers ready.");
 
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 Server running on port ${PORT}`);
