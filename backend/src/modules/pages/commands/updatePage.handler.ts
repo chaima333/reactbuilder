@@ -1,20 +1,22 @@
-// src/modules/pages/commands/updatePage.handler.ts
 
-import { Command } from "../../../core/commands/command.types";
-import { PageExecutionGate } from "../../../core/gate/PageExecutionGate";
+import { Page } from "../../../models/page";
 
-import { eventBus } from "../../../core/plugins/events/eventBus";
-
-export const updatePageHandler = async (command: Command) => {
+export const updatePageHandler = async (command) => {
   const { payload, context } = command;
 
-  // update page...
+  // 1. update real data
+  const page = await Page.update(
+    { title: payload.title },
+    { where: { id: payload.pageId, siteId: context.siteId } }
+  );
 
-  await eventBus.emit("page.updated", {
-    siteId: context.siteId,
-    userId: context.userId,
-    pageId: payload.id
-  });
+  // 2. log effect
+  console.log("🔥 PAGE UPDATED:", payload.pageId);
 
-  return { success: true };
+  // 3. return meaningful result
+  return {
+    success: true,
+    updated: true,
+    pageId: payload.pageId
+  };
 };
