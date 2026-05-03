@@ -6,44 +6,41 @@ import { UnifiedEvent } from "../../core/plugins/events/contracts/pageUpdated.ev
 export const initPluginWorker = () =>
   new Worker(
     "plugin-tasks",
-    async (job) => {
-      // 1. استلام الحدث الموحد مباشرة من الـ Job
-      const event = job.data as UnifiedEvent;
 
-      console.log(`-----------------------------------------`);
-      console.log(`📦 ÉVÉNEMENT REÇU → ${event.type} | ID: ${event.id}`);
+async (job) => {
+  // 1. التثبت من البيانات (Safe Casting)
+  const event = job.data as UnifiedEvent;
+  
+  if (!event || !event.type) {
+    console.error(`❌ [WORKER] Data corrupted for job ${job.id}`);
+    return;
+  }
 
-      if (!event.type) {
-        console.error("❌ Worker Error: Job data is missing 'type'.", job.data);
-        return;
-      }
+  console.log(`📦 [WORKER] Processing Event: ${event.type} | ID: ${event.id}`);
 
-      // 2. تصفية وترتيب الـ Plugins
-      const plugins = cmsRegistry
-        .getAllPlugins()
-        .filter(p => p.enabled && p.events.includes(event.type))
-        .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+  // 2. فلطرة الـ Plugins النشطة
+  const activePlugins = cmsRegistry.getAllPlugins()
+    .filter(p => p.enabled && p.events.includes(event.type));
 
-      // 3. تشغيل الـ Pipeline
-      let pipelineFailed = false;
-
-      for (const plugin of plugins) {
-        if (pipelineFailed) break;
-        
-        try {
-          console.log(`⚙️ Executing Plugin: ${plugin.name}`);
-          
-          // ✅ التعديل الجوهري: نمرر الـ event كاملاً فقط
-          await plugin.execute(event); 
-
-        } catch (err: any) {
-          console.error(`❌ Plugin [${plugin.name}] failed:`, err.message);
-          // إذا كان الـ plugin حرجاً، نوقف الـ pipeline
-          if (plugin.isCritical) pipelineFailed = true;
-        }
-      }
+  // 3. التنفيذ مع الحماية (Error Isolation)
+  for (const plugin of activePlugins) {
+    try {
+      console.log(`⚙️  Executing: ${plugin.name}`);
       
-      console.log("📊 PIPELINE DONE");
-    },
+      // نبعثوا الـ Object الموحد
+      await plugin.execute(event); 
+
+      console.log(`✅ [${plugin.name}] Success`);
+    } catch (err) {
+      // لو Plugin يغلط، الـ Worker يقعد يخدم وما ياقفش
+      console.error(`🚨 [Plugin Error] ${plugin.name} failed:`, err);
+      
+      // تنجم تزيد هوني منطق الـ "isCritical"
+      if (plugin.isCritical) {
+        throw err; // يخلي BullMQ يعاود الـ Job (Retry)
+      }
+    }
+  }
+},
     { connection: REDIS_CONFIG }
   );

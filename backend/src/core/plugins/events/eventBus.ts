@@ -4,43 +4,18 @@ import { eventStore } from "./event.store";
 import { isValidUnifiedEvent, UnifiedEvent } from "./contracts/pageUpdated.event"; 
 
 export class EventBus {
-  static async emit(params: {
-    type: string;
-    data: any;
-    context: {
-      userId: number;
-      siteId: number;
-      action: "update" | "restore" | "publish" | "create";
-    };
-  }) {
-    // 1. استخدام "as any as UnifiedEvent" يكسر حلقة الـ never تماماً
-    const event = {
-      id: crypto.randomUUID(),
-      type: params.type,
-      timestamp: Date.now(),
-      data: params.data,
-      context: {
-        ...params.context,
-        source: "event.bus"
-      }
-    } as any as UnifiedEvent;
+static async emit(type: string, payload: any) {
+  const event: UnifiedEvent = {
+    id: crypto.randomUUID(),
+    type: type,
+    timestamp: Date.now(),
+    data: payload.data || payload, // السلعة
+    context: payload.context       // شكون ومنين
+  };
 
-    // 2. التحقق من الصحة (اختياري للـ Logs فقط)
-    const isValid = isValidUnifiedEvent(event);
-    if (!isValid) {
-      console.warn(`⚠️ [EventBus] Contract Violation: ${params.type}`);
-    }
-
-    // الآن مستحيل يعطيك خطأ type on never لأننا أجبرناه بـ any أولاً
-    console.log(`📡 [BUS] EMIT → ${event.type} | ID: ${event.id}`);
-
-    await Promise.all([
-      pluginQueue.add("plugin-tasks", event),
-      eventStore.add(event) 
-    ]);
-
-    return event;
-  }
+  console.log(`📡 [BUS] Dispatching → ${type} | ID: ${event.id}`);
+  await pluginQueue.add("plugin-tasks", event);
+}
 }
 
 export const detectChanges = (oldData: any, newData: any): string[] => {
