@@ -81,30 +81,25 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
     const hasChanges = changes.length > 0;
 
     return {
-      data: newPage,
-      event: {
-        type: PAGE_EVENTS.UPDATED,
-        shouldEmit: hasChanges,
-        payload: {
-          current: newPage,
-          previous: oldPage,
-          changes,
-
-          context: {
-            eventId: crypto.randomUUID(),
-            timestamp: Date.now(),
-            action: "update",
-            userId,
-            siteId
-          },
-
-          flags: {
-            shouldVersion: changes.includes("blocks"),
-            shouldSEO: changes.includes("title")
-          }
-        }
+  data: newPage,
+  event: {
+    type: PAGE_EVENTS.UPDATED,
+    shouldEmit: hasChanges,
+    payload: {
+      current: newPage,
+      previous: oldPage,
+      changes,
+      flags: {
+        shouldVersion: changes.includes("blocks"),
+        shouldSEO: changes.includes("title")
       }
-    };
+    },
+    context: {
+      userId,
+      siteId
+    }
+  }
+};
   });
 }
 

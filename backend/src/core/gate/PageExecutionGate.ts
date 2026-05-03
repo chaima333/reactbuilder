@@ -1,6 +1,6 @@
 import { PageService } from "../../modules/pages/services/page.service";
-import { EventDispatcher } from "../../core/plugins/event.dispatcher";
 import crypto from "crypto";
+import { EventBus } from "../plugins/events/eventBus";
 
 export class PageExecutionGate {
 
@@ -15,19 +15,26 @@ export class PageExecutionGate {
 
     if (result.event?.shouldEmit) {
 
-      await EventDispatcher.dispatch(
-        result.event.type,
-        {
-          ...result.event.payload,
+      await EventBus.emit(
+  result.event.type,
+  {
+    type: result.event.type,
 
-          context: {
-            ...result.event.payload.context,
-            eventId: result.event.payload.context?.eventId || crypto.randomUUID(),
-            source: "page.gate"
-          }
-        },
-        "page.gate"
-      );
+    data: {
+      current: result.event.payload.current,
+      previous: result.event.payload.previous,
+      shouldVersion: result.event.payload.flags.shouldVersion
+    },
+
+    context: result.event.context,
+
+    meta: {
+      eventId: crypto.randomUUID(),
+      timestamp: Date.now(),
+      source: "page.gate"
+    }
+  }
+);
     }
 
     return result.data;
