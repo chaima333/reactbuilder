@@ -1,43 +1,31 @@
 import crypto from "crypto";
 import { pluginQueue } from "../../queues/plugin.queue";
-import { isValidPageUpdatedEvent } from "./contracts/pageUpdated.event";
+import { BaseEvent, isValidPageUpdatedEvent } from "./contracts/pageUpdated.event";
 
 export class EventBus {
-  /**
-   * إرسال حدث للنظام مع تغليفه بمعلومات إضافية والتحقق من صحته
-   */
-  static async emit(event: string, payload: any) {
-    // 1️⃣ تغليف الحدث (Event Enrichment)
-    // نضمن أن البيانات والـ Context والـ Meta موجودة دائماً بنفس الهيكل
-    const enrichedEvent = {
-      type: event,
-      data: payload.data ?? payload, // نأخذ البيانات سواء كانت داخل data أو الـ payload نفسه
-      context: payload.context ?? {},
+
+  static async emit(event: BaseEvent) {
+
+    const enriched: BaseEvent = {
+      ...event,
       meta: {
-        eventId: crypto.randomUUID(),
+        eventId: event.meta?.eventId || crypto.randomUUID(),
         timestamp: Date.now(),
-        source: "event.bus"
+        source: event.meta?.source || "event.bus"
       }
     };
 
-    // 2️⃣ التحقق من العقد (Contract Validation)
-    // إذا كان الحدث هو تحديث صفحة، نمرره على الحارس الخاص به
-    if (event === "page.updated") {
-      if (!isValidPageUpdatedEvent(enrichedEvent)) {
-        console.error("❌ Validation Failed for enrichedEvent:", enrichedEvent);
-        throw new Error("Invalid PageUpdatedEvent payload: Structure does not match contract.");
+    if (event.type === "page.updated") {
+      if (!isValidPageUpdatedEvent(enriched)) {
+        throw new Error("Invalid page.updated event");
       }
     }
-    
-    // 3️⃣ تتبع الخروج (Logging)
-    console.log(`📡 [Bus] EMIT → ${event} | ID: ${enrichedEvent.meta.eventId}`);
 
-    // 4️⃣ الإرسال للـ Queue (The Source of Truth)
-    // نرسل الـ enrichedEvent كاملاً للـ Worker
-    await pluginQueue.add("plugin-tasks", enrichedEvent);
+    console.log(`📡 EMIT → ${enriched.type} | ${enriched.meta.eventId}`);
+
+    await pluginQueue.add("plugin-tasks", enriched);
   }
 }
-
 /**
  * دالة مقارنة البيانات (Diffing)
  * تكتشف الحقول التي تغيرت فعلياً لتجنب العمليات غير الضرورية

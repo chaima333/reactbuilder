@@ -1,27 +1,15 @@
-export interface PageUpdatedEvent {
+export interface PageUpdatedEvent extends BaseEvent<{
+  current: any;
+  previous: any;
+  changes: string[];
+  flags: {
+    shouldVersion: boolean;
+    shouldSEO: boolean;
+  };
+}> {
   type: "page.updated";
-
-  data: {
-    current: any;
-    previous: any;
-    changes: string[];
-    flags: {
-      shouldVersion: boolean;
-      shouldSEO: boolean;
-    };
-  };
-
-  context: {
-    userId: number;
-    siteId: number;
-  };
-
-  meta: {
-    eventId: string;
-    timestamp: number;
-    source: string;
-  };
 }
+
 
 
 export const isValidPageUpdatedEvent = (payload: any): payload is PageUpdatedEvent => {
@@ -35,3 +23,20 @@ export const isValidPageUpdatedEvent = (payload: any): payload is PageUpdatedEve
     typeof payload.meta?.timestamp === "number"
   );
 };
+
+export interface BaseEvent<T = any> {
+  type: string;
+
+  data: T;
+
+  context: {
+    userId: number;
+    siteId: number;
+  };
+
+  meta: {
+    eventId: string;
+    timestamp: number;
+    source: string;
+  };
+}

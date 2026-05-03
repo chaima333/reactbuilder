@@ -58,7 +58,12 @@ export class PageService {
 
   // ================= UPDATE =================
 
-static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
+static async updatePage(
+  siteId: number,
+  pageId: number,
+  userId: number,
+  input: any
+) {
   return sequelize.transaction(async (t) => {
 
     const page = await Page.findOne({
@@ -68,49 +73,51 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
 
     if (!page) throw new Error("PAGE_NOT_FOUND");
 
-    // 1. Snapshot للحالة القديمة
+    // 1. snapshot old
     const oldPage = page.get({ plain: true });
 
-    // 2. التحديث الفعلي
+    // 2. update
     await page.update(input, { transaction: t });
 
-    // 3. Snapshot للحالة الجديدة (نسميوها currentData باش ما نغلطوش)
+    // 3. snapshot new
     const currentData = page.get({ plain: true });
 
-    // 4. حساب التغييرات (Diffing)
+    // 4. diff
     const changes = detectChanges(oldPage, currentData);
-    
-    // نبعثو الـ Event فقط إذا فمة تغيير حقيقي، أو Force it للتجربة
+
     const hasChanges = changes.length > 0;
 
     return {
-      data: page, // نرجعو الـ Model instance للـ Controller
+      data: currentData,
+
       event: {
-        type: "page.updated",
-        shouldEmit: hasChanges, // يخدم منطقياً توّة
+        type: PAGE_EVENTS.UPDATED,
+        shouldEmit: hasChanges,
+
         data: {
-          current: currentData, // استعملنا التسمية الصحيحة
+          current: currentData,
           previous: oldPage,
-          changes: changes,
-          flags: { 
-            shouldVersion: changes.includes("blocks"), 
-            shouldSEO: changes.includes("title") 
+          changes,
+          flags: {
+            shouldVersion: changes.includes("blocks"),
+            shouldSEO: changes.includes("title")
           }
         },
+
         context: {
-          userId: userId,
-          siteId: siteId
+          userId,
+          siteId
         },
+
         meta: {
           eventId: crypto.randomUUID(),
           timestamp: Date.now(),
-          source: "page.service.update"
+          source: "page.service"
         }
       }
     };
   });
 }
-
   // ================= DELETE =================
   static async deletePage(siteId: number, pageId: number) {
     const page = await PageRepository.findById(pageId, siteId);
