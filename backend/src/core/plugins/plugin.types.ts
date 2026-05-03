@@ -1,4 +1,4 @@
-// 📂 src/core/plugins/plugin.types.ts (تأكد من المسار)
+import { UnifiedEvent } from "../../core/plugins/events/contracts/pageUpdated.event"; // استورد النوع الموحد
 
 export interface ICmsPlugin {
   name: string;
@@ -10,11 +10,8 @@ export interface ICmsPlugin {
 
   register?(context: any): void;
 
-  execute(
-    event: string,
-    payload: any,
-    context: any
-  ): Promise<void>;
+  
+  execute(event: UnifiedEvent): Promise<void>;
 
   meta?: {
     dashboard?: {

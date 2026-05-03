@@ -1,4 +1,5 @@
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
+import { UnifiedEvent } from "../../core/plugins/events/contracts/pageUpdated.event"; // استورد النوع الموحد
 
 
 export const SEOPlugin: ICmsPlugin = {
@@ -9,19 +10,19 @@ export const SEOPlugin: ICmsPlugin = {
   events: ["page.updated", "page.restored"],
   enabled: true,
 
-  async execute(event, payload) {
-    // 🎯 اقتناص البيانات مباشرة من الـ Contract الجديد
-    const { current, context, flags } = payload;
+  async execute(event: UnifiedEvent) {
+    // 🎯 اقتناص البيانات من العقد الجديد
+    const { data, context, id } = event;
+    const { current, flags } = data;
 
-    // 🛑 التثبت من الـ ID (باش ما يطلّعش Error)
-    if (!context?.eventId) {
+    // 🛑 التثبت من الـ ID (الآن هو event.id)
+    if (!id) {
       console.error("🚨 SEOPlugin: Identifiant d'événement manquant");
       return;
     }
 
-    // 🚦 التثبت من الـ Flag اللي بعثناه من السيرفس
+    // 🚦 التثبت من الـ Flags
     if (!flags?.shouldSEO) {
-      // console.log("🟡 SEO skipped: No title change");
       return;
     }
 
@@ -30,6 +31,6 @@ export const SEOPlugin: ICmsPlugin = {
       return;
     }
 
-    console.log(`🔍 SEO processing: ${current.title} | Event: ${context.eventId}`);
+    console.log(`🔍 SEO processing: ${current.title} | Event ID: ${id}`);
   }
 };
