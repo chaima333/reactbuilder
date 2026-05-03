@@ -1,19 +1,21 @@
-
+import { eventBus } from "../../../core/plugins/events/eventBus";
 import { Page } from "../../../models/page";
 
 export const updatePageHandler = async (command) => {
   const { payload, context } = command;
 
-  // 1. update real data
   const page = await Page.update(
     { title: payload.title },
     { where: { id: payload.pageId, siteId: context.siteId } }
   );
 
-  // 2. log effect
-  console.log("🔥 PAGE UPDATED:", payload.pageId);
+  // 🔥 IMPORTANT: emit event
+  await eventBus.emit("page.updated", {
+    pageId: payload.pageId,
+    siteId: context.siteId,
+    userId: context.userId
+  });
 
-  // 3. return meaningful result
   return {
     success: true,
     updated: true,
