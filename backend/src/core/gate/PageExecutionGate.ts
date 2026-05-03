@@ -1,5 +1,6 @@
 import { PageService } from "../../modules/pages/services/page.service";
 import { EventDispatcher } from "../../core/plugins/event.dispatcher";
+import crypto from "crypto";
 
 export class PageExecutionGate {
 
@@ -18,15 +19,15 @@ export class PageExecutionGate {
         result.event.type,
         {
           ...result.event.payload,
+
           context: {
-            eventId: crypto.randomUUID(),
-            userId: input.userId,
-            siteId: input.siteId
+            ...result.event.payload.context,
+            eventId: result.event.payload.context?.eventId || crypto.randomUUID(),
+            source: "page.gate"
           }
         },
         "page.gate"
       );
-
     }
 
     return result.data;

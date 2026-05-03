@@ -1,41 +1,43 @@
 import { EventEmitter } from "events";
 import { pluginQueue } from "../../queues/plugin.queue";
+import { isValidPageUpdatedEvent } from "./contracts/pageUpdated.event";
 
 class CentralBus extends EventEmitter {}
 
 
-export const eventBus = {
-  // دالة واحدة لبعث أي حدث للنظام بالكامل
-  async emit(event: string, data: any) {
-    console.log(`📡 Dispatching System Event: ${event}`);
+
+export class EventBus {
+  // استعمل الـ pluginQueue المستورد مباشرة
+  static async emit(event: string, payload: any) {
     
-    await pluginQueue.add("plugin-execution", {
+    if (event === "page.updated") {
+      if (!isValidPageUpdatedEvent(payload)) {
+        throw new Error("Invalid PageUpdatedEvent payload");
+      }
+    }
+
+    console.log("📡 EMIT Event to Queue:", event);
+
+    // ✅ استعمل pluginQueue هنا مباشرة
+    await pluginQueue.add("plugin-tasks", {
       event,
-      siteId: data.siteId,
-      userId: data.userId,
-      payload: data.payload,
-      changes: data.changes || [] // هنا نستعملو الـ detectChanges اللي صنعتها
+      payload,
     });
   }
-};
-
+}
 
 export const detectChanges = (oldData: any, newData: any): string[] => {
   const changes: string[] = [];
 
-  // 1️⃣ دالة تنظيف الـ Blocks (ترتيب الـ Keys وتحويلها لنص ثابت)
   const normalize = (data: any) => {
     if (!data) return "[]";
-    // ترتيب الـ Keys يضمن إنو المقارنة ديما صحيحة مهما كان ترتيب الـ Object
     return JSON.stringify(data, Object.keys(data).sort());
   };
 
-  // 2️⃣ مقارنة الحقول العادية
   if (oldData.title !== newData.title) changes.push("title");
   if (oldData.content !== newData.content) changes.push("content");
   if (oldData.status !== newData.status) changes.push("status");
 
-  // 3️⃣ مقارنة الـ Blocks بعد التنظيف
   if (normalize(oldData.blocks) !== normalize(newData.blocks)) {
     changes.push("blocks");
   }

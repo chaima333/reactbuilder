@@ -1,39 +1,54 @@
-import { detectChanges, eventBus } from "../../../core/plugins/events/eventBus";
 import { Page } from "../../../models/page";
+import { EventBus, detectChanges } from "../../../core/plugins/events/eventBus"; 
 
 export const updatePageHandler = async (command) => {
   const { payload, context } = command;
- console.log(`🔍 Searching for Page: ${payload.pageId} in Site: ${context.siteId}`);
 
-  // 1️⃣ جيب الداتا القديمة قبل التحديث (ضروري للمقارنة)
   const oldPage = await Page.findOne({
-  where: { id: payload.pageId, siteId: context.siteId }
-});
+    where: { id: payload.pageId, siteId: context.siteId }
+  });
+  
+  if (!oldPage) throw new Error("Page not found or access denied");
 
-if (!oldPage) {
-  console.error("❌ Page not found in this specific site context!");
-  throw new Error("Page not found");
-}
-  // 2️⃣ التحديث في قاعدة البيانات
   await Page.update(
-    { title: payload.title, content: payload.content, blocks: payload.blocks },
+    { 
+      title: payload.title, 
+      content: payload.content, 
+      blocks: payload.blocks 
+    },
     { where: { id: payload.pageId, siteId: context.siteId } }
   );
 
-  // 3️⃣ استعمل الدالة متاعك باش تطلع الـ Diff
-  const changes = detectChanges(oldPage.toJSON(), payload);
+  const changes = detectChanges(oldPage.get({ plain: true }), payload);
 
-  console.log("🔍 Changes detected:", changes);
+  console.log(`🔍 Changes detected for Page ${payload.pageId}:`, changes);
 
-  // 4️⃣ ابعث للـ EventBus (وهو يتصرف مع الـ Queue)
   if (changes.length > 0) {
-    await eventBus.emit("page.updated", {
-      siteId: context.siteId,
-      userId: context.userId,
-      payload: { pageId: payload.pageId, ...payload },
-      changes: changes // الـ Plugins توّة يعرفو بالضبط شنوّة تبدل
-    });
+    await EventBus.emit("page.updated", {
+  context: {
+    eventId: crypto.randomUUID(),
+    userId: context.userId,
+    siteId: context.siteId,
+    action: "update",
+    timestamp: Date.now(),
+    source: "page.handler"
+  },
+
+  data: {
+    pageId: payload.pageId,
+    changes,
+    current: {
+      title: payload.title,
+      content: payload.content,
+      blocks: payload.blocks
+    }
+  }
+});
   }
 
-  return { success: true, updated: true, pageId: payload.pageId };
+  return { 
+    success: true, 
+    updated: changes.length > 0, 
+    pageId: payload.pageId 
+  };
 };
