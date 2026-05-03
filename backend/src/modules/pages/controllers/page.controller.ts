@@ -63,6 +63,7 @@ export const getPages = async (req: AuthRequest, res: Response) => {
 // ========================
 // 🟢 UPDATE PAGE
 // ========================
+
 export const updatePage = async (req: AuthRequest, res: Response) => {
   try {
     const result = await PageService.updatePage(
@@ -76,14 +77,17 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
 
     if (result.data) {      
       await EventBus.emit({
-  type: "page.updated",
-  data: {
-    id: result.data.id,
-    title: result.data.title,
-    updatedBy: req.user.id,
-    changes: (result as any).changes || [] // الـ Type Cast هذا يحيّد الخطأ
-  }
-} as any);
+        type: "page.updated",
+        data: {
+          id: result.data.id,
+          siteId: Number(req.siteContext.siteId),
+          title: result.data.title,
+          content: result.data.content || "",
+          updatedBy: req.user.id,
+          // ✅ التصحيح هنا: نجبدو الـ changes من داخل الـ event.data
+          changes: result.event?.data?.changes || [] 
+        }
+      });
     }
 
     return res.json({

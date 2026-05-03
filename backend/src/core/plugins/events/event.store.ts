@@ -1,4 +1,3 @@
-
 import Redis from "ioredis";
 import { REDIS_CONFIG } from "../../queues/config";
 
@@ -19,7 +18,7 @@ class EventStore {
       console.log(`📝 [Redis] Adding event: ${event.type}`);
       const data = JSON.stringify(event);
       await redis.lpush(this.KEY, data);
-      await redis.ltrim(this.KEY, 0, 14);
+      await redis.ltrim(this.KEY, 0, 14); // الاحتفاظ بآخر 15 حدث فقط
     } catch (err) {
       console.error("🚨 [Redis] Push Error:", err);
     }
@@ -35,8 +34,7 @@ class EventStore {
       console.error("🚨 [Redis] Get Error:", err);
       return [];
     }
-  } 
-} 
+  }
+}
 
-// تصدير نسخة واحدة فقط (Singleton)
 export const eventStore = new EventStore();
