@@ -6,26 +6,25 @@ import { PageMapper } from "../mappers/page.mapper";
 import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
 
 
+// PageController.ts
 export const handleEventDispatch = async (result: any, source: string) => {
-  const event = result?.event;
+  const eventPayload = result?.event;
 
-  if (!event?.shouldEmit) return;
+  if (!eventPayload?.shouldEmit) return;
 
-  const fullEvent = {
-    type: event.type,
-    data: event.data,
-    context: event.context,
-    meta: event.meta
+  // الميثاق الموحد: يجب أن يكون الـ Object المرسل للـ Dispatcher 
+  // يحتوي على type, data, context, meta مباشرة في السطح
+  const envelope = {
+    type: eventPayload.type,
+    data: eventPayload.data || eventPayload.payload, // دعم التسميتين مؤقتاً
+    context: eventPayload.context || {},
+    meta: eventPayload.meta || {
+      eventId: crypto.randomUUID(),
+      timestamp: Date.now()
+    }
   };
 
-  const eventId = fullEvent.meta?.eventId;
-
-  if (!eventId) {
-    console.error("🚨 Missing eventId", fullEvent);
-    return;
-  }
-
-  await EventDispatcher.dispatch(fullEvent, source);
+  await EventDispatcher.dispatch(envelope, source);
 };
 
 // ========================

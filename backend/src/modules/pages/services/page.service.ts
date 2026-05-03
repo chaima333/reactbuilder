@@ -68,50 +68,48 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
 
     if (!page) throw new Error("PAGE_NOT_FOUND");
 
-    // 1. snapshot قبل
+    // 1. Snapshot للحالة القديمة
     const oldPage = page.get({ plain: true });
 
-    // 2. update مرة وحدة فقط (هذي الغلطة عندك)
+    // 2. التحديث الفعلي
     await page.update(input, { transaction: t });
 
-    const newPage = page.get({ plain: true });
+    // 3. Snapshot للحالة الجديدة (نسميوها currentData باش ما نغلطوش)
+    const currentData = page.get({ plain: true });
 
-    // 3. diff
-    const changes = detectChanges(oldPage, newPage);
-   // const hasChanges = changes.length > 0;
-   const hasChanges = true;
+    // 4. حساب التغييرات (Diffing)
+    const changes = detectChanges(oldPage, currentData);
+    
+    // نبعثو الـ Event فقط إذا فمة تغيير حقيقي، أو Force it للتجربة
+    const hasChanges = changes.length > 0;
 
-return {
-  data: newPage,
-  event: {
-    type: PAGE_EVENTS.UPDATED,
-    shouldEmit: true,
-
-    data: {
-      current: newPage,
-      previous: oldPage,
-      changes,
-      flags: {
-        shouldVersion: changes.includes("blocks"),
-        shouldSEO: changes.includes("title")
+    return {
+      data: page, // نرجعو الـ Model instance للـ Controller
+      event: {
+        type: "page.updated",
+        shouldEmit: hasChanges, // يخدم منطقياً توّة
+        data: {
+          current: currentData, // استعملنا التسمية الصحيحة
+          previous: oldPage,
+          changes: changes,
+          flags: { 
+            shouldVersion: changes.includes("blocks"), 
+            shouldSEO: changes.includes("title") 
+          }
+        },
+        context: {
+          userId: userId,
+          siteId: siteId
+        },
+        meta: {
+          eventId: crypto.randomUUID(),
+          timestamp: Date.now(),
+          source: "page.service.update"
+        }
       }
-    },
-
-    context: {
-      userId,
-      siteId
-    },
-
-    meta: {
-      eventId: crypto.randomUUID(),
-      timestamp: Date.now(),
-      source: "page.service"
-    }
-  }
-};
-});
+    };
+  });
 }
-
 
   // ================= DELETE =================
   static async deletePage(siteId: number, pageId: number) {
