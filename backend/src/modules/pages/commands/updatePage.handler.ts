@@ -2,7 +2,6 @@
 import { Page } from "../../../models/page";
 import { EventBus, detectChanges } from "../../../core/plugins/events/eventBus";
 
-// modules/pages/commands/updatePage.handler.ts
 export const updatePageHandler = async (command) => {
   const { payload, context } = command;
 
@@ -12,34 +11,29 @@ export const updatePageHandler = async (command) => {
 
   if (!page) throw new Error("Page not found");
 
-  // 🛡️ تجميد البيانات القديمة (Deep Copy) لضمان عدم تأثرها بالـ Update
+  // 🛡️ الـ Deep Copy لضمان استقرار الـ diff
   const oldData = JSON.parse(JSON.stringify(page.get({ plain: true })));
 
-  // التنفيذ
+  // التحديث
   await page.update({
     title: payload.title,
     content: payload.content,
     blocks: payload.blocks
   });
 
-  // 🔥 الـ Reload الإجباري: إجبار Sequelize على قراءة الحقيقة من الـ DB
+  // 🔥 الـ Reload لضمان قراءة الداتا الجديدة من الـ DB
   await page.reload();
   const currentData = page.get({ plain: true });
 
-  // حساب التغييرات
   const changes = detectChanges(oldData, currentData);
 
-  // 🧪 Brutal Debugging
-  console.log(`🧪 [DIFF] Old: "${oldData.title}" | New: "${currentData.title}"`);
-  console.log(`🧪 [CHANGES]:`, changes);
-
-  // 🛑 Guard Clause: متبعثش Event لو ما فماش تغيير حقيقي
+  // 🛑 Guard Clause
   if (changes.length === 0) {
-    console.log("ℹ️ Skipping EventBus: No actual changes.");
+    console.log("ℹ️ Skipping: No actual changes.");
     return { success: true, updated: false };
   }
 
-  // الإرسال بالعقد الجديد الموحد (Unified Event Data)
+  // الإرسال بالعقد الجديد
   await EventBus.emit({
     type: "page.updated",
     data: { 
@@ -47,7 +41,7 @@ export const updatePageHandler = async (command) => {
       previous: oldData, 
       changes,
       flags: {
-        shouldVersion: changes.includes("blocks"),
+        shouldVersion: changes.includes("blocks") || changes.includes("content"),
         shouldSEO: changes.includes("title")
       }
     },

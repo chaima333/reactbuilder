@@ -1,46 +1,41 @@
+// src/core/queues/plugin.worker.ts
 import { Worker } from "bullmq";
 import { cmsRegistry } from "../plugins/plugin.registry";
-import { REDIS_CONFIG } from "./config";
-import { UnifiedEvent } from "../../core/plugins/events/contracts/pageUpdated.event"; // استورد النوع الموحد
+import { REDIS_CONFIG, redis } from "./config"; // 🔥 استوردنا الـ redis instance
+import { UnifiedEvent } from "../../core/plugins/events/contracts/pageUpdated.event";
 
 export const initPluginWorker = () =>
   new Worker(
     "plugin-tasks",
+    async (job) => {
+      const event = job.data as UnifiedEvent;
+      if (!event || !event.type) return;
 
-async (job) => {
-  // 1. التثبت من البيانات (Safe Casting)
-  const event = job.data as UnifiedEvent;
-  
-  if (!event || !event.type) {
-    console.error(`❌ [WORKER] Data corrupted for job ${job.id}`);
-    return;
-  }
+      console.log(`📦 [WORKER] Processing: ${event.type} | ID: ${event.id}`);
 
-  console.log(`📦 [WORKER] Processing Event: ${event.type} | ID: ${event.id}`);
+      // 1. تنفيذ الـ Plugins
+      const activePlugins = cmsRegistry.getAllPlugins()
+        .filter(p => p.enabled && p.events.includes(event.type));
 
-  // 2. فلطرة الـ Plugins النشطة
-  const activePlugins = cmsRegistry.getAllPlugins()
-    .filter(p => p.enabled && p.events.includes(event.type));
-
-  // 3. التنفيذ مع الحماية (Error Isolation)
-  for (const plugin of activePlugins) {
-    try {
-      console.log(`⚙️  Executing: ${plugin.name}`);
-      
-      // نبعثوا الـ Object الموحد
-      await plugin.execute(event); 
-
-      console.log(`✅ [${plugin.name}] Success`);
-    } catch (err) {
-      // لو Plugin يغلط، الـ Worker يقعد يخدم وما ياقفش
-      console.error(`🚨 [Plugin Error] ${plugin.name} failed:`, err);
-      
-      // تنجم تزيد هوني منطق الـ "isCritical"
-      if (plugin.isCritical) {
-        throw err; // يخلي BullMQ يعاود الـ Job (Retry)
+      for (const plugin of activePlugins) {
+        try {
+          console.log(`⚙️  Executing: ${plugin.name}`);
+          await plugin.execute(event);
+          console.log(`✅ [${plugin.name}] Success`);
+        } catch (err) {
+          console.error(`🚨 [Plugin Error] ${plugin.name} failed:`, err);
+        }
       }
-    }
-  }
-},
+
+      // 2. 🔥 السطر السحري: تسجيل الـ Event في تاريخ الـ Dashboard
+      try {
+        const HISTORY_KEY = "dashboard:runtime:events";
+        await redis.lpush(HISTORY_KEY, JSON.stringify(event)); 
+        await redis.ltrim(HISTORY_KEY, 0, 49); // نخليوا كان آخر 50
+        console.log(`💾 [WORKER] Event ${event.id} persisted to Redis.`);
+      } catch (redisErr) {
+        console.error("❌ Redis persistence error:", redisErr);
+      }
+    },
     { connection: REDIS_CONFIG }
   );
