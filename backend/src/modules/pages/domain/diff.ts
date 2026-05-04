@@ -1,18 +1,16 @@
-import { normalizePage } from "../../../core/plugins/events/contracts/unified.contract.ts";
-
 // src/modules/pages/domain/page.logic.ts
 const ALLOWED_FIELDS = ["title", "content", "blocks", "slug", "status", "metaData"];
 
-export function getSemanticDiff(oldPage: any, newPage: any) {
-  const oldN = normalizePage(oldPage);
-  const newN = normalizePage(newPage);
-
+export function getSemanticDiff(oldPageN: any, newPageN: any) {
+  // 🛑 نحّينا الـ normalizePage من هنا خاطر الـ Handler هو اللي يتكفل بيها
   return ALLOWED_FIELDS.filter(field => {
-    // Deep comparison للـ blocks والـ metaData
-    if (typeof oldN[field] === 'object') {
-      return JSON.stringify(oldN[field]) !== JSON.stringify(newN[field]);
+    const valOld = oldPageN[field];
+    const valNew = newPageN[field];
+
+    if (typeof valOld === 'object' && valOld !== null) {
+      return JSON.stringify(valOld) !== JSON.stringify(valNew);
     }
-    return oldN[field] !== newN[field];
+    return valOld !== valNew;
   });
 }
 
@@ -20,14 +18,18 @@ export function getSemanticDiff(oldPage: any, newPage: any) {
 import { createHash } from "crypto";
 import { EventBus } from "../../../core/plugins/events/eventBus.js";
 import { redis } from "../../../core/queues/config.js";
-
+// src/core/events/eventGateway.ts
 export const emitDomainEvent = async (type: string, data: any, context: any) => {
-  // 1. توليد Unique ID بناءً على محتوى التغيير الفعلي (Deterministic ID)
+  // 🛡️ Guard Clause
+  if (!data?.current?.id) {
+    console.error("❌ [GATEWAY] Missing data.current.id. Cannot generate fingerprint.");
+    return null;
+  }
+
   const fingerprint = createHash('sha256')
     .update(`${type}-${data.current.id}-${JSON.stringify(data.changes)}`)
     .digest('hex');
 
-  // 2. Dedup Gate: نمنع إعادة النشر لمدة ساعة (Idempotency)
   const lockKey = `evt:gate:${fingerprint}`;
   const isNew = await redis.set(lockKey, "active", "EX", 3600, "NX");
 
@@ -36,7 +38,6 @@ export const emitDomainEvent = async (type: string, data: any, context: any) => 
     return null;
   }
 
-  // 3. النشر الوحيد والرسمي
   return await EventBus.emit({
     id: fingerprint,
     type,

@@ -2,25 +2,30 @@ import { Page } from "../../../models/page";
 import { normalizePage } from "../../../core/plugins/events/contracts/unified.contract.ts";
 import { emitDomainEvent, getSemanticDiff } from "../domain/diff"; // ثبت المسار هنا
 
+// src/modules/pages/commands/updatePage.handler.ts
 export const updatePageHandler = async (command: any) => {
   const { payload, context } = command;
+
+  if (!payload?.pageId) return { success: false, error: "Page ID is required" };
 
   const page = await Page.findByPk(payload.pageId);
   if (!page) return { success: false, error: "Page not found" };
 
+  // 1. التطهير الأول
   const oldPageN = normalizePage(page);
 
-  // تحديث البيانات
+  // 2. التحديث
   await page.update(payload);
-  const currentPageN = normalizePage(await page.reload());
+  const updatedPage = await page.reload();
+  
+  // 3. التطهير الثاني
+  const currentPageN = normalizePage(updatedPage);
 
-  // 1. حساب التغييرات الحقيقية (Pure Logic)
+  // 4. المقارنة (الآن صارت آمنة)
   const changes = getSemanticDiff(oldPageN, currentPageN);
 
-  // 2. الـ Guard: إذا ما فماش تغيير حقيقي، أخرج بكرامتك
   if (changes.length === 0) {
-    console.log("🤫 [HANDLER] No semantic changes. Flow stopped.");
-    return { success: true, updated: false };
+    return { success: true, updated: false, data: currentPageN };
   }
 
   // 3. الـ Single Authority: بعث الحدث عبر البوابة الوحيدة
