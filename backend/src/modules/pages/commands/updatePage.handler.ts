@@ -1,12 +1,8 @@
 import { Page } from "../../../models/page";
-import { EventBus, detectChanges } from "../../../core/plugins/events/eventBus";
+import { EventBus } from "../../../core/plugins/events/eventBus";
 import { SEO_RULES, VERSIONING_RULES } from "../domain/rules";
 
-/**
- * 🧼 Normalization Layer
- * وظيفتها تحويل البيانات لمستوى "Canonical" (نظيف وموحد)
- * هكّة نضمنوا إنو "Title" هو بيدو " Title  " وما نغلطوش السيستيم
- */
+// 🧼 1. Normalization Layer: توحيد الداتا
 export const normalizePage = (data: any) => {
   if (!data) return null;
   return {
@@ -14,92 +10,85 @@ export const normalizePage = (data: any) => {
     title: String(data.title || "").trim(),
     slug: String(data.slug || "").trim().toLowerCase(),
     content: String(data.content || "").trim(),
-    // Stringify للـ Objects لضمان إنو ترتيب الـ Keys ما يأثرش على الـ Diff
     blocks: JSON.stringify(data.blocks || []),
     status: data.status,
     userId: Number(data.userId || data.user_id),
     siteId: Number(data.siteId || data.site_id),
-    metaData: JSON.stringify(data.metaData || data.meta_data || {})
   };
+};
+
+// 🧠 2. Semantic Diff Engine: المقارنة الذكية
+const getSemanticChanges = (oldN: any, newN: any): string[] => {
+  return Object.keys(newN).filter((key) => {
+    // إذا كان التغيير مجرد حروف كبيرة/صغيرة أو فراغات في العناوين، نعتبروه "لا يوجد تغيير"
+    if (['title', 'slug'].includes(key)) {
+      return oldN[key].toLowerCase() !== newN[key].toLowerCase();
+    }
+    return oldN[key] !== newN[key];
+  });
 };
 
 export const updatePageHandler = async (command: any) => {
   const { payload, context: cmdContext } = command;
-  
-  // 1. التثبت من وجود الصفحة
-  const page = await Page.findOne({ 
-    where: { id: payload.pageId, siteId: cmdContext.siteId } 
+
+  const page = await Page.findOne({
+    where: { id: payload.pageId, siteId: cmdContext.siteId }
   });
-  
+
   if (!page) throw new Error("Page not found");
 
-  // 2. تصوير الحالة القديمة (Normalized)
+  // الحالة القديمة
   const oldDataRaw = page.get({ plain: true });
   const oldDataNormalized = normalizePage(oldDataRaw);
 
-  // 3. التحديث الفعلي في القاعدة
-  await page.update({
-    title: payload.title,
-    content: payload.content,
-    blocks: payload.blocks,
-    slug: payload.slug,
-    status: payload.status,
-    metaData: payload.metaData
-  });
-  
-  // 4. جلب الحالة الجديدة (Normalized)
+  // التحديث في القاعدة
+  await page.update(payload);
   await page.reload();
+
+  // الحالة الجديدة
   const currentDataRaw = page.get({ plain: true });
   const currentDataNormalized = normalizePage(currentDataRaw);
 
-  // 5. 🧠 Semantic Diff Engine
-  // المقارنة توّة تصير بين بيانات نظيفة، يعني الـ Spaces الزايدة ماتخلقش Events
-  const changes = detectChanges(oldDataNormalized, currentDataNormalized);
+  // 🔥 الـ GATE الأول: هل فما تغيير حقيقي؟
+  const semanticChanges = getSemanticChanges(oldDataNormalized, currentDataNormalized);
 
-  // 🛑 إذا ما فماش تغيير حقيقي (بعد الـ Normalization)، نوقفو هنا
-  if (changes.length === 0) {
-    console.log("🤫 [STABILITY] Change ignored: No semantic differences detected.");
-    return { 
-      success: true, 
-      updated: false, 
-      pageId: payload.pageId, 
-      data: currentDataRaw 
-    };
+  if (semanticChanges.length === 0) {
+    console.log("🤫 [GATE] No semantic changes detected (only noise/whitespace). Suppression active.");
+    return { success: true, updated: false, pageId: payload.pageId, data: currentDataRaw };
   }
 
-  // 6. تطبيق الـ Business Rules الذكية
+  // 🔥 الـ GATE الثاني: هل التغيير يستحق تشغيل الـ Plugins؟
   const shouldVersion = VERSIONING_RULES.shouldCreateVersion(
-    changes, 
-    oldDataNormalized, 
+    semanticChanges,
+    oldDataNormalized,
     currentDataNormalized
   );
   
-  const shouldSEO = SEO_RULES.shouldUpdateSEO(changes);
+  const shouldSEO = SEO_RULES.shouldUpdateSEO(semanticChanges);
 
-  // 7. إرسال الـ Event الموثوق
-  // نبعثو الـ currentDataRaw (الـ Object الأصلي) للـ Plugins باش ينجمو يخدمو
+  // 🛑 إذا التغيير ما يستحقش لا Version ولا SEO، نوقفو هنا وما نبعثوش Event
+  if (!shouldVersion && !shouldSEO) {
+    console.log(`🛑 [GATE] Changes [${semanticChanges.join(",")}] are minor. Skipping EventBus.`);
+    return { success: true, updated: true, pageId: payload.pageId, data: currentDataRaw };
+  }
+
+  // 🚀 إرسال الـ Event فقط إذا كان "صيد ثمين" (High Value)
   await EventBus.emit({
     type: "page.updated",
     data: {
       current: currentDataRaw,
       previous: oldDataRaw,
-      changes,
+      changes: semanticChanges,
       flags: { shouldVersion, shouldSEO }
     },
     context: {
       userId: Number(currentDataNormalized.userId),
       siteId: Number(currentDataNormalized.siteId),
-      action: "update",
-      // الـ EventBus سيتولى إضافة الـ traceId والـ source أوتوماتيكياً
+      action: "update"
     }
   });
 
-  console.log(`✅ [EVENT] Page ${payload.pageId} updated. Changes: ${changes.join(", ")}`);
+  console.log(`✅ [ENGINE] Meaningful Event Emitted: ${semanticChanges.join(", ")}`);
 
-  return { 
-    success: true, 
-    updated: true, 
-    pageId: payload.pageId, 
-    data: currentDataRaw 
-  };
+  return { success: true, updated: true, pageId: payload.pageId, data: currentDataRaw };
 };
