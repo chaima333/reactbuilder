@@ -64,9 +64,27 @@ export const getPages = async (req: AuthRequest, res: Response) => {
 // 🟢 UPDATE PAGE
 // ========================
 
+// 🔒 مخزن مؤقت لحفظ الطلبات اللي قاعدة تتخدم توّة
+const activeRequests = new Set<string>();
+
 export const updatePage = async (req: AuthRequest, res: Response) => {
+  // 🔑 نصنعوا مفتاح فريد يعتمد على الـ Site والـ Page
+  const lockKey = `${req.siteContext.siteId}:${req.params.pageId}`;
+
   try {
-    // نعيطوا للـ Service فقط
+    // 🛑 1. إذا الطلب هذا ديجا قاعد يتخدم، نرفضوا الطلب الجديد
+    if (activeRequests.has(lockKey)) {
+      console.log(`🛑 [CONTROLLER] Duplicate request blocked for Key: ${lockKey}`);
+      return res.status(429).json({ 
+        success: false, 
+        message: "Action already in progress. Please wait." 
+      });
+    }
+
+    // 🛡️ 2. نسجلوا الطلب كـ "نشط"
+    activeRequests.add(lockKey);
+
+    // 🏃 3. نعيطوا للـ Service بالخدمة متاعنا
     const result = await PageService.updatePage(
       Number(req.siteContext.siteId),
       Number(req.params.pageId),
@@ -76,10 +94,17 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
 
     return res.json({
       success: true,
-      data: PageMapper.toDTO(result.data) // الـ data توّة تجينا مالـ Handler عبر الـ Service
+      data: PageMapper.toDTO(result.data)
     });
+
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
+  } finally {
+    // 🔓 4. أهم خطوة: ديما نحيوا الـ Lock في الـ finally (سواء نجحت العملية أو فشلت)
+    // نزيدوا Delay صغير (مثلاً 500ms) باش نضمنوا إنو الـ Frontend ركح
+    setTimeout(() => {
+      activeRequests.delete(lockKey);
+    }, 500);
   }
 };
 // ========================
