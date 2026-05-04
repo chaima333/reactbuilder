@@ -30,65 +30,46 @@ const getSemanticChanges = (oldN: any, newN: any): string[] => {
 
 export const updatePageHandler = async (command: any) => {
   const { payload, context: cmdContext } = command;
-
-  const page = await Page.findOne({
-    where: { id: payload.pageId, siteId: cmdContext.siteId }
-  });
-
+  
+  const page = await Page.findOne({ where: { id: payload.pageId, siteId: cmdContext.siteId } });
   if (!page) throw new Error("Page not found");
 
-  // الحالة القديمة
-  const oldDataRaw = page.get({ plain: true });
-  const oldDataNormalized = normalizePage(oldDataRaw);
-
-  // التحديث في القاعدة
+  // 1. تصوير الحالات (Normalization)
+  const oldN = normalizePage(page.get({ plain: true }));
   await page.update(payload);
   await page.reload();
+  const currentN = normalizePage(page.get({ plain: true }));
 
-  // الحالة الجديدة
-  const currentDataRaw = page.get({ plain: true });
-  const currentDataNormalized = normalizePage(currentDataRaw);
+  // 2. الـ Semantic Diff (The Judge)
+  const semanticChanges = getSemanticChanges(oldN, currentN);
 
-  // 🔥 الـ GATE الأول: هل فما تغيير حقيقي؟
-  const semanticChanges = getSemanticChanges(oldDataNormalized, currentDataNormalized);
-
+  // 🛑 الجدار العازل: إذا "Noise"، أخرج فوراً وما تعيطش للـ EventBus
   if (semanticChanges.length === 0) {
-    console.log("🤫 [GATE] No semantic changes detected (only noise/whitespace). Suppression active.");
-    return { success: true, updated: false, pageId: payload.pageId, data: currentDataRaw };
+    console.log("🤫 [ARCH-GATE] No meaningful change. Communication halted at Handler level.");
+    return { success: true, updated: false, data: page.get({ plain: true }) };
   }
 
-  // 🔥 الـ GATE الثاني: هل التغيير يستحق تشغيل الـ Plugins؟
-  const shouldVersion = VERSIONING_RULES.shouldCreateVersion(
-    semanticChanges,
-    oldDataNormalized,
-    currentDataNormalized
-  );
-  
+  // 3. تطبيق القواعد (Gating Logic)
+  const shouldVersion = VERSIONING_RULES.shouldCreateVersion(semanticChanges, oldN, currentN);
   const shouldSEO = SEO_RULES.shouldUpdateSEO(semanticChanges);
 
-  // 🛑 إذا التغيير ما يستحقش لا Version ولا SEO، نوقفو هنا وما نبعثوش Event
+  // 🛑 إذا التغييرات ما تستحق حتى Plugin، زادة ما تبعثش Event (Option A+)
   if (!shouldVersion && !shouldSEO) {
-    console.log(`🛑 [GATE] Changes [${semanticChanges.join(",")}] are minor. Skipping EventBus.`);
-    return { success: true, updated: true, pageId: payload.pageId, data: currentDataRaw };
+    console.log("🛑 [ARCH-GATE] Change is meaningful but doesn't hit business rules. Suppression active.");
+    return { success: true, updated: true, data: page.get({ plain: true }) };
   }
 
-  // 🚀 إرسال الـ Event فقط إذا كان "صيد ثمين" (High Value)
+  // 🚀 توّة فقط، الـ EventBus يستحق يخدم
   await EventBus.emit({
     type: "page.updated",
     data: {
-      current: currentDataRaw,
-      previous: oldDataRaw,
+      current: page.get({ plain: true }),
+      previous: oldN, // نبعثوا النسخة النظيفة للمقارنة السهلة
       changes: semanticChanges,
       flags: { shouldVersion, shouldSEO }
     },
-    context: {
-      userId: Number(currentDataNormalized.userId),
-      siteId: Number(currentDataNormalized.siteId),
-      action: "update"
-    }
+    context: { siteId: cmdContext.siteId, userId: cmdContext.userId, action: "update" }
   });
 
-  console.log(`✅ [ENGINE] Meaningful Event Emitted: ${semanticChanges.join(", ")}`);
-
-  return { success: true, updated: true, pageId: payload.pageId, data: currentDataRaw };
+  return { success: true, updated: true, data: page.get({ plain: true }) };
 };
