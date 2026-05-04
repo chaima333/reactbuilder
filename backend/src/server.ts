@@ -106,12 +106,11 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log("🗄️ Database connected.");
 
-    // 2. الـ Nuclear Clean-up (إجباري لتنظيف الخردة القديمة)
-    // ملاحظة: الـ flushall يمسح كل شي في الـ Redis
-    await redis.flushall();
-    console.log("🧹 [Redis] Global Flush Success. Legacy data purged.");
+    // ❌ تم حذف الـ Nuclear Clean-up (flushall) 
+    // الـ History توّة باش يولي Durable وما يتمسحش مع الـ Restart
+    console.log("♻️ [Redis] Persistence Mode: Skipping global flush to preserve history.");
 
-    // 3. تشغيل الـ Plugins والـ Worker
+    // 2. تشغيل الـ Plugins والـ Worker
     bootstrapPlugins();
     initPluginWorker();
     console.log("✅ Plugins & Workers ready.");
