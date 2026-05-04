@@ -2,33 +2,65 @@ import crypto from "crypto";
 import { pluginQueue } from "../../queues/plugin.queue";
 import { UnifiedEvent } from "./contracts/unified.contract.ts";
 
-// src/core/plugins/events/eventBus.ts
+// 🧠 in-memory dedup (fast guard)
+const emittedEvents = new Map<string, number>();
+const TTL = 5000; // 5 seconds window
+
+function isDuplicate(key: string) {
+  const now = Date.now();
+  const last = emittedEvents.get(key);
+
+  if (last && now - last < TTL) return true;
+
+  emittedEvents.set(key, now);
+  return false;
+}
 
 export class EventBus {
   static async emit(params: {
-    id?: string;      
+    id?: string;
     traceId?: string;
     type: string;
     data: any;
-    context: Omit<UnifiedEvent["context"], "source">; // نطلب الكونتكس بدون سورس هنا
+    context: Omit<UnifiedEvent["context"], "source">;
   }) {
-    // بناء الحدث النهائي مع الالتزام بالـ UnifiedEvent Interface
+
+    const currentId = params.data?.current?.id;
+
+    // 🔥 business key (IMPORTANT FIX)
+    const eventKey = crypto.createHash("sha256")
+      .update(JSON.stringify({
+        type: params.type,
+        id: currentId,
+        slug: params.data?.current?.slug,
+        title: params.data?.current?.title,
+        changes: params.data?.changes || []
+      }))
+      .digest("hex");
+
+    // 🛑 HARD dedup at bus level
+    if (isDuplicate(eventKey)) {
+      console.log("🟡 [EventBus] duplicate blocked:", eventKey);
+      return;
+    }
+
     const event: UnifiedEvent = {
       id: crypto.randomUUID(),
-      traceId: crypto.randomUUID(),
+      traceId: eventKey, // 🔥 مهم: traceId = business key
       timestamp: Date.now(),
       type: params.type,
       data: params.data,
       context: {
         ...params.context,
-        source: "event.bus" // الـ Bus يضيف السورس هنا لإرضاء الـ Interface
+        source: "event.bus"
       }
     };
 
     console.log(`📡 [TRACE: ${event.traceId}] BUS → ${event.type} | ${event.id}`);
 
+    // 🔥 Queue dedup (PRIMARY protection)
     await pluginQueue.add("plugin-tasks", event, {
-      jobId: event.id,
+      jobId: eventKey, // 🚨 THIS IS CRITICAL FIX
       attempts: 3,
       backoff: { type: "exponential", delay: 2000 },
       removeOnComplete: true,

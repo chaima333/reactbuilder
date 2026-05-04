@@ -13,67 +13,63 @@ export const VersionPlugin: ICmsPlugin = {
   enabled: true,
 
   async execute(event: UnifiedEvent) {
-    const { data, context, id } = event;
+    const { data, context } = event;
     const { current, previous } = data;
 
     if (!current || !previous) return;
 
-    // 🔥 1. Normalize data (important)
-    const normalizeBlocks = (blocks: any[] = []) =>
-      blocks.map(b => ({
-        type: (b.type || "").trim(),
-        data: b.data || {}
-      }));
-
+    // 1. Normalize
     const normalize = (p: any) => ({
       title: (p.title || "").trim(),
       content: (p.content || "").trim(),
       slug: (p.slug || "").trim(),
-      blocks: normalizeBlocks(p.blocks || [])
+      blocks: JSON.stringify(p.blocks || [])
     });
 
     const curr = normalize(current);
     const prev = normalize(previous);
 
-    // 🔥 2. Deep deterministic diff (source of truth)
-    const hasMeaningfulChange =
+    // 2. Strict diff
+    const hasChange =
       curr.title !== prev.title ||
       curr.content !== prev.content ||
       curr.slug !== prev.slug ||
-      JSON.stringify(curr.blocks) !== JSON.stringify(prev.blocks);
+      curr.blocks !== prev.blocks;
 
-    if (!hasMeaningfulChange) {
-      console.log("🟡 No meaningful change → skip version");
-      return;
-    }
+    if (!hasChange) return;
 
-    // 🔥 3. Create deterministic versionTag
+    // 3. SINGLE source of truth key
     const versionTag = createHash("sha256")
-      .update(JSON.stringify({
-        pageId: current.id,
-        ...curr
-      }))
+      .update(
+        JSON.stringify({
+          pageId: current.id,
+          title: curr.title,
+          content: curr.content,
+          slug: curr.slug,
+          blocks: curr.blocks
+        })
+      )
       .digest("hex");
 
-    // 🔥 4. Prevent duplicates
+    // 4. HARD idempotency at DB level (ONLY guard you need)
     const exists = await PageVersionRepository.findByVersionTag(versionTag);
 
     if (exists) {
-      console.log(`🟡 Duplicate version skipped for page ${current.id}`);
+      console.log("🟡 duplicate skipped (idempotent hit)");
       return;
     }
 
-    // 🔥 5. Save version
+    // 5. Save
     await PageVersionRepository.create({
       pageId: current.id,
       siteId: context.siteId,
       versionTag,
       title: curr.title,
       content: curr.content,
-      blocks: curr.blocks,
+      blocks: JSON.parse(curr.blocks),
       createdBy: context.userId
     });
 
-    console.log(`✅ Version created for page ${current.id}`);
+    console.log(`✅ Version saved page ${current.id}`);
   }
 };
