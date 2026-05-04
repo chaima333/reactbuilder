@@ -36,11 +36,14 @@ export const canPublish = (role: string) => {
 
 // ===== BUSINESS LOGIC RULES (The Decision Maker) =====
 
+// src/modules/pages/domain/rules.ts
+
 export const VERSIONING_RULES = {
-  REQUIRED_FIELDS: ["title", "content", "blocks", "status", "slug", "metaData"],
-  
-  shouldCreateVersion: (changes: string[]): boolean => {
-    return changes.some(field => VERSIONING_RULES.REQUIRED_FIELDS.includes(field));
+  CRITICAL_FIELDS: ["title", "content", "blocks", "slug"],
+
+  // التعريف يتوقع 3 معاملات
+  shouldCreateVersion: (changes: string[], oldData: any, newData: any): boolean => {
+    return changes.some(field => VERSIONING_RULES.CRITICAL_FIELDS.includes(field));
   }
 };
 

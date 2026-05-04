@@ -1,77 +1,72 @@
 import { Page } from "../../../models/page";
 import { EventBus, detectChanges } from "../../../core/plugins/events/eventBus";
 import { SEO_RULES, VERSIONING_RULES } from "../domain/rules";
-
-const sanitizeForContract = (raw: any) => {
+/**
+ * 🧹 Canonical State Normalizer
+ * وظيفتها توحيد البيانات (حذف الفراغات، توحيد الأنواع) لضمان مقارنة Semantic صحيحة
+ */
+const normalizePageData = (raw: any) => {
   if (!raw) return null;
   return {
     id: raw.id,
-    title: raw.title,
-    slug: raw.slug,
-    content: raw.content,
-    blocks: raw.blocks || [],
+    title: String(raw.title || "").trim(),
+    slug: String(raw.slug || "").trim(),
+    content: String(raw.content || "").trim(),
+    // تحويل الـ Objects لـ String يضمن إنو المقارنة ما تفيقش باختلاف الترتيب التافه
+    blocks: JSON.stringify(raw.blocks || []),
     status: raw.status,
-    userId: raw.userId || raw.user_id, 
-    siteId: raw.siteId || raw.site_id, 
-    metaData: raw.metaData || raw.meta_data || {}
+    userId: Number(raw.userId || raw.user_id), 
+    siteId: Number(raw.siteId || raw.site_id), 
+    metaData: JSON.stringify(raw.metaData || raw.meta_data || {})
   };
 };
 
 export const updatePageHandler = async (command: any) => {
-  const { payload, context } = command;
+  const { payload, context: cmdContext } = command;
   
   const page = await Page.findOne({ 
-    where: { id: payload.pageId, siteId: context.siteId } 
+    where: { id: payload.pageId, siteId: cmdContext.siteId } 
   });
   
   if (!page) throw new Error("Page not found");
 
-  // حفظ الداتا القديمة قبل التحديث
-  const oldData = sanitizeForContract(JSON.parse(JSON.stringify(page.get({ plain: true }))));
+  const oldDataRaw = page.get({ plain: true });
+  const oldDataNormalized = normalizePageData(oldDataRaw);
 
-  // التحديث في قاعدة البيانات
-  await page.update({ 
-    title: payload.title, 
-    content: payload.content, 
-    blocks: payload.blocks 
-  });
-  
+  await page.update(payload);
   await page.reload();
   
-  const currentData = sanitizeForContract(page.get({ plain: true }));
-  const changes = detectChanges(oldData, currentData);
+  const currentDataRaw = page.get({ plain: true });
+  const currentDataNormalized = normalizePageData(currentDataRaw);
 
-  if (changes.length === 0) {
-    return { success: true, updated: false, data: currentData };
-  }
+  const changes = detectChanges(oldDataNormalized, currentDataNormalized);
 
-  // 🧠 تطبيق الـ Centralized Rules
-  const shouldVersion = VERSIONING_RULES.shouldCreateVersion(changes);
+  if (changes.length === 0) return { success: true, updated: false };
+
+  const shouldVersion = VERSIONING_RULES.shouldCreateVersion(changes, oldDataNormalized, currentDataNormalized);
   const shouldSEO = SEO_RULES.shouldUpdateSEO(changes);
 
-  // إرسال الـ Event للـ Bus
+  // 🔥 تحضير الـ Event بناءً على الـ Strict Contract الجديد
+  const traceId = crypto.randomUUID();
+
   await EventBus.emit({
     type: "page.updated",
+    // الـ traceId والـ id والـ timestamp الـ EventBus هو اللي باش يصنعهم أوتوماتيكياً
+    // إحنا نبعثو فقط الـ data والـ context المطلوبين
     data: {
-      current: currentData,
-      previous: oldData,
-      changes: changes,
-      flags: {
-        shouldVersion, 
-        shouldSEO
-      }
+      current: currentDataRaw,
+      previous: oldDataRaw,
+      changes,
+      flags: { shouldVersion, shouldSEO }
     },
     context: {
-      userId: currentData.userId,
-      siteId: currentData.siteId,
-      action: "update"
+      userId: Number(currentDataNormalized.userId),
+      siteId: Number(currentDataNormalized.siteId),
+      action: "update", 
+      // الـ source توّة الـ EventBus باش يعطيها القيمة "page.handler" أوتوماتيكياً
+      // والـ traceId باش يتعدى للـ Root متاع الـ UnifiedEvent
     }
   });
 
-  return { 
-    success: true, 
-    updated: true, 
-    pageId: payload.pageId, 
-    data: currentData 
-  };
+  return { success: true, updated: true, pageId: payload.pageId };
 };
