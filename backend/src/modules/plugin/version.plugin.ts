@@ -15,11 +15,11 @@ export const VersionPlugin: ICmsPlugin = {
     const { data, context } = event;
 
     // 🛡️ Guard 1: المصدر لازم يكون الـ Handler حصراً
-    if (context.source !== "page.handler") {
-      console.log("🛡️ [VersionPlugin] Ignored: Internal/Auto source detected.");
-      return;
-    }
-
+      // في VersionPlugin.ts
+if (context.source !== "page.handler") {
+  console.log(`🛡️ [VersionPlugin] Ignored! Source was: [${context.source}] | Depth: ${context.depth}`);
+  return;
+}
     // 🛡️ Guard 2: منع الـ Loops (العمق)
     if ((context.depth || 0) > 1) {
       console.log("🚫 [VersionPlugin] Loop killed!");
