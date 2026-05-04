@@ -30,7 +30,7 @@ export const VersionPlugin: ICmsPlugin = {
       }))
       .digest("hex");
 
-    const exists = await PageVersionRepository.findByVersionNumber(stateKey);
+const exists = await PageVersionRepository.findByVersionTag(stateKey);
 
     if (exists) {
       console.log("🟡 Skip: version already exists");
@@ -40,7 +40,7 @@ export const VersionPlugin: ICmsPlugin = {
     await PageVersionRepository.create({
       pageId: current.id,
       siteId: context.siteId,
-      versionNumber: stateKey,
+      versionTag: stateKey,
       title: current.title,
       content: current.content,
       blocks: current.blocks,

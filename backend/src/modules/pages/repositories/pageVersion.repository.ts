@@ -21,9 +21,9 @@ export class PageVersionRepository {
 
   // 🔥 NEW: important fix
 
-static findByVersionNumber(versionNumber: string) {
+static findByVersionTag(versionTag: string) {
   return PageVersion.findOne({
-    where: { versionNumber }
+    where: { versionTag }
   });
 }
 
