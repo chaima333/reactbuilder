@@ -66,6 +66,8 @@ export const getPages = async (req: AuthRequest, res: Response) => {
 
 export const updatePage = async (req: AuthRequest, res: Response) => {
   try {
+    // 1. الـ Service هوني هو اللي يستدعي الـ Handler
+    // والـ Handler هو اللي يبعث الـ EventBus.emit الصحيح (بكل الـ current/previous)
     const result = await PageService.updatePage(
       Number(req.siteContext.siteId),
       Number(req.params.pageId),
@@ -75,42 +77,18 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
 
     await handleEventDispatch(result, "PageController.updatePage");
 
-    if (result.data) {      
-      await EventBus.emit({
-        type: "page.updated",
-        data: {
-          id: result.data.id,
-          siteId: Number(req.siteContext.siteId),
-          title: result.data.title,
-          content: result.data.content || "",
-          updatedBy: req.user.id,
-          // ✅ التصحيح متاعك صحيح
-          changes: result.event?.data?.changes || [] 
-        },
-        // ⚠️ لازم تزيد الـ context هنا باش يحترم الـ Unified Contract
-        context: {
-          userId: req.user.id,
-          siteId: Number(req.siteContext.siteId),
-          action: "update" ,// ضروري جداً للـ Validator
-        }
-      });
-    }
 
-    // إجبار الـ TypeScript على قبول الـ id
-const eventId = (result.event as any)?.id || (result.event as any)?.meta?.eventId;
+    const eventId = (result.event as any)?.id;
 
-return res.json({
-  success: true,
-  data: PageMapper.toDTO(result.data),
-  eventId: eventId
-});
+    return res.json({
+      success: true,
+      data: PageMapper.toDTO(result.data),
+      eventId: eventId
+    });
 
   } catch (err: any) {
     console.error("🚨 [UpdatePage Error]:", err);
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 // ========================
