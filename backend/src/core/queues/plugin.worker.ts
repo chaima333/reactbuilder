@@ -52,33 +52,30 @@ export const initPluginWorker = () => {
           console.error(`🚨 [Plugin Error] ${plugin.name} failed:`, err.message);
         }
       }
-
-      // 5️⃣ 🔥 الـ Atomic Persistence (التخزين الذكي)
-     // 5️⃣ 🔥 الـ Atomic Persistence (المطورة)
+       // 5️⃣ 🔥 الـ Atomic Persistence (النسخة الحاسمة)
 try {
   const siteId = rawEvent.data.current?.siteId || "global";
   const SITE_HISTORY_KEY = getSiteHistoryKey(siteId);
-
-  // 1. شوف قداش كان فيه من قبل
-  const beforePush = await redis.llen(SITE_HISTORY_KEY);
+  const GLOBAL_HISTORY_KEY = "dashboard:runtime:events"; // الـ Key اللي يلوّج فيه الـ Dashboard
 
   const pipeline = redis.multi();
+
+  // أ) نصبّو في الـ Key الخاص بالموقع (للمستقبل)
   pipeline.lpush(SITE_HISTORY_KEY, JSON.stringify(rawEvent));
-  
-  // زدنا في الـ Limit لـ 200 ونحينا الـ LTRIM في مرحلة التيست
-  // pipeline.ltrim(SITE_HISTORY_KEY, 0, 199); 
-  
-  pipeline.llen(SITE_HISTORY_KEY);
+  pipeline.ltrim(SITE_HISTORY_KEY, 0, 99);
+
+  // ب) نصبّو في الـ Key اللي يقرأ منه الـ Dashboard توّة (الـ Legacy/Global Key)
+  pipeline.lpush(GLOBAL_HISTORY_KEY, JSON.stringify(rawEvent));
+  pipeline.ltrim(GLOBAL_HISTORY_KEY, 0, 99);
+
+  // ج) نطلعو الحجم متاع الـ Global Key باش نثبتو
+  pipeline.llen(GLOBAL_HISTORY_KEY);
+
   const results = await pipeline.exec();
-  
-  const afterPush = results ? (results[1][1] as number) : 0;
+  const globalSize = results ? (results[results.length - 1][1] as number) : 0;
 
-  console.log(`📊 [STORAGE] Site: ${siteId} | Before: ${beforePush} | After: ${afterPush}`);
+  console.log(`💾 [SUCCESS] Global History: ${globalSize} | Site 59: Saved | Trace: ${rawEvent.traceId}`);
 
-  // 🚨 إذا بعد الـ Push بقى الحجم 1، يعني Redis Instance قاعد يعمل Reset
-  if (beforePush > 0 && afterPush === 1) {
-    console.error("⚠️ ALERT: Redis Key Overwrite Detected! History was lost.");
-  }
 } catch (persistErr) {
   console.error("❌ Persistence Error:", persistErr);
 }
