@@ -12,7 +12,6 @@ const normalizePageData = (raw: any) => {
     title: String(raw.title || "").trim(),
     slug: String(raw.slug || "").trim(),
     content: String(raw.content || "").trim(),
-    // تحويل الـ Objects لـ String يضمن إنو المقارنة ما تفيقش باختلاف الترتيب التافه
     blocks: JSON.stringify(raw.blocks || []),
     status: raw.status,
     userId: Number(raw.userId || raw.user_id), 
@@ -68,5 +67,5 @@ export const updatePageHandler = async (command: any) => {
     }
   });
 
-  return { success: true, updated: true, pageId: payload.pageId };
+  return { success: true, updated: true, pageId: payload.pageId , data: currentDataRaw };
 };
