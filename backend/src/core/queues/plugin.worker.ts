@@ -54,34 +54,34 @@ export const initPluginWorker = () => {
       }
 
       // 5️⃣ 🔥 الـ Atomic Persistence (التخزين الذكي)
-      try {
-        const siteId = rawEvent.data.current?.siteId || "global";
-        const SITE_HISTORY_KEY = getSiteHistoryKey(siteId);
+     // 5️⃣ 🔥 الـ Atomic Persistence (المطورة)
+try {
+  const siteId = rawEvent.data.current?.siteId || "global";
+  const SITE_HISTORY_KEY = getSiteHistoryKey(siteId);
 
-        // استعمال Pipeline لضمان تنفيذ كل العمليات مع بعضها
-        const pipeline = redis.multi();
+  // 1. شوف قداش كان فيه من قبل
+  const beforePush = await redis.llen(SITE_HISTORY_KEY);
 
-        // أ) الحفظ في الـ Key الخاص بالموقع (للـ Analytics)
-        pipeline.lpush(SITE_HISTORY_KEY, JSON.stringify(rawEvent));
-        pipeline.ltrim(SITE_HISTORY_KEY, 0, 99); // حفظ آخر 100 حدث للموقع
+  const pipeline = redis.multi();
+  pipeline.lpush(SITE_HISTORY_KEY, JSON.stringify(rawEvent));
+  
+  // زدنا في الـ Limit لـ 200 ونحينا الـ LTRIM في مرحلة التيست
+  // pipeline.ltrim(SITE_HISTORY_KEY, 0, 199); 
+  
+  pipeline.llen(SITE_HISTORY_KEY);
+  const results = await pipeline.exec();
+  
+  const afterPush = results ? (results[1][1] as number) : 0;
 
-        // ب) الحفظ في الـ Key العام (لشاشة الـ Dashboard الرئيسية)
-        pipeline.lpush(GLOBAL_HISTORY_KEY, JSON.stringify(rawEvent));
-        pipeline.ltrim(GLOBAL_HISTORY_KEY, 0, 99); 
+  console.log(`📊 [STORAGE] Site: ${siteId} | Before: ${beforePush} | After: ${afterPush}`);
 
-        // ج) الحصول على الحجم الجديد للتأكد من التراكم (Observability)
-        pipeline.llen(SITE_HISTORY_KEY);
-
-        const results = await pipeline.exec();
-        
-        // نتائج الـ exec تكون مصفوفة، الـ llen هو العنصر الأخير
-        // في ioredis، النتيجة تكون [error, value]
-        const newListSize = results ? (results[results.length - 1][1] as number) : 0;
-
-        console.log(`💾 [SUCCESS] Site: ${siteId} | History Size: ${newListSize} | Trace: ${rawEvent.traceId}`);
-      } catch (persistErr) {
-        console.error("❌ Persistence Error:", persistErr);
-      }
+  // 🚨 إذا بعد الـ Push بقى الحجم 1، يعني Redis Instance قاعد يعمل Reset
+  if (beforePush > 0 && afterPush === 1) {
+    console.error("⚠️ ALERT: Redis Key Overwrite Detected! History was lost.");
+  }
+} catch (persistErr) {
+  console.error("❌ Persistence Error:", persistErr);
+}
     },
     { 
       connection: REDIS_CONFIG,
