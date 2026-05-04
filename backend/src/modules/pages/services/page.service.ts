@@ -59,10 +59,14 @@ export class PageService {
   // ================= UPDATE =================
 
 static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
-  // نبعثوا الخدمة الكل للـ Handler اللي صلحناه
   return await updatePageHandler({
     payload: { pageId, ...input },
-    context: { userId, siteId }
+    context: { 
+      userId, 
+      siteId, 
+      source: "page.handler", // ✅ أضف هذا السطر لكي يعرف الـ Plugin أن المصدر موثوق
+      action: "update" 
+    }
   });
 }
   // ================= DELETE =================
