@@ -66,8 +66,7 @@ export const getPages = async (req: AuthRequest, res: Response) => {
 
 export const updatePage = async (req: AuthRequest, res: Response) => {
   try {
-    // 1. الـ Service هوني هو اللي يستدعي الـ Handler
-    // والـ Handler هو اللي يبعث الـ EventBus.emit الصحيح (بكل الـ current/previous)
+    // نعيطوا للـ Service فقط
     const result = await PageService.updatePage(
       Number(req.siteContext.siteId),
       Number(req.params.pageId),
@@ -75,19 +74,11 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
       req.body
     );
 
-    await handleEventDispatch(result, "PageController.updatePage");
-
-
-    const eventId = (result.event as any)?.id;
-
     return res.json({
       success: true,
-      data: PageMapper.toDTO(result.data),
-      eventId: eventId
+      data: PageMapper.toDTO(result.data) // الـ data توّة تجينا مالـ Handler عبر الـ Service
     });
-
   } catch (err: any) {
-    console.error("🚨 [UpdatePage Error]:", err);
     return res.status(500).json({ success: false, message: err.message });
   }
 };

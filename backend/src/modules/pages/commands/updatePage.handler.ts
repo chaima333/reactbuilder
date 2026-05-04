@@ -45,5 +45,5 @@ export const updatePageHandler = async (command) => {
     }
   });
 
-  return { success: true, updated: true, pageId: payload.pageId };
+  return { success: true, updated: true, pageId: payload.pageId, data: currentData };
 };

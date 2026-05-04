@@ -9,6 +9,7 @@ import { PAGE_EVENTS } from "../../../core/plugins/events/pageEvents";
 import crypto from 'crypto';
 import PageVersion from "../../../models/pageVersion";
 import { detectChanges } from "../../../core/plugins/events/eventBus";
+import { updatePageHandler } from "../commands/updatePage.handler";
 
 const { nanoid } = require("nanoid");
 
@@ -58,64 +59,11 @@ export class PageService {
 
   // ================= UPDATE =================
 
-static async updatePage(
-  siteId: number,
-  pageId: number,
-  userId: number,
-  input: any
-) {
-  return sequelize.transaction(async (t) => {
-
-    const page = await Page.findOne({
-      where: { id: pageId, siteId },
-      transaction: t
-    });
-
-    if (!page) throw new Error("PAGE_NOT_FOUND");
-
-    // 1. snapshot old
-    const oldPage = page.get({ plain: true });
-
-    // 2. update
-    await page.update(input, { transaction: t });
-
-    // 3. snapshot new
-    const currentData = page.get({ plain: true });
-
-    // 4. diff
-    const changes = detectChanges(oldPage, currentData);
-
-    const hasChanges = changes.length > 0;
-
-    return {
-      data: currentData,
-
-      event: {
-        type: PAGE_EVENTS.UPDATED,
-        shouldEmit: hasChanges,
-
-        data: {
-          current: currentData,
-          previous: oldPage,
-          changes,
-          flags: {
-            shouldVersion: changes.includes("blocks"),
-            shouldSEO: changes.includes("title")
-          }
-        },
-
-        context: {
-          userId,
-          siteId
-        },
-
-        meta: {
-          eventId: crypto.randomUUID(),
-          timestamp: Date.now(),
-          source: "page.service"
-        }
-      }
-    };
+static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
+  // نبعثوا الخدمة الكل للـ Handler اللي صلحناه
+  return await updatePageHandler({
+    payload: { pageId, ...input },
+    context: { userId, siteId }
   });
 }
   // ================= DELETE =================
