@@ -2,53 +2,50 @@ import crypto from "crypto";
 import { pluginQueue } from "../../queues/plugin.queue";
 import { UnifiedEvent } from "./contracts/unified.contract.ts";
 
+// src/core/plugins/events/eventBus.ts
+
 export class EventBus {
-  static async emit(params: Omit<UnifiedEvent, "id" | "timestamp" | "traceId">) {
+  static async emit(params: {
+    type: string;
+    data: any;
+    context: Omit<UnifiedEvent["context"], "source">; // نطلب الكونتكس بدون سورس هنا
+  }) {
+    // بناء الحدث النهائي مع الالتزام بالـ UnifiedEvent Interface
     const event: UnifiedEvent = {
       id: crypto.randomUUID(),
-      // 🧭 TraceId يربط الـ Request بالـ Worker
-      traceId: crypto.randomUUID(), 
+      traceId: crypto.randomUUID(),
       timestamp: Date.now(),
       type: params.type,
       data: params.data,
       context: {
         ...params.context,
-        source: params.context.source ?? "event.bus"
+        source: "event.bus" // الـ Bus يضيف السورس هنا لإرضاء الـ Interface
       }
     };
 
     console.log(`📡 [TRACE: ${event.traceId}] BUS → ${event.type} | ${event.id}`);
 
-    // 🔁 نزيدو الـ Retries والـ Ordering (Key-based)
     await pluginQueue.add("plugin-tasks", event, {
-      jobId: event.id, // لمنع BullMQ من تكرار نفس الـ Job
-      attempts: 3,     // محاولات في حالة فشل Plugin Critical
-      backoff: {
-        type: "exponential",
-        delay: 2000,   // يبدأ بـ 2 ثواني
-      },
-      // 🧭 الترتيب: الـ Events متاع نفس الموقع يمشيو ورا بعضهم
+      jobId: event.id,
+      attempts: 3,
+      backoff: { type: "exponential", delay: 2000 },
       removeOnComplete: true,
     });
   }
 }
 
+//
 
 export const detectChanges = (oldData: any, newData: any): string[] => {
   const changes: string[] = [];
 
-  /**
-   * دالة مساعدة لتحويل أي داتا لـ Plain String 
-   * تضمن إننا نقارنو في "الجوهر" موش في الـ Reference متاع الـ Object
-   */
+ 
   const stringify = (val: any) => {
     if (val === null || val === undefined) return "";
     if (typeof val === "object") return JSON.stringify(val);
     return String(val).trim();
   };
 
-  // 1. مقارنة الحقول النصية (Title, Content, Status)
-  // نزيدو الـ .trim() باش لو المستخدم زاد "فراغ" بالغلط ما نعتبروش تبديل حقيقي
   const fieldsToWatch = ["title", "content", "status"];
   
   fieldsToWatch.forEach(field => {
@@ -57,8 +54,6 @@ export const detectChanges = (oldData: any, newData: any): string[] => {
     }
   });
 
-  // 2. مقارنة الـ Blocks (الـ JSON المعقد)
-  // الـ normalize القديم متاعك باهي، أما نزيدو نضمنو إنو يقارن Deep Equality
   const oldBlocks = JSON.stringify(oldData.blocks || []);
   const newBlocks = JSON.stringify(newData.blocks || []);
   

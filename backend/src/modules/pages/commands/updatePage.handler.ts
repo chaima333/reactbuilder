@@ -2,37 +2,25 @@
 import { Page } from "../../../models/page";
 import { EventBus, detectChanges } from "../../../core/plugins/events/eventBus";
 
+// modules/pages/commands/updatePage.handler.ts
+
 export const updatePageHandler = async (command) => {
   const { payload, context } = command;
-
-  const page = await Page.findOne({
-    where: { id: payload.pageId, siteId: context.siteId }
-  });
-
+  const page = await Page.findOne({ where: { id: payload.pageId, siteId: context.siteId } });
   if (!page) throw new Error("Page not found");
 
-  // snapshot old state (safe copy)
-  const oldData = page.get({ plain: true });
+  // ✅ 1. Deep Copy: نسخة حقيقية ومستقلة تماما
+  const oldData = JSON.parse(JSON.stringify(page.get({ plain: true })));
 
-  // update DB
-  await page.update({
-    title: payload.title,
-    content: payload.content,
-    blocks: payload.blocks
-  });
-
-  // reload fresh state
+  await page.update({ title: payload.title, content: payload.content, blocks: payload.blocks });
   await page.reload();
+  
   const currentData = page.get({ plain: true });
-
   const changes = detectChanges(oldData, currentData);
 
-  // ❗ important: no noise events
-  if (changes.length === 0) {
-    return { success: true, updated: false };
-  }
+  if (changes.length === 0) return { success: true, updated: false };
 
-  // ONLY EventBus creates the event (no context.source override here)
+  // ✅ 2. Clean Context: نحينا الـ source وخليناها للـ Bus
   await EventBus.emit({
     type: "page.updated",
     data: {
@@ -47,14 +35,9 @@ export const updatePageHandler = async (command) => {
     context: {
       userId: Number(context.userId),
       siteId: Number(context.siteId),
-      action: "update",
-      source: "page.handler" // فقط provenance، مش logic
+      action: "update"
     }
   });
 
-  return {
-    success: true,
-    updated: true,
-    pageId: payload.pageId
-  };
+  return { success: true, updated: true, pageId: payload.pageId };
 };

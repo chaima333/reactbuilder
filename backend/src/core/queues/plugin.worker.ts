@@ -48,15 +48,16 @@ export const initPluginWorker = () => {
         .getAllPlugins()
         .filter((p) => p.enabled && p.events.includes(event.type));
 
-      for (const plugin of plugins) {
-        try {
-          // الـ Plugins توة يخدموا بالنسخة المجمدة
-          await plugin.execute(frozenEvent);
-        } catch (err) {
-          console.error(`🚨 Plugin failed: ${plugin.name}`, err);
-          if (plugin.isCritical) throw err; // BullMQ سيقوم بالـ Retry هنا
-        }
-      }
+      // داخل الـ loop متاع الـ plugins
+for (const plugin of plugins) {
+  try {
+    // ✅ 3. Clone per Plugin: كل بلجن ياخذ نسخته الخاصة
+    const eventClone = JSON.parse(JSON.stringify(event));
+    await plugin.execute(eventClone);
+  } catch (err) {
+    console.error(`🚨 Plugin ${plugin.name} failed`, err);
+  }
+}
 
       // 3. Persistence (تخزين النسخة الأصلية النظيفة)
       await redis.lpush(HISTORY_KEY, JSON.stringify(event));
