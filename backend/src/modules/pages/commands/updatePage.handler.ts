@@ -20,6 +20,12 @@ export const updatePageHandler = async (command) => {
 
   if (changes.length === 0) return { success: true, updated: false };
 
+  console.log("🔥 ACTUAL DATA BEFORE BUS:", JSON.stringify({
+  hasCurrent: !!currentData,
+  hasPrevious: !!oldData,
+  changesCount: changes.length
+}, null, 2));
+
   // ✅ 2. Clean Context: نحينا الـ source وخليناها للـ Bus
   await EventBus.emit({
     type: "page.updated",
