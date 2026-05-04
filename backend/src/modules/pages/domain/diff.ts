@@ -1,42 +1,44 @@
-const ALLOWED_FIELDS = ["title", "content", "blocks", "slug", "status", "metaData"];
+// core/domain/diff.ts
+
+const deepEqual = (a: any, b: any) => {
+  return JSON.stringify(a) === JSON.stringify(b);
+};
+
+const CORE_FIELDS = ["title", "content", "blocks", "slug", "status"];
 
 export function getSemanticDiff(oldPageN: any, newPageN: any) {
-  // نحصر المقارنة فقط في الـ ALLOWED_FIELDS لقتل ضجيج الـ updatedAt
-  return ALLOWED_FIELDS.filter(field => {
-    const oldVal = oldPageN[field];
-    const newVal = newPageN[field];
-
-    // مقارنة الـ Objects (blocks, metaData)
-    if (typeof oldVal === 'object' && oldVal !== null) {
-      return JSON.stringify(oldVal) !== JSON.stringify(newVal);
-    }
-    
-    // مقارنة القيم العادية
-    return oldVal !== newVal;
+  return CORE_FIELDS.filter(field => {
+    return !deepEqual(oldPageN[field], newPageN[field]);
   });
 }
 
 // src/core/events/eventGateway.ts
+// core/events/eventGateway.ts
+
 import { createHash } from "crypto";
 import { EventBus } from "../../../core/plugins/events/eventBus.js";
 import { redis } from "../../../core/queues/config.js";
 
-
-
-
 export const emitDomainEvent = async (type: string, data: any, context: any) => {
-  // 🛡️ Guard Clause
   if (!data?.current?.id) {
-    console.error("❌ [GATEWAY] Missing data.current.id. Cannot generate fingerprint.");
+    console.error("❌ [GATEWAY] Missing data.current.id.");
     return null;
   }
 
-  const fingerprint = createHash('sha256')
-    .update(`${type}-${data.current.id}-${JSON.stringify(data.changes)}`)
-    .digest('hex');
+  // ✅ fingerprint يعتمد على القيم موش كان names
+  const fingerprintPayload = {
+    type,
+    id: data.current.id,
+    changes: data.changes,
+    values: data.changes.map((c: string) => data.current[c])
+  };
+
+  const fingerprint = createHash("sha256")
+    .update(JSON.stringify(fingerprintPayload))
+    .digest("hex");
 
   const lockKey = `evt:gate:${fingerprint}`;
-  const isNew = await redis.set(lockKey, "active", "EX", 3600, "NX");
+  const isNew = await redis.set(lockKey, "1", "EX", 3600, "NX");
 
   if (!isNew) {
     console.warn(`🚫 [GATEWAY] Redundant event blocked: ${fingerprint}`);
@@ -47,8 +49,6 @@ export const emitDomainEvent = async (type: string, data: any, context: any) => 
     id: fingerprint,
     type,
     data,
-  context: { 
-      ...context, 
-      source: "page.handler" }
+    context // ✅ ما نعاودوش override هنا
   });
 };

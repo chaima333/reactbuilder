@@ -71,24 +71,31 @@ export const validateEvent = (event: any): { isValid: boolean; error?: string } 
 
 // 
 
+
+
 // core/contracts/unified.contract.ts
 
 export function normalizePage(page: any) {
   if (!page) return null;
+
   const raw = page.get ? page.get({ plain: true }) : page;
-  
-  // 🛡️ معالجة الـ blocks إذا كانت String أو Array
-  let normalizedBlocks = raw.blocks || [];
-  if (typeof normalizedBlocks === 'string') {
-      try { normalizedBlocks = JSON.parse(normalizedBlocks); } catch { normalizedBlocks = []; }
+
+  let blocks = raw.blocks || [];
+
+  if (typeof blocks === "string") {
+    try {
+      blocks = JSON.parse(blocks);
+    } catch {
+      blocks = [];
+    }
   }
 
   return {
     id: raw.id,
     title: (raw.title || "").trim(),
     slug: (raw.slug || "").trim(),
-    content: raw.content || "",
-    blocks: normalizedBlocks, // ✅ دائماً Array
+    content: (raw.content || "").trim(), // ✅ مهم
+    blocks: Array.isArray(blocks) ? blocks : [],
     status: raw.status,
     metaData: raw.metaData || {},
     userId: raw.userId ?? raw.user_id,
