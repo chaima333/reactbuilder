@@ -1,44 +1,38 @@
 import { Page } from "../../../models/page";
-import { EventBus } from "../../../core/plugins/events/eventBus";
-import { PageClassifier } from "../domain/diff";
+import { normalizePage } from "../../../core/plugins/events/contracts/unified.contract.ts";
+import { emitDomainEvent, getSemanticDiff } from "../domain/diff"; // ثبت المسار هنا
 
 export const updatePageHandler = async (command: any) => {
-  const { payload, context: cmdContext } = command;
+  const { payload, context } = command;
 
-  // 1. Fetch
-  const page = await Page.findOne({ where: { id: payload.pageId, siteId: cmdContext.siteId } });
-  if (!page) throw new Error("Page not found");
+  const page = await Page.findByPk(payload.pageId);
+  if (!page) return { success: false, error: "Page not found" };
 
-  const oldRaw = page.get({ plain: true });
+  const oldPageN = normalizePage(page);
 
-  // 2. Update & Reload
+  // تحديث البيانات
   await page.update(payload);
-  await page.reload();
-  const currentRaw = page.get({ plain: true });
+  const currentPageN = normalizePage(await page.reload());
 
-  // 3. 🧠 THE BRAIN: Single Source of Truth
-  // الـ Classifier هو الوحيد اللي عنده الحق يقرر نوع التغيير
-  const report = PageClassifier.analyze(oldRaw, currentRaw);
+  // 1. حساب التغييرات الحقيقية (Pure Logic)
+  const changes = getSemanticDiff(oldPageN, currentPageN);
 
-  // 🛑 الجدار العازل: إذا التصنيف "Noise" أو "No Change"
-  if (report.type === 'NO_CHANGE' || report.type === 'COSMETIC') {
-    console.log(`🤫 [DETERMINISTIC-GATE] Ignored ${report.type}. Reason: ${report.reason}`);
-    return { success: true, updated: false, data: currentRaw };
+  // 2. الـ Guard: إذا ما فماش تغيير حقيقي، أخرج بكرامتك
+  if (changes.length === 0) {
+    console.log("🤫 [HANDLER] No semantic changes. Flow stopped.");
+    return { success: true, updated: false };
   }
 
-  // 🚀 إذا وصلنا هنا، يعني التغيير SEMANTIC ومستحق بالرسمي
-  // الـ Flags توّة تخرج من الـ Classifier بيدو (Consistency)
-  await EventBus.emit({
-    type: "page.updated",
-    data: {
-      current: currentRaw,
-      previous: oldRaw,
-      changes: report.diff,
-      flags: report.flags // الـ Flags ولات Deterministic
-    },
-    context: { siteId: cmdContext.siteId, userId: cmdContext.userId, action: "update" }
-  });
+  // 3. الـ Single Authority: بعث الحدث عبر البوابة الوحيدة
+  await emitDomainEvent("page.updated", {
+    current: currentPageN,
+    previous: oldPageN,
+    changes,
+    flags: {
+      shouldVersion: changes.some(c => ["title", "content", "blocks"].includes(c)),
+      shouldSEO: changes.some(c => ["title", "slug"].includes(c))
+    }
+  }, context);
 
-  console.log(`✅ [SAAS-ENGINE] High-Value Event Emitted. Type: ${report.type}`);
-  return { success: true, updated: true, data: currentRaw };
+  return { success: true, updated: true, data: currentPageN };
 };

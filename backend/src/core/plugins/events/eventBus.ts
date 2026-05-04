@@ -6,6 +6,8 @@ import { UnifiedEvent } from "./contracts/unified.contract.ts";
 
 export class EventBus {
   static async emit(params: {
+    id?: string;      
+    traceId?: string;
     type: string;
     data: any;
     context: Omit<UnifiedEvent["context"], "source">; // نطلب الكونتكس بدون سورس هنا

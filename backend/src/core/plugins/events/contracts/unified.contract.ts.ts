@@ -68,3 +68,20 @@ export const validateEvent = (event: any): { isValid: boolean; error?: string } 
 
   return { isValid: true };
 };
+
+// 
+
+export function normalizePage(page: any) {
+  const raw = page.get ? page.get({ plain: true }) : page;
+  return {
+    id: raw.id,
+    title: (raw.title || "").trim(),
+    slug: (raw.slug || "").trim(),
+    content: raw.content || "",
+    blocks: raw.blocks || [],
+    status: raw.status,
+    metaData: raw.metaData || {},
+    userId: raw.userId ?? raw.user_id,
+    siteId: raw.siteId ?? raw.site_id
+  };
+}

@@ -1,43 +1,46 @@
-export const PageClassifier = {
-  analyze: (oldData: any, newData: any) => {
-    // 🧼 Normalization الحتمي
-    const clean = (v: any) => String(v || "").trim();
-    
-    const diff = Object.keys(newData).filter(key => {
-        if (['title', 'slug', 'content'].includes(key)) {
-            return clean(oldData[key]).toLowerCase() !== clean(newData[key]).toLowerCase();
-        }
-        if (key === 'blocks') return JSON.stringify(oldData[key]) !== JSON.stringify(newData[key]);
-        return oldData[key] !== newData[key];
-    });
+import { normalizePage } from "../../../core/plugins/events/contracts/unified.contract.ts";
 
-    if (diff.length === 0) return { type: 'NO_CHANGE', reason: 'Identical normalized data', diff: [] };
+// src/modules/pages/domain/page.logic.ts
+const ALLOWED_FIELDS = ["title", "content", "blocks", "slug", "status", "metaData"];
 
-    // 🧠 Intelligence: تحديد قيمة التغيير
-    const hasCriticalFields = diff.some(f => ['title', 'content', 'blocks'].includes(f));
-    const isContentOnly = diff.length === 1 && diff.includes('content');
-    const contentDiffSize = Math.abs((newData.content?.length || 0) - (oldData.content?.length || 0));
+export function getSemanticDiff(oldPage: any, newPage: any) {
+  const oldN = normalizePage(oldPage);
+  const newN = normalizePage(newPage);
 
-    // القرار النهائي (The Judge)
-    if (isContentOnly && contentDiffSize < 5) {
-        return { type: 'COSMETIC', reason: 'Minor content tweak', diff };
+  return ALLOWED_FIELDS.filter(field => {
+    // Deep comparison للـ blocks والـ metaData
+    if (typeof oldN[field] === 'object') {
+      return JSON.stringify(oldN[field]) !== JSON.stringify(newN[field]);
     }
+    return oldN[field] !== newN[field];
+  });
+}
 
-    if (!hasCriticalFields && diff.includes('status')) {
-        return { 
-            type: 'SEMANTIC', 
-            flags: { shouldVersion: false, shouldSEO: false }, 
-            diff 
-        };
-    }
+// src/core/events/eventGateway.ts
+import { createHash } from "crypto";
+import { EventBus } from "../../../core/plugins/events/eventBus.js";
+import { redis } from "../../../core/queues/config.js";
 
-    return {
-      type: 'SEMANTIC',
-      flags: {
-        shouldVersion: hasCriticalFields,
-        shouldSEO: diff.some(f => ['title', 'slug', 'metaData'].includes(f))
-      },
-      diff
-    };
+export const emitDomainEvent = async (type: string, data: any, context: any) => {
+  // 1. توليد Unique ID بناءً على محتوى التغيير الفعلي (Deterministic ID)
+  const fingerprint = createHash('sha256')
+    .update(`${type}-${data.current.id}-${JSON.stringify(data.changes)}`)
+    .digest('hex');
+
+  // 2. Dedup Gate: نمنع إعادة النشر لمدة ساعة (Idempotency)
+  const lockKey = `evt:gate:${fingerprint}`;
+  const isNew = await redis.set(lockKey, "active", "EX", 3600, "NX");
+
+  if (!isNew) {
+    console.warn(`🚫 [GATEWAY] Redundant event blocked: ${fingerprint}`);
+    return null;
   }
+
+  // 3. النشر الوحيد والرسمي
+  return await EventBus.emit({
+    id: fingerprint,
+    type,
+    data,
+    context: { ...context, source: "official_gateway" }
+  });
 };
