@@ -18,16 +18,19 @@ export const VersionPlugin: ICmsPlugin = {
 
     console.log(`📦 VersionPlugin: ${id}`);
 
-const shouldVersion =
-  flags?.shouldVersion ?? (data.changes?.length > 0);
+    // 🚨 STRICT RULE: engine decides everything
+    if (!flags?.shouldVersion) return;
 
-if (!shouldVersion) return;
-    // 🔥 state key (anti duplicate at DB level)
     const stateKey = createHash("sha256")
-      .update(JSON.stringify(current))
+      .update(JSON.stringify({
+        id: current.id,
+        title: current.title,
+        content: current.content,
+        blocks: current.blocks
+      }))
       .digest("hex");
 
-    const exists = await PageVersionRepository.findByStateKey(stateKey);
+    const exists = await PageVersionRepository.findByVersionNumber(stateKey);
 
     if (exists) {
       console.log("🟡 Skip: version already exists");
@@ -37,7 +40,7 @@ if (!shouldVersion) return;
     await PageVersionRepository.create({
       pageId: current.id,
       siteId: context.siteId,
-      versionNumber: stateKey, // 🔥 stable identity
+      versionNumber: stateKey,
       title: current.title,
       content: current.content,
       blocks: current.blocks,

@@ -20,9 +20,12 @@ export class PageVersionRepository {
   }
 
   // 🔥 NEW: important fix
-  static findByStateKey(versionNumber: string) {
-    return PageVersion.findOne({
-      where: { versionNumber }
-    });
-  }
+
+static findByVersionNumber(versionNumber: string) {
+  return PageVersion.findOne({
+    where: { versionNumber }
+  });
+}
+
+  
 }
