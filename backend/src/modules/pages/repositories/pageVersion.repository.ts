@@ -1,7 +1,6 @@
 import { PageVersion } from "../../../models/pageVersion";
 
 export class PageVersionRepository {
-
   static create(data: any, transaction?: any) {
     return PageVersion.create(data, { transaction });
   }
@@ -20,7 +19,8 @@ export class PageVersionRepository {
     });
   }
 
-  static findByVersionNumber(versionNumber: string) {
+  // 🔥 NEW: important fix
+  static findByStateKey(versionNumber: string) {
     return PageVersion.findOne({
       where: { versionNumber }
     });
