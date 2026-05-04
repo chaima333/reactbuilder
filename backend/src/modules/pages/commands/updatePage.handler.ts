@@ -3,43 +3,39 @@ import { normalizePage } from "../../../core/plugins/events/contracts/unified.co
 import { emitDomainEvent, getSemanticDiff } from "../domain/diff"; // ثبت المسار هنا
 
 // src/modules/pages/commands/updatePage.handler.ts
+
 export const updatePageHandler = async (command: any) => {
   const { payload, context } = command;
-
-  if (!payload?.pageId) return { success: false, error: "Page ID is required" };
-
   const page = await Page.findByPk(payload.pageId);
   if (!page) return { success: false, error: "Page not found" };
 
-  // 1. التطهير الأول
   const oldPageN = normalizePage(page);
-
-  // 2. التحديث
   await page.update(payload);
-  const updatedPage = await page.reload();
-  
-  // 3. التطهير الثاني
-  const currentPageN = normalizePage(updatedPage);
+  const currentPageN = normalizePage(await page.reload());
 
-  // 4. المقارنة (الآن صارت آمنة)
-  const changes = getSemanticDiff(oldPageN, currentPageN);
+  // 1. غربلة التغييرات الحقيقية (No spaces, no noise)
+  const meaningfulChanges = getSemanticDiff(oldPageN, currentPageN);
 
-  if (changes.length === 0) {
+  // 2. [BRAIN] إذا ما ثماش حاجة تستحق، نوقفوا هنا
+  if (meaningfulChanges.length === 0) {
+    console.log("🤫 [ENGINE] No meaningful changes → Silent success.");
     return { success: true, updated: false, data: currentPageN };
   }
 
-  // 3. الـ Single Authority: بعث الحدث عبر البوابة الوحيدة
+  // 3. [BRAIN] تحديد المهام (Rules Engine)
+  const flags = {
+    shouldVersion: meaningfulChanges.some(c => ["title", "content", "blocks"].includes(c)),
+    shouldSEO: meaningfulChanges.some(c => ["title", "slug"].includes(c)),
+    isStatusChange: meaningfulChanges.includes("status")
+  };
+
+  // 4. [BRAIN] إرسال الأمر للتنفيذ فقط
   await emitDomainEvent("page.updated", {
     current: currentPageN,
     previous: oldPageN,
-    changes,
-    flags: {
-      shouldVersion: changes.some(c => ["title", "content", "blocks"].includes(c)),
-      shouldSEO: changes.some(c => ["title", "slug"].includes(c))},
-    },{
-    ...context, 
-    action: "update" // ✅ تأكد أنها "update" وليس "UPDATED" أو غيرها
-});
+    changes: meaningfulChanges,
+    flags // الـ Worker والـ Plugins يقرأوا من هنا فقط، ما عادش "يفكروا"
+  }, context);
 
   return { success: true, updated: true, data: currentPageN };
 };

@@ -11,43 +11,36 @@ export const VersionPlugin: ICmsPlugin = {
   enabled: true,
 
   async execute(event: UnifiedEvent) {
-    // 1️⃣ استخراج البيانات من العقد الموحد مباشرة
     const { data, context, id } = event;
-    const { current, previous, changes } = data;
+    const { current, flags } = data; // 👈 استخراج الـ flags الجاهزة
 
     console.log(`📦 [VersionPlugin] Processing event: ${id}`);
 
-    if (!context || !current || !previous) return;
-
-    // 🛡️ 2️⃣ الـ Guard: التثبت من الـ action (عوض source)
-    if (context.action !== "update") {
-      console.log(`🟡 [VersionPlugin] Skip: Action is "${context.action}". No snapshot needed.`);
+    // 1️⃣ الـ Guard الوحيد: هل الـ Handler قالي اخدم؟
+    // ما عادش نثبتوا في الـ changes ولا الـ action هنا. القرار تاشخ ديجا.
+    if (!flags?.shouldVersion) {
+      console.log(`🟡 [VersionPlugin] Skip: Handler decided NO versioning needed for this change.`);
       return;
     }
 
-    // 🎯 3️⃣ الفلتر الذكي
-    const hasMeaningfulChange = 
-      changes.includes('title') || 
-      changes.includes('content') || 
-      changes.includes('status');
+    try {
+      // 2️⃣ تنفيذ المهمة (Muscles only)
+      await PageVersionRepository.create({
+        pageId: current.id,
+        siteId: context.siteId,
+        versionNumber: Date.now(), // أو الـ timestamp متاع الـ event لضمان التطابق
+        title: current.title,
+        content: current.content,
+        blocks: current.blocks,
+        status: current.status,
+        createdBy: context.userId
+      });
 
-    if (!hasMeaningfulChange) {
-      console.log("🟡 [VersionPlugin] Skip: Blocks-only update");
-      return;
+      console.log(`✅ [VersionPlugin] Version created for Page ${current.id} | Event: ${id}`);
+    } catch (error) {
+      console.error(`❌ [VersionPlugin] Failed to create version:`, error);
+      // بما أن isCritical: true، الـ Worker باش يعاود (Retry) حسب الـ Policy
+      throw error; 
     }
-
-    // 📦 4️⃣ صناعة النسخة
-    await PageVersionRepository.create({
-      pageId: current.id,
-      siteId: context.siteId,
-      versionNumber: Date.now(),
-      title: current.title,
-      content: current.content,
-      blocks: current.blocks,
-      status: current.status,
-      createdBy: context.userId
-    });
-
-    console.log(`✅ [VersionPlugin] Version created for Page ${current.id}`);
   }
 };
