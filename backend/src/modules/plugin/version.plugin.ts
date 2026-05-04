@@ -18,8 +18,10 @@ export const VersionPlugin: ICmsPlugin = {
 
     console.log(`📦 VersionPlugin: ${id}`);
 
-    if (!flags?.shouldVersion) return;
+const shouldVersion =
+  flags?.shouldVersion ?? (data.changes?.length > 0);
 
+if (!shouldVersion) return;
     // 🔥 state key (anti duplicate at DB level)
     const stateKey = createHash("sha256")
       .update(JSON.stringify(current))
