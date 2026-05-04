@@ -8,7 +8,6 @@ import { SlugMap } from "../../../models/slug_map";
 import { PAGE_EVENTS } from "../../../core/plugins/events/pageEvents";
 import crypto from 'crypto';
 import PageVersion from "../../../models/pageVersion";
-import { detectChanges } from "../../../core/plugins/events/eventBus";
 import { updatePageHandler } from "../commands/updatePage.handler";
 
 const { nanoid } = require("nanoid");

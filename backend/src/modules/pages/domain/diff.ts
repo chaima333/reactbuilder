@@ -1,8 +1,4 @@
-
-
-
 // core/domain/diff.ts
-
 export function stableNormalize(value: any): any {
   if (value === null || value === undefined) return value;
 
@@ -22,53 +18,48 @@ export function stableNormalize(value: any): any {
   return value;
 }
 
-const deepEqual = (a: any, b: any) => {
-  return JSON.stringify(stableNormalize(a)) === JSON.stringify(stableNormalize(b));
-};
+const deepEqual = (a: any, b: any) =>
+  JSON.stringify(stableNormalize(a)) === JSON.stringify(stableNormalize(b));
 
 const CORE_FIELDS = ["title", "content", "blocks", "slug", "status"];
 
 export function getSemanticDiff(oldPageN: any, newPageN: any) {
-  return CORE_FIELDS.filter((field) => {
-    return !deepEqual(oldPageN[field], newPageN[field]);
-  });
+  return CORE_FIELDS.filter(
+    (field) => !deepEqual(oldPageN[field], newPageN[field])
+  );
 }
 
 
 
 // src/core/events/eventGateway.ts
 
+// src/core/events/eventGateway.ts
 import { createHash } from "crypto";
 import { EventBus } from "../../../core/plugins/events/eventBus.js";
-import { redis } from "../../../core/queues/config.js";
 
-export const emitDomainEvent = async (type: string, data: any, context: any) => {
+export const emitDomainEvent = async (
+  type: string,
+  data: any,
+  context: any
+) => {
   if (!data?.current?.id) {
     console.error("❌ Missing data.current.id");
     return null;
   }
 
-  // 🔥 fingerprint يعتمد على state مش event id فقط
-  const stateFingerprint = createHash("sha256")
-    .update(JSON.stringify({
-      type,
-      id: data.current.id,
-      changes: data.changes,
-      current: data.current
-    }))
+  // 🔥 stable key ONLY on operation, not full state
+  const eventKey = createHash("sha256")
+    .update(
+      JSON.stringify({
+        type,
+        pageId: data.current.id,
+        changes: data.changes || []
+      })
+    )
     .digest("hex");
 
-  const lockKey = `evt:state:${stateFingerprint}`;
-
-  const isNew = await redis.set(lockKey, "1", "EX", 3600, "NX");
-
-  if (!isNew) {
-    console.warn(`🚫 Duplicate state event blocked: ${stateFingerprint}`);
-    return null;
-  }
-
+  // 🔥 IMPORTANT: EventBus + Queue will handle dedup
   return EventBus.emit({
-    id: stateFingerprint,
     type,
     data,
     context: {

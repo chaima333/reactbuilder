@@ -1,26 +1,24 @@
 import crypto from "crypto";
 import { pluginQueue } from "../../queues/plugin.queue";
-import { UnifiedEvent } from "./contracts/unified.contract.ts";
 
 export class EventBus {
   static async emit(params: {
     type: string;
     data: any;
-    context: Omit<UnifiedEvent["context"], "source">;
+    context: any;
   }) {
 
     const pageId = params.data?.current?.id;
 
-    // 🔥 BASE KEY = operation identity only
+    // 🔥 ONLY stable identity = operation, not content
     const dedupeKey = crypto
       .createHash("sha256")
-      .update(JSON.stringify({
-        type: params.type,
-        pageId
-      }))
+      .update(`${params.type}:${pageId}`)
       .digest("hex");
 
-    const event: UnifiedEvent = {
+    console.log(`📡 BUS → ${params.type} | ${pageId}`);
+
+    await pluginQueue.add("plugin-tasks", {
       id: dedupeKey,
       traceId: dedupeKey,
       timestamp: Date.now(),
@@ -30,13 +28,9 @@ export class EventBus {
         ...params.context,
         source: "event.bus"
       }
-    };
-
-    console.log(`📡 BUS → ${event.type} | ${dedupeKey}`);
-
-    await pluginQueue.add("plugin-tasks", event, {
+    }, {
       jobId: dedupeKey,
-      attempts: 1, // 🔥 مهم: stop retry duplication
+      attempts: 1,
       removeOnComplete: true
     });
   }
