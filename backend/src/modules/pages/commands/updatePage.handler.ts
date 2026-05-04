@@ -15,7 +15,15 @@ export const updatePageHandler = async (command: any) => {
     const oldPageN = normalizePage(page);
 
     // 2️⃣ Update
-    await page.update(payload);
+   const allowedFields = ["title", "content", "blocks", "slug", "status", "metaData"];
+
+const safePayload = Object.keys(payload)
+  .filter(k => allowedFields.includes(k))
+  .reduce((acc: any, key) => {
+    acc[key] = payload[key];
+    return acc;
+  }, {});
+  await page.update(safePayload);
     const updatedPage = await page.reload();
     const currentPageN = normalizePage(updatedPage);
 

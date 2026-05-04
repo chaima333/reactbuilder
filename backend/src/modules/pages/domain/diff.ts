@@ -1,7 +1,32 @@
+
+
+
 // core/domain/diff.ts
 
+function stableNormalize(value: any): any {
+  if (Array.isArray(value)) {
+    return value.map(stableNormalize);
+  }
+
+  if (value && typeof value === "object") {
+    return Object.keys(value)
+      .sort() // ✅ ترتيب ثابت
+      .reduce((acc: any, key) => {
+        acc[key] = stableNormalize(value[key]);
+        return acc;
+      }, {});
+  }
+
+  if (typeof value === "string") {
+    return value.trim(); // ✅ قتل whitespace noise
+  }
+
+  return value;
+}
+
+
 const deepEqual = (a: any, b: any) => {
-  return JSON.stringify(a) === JSON.stringify(b);
+  return JSON.stringify(stableNormalize(a)) === JSON.stringify(stableNormalize(b));
 };
 
 const CORE_FIELDS = ["title", "content", "blocks", "slug", "status"];
@@ -13,7 +38,6 @@ export function getSemanticDiff(oldPageN: any, newPageN: any) {
 }
 
 // src/core/events/eventGateway.ts
-// core/events/eventGateway.ts
 
 import { createHash } from "crypto";
 import { EventBus } from "../../../core/plugins/events/eventBus.js";
@@ -30,7 +54,12 @@ export const emitDomainEvent = async (type: string, data: any, context: any) => 
     type,
     id: data.current.id,
     changes: data.changes,
-    values: data.changes.map((c: string) => data.current[c])
+    values: stableNormalize(
+  data.changes.reduce((acc: any, key: string) => {
+    acc[key] = data.current[key];
+    return acc;
+  }, {})
+)
   };
 
   const fingerprint = createHash("sha256")
