@@ -59,12 +59,23 @@ export class EventBus {
     console.log(`📡 [TRACE: ${event.traceId}] BUS → ${event.type} | ${event.id}`);
 
     // 🔥 Queue dedup (PRIMARY protection)
-    await pluginQueue.add("plugin-tasks", event, {
-      jobId: eventKey, // 🚨 THIS IS CRITICAL FIX
-      attempts: 3,
-      backoff: { type: "exponential", delay: 2000 },
-      removeOnComplete: true,
-    });
+   const dedupeKey = crypto
+  .createHash("sha256")
+  .update(JSON.stringify({
+    type: event.type,
+    id: event.data.current.id,
+    title: event.data.current.title,
+    slug: event.data.current.slug,
+    blocks: event.data.current.blocks
+  }))
+  .digest("hex");
+
+await pluginQueue.add("plugin-tasks", event, {
+  jobId: dedupeKey,
+  attempts: 3,
+  backoff: { type: "exponential", delay: 2000 },
+  removeOnComplete: true,
+});
   }
 }
 
