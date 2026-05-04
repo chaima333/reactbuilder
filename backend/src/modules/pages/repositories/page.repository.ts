@@ -44,11 +44,11 @@ export class PageRepository {
   }
 
 
-static async getHistory(pageId: number, siteId: number) {
+/*static async getHistory(pageId: number, siteId: number) {
   return await PageVersion.findAll({
     where: { pageId, siteId },
     order: [["createdAt", "DESC"]], // من الأحدث للأقدم
     limit: 30
   });
-}
+}*/
 }
