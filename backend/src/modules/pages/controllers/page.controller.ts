@@ -92,7 +92,6 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
           userId: req.user.id,
           siteId: Number(req.siteContext.siteId),
           action: "update" ,// ضروري جداً للـ Validator
-          source: "page.handler"
         }
       });
     }
