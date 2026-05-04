@@ -14,22 +14,24 @@ export const VersionPlugin: ICmsPlugin = {
   async execute(event: UnifiedEvent) {
     const { data, context } = event;
 
-    // 🛡️ Guard 1: المصدر لازم يكون الـ Handler حصراً
-      // في VersionPlugin.ts
-if (context.source !== "page.handler") {
-  console.log(`🛡️ [VersionPlugin] Ignored! Source was: [${context.source}] | Depth: ${context.depth}`);
-  return;
-}
+    // 🛡️ Guard 1: السماح بالمصادر المعروفة فقط
+    const allowedSources = ["page.handler", "event.bus"];
+    
+    if (!allowedSources.includes(context.source)) {
+      console.log(`🛡️ [VersionPlugin] Ignored! Source was: [${context.source}]`);
+      return;
+    }
+
     // 🛡️ Guard 2: منع الـ Loops (العمق)
     if ((context.depth || 0) > 1) {
-      console.log("🚫 [VersionPlugin] Loop killed!");
+      console.log(`🚫 [VersionPlugin] Loop killed! Depth: ${context.depth}`);
       return;
     }
 
     const { current, previous } = data;
     if (!current || !previous) return;
 
-    // 🧼 Normalize strictly for Hashing (المهم هو الـ Data فقط)
+    // 🧼 Normalize strictly for Hashing
     const getSnapshot = (p: any) => ({
       title: (p.title || "").trim(),
       content: (p.content || "").trim(),
@@ -40,15 +42,16 @@ if (context.source !== "page.handler") {
     const curr = getSnapshot(current);
     const prev = getSnapshot(previous);
 
-    // 🧐 تثبت: هل تغير المحتوى فعلاً؟
+    // 🧐 هل تغير المحتوى فعلاً؟ (Deep Compare)
     if (curr.title === prev.title && 
         curr.content === prev.content && 
         curr.slug === prev.slug && 
         curr.blocksBody === prev.blocksBody) {
+      console.log("🟡 [VersionPlugin] No real changes detected.");
       return;
     }
 
-    // 🆔 صنع بصمة المحتوى الفريدة
+    // 🆔 بصمة المحتوى
     const versionTag = createHash("sha256")
       .update(`${current.id}-${curr.title}-${curr.content}-${curr.slug}-${curr.blocksBody}`)
       .digest("hex");
@@ -66,7 +69,7 @@ if (context.source !== "page.handler") {
       console.log(`✅ [VERSION SAVED] Tag: ${versionTag.slice(0, 8)}`);
     } catch (err: any) {
       if (err.name === "SequelizeUniqueConstraintError") {
-        console.log("🟡 [VERSION] Duplicate content ignored.");
+        console.log("🟡 [VERSION] Version already exists for this content.");
         return;
       }
       throw err;
