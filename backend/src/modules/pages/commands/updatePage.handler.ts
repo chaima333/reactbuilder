@@ -2,7 +2,6 @@ import { Page } from "../../../models/page";
 import { normalizePage } from "../../../core/plugins/events/contracts/unified.contract.ts";
 import { emitDomainEvent, getSemanticDiff } from "../domain/diff"; // ثبت المسار هنا
 
-// src/modules/pages/commands/updatePage.handler.ts
 
 export const updatePageHandler = async (command: any) => {
   const { payload, context } = command;
@@ -13,29 +12,33 @@ export const updatePageHandler = async (command: any) => {
   await page.update(payload);
   const currentPageN = normalizePage(await page.reload());
 
-  // 1. غربلة التغييرات الحقيقية (No spaces, no noise)
-  const meaningfulChanges = getSemanticDiff(oldPageN, currentPageN);
+  // 🎯 المخ يقرر: ما هي التغييرات الحقيقية فقط؟
+  const ALLOWED_FIELDS = ["title", "content", "blocks", "slug", "status"];
+  const meaningfulChanges = ALLOWED_FIELDS.filter(field => {
+    return JSON.stringify(oldPageN[field]) !== JSON.stringify(currentPageN[field]);
+  });
 
-  // 2. [BRAIN] إذا ما ثماش حاجة تستحق، نوقفوا هنا
+  // 🤫 إذا التغيير "تافه" (فقط updatedAt)، نقتل العملية هنا
   if (meaningfulChanges.length === 0) {
-    console.log("🤫 [ENGINE] No meaningful changes → Silent success.");
     return { success: true, updated: false, data: currentPageN };
   }
 
-  // 3. [BRAIN] تحديد المهام (Rules Engine)
+  // 🧠 المخ يوزع المهام عبر الـ Flags
   const flags = {
     shouldVersion: meaningfulChanges.some(c => ["title", "content", "blocks"].includes(c)),
-    shouldSEO: meaningfulChanges.some(c => ["title", "slug"].includes(c)),
-    isStatusChange: meaningfulChanges.includes("status")
+    shouldSEO: meaningfulChanges.some(c => ["title", "slug"].includes(c))
   };
 
-  // 4. [BRAIN] إرسال الأمر للتنفيذ فقط
   await emitDomainEvent("page.updated", {
     current: currentPageN,
     previous: oldPageN,
-    changes: meaningfulChanges,
-    flags // الـ Worker والـ Plugins يقرأوا من هنا فقط، ما عادش "يفكروا"
-  }, context);
+    changes: meaningfulChanges, // نبعثوا كان الـ meaningful
+    flags
+  }, {
+    ...context,
+    action: "update", // تأكد إنها تطابق الـ Validator 100%
+    source: "page.handler" 
+  });
 
   return { success: true, updated: true, data: currentPageN };
 };
