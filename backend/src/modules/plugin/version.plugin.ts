@@ -14,41 +14,66 @@ export const VersionPlugin: ICmsPlugin = {
 
   async execute(event: UnifiedEvent) {
     const { data, context, id } = event;
-    const { current, changes } = data;
+    const { current, previous } = data;
 
-    // 1️⃣ تفلتر: هل التغيير يخص المحتوى؟
-    const versionableFields = ["title", "content", "blocks", "slug"];
-    const hasMeaningfulChange = changes.some(f => versionableFields.includes(f));
-    
-    if (!hasMeaningfulChange) return;
+    if (!current || !previous) return;
 
-    // 2️⃣ البصمة الرقمية (Hash): تمنع التكرار حتى لو الـ Bus عاود الـ Event
-           const versionTag = createHash("sha256")
-  .update(JSON.stringify({
-    id: current.id,
-    title: current.title,
-    content: current.content,
-    blocks: current.blocks
-  }))
-  .digest("hex");
+    // 🔥 1. Normalize data (important)
+    const normalizeBlocks = (blocks: any[] = []) =>
+      blocks.map(b => ({
+        type: (b.type || "").trim(),
+        data: b.data || {}
+      }));
 
-    // 3️⃣ التثبت من وجود النسخة
-      const exists = await PageVersionRepository.findByVersionTag(versionTag);    if (exists) {
-      console.log(`🟡 [VersionPlugin] State already versioned (${current.id})`);
+    const normalize = (p: any) => ({
+      title: (p.title || "").trim(),
+      content: (p.content || "").trim(),
+      slug: (p.slug || "").trim(),
+      blocks: normalizeBlocks(p.blocks || [])
+    });
+
+    const curr = normalize(current);
+    const prev = normalize(previous);
+
+    // 🔥 2. Deep deterministic diff (source of truth)
+    const hasMeaningfulChange =
+      curr.title !== prev.title ||
+      curr.content !== prev.content ||
+      curr.slug !== prev.slug ||
+      JSON.stringify(curr.blocks) !== JSON.stringify(prev.blocks);
+
+    if (!hasMeaningfulChange) {
+      console.log("🟡 No meaningful change → skip version");
       return;
     }
 
-    // 4️⃣ التسجيل النهائي
+    // 🔥 3. Create deterministic versionTag
+    const versionTag = createHash("sha256")
+      .update(JSON.stringify({
+        pageId: current.id,
+        ...curr
+      }))
+      .digest("hex");
+
+    // 🔥 4. Prevent duplicates
+    const exists = await PageVersionRepository.findByVersionTag(versionTag);
+
+    if (exists) {
+      console.log(`🟡 Duplicate version skipped for page ${current.id}`);
+      return;
+    }
+
+    // 🔥 5. Save version
     await PageVersionRepository.create({
       pageId: current.id,
       siteId: context.siteId,
       versionTag,
-      title: current.title,
-      content: current.content,
-      blocks: current.blocks,
+      title: curr.title,
+      content: curr.content,
+      blocks: curr.blocks,
       createdBy: context.userId
     });
 
-    console.log(`✅ [VersionPlugin] New version saved for page ${current.id}`);
+    console.log(`✅ Version created for page ${current.id}`);
   }
 };
