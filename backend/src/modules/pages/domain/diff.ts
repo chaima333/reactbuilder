@@ -1,4 +1,7 @@
-// core/domain/diff.ts
+/**
+ * ترتيب الـ Keys أبجدياً لضمان إن الـ JSON stringify ديما يعطي نفس النتيجة 
+ * لنفس المحتوى مهما كان ترتيب الخصائص.
+ */
 export function stableNormalize(value: any): any {
   if (value === null || value === undefined) return value;
 
@@ -23,56 +26,40 @@ const deepEqual = (a: any, b: any) =>
 
 const CORE_FIELDS = ["title", "content", "blocks", "slug", "status"];
 
-export function getSemanticDiff(oldPageN: any, newPageN: any) {
+/**
+ * يرجع قائمة الحقول اللي تبدلت فعلياً
+ */
+export function getSemanticDiff(oldPageN: any, newPageN: any): string[] {
   return CORE_FIELDS.filter(
     (field) => !deepEqual(oldPageN[field], newPageN[field])
   );
 }
 
-
-
 // src/core/events/eventGateway.ts
-import { createHash, randomUUID } from "crypto"; // استورد randomUUID
+import { randomUUID } from "crypto";
 import { EventBus } from "../../../core/plugins/events/eventBus.js";
 
-export const emitDomainEvent = async (
-  type: string,
-  data: any,
-  context: any
-) => {
+/**
+ * إرسال الـ Event مع ضمان الهوية الفريدة ومنع الـ Loops
+ */
+export const emitDomainEvent = async (type: string, data: any, context: any) => {
   if (!data?.current?.id) {
-    console.error("❌ Missing data.current.id");
+    console.error("❌ [EventGateway] Missing current.id, event aborted.");
     return null;
   }
 
-  // 1️⃣ اصنع ID فريد تماماً لكل حدث (UUID)
-  // هذا يضمن إنو كل سطر في الـ Logs يكون عندو هوية مستقلة
+  // 🆔 هوية فريدة لكل "محاولة" إرسال
   const eventId = randomUUID(); 
 
-  // 2️⃣ الـ eventKey هوني (Hash) نستعملوه فقط كـ "Metadata" 
-  // أو إذا تحب تعمل بيه Deduplication في الـ Queue، أما الـ ID متاع الـ Event لازم يبقى فريد.
-  const eventKey = createHash("sha256")
-    .update(
-      JSON.stringify({
-        type,
-        pageId: data.current.id,
-        changes: data.changes || []
-      })
-    )
-    .digest("hex");
-
-  console.log(`📡 [EMIT] ${type} | ID: ${eventId} | Key: ${eventKey.slice(0, 8)}`);
-
-  // 3️⃣ ابعث الحدث بالـ ID الجديد
   return EventBus.emit({
-  
     type,
     data,
     context: {
       ...context,
-      depth: (context.depth || 0) + 1, // <--- زيد هذي
       id: eventId,
-      traceId: eventId 
+      traceId: context.traceId || eventId,
+      depth: (context.depth || 0) + 1, // عداد العمق لمنع الـ Infinite Loops
+      source: context.source || "page.handler"
     }
   });
 };
