@@ -1,6 +1,5 @@
-// src/plugins/version-plugin.ts
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
-import { PageVersionRepository } from "../pages/repositories/pageVersion.repository";
+import { PageVersion } from "../../models/pageVersion";
 import { UnifiedEvent } from "../../core/plugins/events/contracts/unified.contract.ts";
 import { createHash } from "crypto";
 
@@ -18,7 +17,7 @@ export const VersionPlugin: ICmsPlugin = {
 
     if (!current || !previous) return;
 
-    // 1. Normalize
+    // normalize (important for consistency)
     const normalize = (p: any) => ({
       title: (p.title || "").trim(),
       content: (p.content || "").trim(),
@@ -29,7 +28,6 @@ export const VersionPlugin: ICmsPlugin = {
     const curr = normalize(current);
     const prev = normalize(previous);
 
-    // 2. Strict diff
     const hasChange =
       curr.title !== prev.title ||
       curr.content !== prev.content ||
@@ -38,38 +36,33 @@ export const VersionPlugin: ICmsPlugin = {
 
     if (!hasChange) return;
 
-    // 3. SINGLE source of truth key
     const versionTag = createHash("sha256")
       .update(
         JSON.stringify({
           pageId: current.id,
-          title: curr.title,
-          content: curr.content,
-          slug: curr.slug,
-          blocks: curr.blocks
+          ...curr
         })
       )
       .digest("hex");
 
-    // 4. HARD idempotency at DB level (ONLY guard you need)
-    const exists = await PageVersionRepository.findByVersionTag(versionTag);
+    // 🔥 IMPORTANT: atomic insert (NO find first)
+  try {
+  await PageVersion.create({
+    pageId: current.id,
+    siteId: context.siteId,
+    versionTag,
+    title: curr.title,
+    content: curr.content,
+    blocks: JSON.parse(curr.blocks),
+    createdBy: context.userId
+  });
 
-    if (exists) {
-      console.log("🟡 duplicate skipped (idempotent hit)");
-      return;
-    }
-
-    // 5. Save
-    await PageVersionRepository.create({
-      pageId: current.id,
-      siteId: context.siteId,
-      versionTag,
-      title: curr.title,
-      content: curr.content,
-      blocks: JSON.parse(curr.blocks),
-      createdBy: context.userId
-    });
-
-    console.log(`✅ Version saved page ${current.id}`);
+  console.log("✅ version saved");
+} catch (err: any) {
+  if (err.name === "SequelizeUniqueConstraintError") {
+    console.log("🟡 duplicate ignored");
+    return;
   }
-};
+  throw err;
+}
+  }}
