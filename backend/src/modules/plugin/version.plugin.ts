@@ -35,7 +35,7 @@ export const VersionPlugin: ICmsPlugin = {
     await PageVersionRepository.create({
       pageId: current.id,
       siteId: context.siteId,
-      versionNumber: id, // ✅ deterministic
+      versionTag: id,
       title: current.title,
       content: current.content,
       blocks: current.blocks,

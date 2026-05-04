@@ -6,9 +6,13 @@ export class PageVersionRepository {
     return PageVersion.create(data, { transaction });
   }
 
-  static findOne(where: any) {
-    return PageVersion.findOne(where);
-  }
+ static findOne(where: any) {
+  return PageVersion.findOne({
+    where: {
+      versionTag: where.versionTag || where.versionNumber
+    }
+  });
+}
 
   static findHistory(pageId: number) {
     return PageVersion.findAll({
