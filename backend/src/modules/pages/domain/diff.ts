@@ -32,9 +32,7 @@ export function getSemanticDiff(oldPageN: any, newPageN: any) {
 
 
 // src/core/events/eventGateway.ts
-
-// src/core/events/eventGateway.ts
-import { createHash } from "crypto";
+import { createHash, randomUUID } from "crypto"; // استورد randomUUID
 import { EventBus } from "../../../core/plugins/events/eventBus.js";
 
 export const emitDomainEvent = async (
@@ -47,7 +45,12 @@ export const emitDomainEvent = async (
     return null;
   }
 
-  // 🔥 stable key ONLY on operation, not full state
+  // 1️⃣ اصنع ID فريد تماماً لكل حدث (UUID)
+  // هذا يضمن إنو كل سطر في الـ Logs يكون عندو هوية مستقلة
+  const eventId = randomUUID(); 
+
+  // 2️⃣ الـ eventKey هوني (Hash) نستعملوه فقط كـ "Metadata" 
+  // أو إذا تحب تعمل بيه Deduplication في الـ Queue، أما الـ ID متاع الـ Event لازم يبقى فريد.
   const eventKey = createHash("sha256")
     .update(
       JSON.stringify({
@@ -58,13 +61,17 @@ export const emitDomainEvent = async (
     )
     .digest("hex");
 
-  // 🔥 IMPORTANT: EventBus + Queue will handle dedup
+  console.log(`📡 [EMIT] ${type} | ID: ${eventId} | Key: ${eventKey.slice(0, 8)}`);
+
+  // 3️⃣ ابعث الحدث بالـ ID الجديد
   return EventBus.emit({
+  
     type,
     data,
     context: {
       ...context,
-      source: "page.handler"
+     id: eventKey, // نبعثوا الـ Key كـ معلومة إضافية فقط
+      traceId: context.traceId || eventId // الـ Trace يتبع الـ UUID
     }
   });
 };
