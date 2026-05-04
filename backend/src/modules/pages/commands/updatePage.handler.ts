@@ -1,57 +1,85 @@
 import { Page } from "../../../models/page";
 import { EventBus, detectChanges } from "../../../core/plugins/events/eventBus";
 import { SEO_RULES, VERSIONING_RULES } from "../domain/rules";
+
 /**
- * 🧹 Canonical State Normalizer
- * وظيفتها توحيد البيانات (حذف الفراغات، توحيد الأنواع) لضمان مقارنة Semantic صحيحة
+ * 🧼 Normalization Layer
+ * وظيفتها تحويل البيانات لمستوى "Canonical" (نظيف وموحد)
+ * هكّة نضمنوا إنو "Title" هو بيدو " Title  " وما نغلطوش السيستيم
  */
-const normalizePageData = (raw: any) => {
-  if (!raw) return null;
+export const normalizePage = (data: any) => {
+  if (!data) return null;
   return {
-    id: raw.id,
-    title: String(raw.title || "").trim(),
-    slug: String(raw.slug || "").trim(),
-    content: String(raw.content || "").trim(),
-    blocks: JSON.stringify(raw.blocks || []),
-    status: raw.status,
-    userId: Number(raw.userId || raw.user_id), 
-    siteId: Number(raw.siteId || raw.site_id), 
-    metaData: JSON.stringify(raw.metaData || raw.meta_data || {})
+    id: data.id,
+    title: String(data.title || "").trim(),
+    slug: String(data.slug || "").trim().toLowerCase(),
+    content: String(data.content || "").trim(),
+    // Stringify للـ Objects لضمان إنو ترتيب الـ Keys ما يأثرش على الـ Diff
+    blocks: JSON.stringify(data.blocks || []),
+    status: data.status,
+    userId: Number(data.userId || data.user_id),
+    siteId: Number(data.siteId || data.site_id),
+    metaData: JSON.stringify(data.metaData || data.meta_data || {})
   };
 };
 
 export const updatePageHandler = async (command: any) => {
   const { payload, context: cmdContext } = command;
   
+  // 1. التثبت من وجود الصفحة
   const page = await Page.findOne({ 
     where: { id: payload.pageId, siteId: cmdContext.siteId } 
   });
   
   if (!page) throw new Error("Page not found");
 
+  // 2. تصوير الحالة القديمة (Normalized)
   const oldDataRaw = page.get({ plain: true });
-  const oldDataNormalized = normalizePageData(oldDataRaw);
+  const oldDataNormalized = normalizePage(oldDataRaw);
 
-  await page.update(payload);
-  await page.reload();
+  // 3. التحديث الفعلي في القاعدة
+  await page.update({
+    title: payload.title,
+    content: payload.content,
+    blocks: payload.blocks,
+    slug: payload.slug,
+    status: payload.status,
+    metaData: payload.metaData
+  });
   
+  // 4. جلب الحالة الجديدة (Normalized)
+  await page.reload();
   const currentDataRaw = page.get({ plain: true });
-  const currentDataNormalized = normalizePageData(currentDataRaw);
+  const currentDataNormalized = normalizePage(currentDataRaw);
 
+  // 5. 🧠 Semantic Diff Engine
+  // المقارنة توّة تصير بين بيانات نظيفة، يعني الـ Spaces الزايدة ماتخلقش Events
   const changes = detectChanges(oldDataNormalized, currentDataNormalized);
 
-  if (changes.length === 0) return { success: true, updated: false };
+  // 🛑 إذا ما فماش تغيير حقيقي (بعد الـ Normalization)، نوقفو هنا
+  if (changes.length === 0) {
+    console.log("🤫 [STABILITY] Change ignored: No semantic differences detected.");
+    return { 
+      success: true, 
+      updated: false, 
+      pageId: payload.pageId, 
+      data: currentDataRaw 
+    };
+  }
 
-  const shouldVersion = VERSIONING_RULES.shouldCreateVersion(changes, oldDataNormalized, currentDataNormalized);
+  // 6. تطبيق الـ Business Rules الذكية
+  const shouldVersion = VERSIONING_RULES.shouldCreateVersion(
+    changes, 
+    oldDataNormalized, 
+    currentDataNormalized
+  );
+  
   const shouldSEO = SEO_RULES.shouldUpdateSEO(changes);
 
-  // 🔥 تحضير الـ Event بناءً على الـ Strict Contract الجديد
-  const traceId = crypto.randomUUID();
-
+  // 7. إرسال الـ Event الموثوق
+  // نبعثو الـ currentDataRaw (الـ Object الأصلي) للـ Plugins باش ينجمو يخدمو
   await EventBus.emit({
     type: "page.updated",
-    // الـ traceId والـ id والـ timestamp الـ EventBus هو اللي باش يصنعهم أوتوماتيكياً
-    // إحنا نبعثو فقط الـ data والـ context المطلوبين
     data: {
       current: currentDataRaw,
       previous: oldDataRaw,
@@ -61,11 +89,17 @@ export const updatePageHandler = async (command: any) => {
     context: {
       userId: Number(currentDataNormalized.userId),
       siteId: Number(currentDataNormalized.siteId),
-      action: "update", 
-      // الـ source توّة الـ EventBus باش يعطيها القيمة "page.handler" أوتوماتيكياً
-      // والـ traceId باش يتعدى للـ Root متاع الـ UnifiedEvent
+      action: "update",
+      // الـ EventBus سيتولى إضافة الـ traceId والـ source أوتوماتيكياً
     }
   });
 
-  return { success: true, updated: true, pageId: payload.pageId , data: currentDataRaw };
+  console.log(`✅ [EVENT] Page ${payload.pageId} updated. Changes: ${changes.join(", ")}`);
+
+  return { 
+    success: true, 
+    updated: true, 
+    pageId: payload.pageId, 
+    data: currentDataRaw 
+  };
 };

@@ -36,21 +36,37 @@ export const canPublish = (role: string) => {
 
 // ===== BUSINESS LOGIC RULES (The Decision Maker) =====
 
-// src/modules/pages/domain/rules.ts
-
 export const VERSIONING_RULES = {
+  // الحقول اللي بالحق تستحق نعملوا عليها Version (Snapshot)
   CRITICAL_FIELDS: ["title", "content", "blocks", "slug"],
 
-  // التعريف يتوقع 3 معاملات
-  shouldCreateVersion: (changes: string[], oldData: any, newData: any): boolean => {
-    return changes.some(field => VERSIONING_RULES.CRITICAL_FIELDS.includes(field));
+  /**
+   * 🧠 قرار إنشاء نسخة جديدة
+   * @param changes - مصفوفة الحقول اللي تبدلت (بعد الـ Normalization)
+   * @param oldN - البيانات القديمة منظفة
+   * @param newN - البيانات الجديدة منظفة
+   */
+  shouldCreateVersion: (changes: string[], oldN: any, newN: any): boolean => {
+    const hasCritical = changes.some(f => VERSIONING_RULES.CRITICAL_FIELDS.includes(f));
+
+    // 🔬 منطق ذكي: لو التغيير الوحيد صار في الـ Content
+    // ما نعملوا نسخة إلا إذا كان الفرق أكثر من 5 حروف (باش نتفادوا الـ Spam متاع التصليحات الصغيرة)
+    if (changes.length === 1 && changes.includes('content')) {
+      const oldLen = oldN.content?.length || 0;
+      const newLen = newN.content?.length || 0;
+      return Math.abs(newLen - oldLen) > 5;
+    }
+
+    return hasCritical;
   }
 };
 
 export const SEO_RULES = {
+  // الحقول اللي تبديلها يخلّينا لازم نعاودوا الـ SEO Processing
   REQUIRED_FIELDS: ["title", "slug", "metaData"],
 
   shouldUpdateSEO: (changes: string[]): boolean => {
+    // الـ SEO حساس للـ Title والـ Slug بالأساس
     return changes.some(field => SEO_RULES.REQUIRED_FIELDS.includes(field));
   }
 };
