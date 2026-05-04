@@ -31,12 +31,18 @@ export const updatePageHandler = async (command: any) => {
     const currentPageN = normalizePage(updatedPage);
 
     // 4️⃣ حساب الفروقات الحقيقية (Semantic Diff)
-    const meaningfulChanges = getSemanticDiff(oldPageN, currentPageN);
+    // 4️⃣ حساب الفروقات الحقيقية (Semantic Diff)
+const rawChanges = getSemanticDiff(oldPageN, currentPageN);
 
-    // إذا لم يتغير شيء فعلي (مثلاً بعث نفس العنوان) نخرج بهدوء
-    if (meaningfulChanges.length === 0) {
-      return { success: true, updated: false, data: currentPageN };
-    }
+// 🔥 سطر الحسم: نفلترو فقط الحقول اللي تهمنا للنسخ
+const versionableFields = ["title", "content", "blocks", "slug"];
+const meaningfulChanges = rawChanges.filter(f => versionableFields.includes(f));
+
+// إذا لم يتغير شيء فعلي (حتى لو updatedAt تبدلت) نخرج بهدوء
+if (meaningfulChanges.length === 0) {
+    console.log("ℹ️ No versionable changes detected. Skipping event.");
+    return { success: true, updated: false, data: currentPageN };
+}
 
     // 5️⃣ بث الحدث للـ Bus (بدون تعقيد الـ Flags)
     await emitDomainEvent(
