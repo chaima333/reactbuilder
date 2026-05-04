@@ -20,35 +20,20 @@ export class EventBus {
     data: any;
     context: any;
   }) {
-
     const pageId = params.data?.current?.id;
+    if (!pageId) return;
 
-    if (!pageId) {
-      console.log("🚫 missing pageId → event ignored");
-      return;
-    }
+    // 1️⃣ استعمل الـ ID الحقيقي اللي بعثناه من الـ Handler (الـ UUID)
+    const finalId = params.context.id || crypto.randomUUID();
+    const finalTraceId = params.context.traceId || finalId;
 
-    // 🧠 stable operation key (NOT content)
-    const baseKey = `${params.type}:${pageId}`;
-
-    const dedupeKey = crypto
-      .createHash("sha256")
-      .update(baseKey)
-      .digest("hex");
-
-    // 🚫 FAST guard (same tick / double call protection)
-    if (isDuplicate(dedupeKey)) {
-      console.log("🟡 duplicate blocked (memory):", baseKey);
-      return;
-    }
-
-    console.log(`📡 BUS → ${params.type} | ${pageId}`);
+    console.log(`📡 BUS → ${params.type} | Page: ${pageId} | Trace: ${finalTraceId.slice(0, 8)}`);
 
     await pluginQueue.add(
       "plugin-tasks",
       {
-        id: dedupeKey,
-        traceId: dedupeKey,
+        id: finalId,         // <--- UUID فريد
+        traceId: finalTraceId, // <--- UUID فريد
         timestamp: Date.now(),
         type: params.type,
         data: params.data,
@@ -58,8 +43,8 @@ export class EventBus {
         }
       },
       {
-        // 🧠 ONLY real protection at queue level
-        jobId: dedupeKey,
+        // 🧠 الـ JobId في الـ Queue لازم يكون فريد باش ما يطيرش الـ Event
+        jobId: finalId, 
         attempts: 1,
         removeOnComplete: true
       }
