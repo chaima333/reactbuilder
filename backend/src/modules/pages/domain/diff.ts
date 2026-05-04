@@ -1,16 +1,18 @@
-// src/modules/pages/domain/page.logic.ts
 const ALLOWED_FIELDS = ["title", "content", "blocks", "slug", "status", "metaData"];
 
 export function getSemanticDiff(oldPageN: any, newPageN: any) {
-  // 🛑 نحّينا الـ normalizePage من هنا خاطر الـ Handler هو اللي يتكفل بيها
+  // نحصر المقارنة فقط في الـ ALLOWED_FIELDS لقتل ضجيج الـ updatedAt
   return ALLOWED_FIELDS.filter(field => {
-    const valOld = oldPageN[field];
-    const valNew = newPageN[field];
+    const oldVal = oldPageN[field];
+    const newVal = newPageN[field];
 
-    if (typeof valOld === 'object' && valOld !== null) {
-      return JSON.stringify(valOld) !== JSON.stringify(valNew);
+    // مقارنة الـ Objects (blocks, metaData)
+    if (typeof oldVal === 'object' && oldVal !== null) {
+      return JSON.stringify(oldVal) !== JSON.stringify(newVal);
     }
-    return valOld !== valNew;
+    
+    // مقارنة القيم العادية
+    return oldVal !== newVal;
   });
 }
 
