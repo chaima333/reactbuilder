@@ -1,11 +1,9 @@
 // modules/pages/commands/updatePage.handler.ts
 import { Page } from "../../../models/page";
 import { EventBus, detectChanges } from "../../../core/plugins/events/eventBus";
+import { SEO_RULES, VERSIONING_RULES } from "../domain/rules";
 
-/**
- * 🛡️ دالة لتنظيف البيانات وفرض الـ English Contract
- * تضمن إنو الـ Keys ديما camelCase وما فماش تضارب مع الـ DB field names
- */
+
 const sanitizeForContract = (raw: any) => {
   if (!raw) return null;
   return {
@@ -15,8 +13,8 @@ const sanitizeForContract = (raw: any) => {
     content: raw.content,
     blocks: raw.blocks || [],
     status: raw.status,
-    userId: raw.userId || raw.user_id, // توحيد المعرّفات
-    siteId: raw.siteId || raw.site_id, // توحيد المعرّفات
+    userId: raw.userId || raw.user_id, 
+    siteId: raw.siteId || raw.site_id, 
     metaData: raw.metaData || raw.meta_data || {}
   };
 };
@@ -31,11 +29,8 @@ export const updatePageHandler = async (command: any) => {
   
   if (!page) throw new Error("Page not found");
 
-  // ✅ 2. Deep Copy & Sanitize (قبل التعديل)
-  // نستعملو sanitizeForContract باش الـ Comparison يكون دقيق وما يتأثرش بـ JSON.stringify الزايد
   const oldData = sanitizeForContract(JSON.parse(JSON.stringify(page.get({ plain: true }))));
 
-  // 3. التحديث في قاعدة البيانات
   await page.update({ 
     title: payload.title, 
     content: payload.content, 
@@ -44,13 +39,10 @@ export const updatePageHandler = async (command: any) => {
   
   await page.reload();
   
-  // ✅ 4. Sanitize (بعد التعديل)
   const currentData = sanitizeForContract(page.get({ plain: true }));
   
-  // 5. حساب التغييرات (على داتا نظيفة)
   const changes = detectChanges(oldData, currentData);
 
-  // إذا ما فماش تغييرات حقيقية، نخرجوا
   if (changes.length === 0) {
     return { success: true, updated: false, data: currentData };
   }
@@ -61,24 +53,28 @@ export const updatePageHandler = async (command: any) => {
     siteId: currentData?.siteId
   }, null, 2));
 
-  // ✅ 6. الإرسال للـ EventBus مع فرض الـ Contract بالسيف
-  await EventBus.emit({
-    type: "page.updated",
-    data: {
-      current: currentData,
-      previous: oldData,
-      changes: changes,
-      flags: {
-        shouldVersion: changes.includes("blocks"),
-        shouldSEO: changes.includes("title")
-      }
-    },
-    context: {
-      userId: Number(currentData?.userId || context.userId),
-      siteId: Number(currentData?.siteId || context.siteId),
-      action: "update" // Hardcoded English: ممنوع تولي miseÀJour
+
+// 🎯 توّة القرار يخرج من الـ Rules Engine موش من الـ Handler
+const shouldVersion = VERSIONING_RULES.shouldCreateVersion(changes);
+const shouldSEO = SEO_RULES.shouldUpdateSEO(changes);
+
+await EventBus.emit({
+  type: "page.updated",
+  data: {
+    current: currentData,
+    previous: oldData,
+    changes: changes,
+    flags: {
+      shouldVersion, // توّة تولي True خاطر الـ Title موجود في الـ Required Fields
+      shouldSEO
     }
-  });
+  },
+  context: {
+    userId: currentData.userId,
+    siteId: currentData.siteId,
+    action: "update"
+  }
+});
 
   return { 
     success: true, 
