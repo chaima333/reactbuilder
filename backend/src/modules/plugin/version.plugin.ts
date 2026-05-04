@@ -11,36 +11,47 @@ export const VersionPlugin: ICmsPlugin = {
   enabled: true,
 
   async execute(event: UnifiedEvent) {
-    const { data, context, id } = event;
-    const { current, flags } = data; // 👈 استخراج الـ flags الجاهزة
+  const { data, context, id } = event;
+  const { current, flags, changes } = data;
 
-    console.log(`📦 [VersionPlugin] Processing event: ${id}`);
+  console.log(`📦 [VersionPlugin] Processing event: ${id}`);
 
-    // 1️⃣ الـ Guard الوحيد: هل الـ Handler قالي اخدم؟
-    // ما عادش نثبتوا في الـ changes ولا الـ action هنا. القرار تاشخ ديجا.
-    if (!flags?.shouldVersion) {
-      console.log(`🟡 [VersionPlugin] Skip: Handler decided NO versioning needed for this change.`);
+  if (!flags?.shouldVersion) {
+    console.log(`🟡 [VersionPlugin] Skip: Handler decided NO versioning needed.`);
+    return;
+  }
+
+  try {
+    // 🛡️ Anti-duplication
+    const exists = await PageVersionRepository.findOne({
+      where: { versionNumber: id }
+    });
+
+    if (exists) {
+      console.log(`🟡 [VersionPlugin] Skip: Already versioned event ${id}`);
       return;
     }
 
-    try {
-      // 2️⃣ تنفيذ المهمة (Muscles only)
-      await PageVersionRepository.create({
-        pageId: current.id,
-        siteId: context.siteId,
-        versionNumber: Date.now(), // أو الـ timestamp متاع الـ event لضمان التطابق
-        title: current.title,
-        content: current.content,
-        blocks: current.blocks,
-        status: current.status,
-        createdBy: context.userId
-      });
+    await PageVersionRepository.create({
+      pageId: current.id,
+      siteId: context.siteId,
+      versionNumber: id, // ✅ deterministic
+      title: current.title,
+      content: current.content,
+      blocks: current.blocks,
+      status: current.status,
+      createdBy: context.userId,
 
-      console.log(`✅ [VersionPlugin] Version created for Page ${current.id} | Event: ${id}`);
-    } catch (error) {
-      console.error(`❌ [VersionPlugin] Failed to create version:`, error);
-      // بما أن isCritical: true، الـ Worker باش يعاود (Retry) حسب الـ Policy
-      throw error; 
-    }
+      // 🔥 audit power
+      changes,
+      traceId: context.traceId
+    });
+
+    console.log(`✅ [VersionPlugin] Version created for Page ${current.id}`);
+
+  } catch (error) {
+    console.error(`❌ [VersionPlugin] Failed:`, error);
+    throw error;
   }
+}
 };

@@ -33,7 +33,7 @@ const CORE_FIELDS = ["title", "content", "blocks", "slug", "status"];
 
 export function getSemanticDiff(oldPageN: any, newPageN: any) {
   return CORE_FIELDS.filter(field => {
-    return !deepEqual(oldPageN[field], newPageN[field]);
+    return JSON.stringify(oldPageN[field]) !== JSON.stringify(newPageN[field]);
   });
 }
 
@@ -50,17 +50,18 @@ export const emitDomainEvent = async (type: string, data: any, context: any) => 
   }
 
   // ✅ fingerprint يعتمد على القيم موش كان names
-  const fingerprintPayload = {
-    type,
-    id: data.current.id,
-    changes: data.changes,
-    values: stableNormalize(
-  data.changes.reduce((acc: any, key: string) => {
-    acc[key] = data.current[key];
-    return acc;
-  }, {})
-)
-  };
+ const fingerprintPayload = {
+  type,
+  siteId: data.current.siteId,
+  id: data.current.id,
+  changes: data.changes,
+  values: stableNormalize(
+    data.changes.reduce((acc: any, key: string) => {
+      acc[key] = data.current[key];
+      return acc;
+    }, {})
+  )
+};
 
   const fingerprint = createHash("sha256")
     .update(JSON.stringify(fingerprintPayload))

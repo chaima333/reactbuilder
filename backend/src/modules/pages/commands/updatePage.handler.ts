@@ -23,7 +23,12 @@ const safePayload = Object.keys(payload)
     acc[key] = payload[key];
     return acc;
   }, {});
-  await page.update(safePayload);
+const normalizedPayload = normalizePage({
+  ...page.get(),
+  ...payload
+});
+
+await page.update(normalizedPayload);
     const updatedPage = await page.reload();
     const currentPageN = normalizePage(updatedPage);
 

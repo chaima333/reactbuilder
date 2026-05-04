@@ -1,10 +1,13 @@
-
- import { PageVersion } from "../../../models/pageVersion";
+import { PageVersion } from "../../../models/pageVersion";
 
 export class PageVersionRepository {
 
   static create(data: any, transaction?: any) {
     return PageVersion.create(data, { transaction });
+  }
+
+  static findOne(where: any) {
+    return PageVersion.findOne(where);
   }
 
   static findHistory(pageId: number) {

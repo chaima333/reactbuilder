@@ -21,6 +21,7 @@ export interface UnifiedEvent<T = any> {
   data: T;
 
   context: {
+    traceId: any;
     userId: number;
     siteId: number;
     action: EventAction;
