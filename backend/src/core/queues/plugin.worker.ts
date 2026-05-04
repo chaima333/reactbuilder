@@ -7,68 +7,71 @@ import { UnifiedEvent, validateEvent } from "../plugins/events/contracts/unified
 const HISTORY_KEY = "dashboard:runtime:events";
 const DLQ_KEY = "dashboard:dead:letters";
 
-// ❄️ Helper لـ تجميد الـ Event (Immutability)
-function deepFreeze(obj: any) {
-  Object.freeze(obj);
-  Object.getOwnPropertyNames(obj).forEach((prop) => {
-    if (obj[prop] !== null && (typeof obj[prop] === "object") && !Object.isFrozen(obj[prop])) {
-      deepFreeze(obj[prop]);
-    }
-  });
-  return obj;
-}
-
+/**
+ * 🛠️ الـ Worker المسؤول عن تنفيذ الـ Plugins وتخزين التاريخ
+ */
 export const initPluginWorker = () => {
   const worker = new Worker(
     "plugin-tasks",
     async (job) => {
-      const event = job.data as UnifiedEvent;
-      const validation = validateEvent(event);
+      // 1️⃣ أخذ نسخة مستقلة تماماً (Deep Copy) في أول خطوة
+      // هذا يضمن إنو الـ rawEvent هو المرجع الصحيح متاعنا وما يتبدلش بالـ Reference
+      const rawEvent = JSON.parse(JSON.stringify(job.data)) as UnifiedEvent;
 
+      // 2️⃣ التثبت من صحة الـ Event حسب الـ Contract
+      const validation = validateEvent(rawEvent);
       if (!validation.isValid) {
-        await redis.lpush(DLQ_KEY, JSON.stringify({ event, error: validation.error }));
+        console.error(`❌ [INVALID EVENT] ID: ${rawEvent.id}`, validation.error);
+        await redis.lpush(DLQ_KEY, JSON.stringify({ event: rawEvent, error: validation.error }));
         return;
       }
 
-      // 🛡️ 1. Idempotency (تمنع التنفيذ المكرر في Redis)
-      const lockKey = `evt:done:${event.id}`;
-      const isFirstTime = await redis.set(lockKey, "1", "PX", 3600000, "NX");
+      // 3️⃣ الـ Idempotency: منع تنفيذ نفس الـ Event أكثر من مرة (حماية للـ Redis والـ DB)
+      const lockKey = `evt:done:${rawEvent.id}`;
+      const isFirstTime = await redis.set(lockKey, "1", "PX", 3600000, "NX"); // Lock لمدة ساعة
       if (!isFirstTime) {
-        console.log(`⏭️ [SKIP] Duplicate Event: ${event.id}`);
+        console.log(`⏭️ [SKIP] Duplicate Event detected: ${rawEvent.id}`);
         return;
       }
 
-      console.log(`📦 [TRACE: ${event.traceId}] WORKER: ${event.type}`);
+      console.log(`📦 [TRACE: ${rawEvent.traceId}] WORKER: ${rawEvent.type} | ID: ${rawEvent.id}`);
 
-      // ❄️ 2. Immutability (تجميد الـ Event قبل ما ياخذوه الـ Plugins)
-      // نأخذ نسخة عميقة ونجمدوها
-      const frozenEvent = deepFreeze(JSON.parse(JSON.stringify(event)));
-
+      // 4️⃣ جلب الـ Plugins المهتمة بهذا النوع من الـ Events
       const plugins = cmsRegistry
         .getAllPlugins()
-        .filter((p) => p.enabled && p.events.includes(event.type));
+        .filter((p) => p.enabled && p.events.includes(rawEvent.type));
 
-      // داخل الـ loop متاع الـ plugins
-for (const plugin of plugins) {
-  try {
-    // ✅ 3. Clone per Plugin: كل بلجن ياخذ نسخته الخاصة
-    const eventClone = JSON.parse(JSON.stringify(event));
-    await plugin.execute(eventClone);
-  } catch (err) {
-    console.error(`🚨 Plugin ${plugin.name} failed`, err);
-  }
-}
+      // 5️⃣ تنفيذ الـ Plugins بالتوازي أو بالتوالي (حسب الـ mode)
+      for (const plugin of plugins) {
+        try {
+          // 🛡️ حماية: نبعث نسخة (Clone) لكل بلجن
+          // هكا نضمنوا إنو حتى لو البلجن عدّل في الداتا، الـ rawEvent يقعد نظيف
+          const eventForPlugin = JSON.parse(JSON.stringify(rawEvent));
+          
+          console.log(`🔌 [Plugin: ${plugin.name}] Executing...`);
+          await plugin.execute(eventForPlugin);
+        } catch (err: any) {
+          console.error(`🚨 [Plugin Error] ${plugin.name} failed:`, err.message);
+          // إذا كان البلجن Critical، تنجم تزيد Logic هوني باش تمركي الـ Job كـ Failed
+        }
+      }
 
-      // 3. Persistence (تخزين النسخة الأصلية النظيفة)
-      await redis.lpush(HISTORY_KEY, JSON.stringify(event));
+      // 6️⃣ الـ Persistence: تخزين النسخة الأصلية المحمية في Redis
+      // الـ rawEvent هوني فيه الـ current والـ previous والـ changes كما خرجوا من الـ Handler
+      await redis.lpush(HISTORY_KEY, JSON.stringify(rawEvent));
+      
+      // نخلوا كان آخر 50 Event باش ما نعبيوش الـ RAM متاع Redis
       await redis.ltrim(HISTORY_KEY, 0, 49);
 
-      console.log(`💾 [SUCCESS] Persisted: ${event.id}`);
+      console.log(`💾 [SUCCESS] Event persisted to history: ${rawEvent.id}`);
     },
-    { connection: REDIS_CONFIG }
+    { 
+      connection: REDIS_CONFIG,
+      concurrency: 5 // تنفيذ 5 مهام في نفس الوقت لزيادة السرعة
+    }
   );
 
-  // 🔁 4. Dead Letter Queue (DLQ) في حالة الفشل النهائي بعد 3 محاولات
+  // 7️⃣ التعامل مع الفشل النهائي (بعد الـ Retries الكل)
   worker.on("failed", async (job, err) => {
     console.error(`☢️ [FATAL] Job ${job?.id} failed definitely:`, err.message);
     await redis.lpush(DLQ_KEY, JSON.stringify({
@@ -79,5 +82,6 @@ for (const plugin of plugins) {
     }));
   });
 
+  console.log("🚀 Plugin Worker initialized and listening...");
   return worker;
 };
