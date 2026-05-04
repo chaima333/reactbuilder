@@ -99,16 +99,4 @@ publishedAt!: Date;
 metaData: any; 
 
 
-
- toJSON() {
-  const values = { ...this.get() };
-
-  delete values.userId;
-  delete values.siteId;
-  delete values.createdAt;
-  delete values.updatedAt;
-
- 
-  return values;
-}
 }
