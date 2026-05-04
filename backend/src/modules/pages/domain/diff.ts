@@ -20,7 +20,10 @@ export function getSemanticDiff(oldPageN: any, newPageN: any) {
 import { createHash } from "crypto";
 import { EventBus } from "../../../core/plugins/events/eventBus.js";
 import { redis } from "../../../core/queues/config.js";
-// src/core/events/eventGateway.ts
+
+
+
+
 export const emitDomainEvent = async (type: string, data: any, context: any) => {
   // 🛡️ Guard Clause
   if (!data?.current?.id) {
@@ -44,6 +47,8 @@ export const emitDomainEvent = async (type: string, data: any, context: any) => 
     id: fingerprint,
     type,
     data,
-    context: { ...context, source: "official_gateway" }
+  context: { 
+      ...context, 
+      source: "page.handler" }
   });
 };

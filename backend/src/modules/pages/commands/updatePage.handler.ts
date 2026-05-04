@@ -35,9 +35,11 @@ export const updatePageHandler = async (command: any) => {
     changes,
     flags: {
       shouldVersion: changes.some(c => ["title", "content", "blocks"].includes(c)),
-      shouldSEO: changes.some(c => ["title", "slug"].includes(c))
-    }
-  }, context);
+      shouldSEO: changes.some(c => ["title", "slug"].includes(c))},
+    },{
+    ...context, 
+    action: "update" // ✅ تأكد أنها "update" وليس "UPDATED" أو غيرها
+});
 
   return { success: true, updated: true, data: currentPageN };
 };
