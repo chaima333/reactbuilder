@@ -23,18 +23,17 @@ export const VersionPlugin: ICmsPlugin = {
     if (!hasMeaningfulChange) return;
 
     // 2️⃣ البصمة الرقمية (Hash): تمنع التكرار حتى لو الـ Bus عاود الـ Event
-    const stateKey = createHash("sha256")
-      .update(JSON.stringify({
-        id: current.id,
-        title: current.title?.trim(),
-        content: current.content?.trim(),
-        blocks: current.blocks
-      }))
-      .digest("hex");
+           const versionTag = createHash("sha256")
+  .update(JSON.stringify({
+    id: current.id,
+    title: current.title,
+    content: current.content,
+    blocks: current.blocks
+  }))
+  .digest("hex");
 
     // 3️⃣ التثبت من وجود النسخة
-    const exists = await PageVersionRepository.findByVersionTag(stateKey);
-    if (exists) {
+      const exists = await PageVersionRepository.findByVersionTag(versionTag);    if (exists) {
       console.log(`🟡 [VersionPlugin] State already versioned (${current.id})`);
       return;
     }
@@ -43,7 +42,7 @@ export const VersionPlugin: ICmsPlugin = {
     await PageVersionRepository.create({
       pageId: current.id,
       siteId: context.siteId,
-      versionTag: stateKey,
+      versionTag,
       title: current.title,
       content: current.content,
       blocks: current.blocks,
