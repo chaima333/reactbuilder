@@ -13,6 +13,10 @@ export const VersionPlugin: ICmsPlugin = {
 
   async execute(event: UnifiedEvent) {
     const { data, context } = event;
+    if (context.source !== "page.handler") {
+    console.log("🛡️ [VersionPlugin] Ignored: Event source is not manual handler");
+    return;
+  }
     const { current, previous } = data;
 
     if (!current || !previous) return;

@@ -70,8 +70,9 @@ export const emitDomainEvent = async (
     data,
     context: {
       ...context,
-     id: eventKey, // نبعثوا الـ Key كـ معلومة إضافية فقط
-      traceId: context.traceId || eventId // الـ Trace يتبع الـ UUID
+      depth: (context.depth || 0) + 1, // <--- زيد هذي
+      id: eventId,
+      traceId: eventId 
     }
   });
 };
