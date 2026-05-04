@@ -14,6 +14,7 @@ export type EventSource =
 
 export interface UnifiedEvent<T = any> {
   id: string;
+  traceId: string;
   type: string;
   timestamp: number;
 
@@ -39,37 +40,31 @@ export interface PageUpdateData {
 }
 
 // Validator (strict + consistent)
-export const validateEvent = (
-  event: any
-): { isValid: boolean; error?: string } => {
-  if (!event || typeof event !== "object")
-    return { isValid: false, error: "Invalid event" };
 
-  if (typeof event.id !== "string")
-    return { isValid: false, error: "Invalid id" };
+export const validateEvent = (event: any): { isValid: boolean; error?: string } => {
+  if (!event || typeof event !== "object") return { isValid: false, error: "Invalid event" };
 
-  if (typeof event.type !== "string")
-    return { isValid: false, error: "Invalid type" };
+  // 🆔 تثبت من الـ IDs
+  if (typeof event.id !== "string") return { isValid: false, error: "Invalid id" };
+  if (typeof event.traceId !== "string") return { isValid: false, error: "Invalid traceId" }; // 🔥 لازم تزيد هذي
 
-  if (!event.data)
-    return { isValid: false, error: "Missing data" };
+  if (typeof event.type !== "string") return { isValid: false, error: "Invalid type" };
+  if (!event.data) return { isValid: false, error: "Missing data" };
 
   const ctx = event.context;
+  if (!ctx) return { isValid: false, error: "Missing context" };
 
-  if (!ctx)
-    return { isValid: false, error: "Missing context" };
+  // 👤 تثبت من الـ User والـ Site
+  if (typeof ctx.userId !== "number") return { isValid: false, error: "Invalid userId" };
+  if (typeof ctx.siteId !== "number") return { isValid: false, error: "Invalid siteId" };
 
-  if (typeof ctx.userId !== "number")
-    return { isValid: false, error: "Invalid userId" };
+  // 🛠️ تثبت من الـ Action (Enum check)
+  const validActions = ["update", "restore", "publish", "create", "delete"];
+  if (!validActions.includes(ctx.action)) return { isValid: false, error: "Invalid action" };
 
-  if (typeof ctx.siteId !== "number")
-    return { isValid: false, error: "Invalid siteId" };
-
-  if (!["update", "restore", "publish", "create", "delete"].includes(ctx.action))
-    return { isValid: false, error: "Invalid action" };
-
-  if (typeof ctx.source !== "string")
-    return { isValid: false, error: "Missing source" };
+  // 🚀 تثبت من الـ Source (Enum check)
+  const validSources = ["event.bus", "page.handler", "admin.panel"];
+  if (!validSources.includes(ctx.source)) return { isValid: false, error: "Invalid source" }; // 🔥 تثبت أدق
 
   return { isValid: true };
 };
