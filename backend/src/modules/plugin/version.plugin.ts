@@ -11,47 +11,35 @@ export const VersionPlugin: ICmsPlugin = {
   enabled: true,
 
   async execute(event: UnifiedEvent) {
-  const { data, context, id } = event;
-  const { current, flags, changes } = data;
+    const { data, context, id } = event;
+    const { current, flags } = data;
 
-  console.log(`📦 [VersionPlugin] Processing event: ${id}`);
+    console.log(`📦 [VersionPlugin] Processing event: ${id}`);
 
-  if (!flags?.shouldVersion) {
-    console.log(`🟡 [VersionPlugin] Skip: Handler decided NO versioning needed.`);
-    return;
-  }
-
-  try {
-    // 🛡️ Anti-duplication
-    const exists = await PageVersionRepository.findOne({
-      where: { versionNumber: id }
-    });
-
-    if (exists) {
-      console.log(`🟡 [VersionPlugin] Skip: Already versioned event ${id}`);
+    if (!flags?.shouldVersion) {
+      console.log(`🟡 [VersionPlugin] Skip: no versioning needed`);
       return;
     }
 
-    await PageVersionRepository.create({
-      pageId: current.id,
-      siteId: context.siteId,
-      versionTag: id,
-      title: current.title,
-      content: current.content,
-      blocks: current.blocks,
-      status: current.status,
-      createdBy: context.userId,
+    try {
+      await PageVersionRepository.create({
+        pageId: current.id,
+        siteId: context.siteId,
 
-      // 🔥 audit power
-      changes,
-      traceId: context.traceId
-    });
+        // 🔥 مهم: version identity لازم يكون منطقي مش event id
+        versionNumber: `${current.id}-${Date.now()}`,
 
-    console.log(`✅ [VersionPlugin] Version created for Page ${current.id}`);
+        title: current.title,
+        content: current.content,
+        blocks: current.blocks,
+        createdBy: context.userId
+      });
 
-  } catch (error) {
-    console.error(`❌ [VersionPlugin] Failed:`, error);
-    throw error;
+      console.log(`✅ [VersionPlugin] Version created for Page ${current.id}`);
+
+    } catch (error) {
+      console.error(`❌ [VersionPlugin] Failed:`, error);
+      throw error;
+    }
   }
-}
 };
