@@ -76,7 +76,7 @@ export const updatePageHandler = async (command: any) => {
 
     // 🧹 CACHE INVALIDATION (🔥 مهم برشة)
     //await redis.del(`dashboard:stats:${current.siteId}`);
-    await rebuildDashboardProjection(current.siteId);
+    //await rebuildDashboardProjection(current.siteId);
     return {
       success: true,
       updated: true,

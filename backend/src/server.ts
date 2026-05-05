@@ -29,7 +29,8 @@ import { initPluginWorker } from "./core/queues/plugin.worker";
 import commandRoutes from "./modules/dashboard/commands/command.routes";
 import { registerCommands } from "./core/commands/register";
 import { redis } from "./core/queues/config";
-
+import { registerDashboardListener } from "./modules/dashboard/events/dashboard.listener";
+import { EventBus } from "./core/plugins/events/eventBus";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 
@@ -102,19 +103,20 @@ app.use((_req: Request, res: Response) => {
 ======================== */
 const startServer = async () => {
   try {
-    // 1. اتصـال الـ Database
+    // 1. DB
     await sequelize.authenticate();
     console.log("🗄️ Database connected.");
 
-    // ❌ تم حذف الـ Nuclear Clean-up (flushall) 
-    // الـ History توّة باش يولي Durable وما يتمسحش مع الـ Restart
-    console.log("♻️ [Redis] Persistence Mode: Skipping global flush to preserve history.");
-
-    // 2. تشغيل الـ Plugins والـ Worker
+    // 2. Plugins system
     bootstrapPlugins();
     initPluginWorker();
     console.log("✅ Plugins & Workers ready.");
 
+    // 3. Event listeners (IMPORTANT)
+    registerDashboardListener(EventBus);
+    console.log("📡 Dashboard listener registered.");
+
+    // 4. Start server
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 Server running on port ${PORT}`);
     });
