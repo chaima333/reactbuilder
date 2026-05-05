@@ -43,41 +43,38 @@ export const rebuildDashboardProjection = async (siteId: number) => {
   try {
     const stats = await DashboardService.fetchStats(siteId);
     const signals = await fetchSignals(siteId);
-    const plugins = cmsRegistry.getAllPlugins();
-    
-    console.log(`🔥 [Rebuild] Processing ${plugins.length} plugins for site ${siteId}`);
+    const rawPlugins = cmsRegistry.getAllPlugins();
 
-    // معالجة الـ Plugins بجلب بياناتهم إذا كانت الميثود موجودة
-    const processedPlugins = await Promise.all(plugins.map(async (p: any) => {
-      // التثبت من وجود ميثود جلب البيانات
-      const hasMethod = typeof p.getDashboardData === 'function';
-      // التثبت من وجود تعريف في الـ Meta
-      const hasMeta = !!p.meta?.dashboard;
-
-      let pluginData = null;
-      if (hasMethod) {
-        try {
-          pluginData = await p.getDashboardData(siteId);
-        } catch (e) {
-          console.error(`⚠️ Error fetching data for plugin ${p.name}:`, e);
+    // 🔥 الـ Magic هنا: نلموا الـ data متاع الـ plugins الكل في وقت واحد
+    const processedPlugins = await Promise.all(
+      rawPlugins.map(async (p: any) => {
+        let dashboardData = null;
+        
+        // إذا الـ plugin عندو ميثود داتا، نعيطولها
+        if (typeof p.getDashboardData === 'function') {
+          try {
+            dashboardData = await p.getDashboardData(siteId);
+          } catch (e) {
+            console.error(`❌ Data fetch failed for ${p.name}:`, e);
+          }
         }
-      }
 
-      return {
-        name: p.name,
-        enabled: p.enabled,
-        priority: p.priority,
-        hasDashboard: hasMethod || hasMeta, // 🔥 هنا التصليح: إذا وحدة منهم true تطلع true
-        data: pluginData
-      };
-    }));
+        return {
+          name: p.name,
+          enabled: p.enabled,
+          priority: p.priority,
+          hasDashboard: !!p.meta?.dashboard || !!dashboardData,
+          data: dashboardData // 🎯 الـ Payload وصل للـ Snapshot!
+        };
+      })
+    );
 
     const snapshot = {
       stats,
       signals,
       plugins: processedPlugins,
       layout: {
-        blocks: plugins
+        blocks: rawPlugins
           .filter((p: any) => p.meta?.dashboard)
           .map((p: any) => ({
             id: p.name,
@@ -89,12 +86,9 @@ export const rebuildDashboardProjection = async (siteId: number) => {
       generatedAt: Date.now()
     };
 
-    // حفظ النسخة الجديدة في الـ DB
     await DashboardProjection.save(siteId, snapshot);
-    console.log(`✅ [Rebuild] Dashboard projection saved for site ${siteId}`);
-
+    console.log(`✅ System Dynamic: Snapshot updated with plugin data for site ${siteId}`);
   } catch (error) {
-    console.error("❌ [Rebuild Error]:", error);
-    throw error;
+    console.error("❌ Rebuild System Failure:", error);
   }
 };
