@@ -87,29 +87,32 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
   }
 
   // ================= PUBLISH =================
-static async publishPage(
-  siteId: number,
-  pageId: number,
-  userRole: string,
-  userId: number
-) {
-  return await sequelize.transaction(async (t) => {
+  static async publishPage(siteId: number, pageId: number, userRole: string, userId: number) {
+    return sequelize.transaction(async (t) => {
 
-    // 1. Load page
-    const page = await PageRepository.findById(pageId, siteId);
-    if (!page) throw new Error("PAGE_NOT_FOUND");
+      const page = await Page.findOne({
+        where: { id: pageId, siteId },
+        transaction: t
+      });
 
-    // 2. Authorization
-    if (!canPublish(userRole)) throw new Error("FORBIDDEN");
+      if (!page) throw new Error("PAGE_NOT_FOUND");
 
-    const oldPageSnapshot = page.toJSON();
+      if (!canPublish(userRole)) throw new Error("FORBIDDEN");
 
-    // 3. Detect state
-    const isFirstPublish = page.status !== PAGE_STATUS.PUBLISHED;
+      if (!canTransition(page.status, PAGE_STATUS.PUBLISHED)) {
+        return {
+          data: page,
+          event: {
+            type: PAGE_EVENTS.PUBLISHED,
+            shouldEmit: false,
+            payload: { page: page.toJSON(), alreadyPublished: true }
+          }
+        };
+      }
 
-    // 4. Save version ALWAYS (audit trail)
-    await PageVersionRepository.create(
-      {
+      const oldSnapshot = page.toJSON();
+
+      await PageVersion.create({
         pageId: page.id,
         siteId,
         title: page.title,
@@ -117,45 +120,29 @@ static async publishPage(
         blocks: page.blocks,
         status: page.status,
         createdBy: userId
-      },
-      { transaction: t }
-    );
+      }, { transaction: t });
 
-    // 5. Apply state change ONLY if needed
-    let updatedPage = page;
+      const updated = await page.update({
+        status: PAGE_STATUS.PUBLISHED,
+        publishedAt: new Date()
+      }, { transaction: t });
 
-    if (isFirstPublish) {
-      updatedPage = await page.update(
-        {
-          status: PAGE_STATUS.PUBLISHED,
-          publishedAt: new Date()
-        },
-        { transaction: t }
-      );
-    }
-
-    // 6. Event semantics (IMPORTANT)
-    const eventType = isFirstPublish
-      ? PAGE_EVENTS.PUBLISHED
-      : PAGE_EVENTS.REPUBLISHED;
-
-    return {
-      data: updatedPage,
-      event: {
-        type: eventType,
-        shouldEmit: true,
-
-        payload: {
-          current: updatedPage.toJSON(),
-          previous: oldPageSnapshot,
-          siteId,
-          userId,
-          isFirstPublish
+      return {
+        data: updated,
+        event: {
+          type: PAGE_EVENTS.PUBLISHED,
+          shouldEmit: true,
+          payload: {
+            page: updated.toJSON(),
+            oldPage: oldSnapshot,
+            siteId,
+            userId
+          }
         }
-      }
-    };
-  });
-}
+      };
+    });
+  }
+
 
   // ================= RESTORE =================
 static async restoreVersion(siteId: number, pageId: number, versionId: number, userId: number) {
