@@ -14,14 +14,12 @@ export const VersionPlugin: ICmsPlugin = {
   async execute(event: UnifiedEvent) {
     const { data, context } = event;
 
-    // 🛡️ Guard: المصادر الموثوقة فقط
     if (!["page.handler", "event.bus"].includes(context.source)) return;
     if ((context.depth || 0) > 1) return;
 
     const { current, previous } = data;
     if (!current || !previous) return;
 
-    // 🧼 دالة التنظيف للمقارنة
     const getSnapshot = (p: any) => ({
       title: (p.title || "").trim(),
       content: (p.content || "").trim(),
@@ -32,7 +30,7 @@ export const VersionPlugin: ICmsPlugin = {
     const curr = getSnapshot(current);
     const prev = getSnapshot(previous);
 
-    // 🧐 هل التغيير حقيقي؟
+    // 1. تثبت هل فمة تغيير حقيقي؟
     if (curr.title === prev.title && 
         curr.content === prev.content && 
         curr.slug === prev.slug && 
@@ -40,13 +38,13 @@ export const VersionPlugin: ICmsPlugin = {
       return;
     }
 
-    // 🆔 بصمة المحتوى (Immutable Tag)
     const versionTag = createHash("sha256")
       .update(`${current.id}-${curr.title}-${curr.content}-${curr.slug}-${curr.blocksBody}`)
       .digest("hex");
 
     try {
-      // ✅ ديما Create: كل حالة جديدة تستحق مكان في التاريخ
+      // 2. ✅ ديما Create (ممنوع الـ Update والـ Merge)
+      // الـ Unique Index في الداتابيز هو اللي باش يتصرف لو فمة تكرار
       await PageVersion.create({
         pageId: current.id,
         siteId: context.siteId,
@@ -56,12 +54,13 @@ export const VersionPlugin: ICmsPlugin = {
         blocks: current.blocks,
         createdBy: context.userId
       });
+      
       console.log(`📜 [VERSION CREATED] Tag: ${versionTag.slice(0, 8)}`);
 
     } catch (err: any) {
-      // 🛡️ الـ Unique Index هو اللي باش يمنع الـ Duplication الحقيقي (نفس المحتوى)
+      // 3. لو الـ Database رجعت UniqueConstraintError معناها المحتوى موجود ديجا
       if (err.name === "SequelizeUniqueConstraintError") {
-        console.log("🟡 [VERSION] State already exists. Skipping.");
+        console.log("🟡 [VERSION] State already exists (Deduplicated by Database).");
         return;
       }
       throw err;
