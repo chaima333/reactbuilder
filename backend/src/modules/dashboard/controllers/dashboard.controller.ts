@@ -28,7 +28,7 @@ export const rebuildDashboardProjection = async (siteId: number) => {
   const stats = await DashboardService.fetchStats(siteId);
   const signals = await fetchSignals(siteId);
   const plugins = cmsRegistry.getAllPlugins();
-
+ console.log("🔥 REBUILD RUNNING");
   const snapshot = {
     stats,
     signals,
