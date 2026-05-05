@@ -1,7 +1,5 @@
 import crypto from "crypto";
 import { pluginQueue } from "../../queues/plugin.queue";
-import { UnifiedEvent } from "./contracts/unified.contract.ts";
-
 
 export class EventBus {
   static async emit(params: {
@@ -9,30 +7,33 @@ export class EventBus {
     data: any;
     context: any;
   }) {
+
     const pageId = params.data?.current?.id;
     if (!pageId) return;
 
-    const finalId = params.context.id || crypto.randomUUID();
-    const finalTraceId = params.context.traceId || finalId;
+    // 🔒 identity ثابت (ممنوع يعتمد على content)
+    const jobId = crypto.createHash("sha256")
+      .update(`${params.type}:${pageId}:${params.context.traceId}`)
+      .digest("hex");
 
-    console.log(`📡 BUS → ${params.type} | Page: ${pageId} | Trace: ${finalTraceId.slice(0, 8)}`);
+    console.log(`📡 BUS → ${params.type} | Page: ${pageId}`);
 
     await pluginQueue.add(
       "plugin-tasks",
       {
-        id: finalId,
-        traceId: finalTraceId,
+        id: jobId,
+        traceId: params.context.traceId || jobId,
         timestamp: Date.now(),
         type: params.type,
         data: params.data,
         context: {
           ...params.context,
-          // ✅ إذا المصدر موجود (page.handler) خليه، إذا مش موجود حط event.bus
-          source: params.context.source || "event.bus" 
+          source: params.context.source || "event.bus",
+          depth: (params.context.depth || 0) + 1
         }
       },
       {
-        jobId: finalId, 
+        jobId,
         attempts: 1,
         removeOnComplete: true
       }

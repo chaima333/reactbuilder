@@ -2,67 +2,66 @@ import { normalizePage } from "../../../core/plugins/events/contracts/unified.co
 import { Page } from "../../../models/page";
 import { emitDomainEvent, getSemanticDiff } from "../domain/diff";
 
-// 🔒 قفل أمان لمنع التكرار من المصدر (Double Click / React StrictMode)
-const inflightRequests = new Set<string>();
+const inflight = new Set<string>();
 
 export const updatePageHandler = async (command: any) => {
   const { payload, context } = command;
-  const lockKey = `update-${payload.pageId}`;
 
-  // 1️⃣ التثبت من القفل
-  if (inflightRequests.has(lockKey)) {
-    console.log(`🛑 [HANDLER] Blocked: Request already in progress for page ${payload.pageId}`);
-    return { success: false, error: "Request in progress" };
+  // 🔒 anti double click
+  const lockKey = `update:${payload.pageId}`;
+  if (inflight.has(lockKey)) {
+    return { success: false, error: "busy" };
   }
 
   try {
-    inflightRequests.add(lockKey); // تفعيل القفل
+    inflight.add(lockKey);
 
-    const page = await Page.findByPk(payload.pageId);
-    if (!page) return { success: false, error: "Page not found" };
-    
-    const oldPageN = normalizePage(page);
-
-    // 2️⃣ تنظيف الـ Payload
-    const allowedFields = ["title", "content", "blocks", "slug", "status"];
-    const safePayload: any = {};
-    allowedFields.forEach(field => {
-      if (payload[field] !== undefined) {
-        safePayload[field] = typeof payload[field] === 'string' ? payload[field].trim() : payload[field];
-      }
-    });
-
-    // 3️⃣ التحديث
-    await page.update(safePayload);
-    const updatedPage = await page.reload();
-    const currentPageN = normalizePage(updatedPage);
-
-    // 4️⃣ حساب الفروقات الحقيقية
-    const meaningfulChanges = getSemanticDiff(oldPageN, currentPageN);
-
-    if (meaningfulChanges.length === 0) {
-      return { success: true, updated: false, data: currentPageN };
+    // 🚨 safety gate
+    if (context.source && context.source !== "http") {
+      return { success: false, error: "invalid source" };
     }
 
-    // 5️⃣ بث الحدث مع الهوية الجديدة (UUID + Source + Depth)
+    const page = await Page.findByPk(payload.pageId);
+    if (!page) return { success: false, error: "not found" };
+
+    const old = normalizePage(page);
+
+    const allowed = ["title", "content", "blocks", "slug", "status"];
+    const safe: any = {};
+
+    for (const f of allowed) {
+      if (payload[f] !== undefined) safe[f] = payload[f];
+    }
+
+    await page.update(safe);
+    const updated = await page.reload();
+    const current = normalizePage(updated);
+
+    const changes = getSemanticDiff(old, current);
+
+    if (!changes.length) {
+      return { success: true, updated: false, data: current };
+    }
+
     await emitDomainEvent(
       "page.updated",
-      { current: currentPageN, previous: oldPageN, changes: meaningfulChanges },
-      { 
-        ...context, 
-        siteId: currentPageN.siteId, 
-        source: "page.handler", // تحديد المصدر بدقة
-        action: "update" 
+      {
+        current,
+        previous: old,
+        changes
+      },
+      {
+        userId: context.userId,
+        siteId: current.siteId,
+        source: "page.handler",
+        depth: 0,
+        traceId: context.traceId
       }
     );
 
-    return { success: true, updated: true, data: currentPageN };
+    return { success: true, updated: true, data: current };
 
-  } catch (error: any) {
-    console.error("❌ [HANDLER ERROR]:", error.message);
-    return { success: false, error: error.message };
   } finally {
-    // حل القفل بعد ثانية واحدة (Anti-spam window)
-    setTimeout(() => inflightRequests.delete(lockKey), 1000);
+    setTimeout(() => inflight.delete(lockKey), 1000);
   }
 };

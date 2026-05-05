@@ -87,63 +87,66 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
   }
 
   // ================= PUBLISH =================
-static async publishPage(siteId: number, pageId: number, userRole: string, userId: number) {
-  return sequelize.transaction(async (t) => {
+  static async publishPage(siteId: number, pageId: number, userRole: string, userId: number) {
 
-    const page = await Page.findOne({
-      where: { id: pageId, siteId },
-      transaction: t,
-      lock: t.LOCK.UPDATE // 🔥 يمنع race conditions
-    });
+    return sequelize.transaction(async (t) => {
 
-    if (!page) throw new Error("PAGE_NOT_FOUND");
+      const page = await Page.findOne({
+        where: { id: pageId, siteId },
+        transaction: t,
+        lock: t.LOCK.UPDATE
+      });
 
-    if (!canPublish(userRole)) throw new Error("FORBIDDEN");
+      if (!page) throw new Error("PAGE_NOT_FOUND");
+      if (!canPublish(userRole)) throw new Error("FORBIDDEN");
 
-    // 🧠 HARD GUARD: already published → no-op
-    if (page.status === PAGE_STATUS.PUBLISHED) {
-      return {
-        data: page,
-        event: null // ❌ no event at all
-      };
-    }
-
-    const previous = page.toJSON();
-
-    // 🧱 version snapshot (side effect only)
-    await PageVersion.create({
-      pageId: page.id,
-      siteId,
-      title: page.title,
-      content: page.content,
-      blocks: page.blocks,
-      status: page.status,
-      createdBy: userId
-    }, { transaction: t });
-
-    // 🔥 state change ONLY
-    page.status = PAGE_STATUS.PUBLISHED;
-    page.publishedAt = new Date();
-
-    await page.save({ transaction: t });
-
-    const current = page.toJSON();
-
-    return {
-      data: current,
-      event: {
-        type: PAGE_EVENTS.PUBLISHED,
-        shouldEmit: true,
-        payload: {
-          current,
-          previous,
-          siteId,
-          userId
-        }
+      // 🔥 idempotent publish
+      if (page.status === PAGE_STATUS.PUBLISHED) {
+        return {
+          data: page,
+          event: {
+            type: PAGE_EVENTS.PUBLISHED,
+            shouldEmit: false,
+            payload: {
+              page: page.toJSON(),
+              alreadyPublished: true
+            }
+          }
+        };
       }
-    };
-  });
-}
+
+      const old = page.toJSON();
+
+      await PageVersion.create({
+        pageId: page.id,
+        siteId,
+        title: page.title,
+        content: page.content,
+        blocks: page.blocks,
+        status: page.status,
+        createdBy: userId
+      }, { transaction: t });
+
+      const updated = await page.update({
+        status: PAGE_STATUS.PUBLISHED,
+        publishedAt: new Date()
+      }, { transaction: t });
+
+      return {
+        data: updated,
+        event: {
+          type: PAGE_EVENTS.PUBLISHED,
+          shouldEmit: true,
+          payload: {
+            page: updated.toJSON(),
+            oldPage: old,
+            siteId,
+            userId
+          }
+        }
+      };
+    });
+  }
 
 
   // ================= RESTORE =================
