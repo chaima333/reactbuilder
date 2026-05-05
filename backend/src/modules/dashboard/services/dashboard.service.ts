@@ -5,7 +5,7 @@ import { Page, Site } from "../../../models";
 import { sequelize } from "../../../core/database/connection";
 import { cmsRegistry } from "../../../core/plugins/plugin.registry";
 import { redis } from "../../../core/queues/config";
-
+import { fetchSignals } from "./dashboard.signals";
 
 // =====================================================
 // 🔥 STATS (Cached + Fallback DB)
@@ -13,7 +13,7 @@ import { redis } from "../../../core/queues/config";
 
 export const fetchStats = async (siteId: number) => {
   const cacheKey = `dashboard:stats:${siteId}`;
-
+  const signals = await fetchSignals(siteId);
   try {
     // 1️⃣ حاول من cache
     const cached = await redis.get(cacheKey);
@@ -87,7 +87,8 @@ export const fetchPluginsData = async (siteId: number) => {
     name: p.name,
     enabled: p.enabled,
     events: p.events,
-    hasDashboard: !!p.getDashboardData
+    priority: p.priority,
+    hasDashboard: !!p.meta?.dashboard
   }));
 };
 

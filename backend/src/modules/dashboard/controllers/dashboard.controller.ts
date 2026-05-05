@@ -12,7 +12,6 @@ export const getDashboardFull = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: "siteId required" });
     }
 
-    // 🔒 access check
     const member = await SiteMember.findOne({
       where: { siteId, userId }
     });
@@ -21,25 +20,20 @@ export const getDashboardFull = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ message: "No access to this site" });
     }
 
-    const [
-      stats,
-      pluginsData,
-      layout,
-      system,
-      pluginStatus
-    ] = await Promise.all([
-      DashboardService.fetchStats(Number(siteId)),
-      DashboardService.fetchPluginsData(Number(siteId)),
-      DashboardService.buildLayout(),
-      DashboardService.getSystemHealth(),
-      DashboardService.getPluginStatus()
-    ]);
+    const [stats, plugins, layout, system, pluginStatus] =
+      await Promise.all([
+        DashboardService.fetchStats(Number(siteId)),
+        DashboardService.fetchPluginsData(Number(siteId)),
+        DashboardService.buildLayout(),
+        DashboardService.getSystemHealth(),
+        DashboardService.getPluginStatus()
+      ]);
 
     return res.json({
       success: true,
       data: {
         stats,
-        plugins: pluginsData,
+        plugins,
         layout,
         system,
         runtime: {
@@ -49,7 +43,6 @@ export const getDashboardFull = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (err: any) {
-    console.error(err);
     return res.status(500).json({ message: err.message });
   }
 };
