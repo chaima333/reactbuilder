@@ -4,11 +4,17 @@ import { emitDomainEvent, getSemanticDiff } from "../domain/diff";
 
 const inflight = new Set<string>();
 
-export const updatePageHandler = async (command: any) => {
-  const { payload, context } = command;
+export const updatePageHandler = async (command: any = {}) => {
+  const payload = command?.payload;
+  const context = command?.context || {};
 
-  // 🔒 anti double click
+  // 🧨 HARD GUARD (important)
+  if (!payload?.pageId) {
+    return { success: false, error: "INVALID_PAYLOAD: pageId missing" };
+  }
+
   const lockKey = `update:${payload.pageId}`;
+
   if (inflight.has(lockKey)) {
     return { success: false, error: "busy" };
   }
@@ -16,13 +22,15 @@ export const updatePageHandler = async (command: any) => {
   try {
     inflight.add(lockKey);
 
-    // 🚨 safety gate
+    // 🔥 strict source control (prevents loops)
     if (context.source && context.source !== "http") {
       return { success: false, error: "invalid source" };
     }
 
     const page = await Page.findByPk(payload.pageId);
-    if (!page) return { success: false, error: "not found" };
+    if (!page) {
+      return { success: false, error: "not found" };
+    }
 
     const old = normalizePage(page);
 
@@ -30,7 +38,9 @@ export const updatePageHandler = async (command: any) => {
     const safe: any = {};
 
     for (const f of allowed) {
-      if (payload[f] !== undefined) safe[f] = payload[f];
+      if (payload[f] !== undefined) {
+        safe[f] = payload[f];
+      }
     }
 
     await page.update(safe);
@@ -39,6 +49,7 @@ export const updatePageHandler = async (command: any) => {
 
     const changes = getSemanticDiff(old, current);
 
+    // no meaningful changes → no event
     if (!changes.length) {
       return { success: true, updated: false, data: current };
     }
@@ -51,7 +62,7 @@ export const updatePageHandler = async (command: any) => {
         changes
       },
       {
-        userId: context.userId,
+        userId: context.userId || null,
         siteId: current.siteId,
         source: "page.handler",
         depth: 0,
@@ -61,6 +72,9 @@ export const updatePageHandler = async (command: any) => {
 
     return { success: true, updated: true, data: current };
 
+  } catch (err: any) {
+    console.error("UPDATE HANDLER ERROR:", err);
+    return { success: false, error: err.message };
   } finally {
     setTimeout(() => inflight.delete(lockKey), 1000);
   }
