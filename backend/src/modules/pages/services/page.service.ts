@@ -87,40 +87,30 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
   }
 
   // ================= PUBLISH =================
-  static async publishPage(siteId: number, pageId: number, userRole: string, userId: number) {
+static async publishPage(siteId: number, pageId: number, userRole: string, userId: number) {
   return sequelize.transaction(async (t) => {
 
-    // 1. fetch page (locked for safety)
     const page = await Page.findOne({
       where: { id: pageId, siteId },
       transaction: t,
-      lock: t.LOCK.UPDATE
+      lock: t.LOCK.UPDATE // 🔥 يمنع race conditions
     });
 
     if (!page) throw new Error("PAGE_NOT_FOUND");
 
     if (!canPublish(userRole)) throw new Error("FORBIDDEN");
 
-    const alreadyPublished = page.status === PAGE_STATUS.PUBLISHED;
-
-    // 2. idempotent publish (safe)
-    if (alreadyPublished) {
+    // 🧠 HARD GUARD: already published → no-op
+    if (page.status === PAGE_STATUS.PUBLISHED) {
       return {
         data: page,
-        event: {
-          type: PAGE_EVENTS.PUBLISHED,
-          shouldEmit: false,
-          payload: {
-            page: page.toJSON(),
-            alreadyPublished: true
-          }
-        }
+        event: null // ❌ no event at all
       };
     }
 
-    const oldSnapshot = page.toJSON();
+    const previous = page.toJSON();
 
-    // 3. version snapshot
+    // 🧱 version snapshot (side effect only)
     await PageVersion.create({
       pageId: page.id,
       siteId,
@@ -131,21 +121,22 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
       createdBy: userId
     }, { transaction: t });
 
-    // 4. update page
-    const updated = await page.update({
-      status: PAGE_STATUS.PUBLISHED,
-      publishedAt: new Date()
-    }, { transaction: t });
+    // 🔥 state change ONLY
+    page.status = PAGE_STATUS.PUBLISHED;
+    page.publishedAt = new Date();
 
-    // 5. return event
+    await page.save({ transaction: t });
+
+    const current = page.toJSON();
+
     return {
-      data: updated,
+      data: current,
       event: {
         type: PAGE_EVENTS.PUBLISHED,
         shouldEmit: true,
         payload: {
-          page: updated.toJSON(),
-          oldPage: oldSnapshot,
+          current,
+          previous,
           siteId,
           userId
         }
