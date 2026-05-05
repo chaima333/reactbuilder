@@ -34,7 +34,9 @@ export const rebuildDashboardProjection = async (siteId: number) => {
     signals,
     plugins: plugins.map(p => ({
       name: p.name,
-      enabled: p.enabled
+      enabled: p.enabled,
+      priority: p.priority,
+      hasDashboard: !!p.meta?.dashboard
     })),
     generatedAt: new Date().toISOString()
   };
