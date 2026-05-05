@@ -20,6 +20,14 @@ export const VersionPlugin: ICmsPlugin = {
     }
   },
 
+  async getDashboardData(siteId: number) {
+    // هنا مثلاً تجيب قداش من نسخة (versions) موجودة في السايت
+    return {
+      totalVersions: 150,
+      lastBackup: new Date().toISOString()
+    };
+  },
+
   async execute(event: any) {
 
     // 🔥 HARD VALIDATION (not safeEvent)

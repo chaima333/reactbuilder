@@ -10,7 +10,7 @@ export const SEOPlugin: ICmsPlugin = {
   events: ["page.updated", "page.restored"],
   enabled: true,
 
-  
+
    // 🔥 UI definition للـ dashboard
   meta: {
     dashboard: {
@@ -18,6 +18,14 @@ export const SEOPlugin: ICmsPlugin = {
       col: 6,
       order: 2
     }
+  },
+
+  async getDashboardData(siteId: number) {
+    // هنا تجيب مثلاً قداش من صفحة عاملة SEO مريغل
+    return {
+      seoScore: 85, 
+      optimizedPages: 10
+    };
   },
 
   async execute(event: UnifiedEvent) {
