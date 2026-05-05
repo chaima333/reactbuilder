@@ -24,13 +24,9 @@ import publicRoutes from "./modules/pages/routes/public.routes";
 
 // CORE
 import { bootstrapPlugins } from "./app.bootstrap";
-import { cmsRegistry } from "./core/plugins/plugin.registry";
 import { initPluginWorker } from "./core/queues/plugin.worker";
 import commandRoutes from "./modules/dashboard/commands/command.routes";
 import { registerCommands } from "./core/commands/register";
-import { redis } from "./core/queues/config";
-import { registerDashboardListener } from "./modules/dashboard/events/dashboard.listener";
-import { EventBus } from "./core/plugins/events/eventBus";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 
@@ -113,7 +109,6 @@ const startServer = async () => {
     console.log("✅ Plugins & Workers ready.");
 
     // 3. Event listeners (IMPORTANT)
-    registerDashboardListener(EventBus);
     console.log("📡 Dashboard listener registered.");
 
     // 4. Start server

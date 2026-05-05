@@ -1,101 +1,130 @@
 import { Worker } from "bullmq";
+
 import { cmsRegistry } from "../plugins/plugin.registry";
-import { REDIS_CONFIG, redis } from "./config"; 
+import { REDIS_CONFIG, redis } from "./config";
 import { UnifiedEvent, validateEvent } from "../plugins/events/contracts/unified.contract";
 
-/**
- * 🔑 مفاتيح Redis المنظمة
- */
-const GLOBAL_HISTORY_KEY = "dashboard:runtime:events";
-const getSiteHistoryKey = (siteId: string | number) => `dashboard:events:site:${siteId}`;
-const DLQ_KEY = "dashboard:dead:letters";
+import { rebuildDashboardProjection } from "../../modules/dashboard/services/rebuildDashboardProjection";
 
 /**
- * 🛠️ الـ Worker المسؤول عن تنفيذ الـ Plugins وتخزين تاريخ الأحداث
+ * 🔑 Redis keys
+ */
+const DLQ_KEY = "dashboard:dead:letters";
+
+const getSiteHistoryKey = (siteId: string | number) =>
+  `dashboard:events:site:${siteId}`;
+
+const GLOBAL_HISTORY_KEY = "dashboard:runtime:events";
+
+/**
+ * 🚀 Plugin Worker (Single source of truth for execution)
  */
 export const initPluginWorker = () => {
   const worker = new Worker(
     "plugin-tasks",
     async (job) => {
-      // 1️⃣ استنساخ الحدث لضمان عدم تغيير البيانات الأصلية
       const rawEvent = JSON.parse(JSON.stringify(job.data)) as UnifiedEvent;
 
-      // 2️⃣ التثبت من صحة الـ Event حسب الـ Contract
+      // 1️⃣ Validate event
       const validation = validateEvent(rawEvent);
       if (!validation.isValid) {
-        console.error(`❌ [INVALID EVENT] ID: ${rawEvent.id}`, validation.error);
-        await redis.lpush(DLQ_KEY, JSON.stringify({ event: rawEvent, error: validation.error }));
+        console.error("❌ INVALID EVENT:", validation.error);
+
+        await redis.lpush(
+          DLQ_KEY,
+          JSON.stringify({ event: rawEvent, error: validation.error })
+        );
+
         return;
       }
 
-      // 3️⃣ الـ Idempotency: منع التكرار (Lock لمدة 10 ثواني)
+      // 2️⃣ Idempotency lock
       const lockKey = `evt:done:${rawEvent.id}`;
       const isFirstTime = await redis.set(lockKey, "1", "PX", 10000, "NX");
+
       if (!isFirstTime) {
-        console.log(`⏭️ [SKIP] Duplicate Event: ${rawEvent.id}`);
+        console.log("⏭️ Duplicate event skipped:", rawEvent.id);
         return;
       }
 
-      console.log(`📦 [TRACE: ${rawEvent.traceId}] Processing: ${rawEvent.type}`);
+      console.log(
+        `📦 Processing event [${rawEvent.type}] trace=${rawEvent.traceId}`
+      );
 
-      // 4️⃣ تنفيذ الـ Plugins المفعلة لهذا النوع من الأحداث
+      // 3️⃣ Execute plugins
       const plugins = cmsRegistry
         .getAllPlugins()
-        .filter((p) => p.enabled && p.events.includes(rawEvent.type));
+        .filter(
+          (p) => p.enabled && p.events.includes(rawEvent.type)
+        );
 
       for (const plugin of plugins) {
         try {
-          // نبعث نسخة مستقلة لكل بلجن
-          const eventForPlugin = JSON.parse(JSON.stringify(rawEvent));
-          await plugin.execute(eventForPlugin);
+          const eventCopy = JSON.parse(JSON.stringify(rawEvent));
+          await plugin.execute(eventCopy);
         } catch (err: any) {
-          console.error(`🚨 [Plugin Error] ${plugin.name} failed:`, err.message);
+          console.error(`🚨 Plugin failed (${plugin.name}):`, err.message);
         }
       }
-       // 5️⃣ 🔥 الـ Atomic Persistence (النسخة الحاسمة)
-try {
-  const siteId = rawEvent.data.current?.siteId || "global";
-  const SITE_HISTORY_KEY = getSiteHistoryKey(siteId);
-  const GLOBAL_HISTORY_KEY = "dashboard:runtime:events"; // الـ Key اللي يلوّج فيه الـ Dashboard
 
-  const pipeline = redis.multi();
+      // 4️⃣ Persistence (Redis history)
+      try {
+        const siteId = rawEvent.data?.current?.siteId || "global";
 
-  // أ) نصبّو في الـ Key الخاص بالموقع (للمستقبل)
-  pipeline.lpush(SITE_HISTORY_KEY, JSON.stringify(rawEvent));
-  pipeline.ltrim(SITE_HISTORY_KEY, 0, 99);
+        const pipeline = redis.multi();
 
-  // ب) نصبّو في الـ Key اللي يقرأ منه الـ Dashboard توّة (الـ Legacy/Global Key)
-  pipeline.lpush(GLOBAL_HISTORY_KEY, JSON.stringify(rawEvent));
-  pipeline.ltrim(GLOBAL_HISTORY_KEY, 0, 99);
+        pipeline.lpush(
+          getSiteHistoryKey(siteId),
+          JSON.stringify(rawEvent)
+        );
+        pipeline.ltrim(getSiteHistoryKey(siteId), 0, 99);
 
-  // ج) نطلعو الحجم متاع الـ Global Key باش نثبتو
-  pipeline.llen(GLOBAL_HISTORY_KEY);
+        pipeline.lpush(
+          GLOBAL_HISTORY_KEY,
+          JSON.stringify(rawEvent)
+        );
+        pipeline.ltrim(GLOBAL_HISTORY_KEY, 0, 99);
 
-  const results = await pipeline.exec();
-  const globalSize = results ? (results[results.length - 1][1] as number) : 0;
+        await pipeline.exec();
 
-  console.log(`💾 [SUCCESS] Global History: ${globalSize} | Site 59: Saved | Trace: ${rawEvent.traceId}`);
+        console.log("💾 Event stored in history");
 
-} catch (persistErr) {
-  console.error("❌ Persistence Error:", persistErr);
-}
+      } catch (err) {
+        console.error("❌ Persistence error:", err);
+      }
+
+      // 5️⃣ 🔥 Dashboard Projection (IMPORTANT PLACE)
+      try {
+        const siteId = rawEvent.data?.current?.siteId;
+
+        if (siteId) {
+          await rebuildDashboardProjection(siteId);
+          console.log("📊 Dashboard rebuilt for site:", siteId);
+        }
+
+      } catch (err) {
+        console.error("❌ Dashboard rebuild failed:", err);
+      }
     },
-    { 
+    {
       connection: REDIS_CONFIG,
-      concurrency: 5 // معالجة 5 أحداث بالتوازي
+      concurrency: 5
     }
   );
 
-  // 6️⃣ التعامل مع حالات الفشل النهائي
   worker.on("failed", async (job, err) => {
-    console.error(`☢️ [FATAL] Job ${job?.id} failed:`, err.message);
-    await redis.lpush(DLQ_KEY, JSON.stringify({
-      jobId: job?.id,
-      error: err.message,
-      timestamp: new Date().toISOString()
-    }));
+    console.error("☢️ Worker failed:", err.message);
+
+    await redis.lpush(
+      DLQ_KEY,
+      JSON.stringify({
+        jobId: job?.id,
+        error: err.message,
+        timestamp: new Date().toISOString()
+      })
+    );
   });
 
-  console.log("🚀 Plugin Worker is LIVE and tracking history.");
+  console.log("🚀 Plugin Worker is LIVE");
   return worker;
 };

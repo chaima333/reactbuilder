@@ -73,10 +73,6 @@ export const updatePageHandler = async (command: any) => {
         traceId: context.traceId
       }
     );
-
-    // 🧹 CACHE INVALIDATION (🔥 مهم برشة)
-    //await redis.del(`dashboard:stats:${current.siteId}`);
-    //await rebuildDashboardProjection(current.siteId);
     return {
       success: true,
       updated: true,
