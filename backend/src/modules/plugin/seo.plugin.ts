@@ -10,6 +10,16 @@ export const SEOPlugin: ICmsPlugin = {
   events: ["page.updated", "page.restored"],
   enabled: true,
 
+  
+   // 🔥 UI definition للـ dashboard
+  meta: {
+    dashboard: {
+      type: "seo",
+      col: 6,
+      order: 2
+    }
+  },
+
   async execute(event: UnifiedEvent) {
     // 🎯 اقتناص البيانات من العقد الجديد
     const { data, context, id } = event;

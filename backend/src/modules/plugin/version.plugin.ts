@@ -11,6 +11,15 @@ export const VersionPlugin: ICmsPlugin = {
   events: ["page.updated"],
   enabled: true,
 
+  // 🔥 UI definition للـ dashboard
+  meta: {
+    dashboard: {
+      type: "version",
+      col: 6,
+      order: 1
+    }
+  },
+
   async execute(event: any) {
 
     // 🔥 HARD VALIDATION (not safeEvent)
