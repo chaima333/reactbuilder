@@ -5,6 +5,7 @@ export const PAGE_EVENTS = {
   SLUG_CHANGED: "slug.changed",
   CREATED: "page.created",
   PUBLISHED: "page.published",
+   REPUBLISHED: "page.republished",
   DELETED: "page.deleted",
 } as const;
 

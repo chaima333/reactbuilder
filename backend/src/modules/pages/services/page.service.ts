@@ -87,17 +87,29 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
   }
 
   // ================= PUBLISH =================
-  static async publishPage(siteId: number, pageId: number, userRole: string, userId: number) {
-    return await sequelize.transaction(async (t) => {
-      const page = await PageRepository.findById(pageId, siteId);
-      if (!page) throw new Error("PAGE_NOT_FOUND");
+static async publishPage(
+  siteId: number,
+  pageId: number,
+  userRole: string,
+  userId: number
+) {
+  return await sequelize.transaction(async (t) => {
 
-      if (!canPublish(userRole)) throw new Error("FORBIDDEN");
-      if (!canTransition(page.status, PAGE_STATUS.PUBLISHED)) throw new Error("INVALID_TRANSITION");
+    // 1. Load page
+    const page = await PageRepository.findById(pageId, siteId);
+    if (!page) throw new Error("PAGE_NOT_FOUND");
 
-      const oldPageSnapshot = page.toJSON();
+    // 2. Authorization
+    if (!canPublish(userRole)) throw new Error("FORBIDDEN");
 
-      await PageVersionRepository.create({
+    const oldPageSnapshot = page.toJSON();
+
+    // 3. Detect state
+    const isFirstPublish = page.status !== PAGE_STATUS.PUBLISHED;
+
+    // 4. Save version ALWAYS (audit trail)
+    await PageVersionRepository.create(
+      {
         pageId: page.id,
         siteId,
         title: page.title,
@@ -105,23 +117,45 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
         blocks: page.blocks,
         status: page.status,
         createdBy: userId
-      }, { transaction: t });
+      },
+      { transaction: t }
+    );
 
-      const updated = await page.update({
-        status: PAGE_STATUS.PUBLISHED,
-        publishedAt: new Date()
-      }, { transaction: t });
+    // 5. Apply state change ONLY if needed
+    let updatedPage = page;
 
-      return {
-        data: updated,
-        event: {
-          type: PAGE_EVENTS.PUBLISHED,
-          payload: { page: updated.toJSON(), oldPage: oldPageSnapshot, siteId, userId },
-          shouldEmit: true
+    if (isFirstPublish) {
+      updatedPage = await page.update(
+        {
+          status: PAGE_STATUS.PUBLISHED,
+          publishedAt: new Date()
+        },
+        { transaction: t }
+      );
+    }
+
+    // 6. Event semantics (IMPORTANT)
+    const eventType = isFirstPublish
+      ? PAGE_EVENTS.PUBLISHED
+      : PAGE_EVENTS.REPUBLISHED;
+
+    return {
+      data: updatedPage,
+      event: {
+        type: eventType,
+        shouldEmit: true,
+
+        payload: {
+          current: updatedPage.toJSON(),
+          previous: oldPageSnapshot,
+          siteId,
+          userId,
+          isFirstPublish
         }
-      };
-    });
-  }
+      }
+    };
+  });
+}
 
   // ================= RESTORE =================
 static async restoreVersion(siteId: number, pageId: number, versionId: number, userId: number) {
