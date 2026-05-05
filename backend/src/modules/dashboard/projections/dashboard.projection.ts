@@ -1,24 +1,19 @@
 import { redis } from "../../../core/queues/config";
 
-const PREFIX = "dashboard:projection";
+const KEY = (siteId: number) => `dashboard:projection:${siteId}`;
 
-export class DashboardProjection {
-
-  static async get(siteId: number) {
-    const data = await redis.get(`${PREFIX}:${siteId}`);
+export const DashboardProjection = {
+  
+  async get(siteId: number) {
+    const data = await redis.get(KEY(siteId));
     return data ? JSON.parse(data) : null;
-  }
+  },
 
-  static async save(siteId: number, snapshot: any) {
-    await redis.set(
-      `${PREFIX}:${siteId}`,
-      JSON.stringify(snapshot),
-      "EX",
-      60 // cache 1 min
-    );
-  }
+  async save(siteId: number, snapshot: any) {
+    await redis.set(KEY(siteId), JSON.stringify(snapshot), "EX", 60);
+  },
 
-  static async invalidate(siteId: number) {
-    await redis.del(`${PREFIX}:${siteId}`);
+  async invalidate(siteId: number) {
+    await redis.del(KEY(siteId));
   }
-}
+};
