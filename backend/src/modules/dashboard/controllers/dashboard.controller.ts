@@ -37,7 +37,7 @@ export const rebuildDashboardProjection = async (siteId: number) => {
       name: p.name,
       enabled: p.enabled,
       priority: p.priority,
-      hasDashboard: !!p.meta?.dashboard
+      hasDashboard: typeof p.getDashboardData === 'function'
     })),
     generatedAt: new Date().toISOString()
   };
