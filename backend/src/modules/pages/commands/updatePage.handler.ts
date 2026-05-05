@@ -3,7 +3,7 @@
 import { Page } from "../../../models/page";
 import { emitDomainEvent, getSemanticDiff } from "../domain/diff";
 import { redis } from "../../../core/queues/config";
-import { normalizePage } from "../../../core/plugins/events/contracts/unified.contract.ts";
+import { normalizePage } from "../../../core/plugins/events/contracts/unified.contract";
 
 export const updatePageHandler = async (command: any) => {
   try {

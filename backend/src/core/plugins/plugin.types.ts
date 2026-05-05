@@ -1,4 +1,6 @@
-import { UnifiedEvent } from "./events/contracts/unified.contract.ts"; // استورد النوع الموحد
+import { UnifiedEvent } from "./events/contracts/unified.contract";
+
+
 
 export interface ICmsPlugin {
   name: string;
@@ -10,7 +12,6 @@ export interface ICmsPlugin {
 
   register?(context: any): void;
 
-  
   execute(event: UnifiedEvent): Promise<void>;
 
   meta?: {
@@ -21,5 +22,6 @@ export interface ICmsPlugin {
     };
   };
 
-  getDashboardData?(userId: number): Promise<any>;
+  // 🔥 FIXED: site-level not user-level
+  getDashboardData?(siteId: number): Promise<any>;
 }

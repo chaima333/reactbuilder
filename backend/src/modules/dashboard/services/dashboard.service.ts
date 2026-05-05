@@ -83,13 +83,39 @@ export const fetchStats = async (siteId: number) => {
 export const fetchPluginsData = async (siteId: number) => {
   const plugins = cmsRegistry.getAllPlugins();
 
-  return plugins.map(p => ({
-    name: p.name,
-    enabled: p.enabled,
-    events: p.events,
-    priority: p.priority,
-    hasDashboard: !!p.meta?.dashboard
-  }));
+  const results = await Promise.all(
+    plugins.map(async (p) => {
+      const base = {
+        name: p.name,
+        enabled: p.enabled,
+        priority: p.priority
+      };
+
+      if (!p.getDashboardData) {
+        return {
+          ...base,
+          dashboard: null
+        };
+      }
+
+      try {
+        const dashboard = await p.getDashboardData(siteId);
+
+        return {
+          ...base,
+          dashboard
+        };
+
+      } catch {
+        return {
+          ...base,
+          dashboard: null
+        };
+      }
+    })
+  );
+
+  return results;
 };
 
 

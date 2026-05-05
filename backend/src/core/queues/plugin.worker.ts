@@ -1,7 +1,7 @@
 import { Worker } from "bullmq";
 import { cmsRegistry } from "../plugins/plugin.registry";
 import { REDIS_CONFIG, redis } from "./config"; 
-import { UnifiedEvent, validateEvent } from "../plugins/events/contracts/unified.contract.ts";
+import { UnifiedEvent, validateEvent } from "../plugins/events/contracts/unified.contract";
 
 /**
  * 🔑 مفاتيح Redis المنظمة

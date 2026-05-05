@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 import { PageVersion } from "../../models/pageVersion";
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
-import { safeEvent } from "../../core/plugins/events/contracts/event.safe";
+import { validateEvent } from "../../core/plugins/events/contracts/unified.contract";
 
 export const VersionPlugin: ICmsPlugin = {
   name: "version-plugin",
@@ -13,15 +13,14 @@ export const VersionPlugin: ICmsPlugin = {
 
   async execute(event: any) {
 
-    // 🔥 SAFE ENTRY
-    const safe = safeEvent(event);
-    if (!safe) return;
+    // 🔥 HARD VALIDATION (not safeEvent)
+    const check = validateEvent(event);
+    if (!check.isValid) return;
 
-    const { current, previous } = safe.data;
-    const { context } = safe;
+    const { data, context } = event;
+    const { current, previous } = data;
 
-    if (!current || !current.id) return;
-    if (!previous) return;
+    if (!current?.id || !previous?.id) return;
 
     const serialize = (p: any) =>
       JSON.stringify({
@@ -34,7 +33,6 @@ export const VersionPlugin: ICmsPlugin = {
     const curr = serialize(current);
     const prev = serialize(previous);
 
-    // no change → skip
     if (curr === prev) return;
 
     const versionTag = createHash("sha256")

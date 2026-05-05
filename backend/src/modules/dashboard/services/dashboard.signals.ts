@@ -1,6 +1,7 @@
 import { ActivityLog, Page } from "../../../models";
 
 export const fetchSignals = async (siteId: number) => {
+
   const [totalActivities, lastActivity, topPages] = await Promise.all([
     ActivityLog.count({ where: { siteId } }),
 
