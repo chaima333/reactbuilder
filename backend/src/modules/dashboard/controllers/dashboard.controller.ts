@@ -1,9 +1,7 @@
-// modules/dashboard/dashboard.controller.ts
-
 import { Response } from "express";
-import { AuthRequest } from "../../shared/auth.util";
-import * as DashboardService from "./dashboard.service";
-import { SiteMember } from "../../models";
+import * as DashboardService from "../services/dashboard.service";
+import SiteMember from "../../../models/SiteMember";
+import { AuthRequest } from "../../../shared/auth.util";
 
 export const getDashboardFull = async (req: AuthRequest, res: Response) => {
   try {
@@ -14,7 +12,7 @@ export const getDashboardFull = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: "siteId required" });
     }
 
-    // 🔒 IMPORTANT: check access via SiteMember
+    // 🔒 access check
     const member = await SiteMember.findOne({
       where: { siteId, userId }
     });
@@ -25,33 +23,27 @@ export const getDashboardFull = async (req: AuthRequest, res: Response) => {
 
     const [
       stats,
-      activity,
       pluginsData,
       layout,
       system,
-      pluginStatus,
-      liveEvents
+      pluginStatus
     ] = await Promise.all([
       DashboardService.fetchStats(Number(siteId)),
-      DashboardService.fetchActivity(Number(siteId)),
       DashboardService.fetchPluginsData(Number(siteId)),
       DashboardService.buildLayout(),
       DashboardService.getSystemHealth(),
-      DashboardService.getPluginStatus(),
-      DashboardService.fetchLiveEvents()
+      DashboardService.getPluginStatus()
     ]);
 
     return res.json({
       success: true,
       data: {
         stats,
-        activity,
         plugins: pluginsData,
         layout,
         system,
         runtime: {
-          plugins: pluginStatus,
-          events: liveEvents
+          plugins: pluginStatus
         }
       }
     });

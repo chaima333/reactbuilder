@@ -1,13 +1,16 @@
 import { Router } from "express";
 import { authenticateJWT } from "../../shared/auth.util";
-import { getDashboardFull } from "./dashboard.controller";
+import { getDashboardFull } from "./controllers/dashboard.controller";
+import { getLiveEvents } from "./controllers/monitor.controller";
 
 const router = Router({ mergeParams: true });
 
 router.use(authenticateJWT);
 
-// 🔥 SINGLE SOURCE OF TRUTH
+// ✅ dashboard (clean)
 router.get("/full", getDashboardFull);
 
+// 🔥 monitoring (separate)
+router.get("/internal/monitor/events", getLiveEvents);
 
 export default router;

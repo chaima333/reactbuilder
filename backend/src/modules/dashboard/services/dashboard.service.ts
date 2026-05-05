@@ -1,11 +1,9 @@
-import { cmsRegistry } from "../../core/plugins/plugin.registry";
-import { Site, Page, ActivityLog } from "../../models";
-import { sequelize } from "../../core/database/connection";
 import { QueryTypes } from "sequelize";
-// تأكد من المسار الصحيح للـ eventStore
-import { eventStore } from "../../core/plugins/events/event.store"; 
+import { Page, Site } from "../../../models";
+import { sequelize } from "../../../core/database/connection";
+import { cmsRegistry } from "../../../core/plugins/plugin.registry";
 
-// 🔥 STATS (site scoped)
+// 🔥 STATS
 export const fetchStats = async (siteId: number) => {
   const site = await Site.findByPk(siteId);
 
@@ -39,17 +37,7 @@ export const fetchStats = async (siteId: number) => {
   };
 };
 
-// 🔥 ACTIVITY (History from DB)
-export const fetchActivity = async (siteId: number) => {
-  return ActivityLog.findAll({
-    where: { siteId },
-    limit: 10,
-    order: [["createdAt", "DESC"]],
-    include: [{ association: "user", attributes: ["id", "name"] }]
-  });
-};
-
-// 🔥 PLUGINS DATA
+// 🔥 PLUGINS DATA (read-only)
 export const fetchPluginsData = async (siteId: number) => {
   const plugins = cmsRegistry.getAllPlugins();
   const results: Record<string, any> = {};
@@ -63,6 +51,7 @@ export const fetchPluginsData = async (siteId: number) => {
       }
     }
   }
+
   return results;
 };
 
@@ -75,7 +64,7 @@ export const getSystemHealth = async () => ({
   lastCheck: new Date().toISOString()
 });
 
-// 🔥 RUNTIME PLUGINS STATUS
+// 🔥 PLUGIN STATUS (snapshot فقط)
 export const getPluginStatus = () => {
   return cmsRegistry.getAllPlugins().map(p => ({
     name: p.name,
@@ -85,23 +74,10 @@ export const getPluginStatus = () => {
   }));
 };
 
-/**
- * 🔥 LIVE EVENTS (The Missing Piece)
- * هذي الدالة توّة مربوطة بالـ Redis مباشرة عبر الـ eventStore
- */
-export const fetchLiveEvents = async () => {
-  try {
-    // نعيطو للـ Redis باش يرجعلنا الـ list متاع الـ events الأخيرة
-    const latestEvents = await eventStore.getLatest();
-    return latestEvents || [];
-  } catch (error) {
-    console.error("🚨 [DashboardService] Failed to fetch live events:", error);
-    return [];
-  }
-};
-
+// 🔥 LAYOUT
 export const buildLayout = async () => {
   const plugins = cmsRegistry.getAllPlugins();
+
   return {
     blocks: plugins
       .filter(p => p.meta?.dashboard)
