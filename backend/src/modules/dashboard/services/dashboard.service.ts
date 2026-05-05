@@ -82,20 +82,13 @@ export const fetchStats = async (siteId: number) => {
 
 export const fetchPluginsData = async (siteId: number) => {
   const plugins = cmsRegistry.getAllPlugins();
-  const results: Record<string, any> = {};
 
-  for (const plugin of plugins) {
-    if (plugin.getDashboardData) {
-      try {
-        results[plugin.name] = await plugin.getDashboardData(siteId);
-      } catch (err) {
-        console.error(`❌ Plugin ${plugin.name} failed`, err);
-        results[plugin.name] = { error: true };
-      }
-    }
-  }
-
-  return results;
+  return plugins.map(p => ({
+    name: p.name,
+    enabled: p.enabled,
+    events: p.events,
+    hasDashboard: !!p.getDashboardData
+  }));
 };
 
 
