@@ -2,6 +2,9 @@ import { Response } from "express";
 import * as DashboardService from "../services/dashboard.service";
 import SiteMember from "../../../models/SiteMember";
 import { AuthRequest } from "../../../shared/auth.util";
+import { DashboardProjection } from "../projections/dashboard.projection";
+import { cmsRegistry } from "../../../core/plugins/plugin.registry";
+import { fetchSignals } from "../services/dashboard.signals";
 
 export const getDashboardFull = async (req: AuthRequest, res: Response) => {
   try {
@@ -45,4 +48,22 @@ export const getDashboardFull = async (req: AuthRequest, res: Response) => {
   } catch (err: any) {
     return res.status(500).json({ message: err.message });
   }
+};
+export const rebuildDashboardProjection = async (siteId: number) => {
+
+  const stats = await DashboardService.fetchStats(siteId);
+  const signals = await fetchSignals(siteId);
+  const plugins = cmsRegistry.getAllPlugins();
+
+  const snapshot = {
+    stats,
+    signals,
+    plugins: plugins.map(p => ({
+      name: p.name,
+      enabled: p.enabled
+    })),
+    generatedAt: new Date().toISOString()
+  };
+
+  await DashboardProjection.save(siteId, snapshot);
 };
