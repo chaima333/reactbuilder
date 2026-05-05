@@ -1,6 +1,7 @@
 import { createHash } from "crypto";
 import { PageVersion } from "../../models/pageVersion";
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
+import { safeEvent } from "../../core/plugins/events/contracts/event.safe";
 
 export const VersionPlugin: ICmsPlugin = {
   name: "version-plugin",
@@ -10,32 +11,31 @@ export const VersionPlugin: ICmsPlugin = {
   events: ["page.updated"],
   enabled: true,
 
-  async execute(event) {
+  async execute(event: any) {
 
-    // 🧱 HARD GUARDS
-    if (!event?.data?.current?.id) return;
-    if (!event?.context?.siteId) return;
+    // 🔥 SAFE ENTRY
+    const safe = safeEvent(event);
+    if (!safe) return;
 
-    const { current, previous } = event.data;
+    const { current, previous } = safe.data;
+    const { context } = safe;
 
-    if (!current || !previous) return;
-    if (!current.id) return;
+    if (!current || !current.id) return;
+    if (!previous) return;
 
-    const normalize = (p: any) => {
-      if (!p) return null;
-
-      return JSON.stringify({
+    const serialize = (p: any) =>
+      JSON.stringify({
         title: p.title || "",
         content: p.content || "",
         slug: p.slug || "",
         blocks: p.blocks || []
       });
-    };
 
-    const curr = normalize(current);
-    const prev = normalize(previous);
+    const curr = serialize(current);
+    const prev = serialize(previous);
 
-    if (!curr || curr === prev) return;
+    // no change → skip
+    if (curr === prev) return;
 
     const versionTag = createHash("sha256")
       .update(`${current.id}:${curr}`)
@@ -44,15 +44,15 @@ export const VersionPlugin: ICmsPlugin = {
     try {
       await PageVersion.create({
         pageId: current.id,
-        siteId: event.context.siteId,
+        siteId: context.siteId,
         versionTag,
         title: current.title,
         content: current.content,
         blocks: current.blocks,
-        createdBy: event.context.userId
+        createdBy: context.userId
       });
 
-      console.log(`📜 VERSION saved: ${versionTag.slice(0, 8)}`);
+      console.log(`📜 VERSION SAVED: ${versionTag.slice(0, 8)}`);
 
     } catch (err) {
       console.error("VERSION ERROR:", err);

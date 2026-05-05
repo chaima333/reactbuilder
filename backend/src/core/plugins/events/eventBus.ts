@@ -1,35 +1,33 @@
 import crypto from "crypto";
 import { pluginQueue } from "../../queues/plugin.queue";
-
+import { safeEvent } from "./contracts/event.safe";
 export class EventBus {
-  static async emit(params: {
-    type: string;
-    data: any;
-    context: any;
-  }) {
+  static async emit(params: any) {
 
-    const pageId = params.data?.current?.id;
-    if (!pageId) return;
+    const safe = safeEvent(params);
+    if (!safe) {
+      console.warn("❌ Dropped invalid event in EventBus");
+      return;
+    }
 
-    // 🔒 identity ثابت (ممنوع يعتمد على content)
+    const pageId = safe.data.current.id;
+
     const jobId = crypto.createHash("sha256")
-      .update(`${params.type}:${pageId}:${params.context.traceId}`)
+      .update(`${params.type}:${pageId}:${safe.context.traceId || ""}`)
       .digest("hex");
-
-    console.log(`📡 BUS → ${params.type} | Page: ${pageId}`);
 
     await pluginQueue.add(
       "plugin-tasks",
       {
         id: jobId,
-        traceId: params.context.traceId || jobId,
+        traceId: safe.context.traceId || jobId,
         timestamp: Date.now(),
         type: params.type,
-        data: params.data,
+        data: safe.data,
         context: {
-          ...params.context,
-          source: params.context.source || "event.bus",
-          depth: (params.context.depth || 0) + 1
+          ...safe.context,
+          source: safe.context.source || "event.bus",
+          depth: safe.context.depth + 1
         }
       },
       {
