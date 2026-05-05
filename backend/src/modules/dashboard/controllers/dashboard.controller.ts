@@ -9,14 +9,15 @@ import { DashboardProjection } from "../projections/dashboard.projection";
 export const getDashboardFull = async (req, res) => {
   const siteId = Number(req.params.siteId);
 
-  const cached = await DashboardProjection.get(siteId);
+ const cached = await DashboardProjection.get(siteId);
 
-  if (cached) {
-    return res.json({
-      success: true,
-      data: cached
-    });
-  }
+if (!cached) {
+  await rebuildDashboardProjection(siteId);
+  return res.json({
+    success: true,
+    data: await DashboardProjection.get(siteId)
+  });
+}
 
   return res.status(202).json({
     success: false,
