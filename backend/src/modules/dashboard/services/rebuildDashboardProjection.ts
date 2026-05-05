@@ -5,7 +5,6 @@ import {
 } from "../services/dashboard.service";
 
 import { fetchSignals } from "./dashboard.signals";
-import { cmsRegistry } from "../../../core/plugins/plugin.registry";
 import { DashboardProjection } from "../projections/dashboard.projection";
 
 export const rebuildDashboardProjection = async (siteId: number) => {
