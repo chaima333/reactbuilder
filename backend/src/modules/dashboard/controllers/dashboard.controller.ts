@@ -43,7 +43,7 @@ export const getDashboardFull = async (req: AuthRequest, res: Response) => {
         layout,
         system,
         runtime: {
-          plugins: pluginStatus
+          pluginsCount: pluginStatus.length
         }
       }
     });
