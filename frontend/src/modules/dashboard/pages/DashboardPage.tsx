@@ -1,28 +1,45 @@
 import React from "react";
-import { Box, CircularProgress, Alert, Typography } from "@mui/material";
+
+import {
+  Box,
+  CircularProgress,
+  Alert,
+  Typography
+} from "@mui/material";
+
 import { useSelector } from "react-redux";
+
 import { RootState } from "../../../redux/store";
-import { useGetDashboardFullQuery } from "../../../redux/services/dashboard.api";
-import DashboardRenderer from "../pages/DashboardRenderer";
+
+import { useGetDashboardFullQuery }
+from "../../../redux/services/dashboard.api";
+
+import DashboardRenderer
+from "./DashboardRenderer";
 
 export const DashboardPage: React.FC = () => {
+
   const siteId = useSelector(
-    (state: RootState) => state.site.currentSite?.id
+    (state: RootState) =>
+      state.site.currentSite?.id
   );
 
   const {
     data,
     isLoading,
-    error,
-  } = useGetDashboardFullQuery(siteId!, {
-    skip: !siteId,
-  });
+    error
+  } = useGetDashboardFullQuery(
+    siteId ?? 0,
+    {
+      skip: !siteId
+    }
+  );
 
   if (!siteId) {
     return (
       <Box sx={{ p: 4 }}>
         <Alert severity="warning">
-          اختر موقع أولاً من Site Selector
+          اختر موقع أولاً
         </Alert>
       </Box>
     );
@@ -30,14 +47,22 @@ export const DashboardPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="60vh"
+      >
         <CircularProgress />
-        <Typography sx={{ ml: 2 }}>Loading dashboard...</Typography>
+
+        <Typography sx={{ ml: 2 }}>
+          Loading dashboard...
+        </Typography>
       </Box>
     );
   }
 
-  if (error) {
+  if (error || !data) {
     return (
       <Box sx={{ p: 4 }}>
         <Alert severity="error">
@@ -49,7 +74,12 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <DashboardRenderer layout={data?.layout} context={data} />
+
+      <DashboardRenderer
+        layout={data.layout}
+        dashboard={data}
+      />
+
     </Box>
   );
 };

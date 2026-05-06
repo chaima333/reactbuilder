@@ -1,17 +1,25 @@
 // src/modules/dashboard/components/widgets/SeoWidget.tsx
-import { DashboardContext } from "./types";
 
-export const SeoWidget: React.FC<DashboardContext> = ({ plugins, loading }) => {
-  if (loading.global) return <div>Loading SEO...</div>;
+type SeoWidgetProps = {
+  data: {
+    seoScore: number;
+    optimizedPages: number;
+  };
+};
 
-  const seo = plugins?.seo;
-  if (!seo) return null;
+export const SeoWidget: React.FC<SeoWidgetProps> = ({ data }) => {
+
+  if (!data) {
+    return <div>No SEO Data</div>;
+  }
 
   return (
     <div>
       <h3>SEO</h3>
-      <p>Title: {seo.title}</p>
-      <p>Description: {seo.description}</p>
+
+      <p>SEO Score: {data.seoScore}</p>
+
+      <p>Optimized Pages: {data.optimizedPages}</p>
     </div>
   );
 };
