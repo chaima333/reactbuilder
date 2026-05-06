@@ -13,9 +13,8 @@ export const Layout: React.FC = () => {
   const dispatch = useDispatch();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const { sites, currentSite, isLoading } = useSelector(
-    (state: RootState) => state.site
-  );
+  const { sites, currentSite } =
+  useSelector((state: RootState) => state.site);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -27,14 +26,6 @@ export const Layout: React.FC = () => {
       dispatch(setCurrentSite(sites[0]));
     }
   }, [sites, currentSite, dispatch]);
-
-  if (isLoading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
-        <CircularProgress />
-      </Box>
-    );
-  }
 
   return (
     <Box sx={{ display: "flex" }}>
