@@ -270,7 +270,9 @@ async (siteId: number) => {
        * ---------------------------------------------
        */
 
-      plugins: processedPlugins,
+      plugins: Object.fromEntries(
+
+       processedPlugins.map((p: any) => [p.name, p])),
 
       /**
        * ---------------------------------------------
