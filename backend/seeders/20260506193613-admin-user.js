@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs'); // تأكد إنك صابب bcryptjs
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     // تشفير الباسورد (لازم يكون هو بيدو اللي تستعمل فيه في الـ Register)
-    const hashedPassword = await bcrypt.hash('12345678', 10);
+    const hashedPassword = await bcrypt.hash('Chaima123')
 
     return queryInterface.bulkInsert('users', [{
       name: 'Admin User',
