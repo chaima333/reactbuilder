@@ -29,6 +29,10 @@ module.exports = {
         type: Sequelize.ENUM('Admin', 'Editor', 'Viewer'),
         defaultValue: 'Viewer'
       },
+      avatar: {
+  type: Sequelize.STRING,
+  allowNull: true
+},
 
       created_at: {
         type: Sequelize.DATE,
