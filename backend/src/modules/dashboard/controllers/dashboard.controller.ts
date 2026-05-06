@@ -241,8 +241,8 @@ async (siteId: number) => {
           p.meta.dashboard.col,
 
         order:
-          p.meta.dashboard.order
-          || 100
+        (p.meta.dashboard.order || 0)
+         + 100
 
       }));
 
