@@ -5,8 +5,11 @@ export const initializeDB = async () => {
     await sequelize.authenticate();
     console.log("✅ DB connected");
 
-    // ❌ NO sync HERE
-    console.log("📦 Using migrations only");
+    // نردوها true لمرة واحدة باش نصلحو الجداول الناقصة
+    // بعد ما يتصلح الـ Deploy، تنجم ترجعها false
+    await sequelize.sync({ alter: true }); 
+    console.log("📦 DB Synced (Columns updated successfully)");
+
   } catch (error) {
     console.error("❌ DB error:", error);
     process.exit(1);
