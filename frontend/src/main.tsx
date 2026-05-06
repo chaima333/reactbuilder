@@ -7,7 +7,8 @@ import { store } from './redux/store';
 import App from './App';
 import './index.css';
 
-const GOOGLE_CLIENT_ID = '386973697348-lm5v1bvoupl2l7t7kfqe89irlif6oo37.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '386973697348-nli3u1vt7n20rj0svi90fc3b0kjkvpdc.apps.googleusercontent.com';
+            
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

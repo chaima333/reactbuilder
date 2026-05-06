@@ -39,6 +39,12 @@ React.FC<MonthlyChartProps> = ({
   const data =
     stats?.chartData || [];
 
+  /**
+   * ===============================================
+   * EMPTY STATE
+   * ===============================================
+   */
+
   if (!data.length) {
 
     return (
@@ -65,20 +71,26 @@ React.FC<MonthlyChartProps> = ({
     (item) => ({
 
       month:
-        new Date(
-          item.month
-        ).toLocaleDateString(
-          "fr-FR",
-          {
-            month: "short"
-          }
-        ),
+        new Date(item.month)
+          .toLocaleDateString(
+            "fr-FR",
+            {
+              month: "short",
+              year: "numeric"
+            }
+          ),
 
       count:
         item.count
 
     })
   );
+
+  /**
+   * ===============================================
+   * RENDER
+   * ===============================================
+   */
 
   return (
 
@@ -103,7 +115,9 @@ React.FC<MonthlyChartProps> = ({
               strokeDasharray="3 3"
             />
 
-            <XAxis dataKey="month" />
+            <XAxis
+              dataKey="month"
+            />
 
             <YAxis />
 
