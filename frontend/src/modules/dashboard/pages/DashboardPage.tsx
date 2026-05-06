@@ -72,13 +72,23 @@ export const DashboardPage: React.FC = () => {
     );
   }
 
+  if (!data) {
+  return (
+    <Box sx={{ p: 4 }}>
+      <Alert severity="warning">
+        Dashboard data unavailable
+      </Alert>
+    </Box>
+  );
+}
+
   return (
     <Box sx={{ p: 3 }}>
 
-      <DashboardRenderer
-        layout={data.layout}
-        dashboard={data}
-      />
+           <DashboardRenderer
+           layout={data.layout}
+           context={data}
+           />
 
     </Box>
   );
