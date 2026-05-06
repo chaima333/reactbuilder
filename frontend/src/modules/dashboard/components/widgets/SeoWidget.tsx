@@ -1,5 +1,8 @@
 // src/modules/dashboard/components/widgets/SeoWidget.tsx
 
+import { DashboardCard }
+from "../layout/DashboardCard";
+
 type SeoWidgetProps = {
   data: {
     seoScore: number;
@@ -7,19 +10,36 @@ type SeoWidgetProps = {
   };
 };
 
-export const SeoWidget: React.FC<SeoWidgetProps> = ({ data }) => {
+export const SeoWidget:
+React.FC<SeoWidgetProps> = ({
+  data
+}) => {
 
   if (!data) {
-    return <div>No SEO Data</div>;
+    return (
+      <DashboardCard title="SEO">
+        <div>No SEO Data</div>
+      </DashboardCard>
+    );
   }
 
   return (
-    <div>
-      <h3>SEO</h3>
 
-      <p>SEO Score: {data.seoScore}</p>
+    <DashboardCard title="SEO">
 
-      <p>Optimized Pages: {data.optimizedPages}</p>
-    </div>
+      <p>
+        SEO Score:
+        {" "}
+        {data.seoScore}
+      </p>
+
+      <p>
+        Optimized Pages:
+        {" "}
+        {data.optimizedPages}
+      </p>
+
+    </DashboardCard>
+
   );
 };

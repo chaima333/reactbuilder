@@ -1,17 +1,45 @@
 // src/modules/dashboard/components/widgets/MonthlyChart.tsx
-import React from "react";
-import { DashboardContext } from "./types"; // استعمل الـ Context الموحد
 
-export const MonthlyChart: React.FC<DashboardContext> = ({ stats, loading }) => {
-  // توّة TypeScript يعرف إنو loading.stats موجودة بوضوح
-  if (loading.stats) return <div>Loading chart...</div>;
+import React from "react";
+
+import { DashboardCard }
+from "../layout/DashboardCard";
+
+type MonthlyChartProps = {
+  stats: {
+    chartData: {
+      month: string;
+      count: number;
+    }[];
+  };
+};
+
+export const MonthlyChart:
+React.FC<MonthlyChartProps> = ({
+  stats
+}) => {
+
+  if (!stats) {
+    return (
+      <DashboardCard title="Monthly Activity">
+        <div>No chart data</div>
+      </DashboardCard>
+    );
+  }
 
   return (
-    <div className="widget-card">
-      <h3>Monthly Activity</h3>
+
+    <DashboardCard title="Monthly Activity">
+
       <pre>
-        {JSON.stringify(stats?.chartData || [], null, 2)}
+        {JSON.stringify(
+          stats.chartData || [],
+          null,
+          2
+        )}
       </pre>
-    </div>
+
+    </DashboardCard>
+
   );
 };

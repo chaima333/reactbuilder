@@ -1,18 +1,69 @@
-import { DashboardContext } from "./types";
-import { ActivityItem } from "./types";
+// src/modules/dashboard/components/widgets/ActivityFeed.tsx
 
-// الحل: تأكد من تعريف نوع المصفوفة في الـ Props
-export const ActivityFeed: React.FC<DashboardContext> = ({ activity, loading }) => {
-  if (loading.activity) return <div>Loading...</div>;
+import { DashboardCard }
+from "../layout/DashboardCard";
+
+type ActivityItem = {
+  id: number;
+  action: string;
+  createdAt: string;
+};
+
+type ActivityFeedProps = {
+  signals: {
+    totalActivities: number;
+    lastActivity: ActivityItem | null;
+    topPages: any[];
+  };
+};
+
+export const ActivityFeed:
+React.FC<ActivityFeedProps> = ({
+  signals
+}) => {
+
+  if (!signals) {
+    return (
+      <DashboardCard title="Activity">
+        <div>No activity</div>
+      </DashboardCard>
+    );
+  }
 
   return (
-    <ul>
-      {/* TypeScript سيعرف نوع 'a' أوتوماتيكياً كـ ActivityItem إذا كان نوع activity صحيحاً */}
-      {activity.map((a: ActivityItem) => ( 
-        <li key={a.id}>
-          {a.action} - {a.createdAt}
-        </li>
-      ))}
-    </ul>
+
+    <DashboardCard title="Recent Activity">
+
+      <p>
+        Total Activities:
+        {" "}
+        {signals.totalActivities}
+      </p>
+
+      {signals.lastActivity && (
+
+        <div
+          style={{
+            marginTop: 16
+          }}
+        >
+
+          <strong>
+            Last Activity
+          </strong>
+
+          <p>
+            {signals.lastActivity.action}
+          </p>
+
+          <small>
+            {signals.lastActivity.createdAt}
+          </small>
+
+        </div>
+
+      )}
+
+    </DashboardCard>
   );
 };

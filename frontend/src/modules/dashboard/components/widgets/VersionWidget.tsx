@@ -1,3 +1,6 @@
+import { DashboardCard }
+from "../layout/DashboardCard";
+
 type VersionWidgetProps = {
   data: {
     totalVersions: number;
@@ -11,13 +14,17 @@ React.FC<VersionWidgetProps> = ({
 }) => {
 
   if (!data) {
-    return <div>No Version Data</div>;
+
+    return (
+      <DashboardCard title="Versions">
+        <div>No Version Data</div>
+      </DashboardCard>
+    );
   }
 
   return (
-    <div>
 
-      <h3>Versions</h3>
+    <DashboardCard title="Versions">
 
       <p>
         Total Versions:
@@ -31,6 +38,7 @@ React.FC<VersionWidgetProps> = ({
         {data.lastBackup}
       </p>
 
-    </div>
+    </DashboardCard>
+
   );
 };
