@@ -71,17 +71,6 @@ export class DashboardWidgetService {
           enabled:
             plugin.enabled,
 
-          layout: {
-
-            col:
-              plugin.meta.dashboard.col || 6,
-
-            // 🔥 IMPORTANT FIX
-            order:
-              (plugin.meta.dashboard.order || 0) + 100
-
-          },
-
           payload
 
         };
