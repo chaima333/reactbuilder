@@ -56,7 +56,7 @@ import {
 import {
   GoogleOAuthProvider
 } from "@react-oauth/google";
-import { useAppBootstrap } from "./modules/dashboard/hooks/useBootstrap";
+import { useAppBootstrap } from "./modules/dashboard/hooks/useAppBootstrap";
 
 
 // ======================================================
