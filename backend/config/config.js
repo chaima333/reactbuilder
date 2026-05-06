@@ -1,16 +1,27 @@
-require('dotenv').config();
+require("dotenv").config();
 
 module.exports = {
+
   development: {
-    username: "postgres",
-    password: "PtWYWImdutAsGglMknYLefISsvqBbWbf",
-    database: "railway",
-    host: "junction.proxy.rlwy.net",
-    port: 58389,
-    dialect: "postgres"
+    use_env_variable: "DATABASE_URL",
+    dialect: "postgres",
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    }
   },
+
   production: {
     use_env_variable: "DATABASE_URL",
-    dialect: "postgres"
+    dialect: "postgres",
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    }
   }
+
 };
