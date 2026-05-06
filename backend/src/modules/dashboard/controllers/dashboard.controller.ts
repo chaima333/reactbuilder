@@ -1,342 +1,89 @@
-import { Response } from "express";
-
-import * as DashboardService
-from "../services/dashboard.service";
+// src/modules/dashboard/services/dashboard.widgets.service.ts
 
 import { cmsRegistry }
 from "../../../core/plugins/plugin.registry";
 
-import { fetchSignals }
-from "../services/dashboard.signals";
+export class DashboardWidgetService {
 
-import { DashboardProjection }
-from "../projections/dashboard.projection";
+  static async getWidgets(
+    siteId: number
+  ) {
 
-/**
- * =====================================================
- * GET FULL DASHBOARD
- * =====================================================
- */
-
-export const getDashboardFull = async (
-  req,
-  res
-) => {
-
-  try {
-
-    const siteId =
-      Number(req.params.siteId);
-
-    /**
-     * =================================================
-     * TRY CACHE
-     * =================================================
-     */
-
-    let cached =
-      await DashboardProjection.get(
-        siteId
-      );
-
-    /**
-     * =================================================
-     * FORCE REBUILD IF EMPTY
-     * =================================================
-     */
-
-    if (!cached) {
-
-      console.log(
-        `🚀 [Dashboard] No cache for site ${siteId}, rebuilding now...`
-      );
-
-      await rebuildDashboardProjection(
-        siteId
-      );
-
-      cached =
-        await DashboardProjection.get(
-          siteId
-        );
-    }
-
-    /**
-     * =================================================
-     * RESPONSE
-     * =================================================
-     */
-
-    return res.json({
-
-      success: true,
-
-      data: cached
-
-    });
-
-  } catch (error) {
-
-    console.error(
-      "❌ [Dashboard Error]:",
-      error
-    );
-
-    return res.status(500).json({
-
-      success: false,
-
-      message:
-        "Internal Server Error"
-
-    });
-  }
-};
-
-/**
- * =====================================================
- * REBUILD DASHBOARD SNAPSHOT
- * =====================================================
- */
-
-export const rebuildDashboardProjection =
-async (siteId: number) => {
-
-  try {
-
-    /**
-     * ===============================================
-     * CORE DATA
-     * ===============================================
-     */
-
-    const stats =
-      await DashboardService.fetchStats(
-        siteId
-      );
-
-    const signals =
-      await fetchSignals(siteId);
-
-    /**
-     * ===============================================
-     * PLUGINS
-     * ===============================================
-     */
-
-    const rawPlugins =
+    const plugins =
       cmsRegistry.getAllPlugins();
 
-    /**
-     * ===============================================
-     * PROCESS PLUGIN DASHBOARD DATA
-     * ===============================================
-     */
+    const widgets = await Promise.all(
 
-    const processedPlugins =
-      await Promise.all(
+      plugins.map(async (plugin: any) => {
 
-        rawPlugins.map(
-          async (p: any) => {
+        /**
+         * =============================================
+         * PLUGIN HAS NO DASHBOARD
+         * =============================================
+         */
 
-            let dashboardData = null;
+        if (!plugin.meta?.dashboard) {
+          return null;
+        }
 
-            /**
-             * -------------------------------------------
-             * FETCH DASHBOARD DATA
-             * -------------------------------------------
-             */
+        let data = null;
 
-            if (
-              typeof p.getDashboardData
-              === "function"
-            ) {
+        /**
+         * =============================================
+         * SAFE DASHBOARD DATA
+         * =============================================
+         */
 
-              try {
+        if (
+          typeof plugin.getDashboardData
+          === "function"
+        ) {
 
-                dashboardData =
-                  await p.getDashboardData(
-                    siteId
-                  );
+          try {
 
-              } catch (e) {
+            data =
+              await plugin.getDashboardData(
+                siteId
+              );
 
-                console.error(
-                  `❌ Dashboard data failed for plugin: ${p.name}`,
-                  e
-                );
-              }
-            }
+          } catch (error) {
 
-            return {
-
-              name: p.name,
-
-              enabled: p.enabled,
-
-              priority: p.priority,
-
-              hasDashboard:
-                !!p.meta?.dashboard,
-
-              data: dashboardData
-
-            };
+            console.error(
+              `❌ Widget failed: ${plugin.name}`
+            );
           }
-        )
-      );
+        }
 
-    /**
-     * ===============================================
-     * CORE WIDGETS
-     * ===============================================
-     */
+        /**
+         * =============================================
+         * SAFE WIDGET CONTRACT
+         * =============================================
+         */
 
-    const coreBlocks = [
+        return {
 
-      {
-        id: "stats-core",
-        type: "stats",
-        col: 12,
-        order: 0
-      },
+          id: plugin.name,
 
-      {
-        id: "chart-core",
-        type: "chart",
-        col: 8,
-        order: 1
-      },
+          type:
+            plugin.meta.dashboard.type,
 
-      {
-        id: "activity-core",
-        type: "activity",
-        col: 4,
-        order: 2
-      }
+          enabled:
+            plugin.enabled,
 
-    ];
+          col:
+            plugin.meta.dashboard.col || 6,
 
-    /**
-     * ===============================================
-     * PLUGIN WIDGETS
-     * ===============================================
-     */
+          order:
+            plugin.meta.dashboard.order || 100,
 
-    const pluginBlocks = rawPlugins
+          data
 
-      .filter(
-        (p: any) =>
-          p.meta?.dashboard
-      )
+        };
 
-      .map((p: any) => ({
+      })
 
-        id: p.name,
-
-        type:
-          p.meta.dashboard.type,
-
-        col:
-          p.meta.dashboard.col,
-
-        order:
-        (p.meta.dashboard.order || 0)
-         + 100
-
-      }));
-
-    /**
-     * ===============================================
-     * FINAL SNAPSHOT
-     * ===============================================
-     */
-
-    const snapshot = {
-
-      /**
-       * ---------------------------------------------
-       * CORE DATA
-       * ---------------------------------------------
-       */
-
-      stats,
-
-      signals,
-
-      /**
-       * ---------------------------------------------
-       * PROCESSED PLUGINS
-       * ---------------------------------------------
-       */
-
-      plugins: Object.fromEntries(
-
-       processedPlugins.map((p: any) => [p.name, p])),
-
-      /**
-       * ---------------------------------------------
-       * DYNAMIC LAYOUT ENGINE
-       * ---------------------------------------------
-       */
-
-      layout: {
-
-        blocks: [
-
-          ...coreBlocks,
-
-          ...pluginBlocks
-
-        ]
-
-          /**
-           * -----------------------------------------
-           * SORT BY ORDER
-           * -----------------------------------------
-           */
-
-          .sort(
-            (
-              a: any,
-              b: any
-            ) =>
-              a.order - b.order
-          )
-
-      },
-
-      /**
-       * ---------------------------------------------
-       * SNAPSHOT METADATA
-       * ---------------------------------------------
-       */
-
-      generatedAt:
-        Date.now()
-
-    };
-
-    /**
-     * ===============================================
-     * SAVE PROJECTION
-     * ===============================================
-     */
-
-    await DashboardProjection.save(
-      siteId,
-      snapshot
     );
 
-    console.log(
-      `✅ Dashboard snapshot rebuilt for site ${siteId}`
-    );
-
-  } catch (error) {
-
-    console.error(
-      "❌ Rebuild Dashboard Failure:",
-      error
-    );
+    return widgets.filter(Boolean);
   }
-};
+}
