@@ -5,8 +5,8 @@ module.exports = {
       id: { allowNull: false, autoIncrement: true, primaryKey: true, type: Sequelize.INTEGER },
       url: { type: Sequelize.STRING, allowNull: false },
       // ... أي Columns أخرى تستحقها (لكن ما تحطش original_name هنا توة)
-      createdAt: { allowNull: false, type: Sequelize.DATE },
-      updatedAt: { allowNull: false, type: Sequelize.DATE }
+createdAt: { allowNull: false, type: Sequelize.DATE, defaultValue: Sequelize.NOW },
+updatedAt: { allowNull: false, type: Sequelize.DATE, defaultValue: Sequelize.NOW }
     });
   },
   down: async (queryInterface, Sequelize) => {
