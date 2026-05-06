@@ -1,7 +1,12 @@
-import { Paper, Box, Typography }
-from "@mui/material";
+// src/modules/dashboard/components/layout/DashboardCard.tsx
 
-type Props = {
+import {
+  Paper,
+  Typography,
+  Box
+} from "@mui/material";
+
+type DashboardCardProps = {
   title: string;
   children: React.ReactNode;
 };
@@ -9,15 +14,37 @@ type Props = {
 export const DashboardCard = ({
   title,
   children
-}: Props) => {
+}: DashboardCardProps) => {
 
   return (
+
     <Paper
-      elevation={2}
+
+      elevation={0}
+
       sx={{
+
         p: 3,
-        borderRadius: 3,
-        height: "100%"
+
+        borderRadius: 4,
+
+        bgcolor: "background.paper",
+
+        color: "text.primary",
+
+        border: "1px solid",
+
+        borderColor: "divider",
+
+        height: "100%",
+
+        transition: "0.2s ease",
+
+        "&:hover": {
+          transform: "translateY(-2px)",
+          boxShadow: 3
+        }
+
       }}
     >
 
