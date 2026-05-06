@@ -66,7 +66,10 @@ export interface DashboardFullResponse {
     topPages: TopPage[];
   };
 
-  plugins: DashboardPluginData[];
+plugins: Record<
+  string,
+  DashboardPluginData
+>;
 
   layout: DashboardLayout;
 

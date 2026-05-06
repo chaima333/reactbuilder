@@ -1,53 +1,114 @@
 // src/modules/app/hooks/useAppBootstrap.ts
 
-import { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useEffect }
+from "react";
 
-import { useGetSitesQuery } from "../../../redux/services/sites.api";
-import { setSites, setCurrentSite } from "../../../redux/features/siteSlice";
+import {
+  useDispatch,
+  useSelector
+}
+from "react-redux";
 
-import { RootState } from "../../../redux/store";
+import {
+  useGetSitesQuery
+}
+from "../../../redux/services/sites.api";
+
+import {
+  setSites,
+  setCurrentSite
+}
+from "../../../redux/features/siteSlice";
+
+import {
+  RootState
+}
+from "../../../redux/store";
 
 export const useAppBootstrap = () => {
-  const dispatch = useDispatch();
 
-  const isAuth = useSelector(
-    (s: RootState) => s.auth.isAuthenticated
-  );
+  const dispatch =
+    useDispatch();
 
-  const currentSite = useSelector(
-    (s: RootState) => s.site.currentSite
-  );
+  const isAuth =
+    useSelector(
+      (s: RootState) =>
+        s.auth.isAuthenticated
+    );
 
-  const { data } = useGetSitesQuery(undefined, {
-    skip: !isAuth
-  });
+  const currentSite =
+    useSelector(
+      (s: RootState) =>
+        s.site.currentSite
+    );
+
+  const { data } =
+    useGetSitesQuery(
+      undefined,
+      {
+        skip: !isAuth
+      }
+    );
 
   useEffect(() => {
 
-    if (!data || !Array.isArray(data)) {
+    /**
+     * ===========================================
+     * VALIDATE DATA
+     * ===========================================
+     */
+
+    if (
+      !data ||
+      !Array.isArray(data)
+    ) {
       return;
     }
 
-    // 🔥 خزّن المواقع في redux
-    dispatch(setSites(data));
+    /**
+     * ===========================================
+     * SAVE SITES
+     * ===========================================
+     */
 
-    // 🔥 restore site من localStorage
+    dispatch(
+      setSites(data)
+    );
+
+    /**
+     * ===========================================
+     * RESTORE CURRENT SITE
+     * ===========================================
+     */
+
     if (!currentSite) {
 
-      const savedSiteId = localStorage.getItem("siteId");
+      const savedSiteId =
+        localStorage.getItem(
+          "siteId"
+        );
 
       if (savedSiteId) {
 
-        const found = data.find(
-          (s: any) => s.id === Number(savedSiteId)
-        );
+        const found =
+          data.find(
+            (s: any) =>
+              s.id ===
+              Number(savedSiteId)
+          );
 
         if (found) {
-          dispatch(setCurrentSite(found));
+
+          dispatch(
+            setCurrentSite(found)
+          );
         }
       }
     }
 
-  }, [data, currentSite, dispatch]);
+  }, [
+    data,
+    currentSite,
+    dispatch
+  ]);
 };
