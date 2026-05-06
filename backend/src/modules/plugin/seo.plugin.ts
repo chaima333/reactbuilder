@@ -14,7 +14,7 @@ export const SEOPlugin: ICmsPlugin = {
    // 🔥 UI definition للـ dashboard
   meta: {
     dashboard: {
-      type: "seo",
+      type: "widget.seo.score",
       col: 6,
       order: 2
     }

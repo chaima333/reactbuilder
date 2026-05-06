@@ -14,7 +14,7 @@ export const VersionPlugin: ICmsPlugin = {
   // 🔥 UI definition للـ dashboard
   meta: {
     dashboard: {
-      type: "version",
+      type: "widget.version.summary",
       col: 6,
       order: 1
     }
