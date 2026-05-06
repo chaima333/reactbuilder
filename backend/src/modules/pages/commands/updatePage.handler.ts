@@ -4,7 +4,6 @@ import { Page } from "../../../models/page";
 import { emitDomainEvent, getSemanticDiff } from "../domain/diff";
 import { redis } from "../../../core/queues/config";
 import { normalizePage } from "../../../core/plugins/events/contracts/unified.contract";
-import { rebuildDashboardProjection } from "../../dashboard/controllers/dashboard.controller";
 
 export const updatePageHandler = async (command: any) => {
   try {
