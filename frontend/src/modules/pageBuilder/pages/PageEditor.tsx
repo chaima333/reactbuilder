@@ -21,7 +21,6 @@ import { PageHeader } from "../components/editor/PageHeader";
 import { EditorCanvas } from "../components/editor/EditorCanvas";
 import { usePageEditor } from "../hooks/usePageEditor";
 import { ThemeEditorPanel } from "../components/sidebar/ThemeEditorPanel";
-import { ThemeContext } from "../core/theme/ThemeContext";
 
 import AddBoxIcon from '@mui/icons-material/AddBox';
 import TextFieldsIcon from '@mui/icons-material/TextFields';
@@ -29,6 +28,7 @@ import TextFieldsIcon from '@mui/icons-material/TextFields';
 import { Block } from "../types/page.types";
 import { moveBlockInTree } from "../core/tree/move";
 import { canDrop } from "../adapters/pageAdapter";
+import { ThemeContext } from "../core/theme/themeContext";
 
 // --- 🛠️ Helpers ---
 const findBlockInTree = (blocks: Block[], id: string): Block | null => {
