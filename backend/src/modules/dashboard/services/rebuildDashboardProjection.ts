@@ -21,12 +21,7 @@ export const rebuildDashboardProjection = async (siteId: number) => {
     stats,
     signals,
 
-    plugins: plugins.map(p => ({
-      name: p.name,
-      enabled: p.enabled,
-      priority: p.priority,
-      hasDashboard: p.hasDashboard
-    })),
+      widgets: plugins,
 
     layout: await buildLayout(),
 

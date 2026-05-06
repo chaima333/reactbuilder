@@ -1,13 +1,9 @@
-// src/modules/dashboard/services/dashboard.widgets.service.ts
-
 import { cmsRegistry }
 from "../../../core/plugins/plugin.registry";
 
 export class DashboardWidgetService {
 
-  static async getWidgets(
-    siteId: number
-  ) {
+  static async getWidgets(siteId: number) {
 
     const plugins =
       cmsRegistry.getAllPlugins();
@@ -18,7 +14,7 @@ export class DashboardWidgetService {
 
         /**
          * =============================================
-         * PLUGIN HAS NO DASHBOARD
+         * NO DASHBOARD SUPPORT
          * =============================================
          */
 
@@ -26,11 +22,11 @@ export class DashboardWidgetService {
           return null;
         }
 
-        let data = null;
+        let payload = null;
 
         /**
          * =============================================
-         * SAFE DASHBOARD DATA
+         * SAFE PLUGIN PAYLOAD
          * =============================================
          */
 
@@ -41,7 +37,7 @@ export class DashboardWidgetService {
 
           try {
 
-            data =
+            payload =
               await plugin.getDashboardData(
                 siteId
               );
@@ -51,18 +47,23 @@ export class DashboardWidgetService {
             console.error(
               `❌ Widget failed: ${plugin.name}`
             );
+
+            payload = {
+              error: true
+            };
           }
         }
 
         /**
          * =============================================
-         * SAFE WIDGET CONTRACT
+         * CLEAN WIDGET CONTRACT
          * =============================================
          */
 
         return {
 
-          id: plugin.name,
+          id:
+            plugin.name,
 
           type:
             plugin.meta.dashboard.type,
@@ -70,13 +71,18 @@ export class DashboardWidgetService {
           enabled:
             plugin.enabled,
 
-          col:
-            plugin.meta.dashboard.col || 6,
+          layout: {
 
-          order:
-            plugin.meta.dashboard.order || 100,
+            col:
+              plugin.meta.dashboard.col || 6,
 
-          data
+            // 🔥 IMPORTANT FIX
+            order:
+              (plugin.meta.dashboard.order || 0) + 100
+
+          },
+
+          payload
 
         };
 
