@@ -5,6 +5,6 @@ import { getPublicPage } from "../controllers/public.controller"; // ثبت من
 const router = Router({ mergeParams: true }); // 👈 زيد هذي ضروري!!
 
 // جرب بدّل الـ Route هكا باش نقطعو الشك
-router.get("/:siteId/:slug", getPublicPage);
+router.get("/pages/:siteId/:slug", getPublicPage);
 
 export default router;
