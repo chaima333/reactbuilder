@@ -21,9 +21,9 @@ export const fetchStats = async (siteId: number) => {
 
   const monthlyStatsRaw = await sequelize.query(
     `
-    SELECT DATE_TRUNC('month', "created_at") as month, COUNT(*) as count
-    FROM pages
-    WHERE "site_id" = :siteId
+    SELECT DATE_TRUNC('month', "createdAt") as month, COUNT(*) as count
+    FROM "Pages"
+    WHERE "siteId" = :siteId
     GROUP BY month
     ORDER BY month DESC
     LIMIT 12
