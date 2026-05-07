@@ -2,48 +2,136 @@ import { Worker } from "bullmq";
 
 import { cmsRegistry } from "../plugins/plugin.registry";
 import { REDIS_CONFIG, redis } from "./config";
-import { UnifiedEvent, validateEvent } from "../plugins/events/contracts/unified.contract";
+
+import {
+  UnifiedEvent,
+  validateEvent
+} from "../plugins/events/contracts/unified.contract";
 import { rebuildDashboardProjection } from "../../modules/dashboard/controllers/dashboard.projection.builder";
 
 
 /**
- * 🔑 Redis keys
+ * ============================================
+ * REDIS KEYS
+ * ============================================
  */
-const DLQ_KEY = "dashboard:dead:letters";
 
-const getSiteHistoryKey = (siteId: string | number) =>
+const DLQ_KEY =
+  "dashboard:dead:letters";
+
+const GLOBAL_HISTORY_KEY =
+  "dashboard:runtime:events";
+
+const getSiteHistoryKey =
+(siteId: string | number) =>
   `dashboard:events:site:${siteId}`;
 
-const GLOBAL_HISTORY_KEY = "dashboard:runtime:events";
+/**
+ * ============================================
+ * SINGLETON WORKER GUARD
+ * ============================================
+ */
+
+let workerInitialized = false;
 
 /**
- * 🚀 Plugin Worker (Single source of truth for execution)
+ * ============================================
+ * PLUGIN WORKER
+ * ============================================
  */
-export const initPluginWorker = () => {
-  const worker = new Worker(
-    "plugin-tasks",
-    async (job) => {
-      const rawEvent = JSON.parse(JSON.stringify(job.data)) as UnifiedEvent;
 
-      // 1️⃣ Validate event
-      const validation = validateEvent(rawEvent);
+export const initPluginWorker = () => {
+
+  /**
+   * --------------------------------------------
+   * PREVENT DUPLICATE WORKERS
+   * --------------------------------------------
+   */
+
+  if (workerInitialized) {
+
+    console.log(
+      "⚠️ Worker already initialized"
+    );
+
+    return;
+  }
+
+  workerInitialized = true;
+
+  console.log(
+    "🚀 Initializing Plugin Worker..."
+  );
+
+  /**
+   * --------------------------------------------
+   * WORKER INSTANCE
+   * --------------------------------------------
+   */
+
+  const worker = new Worker(
+
+    "plugin-tasks",
+
+    async (job) => {
+
+      const rawEvent =
+        JSON.parse(
+          JSON.stringify(job.data)
+        ) as UnifiedEvent;
+
+      /**
+       * ----------------------------------------
+       * VALIDATE EVENT
+       * ----------------------------------------
+       */
+
+      const validation =
+        validateEvent(rawEvent);
+
       if (!validation.isValid) {
-        console.error("❌ INVALID EVENT:", validation.error);
+
+        console.error(
+          "❌ INVALID EVENT:",
+          validation.error
+        );
 
         await redis.lpush(
           DLQ_KEY,
-          JSON.stringify({ event: rawEvent, error: validation.error })
+          JSON.stringify({
+            event: rawEvent,
+            error: validation.error
+          })
         );
 
         return;
       }
 
-      // 2️⃣ Idempotency lock
-      const lockKey = `evt:done:${rawEvent.id}`;
-      const isFirstTime = await redis.set(lockKey, "1", "PX", 10000, "NX");
+      /**
+       * ----------------------------------------
+       * IDEMPOTENCY LOCK
+       * ----------------------------------------
+       */
+
+      const lockKey =
+        `evt:done:${rawEvent.id}`;
+
+      const isFirstTime =
+        await redis.set(
+          lockKey,
+          "1",
+          "PX",
+          10000,
+          "NX"
+        );
 
       if (!isFirstTime) {
-        console.log("⏭️ Duplicate event skipped:", rawEvent.id);
+
+        console.log(
+          "⏭️ Duplicate event skipped:",
+          rawEvent.id
+        );
+
         return;
       }
 
@@ -51,80 +139,170 @@ export const initPluginWorker = () => {
         `📦 Processing event [${rawEvent.type}] trace=${rawEvent.traceId}`
       );
 
-      // 3️⃣ Execute plugins
-      const plugins = cmsRegistry
-        .getAllPlugins()
-        .filter(
-          (p) => p.enabled && p.events.includes(rawEvent.type)
-        );
+      /**
+       * ----------------------------------------
+       * EXECUTE PLUGINS
+       * ----------------------------------------
+       */
+
+      const plugins =
+        cmsRegistry
+          .getAllPlugins()
+          .filter(
+            (p) =>
+              p.enabled &&
+              p.events.includes(rawEvent.type)
+          );
 
       for (const plugin of plugins) {
+
         try {
-          const eventCopy = JSON.parse(JSON.stringify(rawEvent));
-          await plugin.execute(eventCopy);
+
+          const eventCopy =
+            JSON.parse(
+              JSON.stringify(rawEvent)
+            );
+
+          await plugin.execute(
+            eventCopy
+          );
+
         } catch (err: any) {
-          console.error(`🚨 Plugin failed (${plugin.name}):`, err.message);
+
+          console.error(
+            `🚨 Plugin failed (${plugin.name}):`,
+            err.message
+          );
+
         }
+
       }
 
-      // 4️⃣ Persistence (Redis history)
-      try {
-        const siteId = rawEvent.data?.current?.siteId || "global";
+      /**
+       * ----------------------------------------
+       * REDIS EVENT HISTORY
+       * ----------------------------------------
+       */
 
-        const pipeline = redis.multi();
+      try {
+
+        const siteId =
+          rawEvent.data?.current?.siteId
+          || "global";
+
+        const pipeline =
+          redis.multi();
 
         pipeline.lpush(
           getSiteHistoryKey(siteId),
           JSON.stringify(rawEvent)
         );
-        pipeline.ltrim(getSiteHistoryKey(siteId), 0, 99);
+
+        pipeline.ltrim(
+          getSiteHistoryKey(siteId),
+          0,
+          99
+        );
 
         pipeline.lpush(
           GLOBAL_HISTORY_KEY,
           JSON.stringify(rawEvent)
         );
-        pipeline.ltrim(GLOBAL_HISTORY_KEY, 0, 99);
+
+        pipeline.ltrim(
+          GLOBAL_HISTORY_KEY,
+          0,
+          99
+        );
 
         await pipeline.exec();
 
-        console.log("💾 Event stored in history");
+        console.log(
+          "💾 Event stored in history"
+        );
 
       } catch (err) {
-        console.error("❌ Persistence error:", err);
+
+        console.error(
+          "❌ Persistence error:",
+          err
+        );
+
       }
 
-      // 5️⃣ 🔥 Dashboard Projection (IMPORTANT PLACE)
+      /**
+       * ----------------------------------------
+       * DASHBOARD PROJECTION
+       * ----------------------------------------
+       */
+
       try {
-        const siteId = rawEvent.data?.current?.siteId;
+
+        const siteId =
+          rawEvent.data?.current?.siteId;
 
         if (siteId) {
-          await rebuildDashboardProjection(siteId);
-          console.log("📊 Dashboard rebuilt for site:", siteId);
+
+          await rebuildDashboardProjection(
+            siteId
+          );
+
+          console.log(
+            "📊 Dashboard rebuilt for site:",
+            siteId
+          );
+
         }
 
       } catch (err) {
-        console.error("❌ Dashboard rebuild failed:", err);
+
+        console.error(
+          "❌ Dashboard rebuild failed:",
+          err
+        );
+
       }
+
     },
+
     {
       connection: REDIS_CONFIG,
       concurrency: 5
     }
+
   );
 
-  worker.on("failed", async (job, err) => {
-    console.error("☢️ Worker failed:", err.message);
+  /**
+   * --------------------------------------------
+   * FAILED JOBS
+   * --------------------------------------------
+   */
 
-    await redis.lpush(
-      DLQ_KEY,
-      JSON.stringify({
-        jobId: job?.id,
-        error: err.message,
-        timestamp: new Date().toISOString()
-      })
-    );
-  });
+  worker.on(
+    "failed",
+    async (job, err) => {
 
-  console.log("🚀 Plugin Worker is LIVE");
+      console.error(
+        "☢️ Worker failed:",
+        err.message
+      );
+
+      await redis.lpush(
+        DLQ_KEY,
+        JSON.stringify({
+          jobId: job?.id,
+          error: err.message,
+          timestamp:
+            new Date().toISOString()
+        })
+      );
+
+    }
+  );
+
+  console.log(
+    "🚀 Plugin Worker is LIVE"
+  );
+
   return worker;
 };
