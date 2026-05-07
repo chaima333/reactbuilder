@@ -4,6 +4,7 @@ import { Page } from "../../../models/page";
 import { emitDomainEvent, getSemanticDiff } from "../domain/diff";
 import { redis } from "../../../core/queues/config";
 import { normalizePage } from "../../../core/plugins/events/contracts/unified.contract";
+import { ActivityService } from "../../dashboard/services/activity.service";
 
 export const updatePageHandler = async (command: any) => {
   try {
@@ -71,7 +72,17 @@ export const updatePageHandler = async (command: any) => {
         depth: 0,
         traceId: context.traceId
       }
+      
     );
+
+    
+    await ActivityService.log({
+  userId: context.userId,
+  siteId: current.siteId,
+  action: "page_updated",
+  entityType: "page",
+  entityId: current.id
+});
     return {
       success: true,
       updated: true,
