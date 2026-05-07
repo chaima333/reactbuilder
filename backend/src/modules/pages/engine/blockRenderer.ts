@@ -70,17 +70,23 @@ export const renderFullPage = (page: any, seo: any, canonical: string, blocksHTM
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>${escapeHTML(page.title)}</h1>
-        <div class="content">${escapeHTML(page.content)}</div>
-        <hr />
-        <div id="blocks-area">
-            ${blocksHTML}
-        </div>
-        <footer style="margin-top:30px; font-size:0.8rem; color:#aaa; text-align:center;">
-            Rendered at: ${new Date().toLocaleTimeString()}
-        </footer>
+   <div class="container">
+    <h1>${escapeHTML(page.title)}</h1>
+    
+    ${page.content && page.content !== "{}" && typeof page.content === "string" 
+        ? `<div class="content">${escapeHTML(page.content)}</div>` 
+        : ""
+    }
+    
+    <hr />
+    <div id="blocks-area">
+        ${blocksHTML}
     </div>
+    
+    <footer style="margin-top:30px; font-size:0.8rem; color:#aaa; text-align:center;">
+        Rendered at: ${new Date().toLocaleTimeString()}
+    </footer>
+</div>
 </body>
 </html>`;
 };
