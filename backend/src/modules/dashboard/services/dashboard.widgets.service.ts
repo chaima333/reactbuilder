@@ -1,16 +1,22 @@
 import { cmsRegistry }
 from "../../../core/plugins/plugin.registry";
+import { ICmsPlugin } from "../../../core/plugins/plugin.types";
+import { DashboardWidget } from "../dashboard.dto";
 
 export class DashboardWidgetService {
 
-  static async getWidgets(siteId: number) {
-
+static async getWidgets(
+  siteId: number
+): Promise<DashboardWidget[]> {
+  
     const plugins =
       cmsRegistry.getAllPlugins();
 
     const widgets = await Promise.all(
 
-      plugins.map(async (plugin: any) => {
+       plugins.map(async (
+       plugin: ICmsPlugin
+       ): Promise<DashboardWidget | null> => {
 
         /**
          * =============================================

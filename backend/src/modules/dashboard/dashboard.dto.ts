@@ -1,38 +1,110 @@
-
-
+export type DashboardBlockType =
+  | "stats"
+  | "chart"
+  | "activity"
+  | "widget.version.summary"
+  | "widget.seo.score"
+  | "widget.media.summary";
+/**
+ * =====================================================
+ * LAYOUT
+ * =====================================================
+ */
 
 export interface DashboardBlock {
-  type: string;
+  id: string;
+
+  type: DashboardBlockType;
+
   col: number;
+
+  order: number;
 }
 
 export interface DashboardLayout {
   blocks: DashboardBlock[];
 }
 
+/**
+ * =====================================================
+ * STATS
+ * =====================================================
+ */
+
 export interface DashboardStats {
   totalSites: number;
+
   totalPages: number;
+
   totalViews: number;
+
+  siteName?: string;
 
   chartData: {
     month: string;
+
     count: number;
   }[];
 }
 
+/**
+ * =====================================================
+ * ACTIVITY
+ * =====================================================
+ */
+
 export interface ActivityItem {
   id: number;
+
   action: string;
+
   createdAt: string;
+
   user?: {
     id: number;
+
     name: string;
   };
 }
 
+/**
+ * =====================================================
+ * WIDGETS
+ * =====================================================
+ */
+
+export interface DashboardWidget {
+  id: string;
+
+  type: DashboardBlockType;
+
+  enabled: boolean;
+
+  payload: any;
+}
+
+/**
+ * =====================================================
+ * RESPONSE
+ * =====================================================
+ */
+
 export interface DashboardResponse {
   stats: DashboardStats;
-  activity: ActivityItem[];
+
+  signals?: any;
+
+  activity?: ActivityItem[];
+
+  widgets: DashboardWidget[];
+
   layout: DashboardLayout;
+
+  meta?: {
+    generatedAt: number;
+
+    schemaVersion: number;
+
+    cacheTTL: number;
+  };
 }

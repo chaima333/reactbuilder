@@ -5,6 +5,7 @@ import * as DashboardService from "../services/dashboard.service";
 import { fetchSignals } from "../services/dashboard.signals";
 import { DashboardProjection } from "../projections/dashboard.projection";
 import { DashboardWidgetService } from "../services/dashboard.widgets.service";
+import { DashboardBlock, DashboardResponse, DashboardWidget } from "../dashboard.dto";
 
 /**
  * =====================================================
@@ -101,7 +102,7 @@ async (siteId: number) => {
    * ===================================================
    */
 
-  const coreBlocks = [
+  const coreBlocks: DashboardBlock[] = [
 
     {
       id: "stats-core",
@@ -132,17 +133,18 @@ async (siteId: number) => {
    * ===================================================
    */
 
-  const widgetBlocks = widgets.map((w: any) => ({
+  const widgetBlocks: DashboardBlock[] =
+  widgets.map((w: DashboardWidget) => ({
 
     id: w.id,
 
     type: w.type,
 
-    col: w.col || 6,
+    col: 6,
 
-    order: w.order || 100
+    order: 100
 
-  }));
+}));
 
   /**
    * ===================================================
@@ -150,7 +152,7 @@ async (siteId: number) => {
    * ===================================================
    */
 
-  const snapshot = {
+  const snapshot: DashboardResponse  = {
 
     stats,
 

@@ -1,4 +1,7 @@
 import { UnifiedEvent } from "./events/contracts/unified.contract";
+import {
+  DashboardBlockType
+} from "../../modules/dashboard/dashboard.dto";
 
 
 
@@ -16,7 +19,7 @@ export interface ICmsPlugin {
 
   meta?: {
     dashboard?: {
-      type: string;
+      type: DashboardBlockType;
       col: number;
       order?: number;
     };

@@ -13,7 +13,7 @@ export const MediaPlugin: ICmsPlugin = {
 
   meta: {
     dashboard: {
-      type: "media",
+      type: "widget.media.summary",
       col: 6,
       order: 2
     }
