@@ -204,10 +204,18 @@ export const renderFullPage = (
   const safeCanonical =
     safeURL(canonical);
 
-  const content =
-    typeof page?.content === "string"
-      ? escapeHTML(page.content)
-      : "";
+ const rawContent =
+  typeof page?.content === "string"
+    ? page.content.trim()
+    : "";
+
+const content =
+  rawContent &&
+  rawContent !== "{}" &&
+  rawContent !== "null"
+    ? escapeHTML(rawContent)
+    : "";
+    
 
   return `
 <!DOCTYPE html>
