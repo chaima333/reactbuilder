@@ -7,8 +7,13 @@ export const SiteSelector = () => {
   const dispatch = useDispatch();
   const currentSite = useSelector((state: RootState) => state.site.currentSite);
   
-  const userSites = useSelector((state: RootState) => (state.auth.user as any)?.sites || []);
+  const userSites =
+  useSelector(
+    (state: RootState) =>
+      state.site.sites
+  );
 
+  
   const handleChange = (event: any) => {
     const selectedSite = userSites.find((s: any) => s.id === event.target.value);
     if (selectedSite) {

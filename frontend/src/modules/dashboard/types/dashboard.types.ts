@@ -1,99 +1,148 @@
 // src/modules/dashboard/types.ts
 
-
-// ======================================================
-// CORE STATS
-// ======================================================
+/**
+ * =====================================================
+ * STATS
+ * =====================================================
+ */
 
 export interface MonthlyStat {
+
   month: string;
+
   count: number;
+
 }
 
 export interface DashboardStats {
+
   totalSites: number;
+
   totalPages: number;
+
   totalViews: number;
+
+  siteName?: string;
+
   chartData: MonthlyStat[];
+
 }
 
-// ======================================================
-// ACTIVITY
-// ======================================================
+/**
+ * =====================================================
+ * ACTIVITY
+ * =====================================================
+ */
 
 export interface ActivityItem {
-  id: number;
+
   action: string;
+
   createdAt: string;
+
 }
 
-// ======================================================
-// LAYOUT
-// ======================================================
+/**
+ * =====================================================
+ * TOP PAGES
+ * =====================================================
+ */
+
+export interface TopPage {
+
+  id: number;
+
+  title: string;
+
+  updatedAt: string;
+
+}
+
+/**
+ * =====================================================
+ * SIGNALS
+ * =====================================================
+ */
+
+export interface DashboardSignals {
+
+  totalActivities: number;
+
+  lastActivity:
+    ActivityItem | null;
+
+  topPages:
+    TopPage[];
+
+}
+
+/**
+ * =====================================================
+ * WIDGETS
+ * =====================================================
+ */
+
+export interface DashboardWidget {
+
+  id: string;
+
+  type: string;
+
+  enabled: boolean;
+
+  payload: any;
+
+}
+
+/**
+ * =====================================================
+ * LAYOUT
+ * =====================================================
+ */
 
 export interface DashboardBlock {
+
   id: string;
+
   type: string;
+
   col: number;
+
   order?: number;
+
 }
 
 export interface DashboardLayout {
-  blocks: DashboardBlock[];
+
+  blocks:
+    DashboardBlock[];
+
 }
 
-// ======================================================
-// PLUGINS
-// ======================================================
-
-export interface DashboardPluginData {
-  name: string;
-  enabled: boolean;
-  priority: number;
-  hasDashboard: boolean;
-  data?: unknown;
-}
-
-// ======================================================
-// API RESPONSE
-// ======================================================
+/**
+ * =====================================================
+ * FULL SNAPSHOT
+ * =====================================================
+ */
 
 export interface DashboardFullResponse {
-  stats: DashboardStats;
-  signals: {
-    totalActivities: number;
-    lastActivity: ActivityItem | null;
-    topPages: TopPage[];
-  };
 
-plugins: Record<
-  string,
-  DashboardPluginData
->;
+  stats: DashboardStats;
+
+  signals: DashboardSignals;
+
+  widgets: DashboardWidget[];
 
   layout: DashboardLayout;
 
-  generatedAt: number;
-}
+  meta: {
 
-// ======================================================
-// WIDGET REGISTRY
-// ======================================================
+    generatedAt: number;
 
-export type DashboardPlugin = {
-  key: string;
-  component: any;
-};
+    schemaVersion: number;
 
- // 
-export interface TopPage {
-  id: number;
-  title: string;
-  updatedAt: string;
-}
+    cacheTTL: number;
 
-export interface DashboardSignals {
-  totalActivities: number;
-  lastActivity: ActivityItem | null;
-  topPages: TopPage[];
+  };
+
 }

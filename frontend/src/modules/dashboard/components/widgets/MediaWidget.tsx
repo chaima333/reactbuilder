@@ -6,7 +6,7 @@ import { DashboardCard }
 from "../layout/DashboardCard";
 
 type MediaWidgetProps = {
-  data: {
+  payload: {
     totalFiles: number;
     storageUsed: string;
     items: any[];
@@ -15,10 +15,11 @@ type MediaWidgetProps = {
 
 export const MediaWidget:
 React.FC<MediaWidgetProps> = ({
-  data
+  payload
 }) => {
 
-  if (!data) {
+  if (!payload) {
+
     return (
       <DashboardCard title="Media">
         <div>No media</div>
@@ -33,22 +34,18 @@ React.FC<MediaWidgetProps> = ({
       <p>
         Total Files:
         {" "}
-        {data.totalFiles}
+        {payload.totalFiles}
       </p>
 
       <p>
         Storage Used:
         {" "}
-        {data.storageUsed}
+        {payload.storageUsed}
       </p>
 
-      <div
-        style={{
-          marginTop: 20
-        }}
-      >
+      <div style={{ marginTop: 20 }}>
 
-        {data.items?.map((m: any) => (
+        {payload.items?.map((m: any) => (
 
           <div
             key={m.id}
@@ -66,5 +63,6 @@ React.FC<MediaWidgetProps> = ({
       </div>
 
     </DashboardCard>
+
   );
 };

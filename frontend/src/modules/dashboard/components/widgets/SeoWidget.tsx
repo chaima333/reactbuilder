@@ -3,8 +3,9 @@
 import { DashboardCard }
 from "../layout/DashboardCard";
 
+
 type SeoWidgetProps = {
-  data: {
+  payload: {
     seoScore: number;
     optimizedPages: number;
   };
@@ -12,10 +13,11 @@ type SeoWidgetProps = {
 
 export const SeoWidget:
 React.FC<SeoWidgetProps> = ({
-  data
+  payload
 }) => {
 
-  if (!data) {
+  if (!payload) {
+
     return (
       <DashboardCard title="SEO">
         <div>No SEO Data</div>
@@ -30,13 +32,13 @@ React.FC<SeoWidgetProps> = ({
       <p>
         SEO Score:
         {" "}
-        {data.seoScore}
+        {payload.seoScore}
       </p>
 
       <p>
         Optimized Pages:
         {" "}
-        {data.optimizedPages}
+        {payload.optimizedPages}
       </p>
 
     </DashboardCard>
