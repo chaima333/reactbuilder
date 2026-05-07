@@ -99,4 +99,13 @@ publishedAt!: Date;
 metaData: any; 
 
 
+@Column({
+  type: DataType.INTEGER,
+  allowNull: false,
+  defaultValue: 0,
+  field: 'views' 
+})
+views!: number;
+
+
 }

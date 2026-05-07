@@ -17,13 +17,13 @@ export const fetchStats = async (siteId: number) => {
   const site = await Site.findByPk(siteId);
 
   const totalPages = await Page.count({ where: { siteId } });
-  const totalViews = await Page.sum("views", { where: { siteId } });
+  const totalViews = await Page.sum("views", { where: { siteId } }) || 0;
 
   const monthlyStatsRaw = await sequelize.query(
     `
-    SELECT DATE_TRUNC('month', "createdAt") as month, COUNT(*) as count
-    FROM "Pages"
-    WHERE "siteId" = :siteId
+    SELECT DATE_TRUNC('month', created_at) as month, COUNT(*) as count
+    FROM pages
+    WHERE site_id = :siteId
     GROUP BY month
     ORDER BY month DESC
     LIMIT 12
@@ -33,7 +33,7 @@ export const fetchStats = async (siteId: number) => {
       type: QueryTypes.SELECT
     }
   );
-
+  
   const result = {
     totalSites: 1,
     totalPages,
