@@ -125,3 +125,14 @@ export interface DashboardSignals {
     updatedAt: string;
   }[];
 }
+
+
+export interface VersionWidgetPayload {
+  totalVersions: number;
+  lastBackup: string;
+}
+
+export interface SeoWidgetPayload {
+  seoScore: number;
+  optimizedPages: number;
+}

@@ -2,7 +2,14 @@ import { ActivityLog, Page } from "../../../models";
 
 export const fetchSignals = async (siteId: number) => {
 
+  console.log("Signals Site:", siteId);
+
+  const allLogs = await ActivityLog.findAll();
+
+  console.log("ALL LOGS:", allLogs);
+
   const [totalActivities, lastActivity, topPages] = await Promise.all([
+    
     ActivityLog.count({ where: { siteId } }),
 
     ActivityLog.findOne({

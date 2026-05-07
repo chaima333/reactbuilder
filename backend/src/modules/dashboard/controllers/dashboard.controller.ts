@@ -5,7 +5,7 @@ import * as DashboardService from "../services/dashboard.service";
 import { fetchSignals } from "../services/dashboard.signals";
 import { DashboardProjection } from "../projections/dashboard.projection";
 import { DashboardWidgetService } from "../services/dashboard.widgets.service";
-import { DashboardBlock, DashboardResponse, DashboardWidget } from "../dashboard.dto";
+import { DashboardBlock, DashboardResponse, DashboardSignals, DashboardWidget } from "../dashboard.dto";
 
 /**
  * =====================================================
@@ -83,9 +83,9 @@ async (siteId: number) => {
 
   const stats =
     await DashboardService.fetchStats(siteId);
-
-  const signals =
-    await fetchSignals(siteId);
+   
+  const signals: DashboardSignals =
+  await fetchSignals(siteId);
 
   /**
    * ===================================================
