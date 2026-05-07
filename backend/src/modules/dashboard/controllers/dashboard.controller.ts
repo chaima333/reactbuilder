@@ -39,14 +39,12 @@ export const getDashboardFull = async (
 
     if (!snapshot) {
 
-      console.log(
-        `🚀 [Dashboard] rebuilding snapshot for site ${siteId}`
-      );
+  return res.json({
+    success: true,
+    data: null
+  });
 
-      snapshot =
-        await buildDashboardProjection(siteId);
-    }
-
+}
     return res.json({
       success: true,
       data: snapshot
@@ -133,8 +131,10 @@ async (siteId: number) => {
    * ===================================================
    */
 
-  const widgetBlocks: DashboardBlock[] =
-  widgets.map((w: DashboardWidget) => ({
+const widgetBlocks: DashboardBlock[] =
+widgets.map(
+
+  (w: DashboardWidget, index: number) => ({
 
     id: w.id,
 
@@ -142,9 +142,11 @@ async (siteId: number) => {
 
     col: 6,
 
-    order: 100
+    order: 100 + index
 
-}));
+  })
+
+);
 
   /**
    * ===================================================
