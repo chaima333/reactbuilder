@@ -11,17 +11,24 @@ export const escapeHTML = (str: string): string => {
 
 // 2. قائمة الـ Renderers لكل بلوك (Scalable)
 const BLOCK_TEMPLATES: Record<string, (data: any) => string> = {
-  hero: (data) => `
-    <section class="hero" style="background:#eee; padding:40px; text-align:center; border-radius:8px;">
-      <h2>${escapeHTML(data.text)}</h2>
-    </section>`,
+  hero: (data) => {
+    // يقرأ headline أو text، اللي يلقاه الأول يستعملو
+    const title = data.headline || data.text || "";
+    const sub = data.subtext || "";
     
-  text: (data) => `
-    <div class="text-block" style="margin:20px 0;">
-      <p>${escapeHTML(data.content)}</p>
+    return `
+      <section class="hero" style="background:#f4f4f4; padding:50px; text-align:center; border-radius:10px;">
+        <h2>${escapeHTML(title)}</h2>
+        ${sub ? `<p>${escapeHTML(sub)}</p>` : ""}
+      </section>`;
+  },
+    
+  button: (data) => `
+    <div style="text-align:center; margin:20px;">
+      <a href="${data.url || '#'}" style="background:${data.color || '#007bff'}; color:white; padding:12px 25px; border-radius:5px; text-decoration:none;">
+        ${escapeHTML(data.label || 'Click here')}
+      </a>
     </div>`,
-    
-  // تنجم تزيد image أو video هنا بسهولة
 };
 
 export const renderBlocks = (blocks: any[]): string => {
