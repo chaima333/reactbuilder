@@ -48,7 +48,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 /* ========================
    PUBLIC ROUTES
 ======================== */
-app.use("/api", publicRoutes);
+app.use("/", publicRoutes);
 
 /* ========================
    AUTH
