@@ -22,14 +22,14 @@ export const fetchSignals = async (siteId: number) => {
     lastActivity: lastActivity
       ? {
           action: lastActivity.action,
-          createdAt: lastActivity.createdAt
+          createdAt: lastActivity.createdAt.toISOString()
         }
       : null,
 
     topPages: topPages.map(p => ({
       id: p.id,
       title: p.title,
-      updatedAt: p.updatedAt
+      updatedAt: p.updatedAt.toISOString()
     }))
   };
 };

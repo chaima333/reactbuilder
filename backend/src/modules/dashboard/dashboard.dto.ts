@@ -92,7 +92,7 @@ export interface DashboardWidget {
 export interface DashboardResponse {
   stats: DashboardStats;
 
-  signals?: any;
+  signals: DashboardSignals;
 
   activity?: ActivityItem[];
 
@@ -107,4 +107,21 @@ export interface DashboardResponse {
 
     cacheTTL: number;
   };
+}
+
+
+
+export interface DashboardSignals {
+  totalActivities: number;
+
+  lastActivity: {
+    action: string;
+    createdAt: string;
+  } | null;
+
+  topPages: {
+    id: number;
+    title: string;
+    updatedAt: string;
+  }[];
 }
