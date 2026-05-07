@@ -1,9 +1,20 @@
-import { rebuildDashboardProjection } from "./services/rebuildDashboardProjection";
+import { rebuildDashboardProjection }
+from "./services/rebuildDashboardProjection";
 
-export const dashboardListener = async (event) => {
-  const siteId = event?.data?.current?.siteId;
+export const dashboardListener =
+async (event: any) => {
+
+  console.log(
+    "📡 Dashboard listener fired"
+  );
+
+  const siteId =
+    event?.data?.current?.siteId;
 
   if (!siteId) return;
 
-  await rebuildDashboardProjection(siteId);
+  await rebuildDashboardProjection(
+    siteId
+  );
+
 };

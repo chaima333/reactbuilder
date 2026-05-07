@@ -77,8 +77,8 @@ export const updatePageHandler = async (command: any) => {
 
     
     await ActivityService.log({
-  userId: context.userId,
-  siteId: current.siteId,
+     userId: context.userId,
+     siteId: current.siteId,
   action: "page_updated",
   entityType: "page",
   entityId: current.id
