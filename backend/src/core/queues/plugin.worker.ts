@@ -3,8 +3,8 @@ import { Worker } from "bullmq";
 import { cmsRegistry } from "../plugins/plugin.registry";
 import { REDIS_CONFIG, redis } from "./config";
 import { UnifiedEvent, validateEvent } from "../plugins/events/contracts/unified.contract";
+import { rebuildDashboardProjection } from "../../modules/dashboard/controllers/dashboard.projection.builder";
 
-import { rebuildDashboardProjection } from "../../modules/dashboard/services/rebuildDashboardProjection";
 
 /**
  * 🔑 Redis keys
