@@ -70,17 +70,28 @@ export const getSites = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;
 
+    // 1. نلوجوا على الـ Memberships مع الـ Site والـ Pages اللي داخل الـ Site
     const memberships = await SiteMember.findAll({
       where: { userId },
-      include: [{ model: Site }]
+      include: [{ 
+        model: Site,
+        include: [{ 
+          model: Page, 
+          as: 'pages', // ثبت الـ Alias لازم يكون كيف ما معرف في الـ Models
+          attributes: ['id', 'title'] // نبعثوا فقط اللي نحتاجوه باش الـ Response يقعد خفيف
+        }]
+      }]
     });
 
+    // 2. نعملوا الـ Mapping مع زيادة الحاجات الناقصة
     const sites = memberships.map((m: any) => ({
       id: m.site.id,
       name: m.site.name,
       subdomain: m.site.subdomain,
-      status: m.site.status
-      // ❌ no role here (clean separation)
+      status: m.site.status,
+      createdAt: m.site.createdAt, // ✅ زدنا التاريخ باش ما عادش يجي Invalid
+      pages: m.site.pages || [],   // ✅ زدنا الـ Pages باش يظهروا في الـ Card
+      pagesCount: m.site.pages ? m.site.pages.length : 0 // ✅ نبعثوا الـ Count حاضر
     }));
 
     return res.json({
@@ -89,6 +100,7 @@ export const getSites = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error) {
+    console.error("GET_SITES_ERROR:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error"
