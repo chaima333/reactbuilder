@@ -40,9 +40,12 @@ export const rebuildDashboardProjection = async (siteId: number) => {
         blocks: [...coreBlocks, ...widgetBlocks].sort((a, b) => a.order - b.order)
       },
       meta: {
-        generatedAt: Date.now(),
-        siteId: siteId // أضفنا الـ siteId للميتا للتأكد من البيانات
-      }
+    siteId: siteId,
+    generatedAt: Date.now(),
+    schemaVersion: 1, // حاسمة جداً للـ Migrations مستقبلاً
+    cacheTTL: 3600,    // ساعة (سجلناها كمعلومة باش الـ Frontend يعرف وقتاش الداتا تموت)
+    provider: "redis-stable" 
+  }
     };
 
     // حفظ في Redis
