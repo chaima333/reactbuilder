@@ -10,7 +10,8 @@ import {
   deletePage,
   publishPageController,
   restorePageVersion,
-  getPageHistory
+  getPageHistory,
+  getPageById
 } from "../controllers/page.controller";
 
 const router = Router({ mergeParams: true });
@@ -26,7 +27,7 @@ router.get("/", requirePermission(PERMISSIONS.SITE_READ), getPages);
 router.post("/", requirePermission(PERMISSIONS.PAGE_CREATE), createPage);
 router.put("/:pageId", requirePermission(PERMISSIONS.PAGE_UPDATE), updatePage);
 router.delete("/:pageId", requirePermission(PERMISSIONS.PAGE_DELETE), deletePage);
-
+router.get("/:pageId", requirePermission(PERMISSIONS.SITE_READ), getPageById);
 // 🚀 lifecycle
 router.post("/:pageId/publish", requirePermission(PERMISSIONS.PAGE_UPDATE), publishPageController);
 

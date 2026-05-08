@@ -177,3 +177,30 @@ export const getPageHistory = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// ========================
+// 🟢 GET SINGLE PAGE (For Editor)
+// ========================
+export const getPageById = async (req: AuthRequest, res: Response) => {
+  try {
+    const { pageId } = req.params;
+    const siteId = req.siteContext.siteId;
+
+    // نعيطوا للـ Service باش يجيب الصفحة
+    const page = await PageService.getPageById(Number(pageId), siteId);
+
+    if (!page) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Page not found in this site" 
+      });
+    }
+
+    return res.json({ 
+      success: true, 
+      data: PageMapper.toDTO(page) 
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};

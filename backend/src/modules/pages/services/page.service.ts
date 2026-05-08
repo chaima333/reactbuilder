@@ -192,4 +192,18 @@ static async restoreVersion(siteId: number, pageId: number, versionId: number, u
     };
   });
 }
+
+
+// داخل class PageService
+static async getPageById(pageId: number, siteId: number) {
+  // نلوجوا على الصفحة بالـ ID والـ SiteId لضمان الأمان (Tenant Isolation)
+  const page = await Page.findOne({
+    where: { 
+      id: pageId, 
+      siteId: siteId 
+    }
+  });
+
+  return page;
+}
 }
