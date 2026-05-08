@@ -7,17 +7,21 @@ export type BlockType =
   | "gallery"
   | "video";
 
+
+  
 export interface Block {
-  id: string;           
-  type: BlockType;    
-  data: {
-    props: Record<string, any>; 
-    style: {                   
-      desktop: Record<string, any>;
-      mobile?: Record<string, any>;
-    };
+  id: string;
+  type: BlockType;
+  // خرجناهم مالـ "data" باش يولو أسهل في الـ Access
+  props: Record<string, any>; 
+  style: ResponsiveStyle;
+  children: Block[];
+  // زِد هذي مستقبلاً للـ Settings الخاصّة بالـ Engine
+  meta?: {
+    isLocked?: boolean;
+    isHidden?: boolean;
+    label?: string; // إسم الـ Block في الـ Layer Tree
   };
-  children: Block[];    
 }
 
 export interface PageData {

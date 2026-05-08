@@ -21,6 +21,7 @@ import {
 
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";
+import { routes } from "../../../router/routes";
 
 export const PageList: React.FC = () => {
   const navigate = useNavigate();
@@ -52,7 +53,9 @@ export const PageList: React.FC = () => {
       }).unwrap();
 
       if (res?.id) {
-        navigate(`/editor/${res.id}`);
+       navigate(
+       routes.pageEdit(siteId, res.id)
+       );
       }
     } catch (err) {
       console.error("Erreur de création:", err);
@@ -180,7 +183,7 @@ export const PageList: React.FC = () => {
                     <Button
                       size="small"
                       variant="outlined"
-                      onClick={() => navigate(`/editor/${page.id}`)}
+                      onClick={() => navigate( routes.pageEdit(siteId, page.id)) }
                     >
                       Éditer
                     </Button>

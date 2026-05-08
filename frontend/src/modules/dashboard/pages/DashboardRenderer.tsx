@@ -55,22 +55,18 @@ export default function DashboardRenderer({ layout, context }: Props) {
           (w: any) => w.id === block.id
         );
 
-        return (
-          <div
-            key={block.id}
-            style={{
-              gridColumn: `span ${block.col || 12}`,
-            }}
-          >
-            {/* 5. تمرير البيانات للـ Widget */}
-            <Component
-              stats={context.stats}
-              signals={context.signals}
-              // نمرر الـ payload الخاص بهذا الـ ID بالظبط
-              data={widgetInstance?.payload}
-            />
-          </div>
-        );
+        // داخل الـ map
+return (
+  <div key={block.id} style={{ gridColumn: `span ${block.col || 12}` }}>
+    <React.Suspense fallback={<div>Loading Widget...</div>}>
+      <Component
+        stats={context.stats}
+        signals={context.signals}
+        data={widgetInstance?.payload}
+      />
+    </React.Suspense>
+  </div>
+);
       })}
     </div>
   );

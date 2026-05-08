@@ -1,11 +1,10 @@
 import { Button, Box } from '@mui/material';
-import { useTheme } from "../../core/theme/ThemeProvider";
-import { applyStyles } from "../../core/styleEngine";
 
-export const ButtonBlock = ({ data, preview, device }: any) => {
-  const { tokens } = useTheme();
-  const styles = applyStyles(data.style, device, tokens);
+// الـ Component توّة يركز كان على الـ UI
+// الـ styles والـ props يجيوه "حاضرين" مالـ RenderTree
+export const ButtonBlock = ({ label, url, styles, context }: any) => {
   
+  // الـ styles هنا توّة هي Object CSS نقي (مثلاً: { color: 'red', padding: '10px' })
   const containerStyles = { 
     textAlign: styles.textAlign || 'center',
     py: 1 
@@ -14,17 +13,18 @@ export const ButtonBlock = ({ data, preview, device }: any) => {
   return (
     <Box sx={containerStyles}>
       <Button 
-        variant={data.style?.variant || 'contained'}
+        // الـ variant يجي مالـ props أو styles حسب الـ Registry متاعك
+        variant="contained" 
         style={{
-          ...styles,
-          textTransform: 'none', // باش يحافظ على شكل الـ Font
-          fontFamily: tokens.typography.fontFamily,
+          ...styles, // نطبقوا الـ Resolved Styles مباشرة
+          textTransform: 'none', 
         }}
-        href={data.props?.url}
+        href={url}
         target="_blank"
-        disabled={!preview}
+        // الـ context يقلنا إحنا في الـ editor وإلا في الـ public
+        disabled={context?.mode === 'editor'} 
       >
-        {data.props?.label || "Button"}
+        {label || "Button"}
       </Button>
     </Box>
   );
