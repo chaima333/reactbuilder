@@ -7,7 +7,7 @@ import {
   UnifiedEvent,
   validateEvent
 } from "../plugins/events/contracts/unified.contract";
-import { rebuildDashboardProjection } from "../../modules/dashboard/controllers/dashboard.projection.builder";
+import { rebuildDashboardProjection } from "../../modules/dashboard/projections/dashboard.projection.builder";
 
 
 /**

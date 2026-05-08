@@ -37,7 +37,7 @@ export function getSemanticDiff(oldPageN: any, newPageN: any): string[] {
 
 // src/core/events/eventGateway.ts
 import { randomUUID } from "crypto";
-import { EventBus } from "../../../core/plugins/events/eventBus.js";
+import { EventBus } from "../../../core/plugins/events/eventBus";
 
 /**
  * إرسال الـ Event مع ضمان الهوية الفريدة ومنع الـ Loops

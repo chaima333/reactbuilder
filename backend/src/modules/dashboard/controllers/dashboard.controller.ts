@@ -1,209 +1,40 @@
 // src/modules/dashboard/controllers/dashboard.controller.ts
-
 import { Response } from "express";
-import * as DashboardService from "../services/dashboard.service";
-import { fetchSignals } from "../services/dashboard.signals";
 import { DashboardProjection } from "../projections/dashboard.projection";
-import { DashboardWidgetService } from "../services/dashboard.widgets.service";
-import { DashboardBlock, DashboardResponse, DashboardSignals, DashboardWidget } from "../dashboard.dto";
+import { rebuildDashboardProjection } from "../projections/dashboard.projection.builder";
 
-/**
- * =====================================================
- * GET FULL DASHBOARD
- * =====================================================
- */
+// src/modules/dashboard/controllers/dashboard.controller.ts
 
-export const getDashboardFull = async (
-  req: any,
-  res: Response
-) => {
-
+export const getDashboardFull = async (req: any, res: Response) => {
   try {
+    const siteId = Number(req.params.siteId || req.query.siteId);
+    console.log("-----------------------------------------");
+    console.log(`📩 Request received for Site ID: ${siteId}`);
 
-    const siteId = Number(req.params.siteId);
-
-    /**
-     * =================================================
-     * TRY CACHE
-     * =================================================
-     */
-
-    let snapshot =
-      await DashboardProjection.get(siteId);
-
-    /**
-     * =================================================
-     * REBUILD IF EMPTY
-     * =================================================
-     */
+    // 1. جرب جيب من الـ Redis
+    let snapshot = await DashboardProjection.get(siteId);
 
     if (!snapshot) {
+      console.log("♻️ Cache Miss. Calling Builder...");
+      snapshot = await rebuildDashboardProjection(siteId);
+    }
 
-  return res.json({
-    success: true,
-    data: null
-  });
+    // 2. إذا الـ Builder رجع null، اصنع "Fake Data" وقتية باش تتأكد إنو المشكلة في الـ Builder
+    if (!snapshot) {
+      console.log("❌ Builder returned NULL! Sending Emergency Fallback.");
+      snapshot = {
+        stats: { siteName: "Debug Site", totalPages: 1 },
+        signals: { totalActivities: 0, chartData: [] },
+        layout: { blocks: [{ id: "stats-core", type: "stats", col: 12, order: 0 }] },
+        meta: { generatedAt: Date.now(), debug: true }
+      };
+    }
 
-}
-    return res.json({
-      success: true,
-      data: snapshot
-    });
+    console.log("✅ Sending Data to Frontend");
+    return res.json({ success: true, data: snapshot });
 
   } catch (error: any) {
-
-    console.error(
-      "❌ Dashboard Error:",
-      error.message
-    );
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error"
-    });
+    console.error("❌ Controller Error:", error.message);
+    return res.status(500).json({ success: false, message: error.message });
   }
-};
-
-/**
- * =====================================================
- * BUILD DASHBOARD SNAPSHOT
- * =====================================================
- */
-
-export const buildDashboardProjection =
-async (siteId: number) => {
-
-  /**
-   * ===================================================
-   * CORE READ MODELS
-   * ===================================================
-   */
-
-  const stats =
-    await DashboardService.fetchStats(siteId);
-   
-  const signals: DashboardSignals =
-  await fetchSignals(siteId);
-
-  /**
-   * ===================================================
-   * WIDGET ENGINE
-   * ===================================================
-   */
-
-  const widgets =
-    await DashboardWidgetService.getWidgets(siteId);
-
-  /**
-   * ===================================================
-   * CORE LAYOUT
-   * ===================================================
-   */
-
-  const coreBlocks: DashboardBlock[] = [
-
-    {
-      id: "stats-core",
-      type: "stats",
-      col: 12,
-      order: 0
-    },
-
-    {
-      id: "chart-core",
-      type: "chart",
-      col: 8,
-      order: 1
-    },
-
-    {
-      id: "activity-core",
-      type: "activity",
-      col: 4,
-      order: 2
-    }
-
-  ];
-
-  /**
-   * ===================================================
-   * DYNAMIC WIDGET BLOCKS
-   * ===================================================
-   */
-
-const widgetBlocks: DashboardBlock[] =
-widgets.map(
-
-  (w: DashboardWidget, index: number) => ({
-
-    id: w.id,
-
-    type: w.type,
-
-    col: 6,
-
-    order: 100 + index
-
-  })
-
-);
-
-  /**
-   * ===================================================
-   * FINAL SNAPSHOT
-   * ===================================================
-   */
-
-  const snapshot: DashboardResponse  = {
-
-    stats,
-
-    signals,
-
-    widgets,
-
-    layout: {
-
-      blocks: [
-
-        ...coreBlocks,
-
-        ...widgetBlocks
-
-      ].sort(
-        (a: any, b: any) =>
-          a.order - b.order
-      )
-
-    },
-
-    meta: {
-
-      generatedAt:
-        Date.now(),
-
-      schemaVersion: 1,
-
-      cacheTTL: 300
-
-    }
-
-  };
-
-  /**
-   * ===================================================
-   * SAVE SNAPSHOT
-   * ===================================================
-   */
-
-  await DashboardProjection.save(
-    siteId,
-    snapshot
-  );
-
-  console.log(
-    `✅ Dashboard snapshot rebuilt (${siteId})`
-  );
-
-  return snapshot;
 };
