@@ -5,7 +5,7 @@ from "../layout/DashboardCard";
 
 
 type SeoWidgetProps = {
-  payload: {
+  data: {
     seoScore: number;
     optimizedPages: number;
   };
@@ -13,10 +13,10 @@ type SeoWidgetProps = {
 
 export const SeoWidget:
 React.FC<SeoWidgetProps> = ({
-  payload
+  data
 }) => {
 
-  if (!payload) {
+  if (!data) {
 
     return (
       <DashboardCard title="SEO">
@@ -32,13 +32,13 @@ React.FC<SeoWidgetProps> = ({
       <p>
         SEO Score:
         {" "}
-        {payload.seoScore}
+        {data.seoScore}
       </p>
 
       <p>
         Optimized Pages:
         {" "}
-        {payload.optimizedPages}
+        {data.optimizedPages}
       </p>
 
     </DashboardCard>

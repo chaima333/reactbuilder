@@ -1,68 +1,40 @@
-const WIDGET_MAP: Record<
-  string,
-  () => Promise<any>
-> = {
+import { StatsCards }
+from "../components/widgets/StatsCards";
+
+import { MonthlyChart }
+from "../components/widgets/MonthlyChart";
+
+import { ActivityFeed }
+from "../components/widgets/ActivityFeed";
+
+import { SeoWidget }
+from "../components/widgets/SeoWidget";
+
+import { VersionWidget }
+from "../components/widgets/VersionWidget";
+
+import { MediaWidget }
+from "../components/widgets/MediaWidget";
+
+export const pluginRegistry:
+Record<string, any> = {
 
   stats:
-    () =>
-      import("../components/widgets/StatsCards"),
+    StatsCards,
 
   chart:
-    () =>
-      import("../components/widgets/MonthlyChart"),
+    MonthlyChart,
 
   activity:
-    () =>
-      import("../components/widgets/ActivityFeed"),
+    ActivityFeed,
 
   "widget.seo.score":
-    () =>
-      import("../components/widgets/SeoWidget"),
-
-  media:
-    () =>
-      import("../components/widgets/MediaWidget"),
+    SeoWidget,
 
   "widget.version.summary":
-    () =>
-      import("../components/widgets/VersionWidget")
+    VersionWidget,
 
-};
-
-
-export const loadPlugin =
-async (type: string) => {
-
-  const loader =
-    WIDGET_MAP[type];
-
-  if (!loader) {
-    return null;
-  }
-
-  try {
-
-    const module =
-      await loader();
-
-    const componentName =
-      Object.keys(module).find(
-        key => key !== "default"
-      );
-
-    return componentName
-      ? module[componentName]
-      : module.default;
-
-  } catch (error) {
-
-    console.error(
-      `Failed to load plugin: ${type}`,
-      error
-    );
-
-    return null;
-
-  }
+  media:
+    MediaWidget
 
 };

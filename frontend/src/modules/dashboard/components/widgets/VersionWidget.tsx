@@ -2,7 +2,7 @@ import { DashboardCard }
 from "../layout/DashboardCard";
 
 type VersionWidgetProps = {
-  payload: {
+  data: {
     totalVersions: number;
     lastBackup: string;
   };
@@ -10,10 +10,10 @@ type VersionWidgetProps = {
 
 export const VersionWidget:
 React.FC<VersionWidgetProps> = ({
-  payload
+  data
 }) => {
 
-  if (!payload) {
+  if (!data) {
 
     return (
       <DashboardCard title="Versions">
@@ -29,13 +29,13 @@ React.FC<VersionWidgetProps> = ({
       <p>
         Total Versions:
         {" "}
-        {payload.totalVersions}
+        {data.totalVersions}
       </p>
 
       <p>
         Last Backup:
         {" "}
-        {payload.lastBackup}
+        {data.lastBackup}
       </p>
 
     </DashboardCard>

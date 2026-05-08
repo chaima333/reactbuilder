@@ -9,22 +9,45 @@ const rawBaseQuery = fetchBaseQuery({
   baseUrl: API_URL,
  // src/redux/services/baseQuery.ts
 
-prepareHeaders: (headers, { getState }) => {
-  
-  const state = getState() as RootState;
+prepareHeaders: (
+  headers,
+  { getState }
+) => {
 
-  const token = state.auth.accessToken;
-  
-  const siteId = state.site.currentSite?.id;
+  const state =
+    getState() as RootState;
+
+  const token =
+    state.auth.accessToken;
+
+  console.log(
+    "ACCESS TOKEN:",
+    token
+  );
+
+  const siteId =
+    state.site.currentSite?.id;
 
   if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
+
+    headers.set(
+      "Authorization",
+      `Bearer ${token}`
+    );
+
   }
+
   if (siteId) {
-    headers.set('x-site-id', String(siteId));
+
+    headers.set(
+      "x-site-id",
+      String(siteId)
+    );
+
   }
 
   return headers;
+
 },
 });
 
