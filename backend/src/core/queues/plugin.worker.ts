@@ -1,7 +1,7 @@
 import { Worker } from "bullmq";
 
 import { cmsRegistry } from "../plugins/plugin.registry";
-import { REDIS_CONFIG, redis } from "./config";
+import { redis } from "./config";
 
 import {
   UnifiedEvent,
@@ -266,7 +266,7 @@ export const initPluginWorker = () => {
     },
 
     {
-      connection: REDIS_CONFIG,
+      connection: redis ,
       concurrency: 5
     }
 

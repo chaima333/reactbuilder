@@ -1,9 +1,9 @@
 // core/queues/plugin.queue.ts
 import { Queue } from "bullmq";
-import { REDIS_CONFIG } from "./config";
+import { redis  } from "./config";
 
 export const pluginQueue = new Queue("plugin-tasks", {
-  connection: REDIS_CONFIG
+  connection: redis 
 });
 
 // أضفنا الـ return ونوعنا الـ Parameters باش تمشي مع الـ Dispatcher

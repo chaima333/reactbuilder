@@ -1,7 +1,5 @@
-import Redis from "ioredis";
-import { REDIS_CONFIG } from "../../queues/config";
+import { redis  } from "../../queues/config";
 import { UnifiedEvent } from "./contracts/unified.contract";
-const redis = new Redis(REDIS_CONFIG);
 
 
 class EventStore {
