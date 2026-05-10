@@ -1,24 +1,18 @@
-// src/core/queues/config.ts
 import Redis from "ioredis";
 
 const redisUrl = process.env.REDIS_URL;
 
-// ✅ لازم يكون اسمه REDIS_CONFIG ويكون قبله كلمة export
-export const REDIS_CONFIG: any = redisUrl 
-  ? {
-      maxRetriesPerRequest: null,
-      connectTimeout: 10000,
-      // إذا كنت تستعمل الـ URL، ioredis تو يقرى الـ host/port منه
-    }
-  : {
-      host: process.env.REDIS_HOST || "127.0.0.1",
-      port: Number(process.env.REDIS_PORT) || 6379,
-      password: process.env.REDIS_PASSWORD,
-      maxRetriesPerRequest: null,
-    };
+// ✅ هكا نضمنو إنو ioredis يستعمل الرابط الكامل متاع Render
+export const REDIS_CONFIG: any = {
+  maxRetriesPerRequest: null,
+  connectTimeout: 10000,
+  retryStrategy: (times: number) => Math.min(times * 50, 2000),
+};
 
-// هذي الـ Instance متاع الـ Redis
-export const redis = redisUrl ? new Redis(redisUrl, REDIS_CONFIG) : new Redis(REDIS_CONFIG);
+// إنشاء الـ connection باستعمال الـ URL مباشرة
+export const redis = redisUrl 
+  ? new Redis(redisUrl, { maxRetriesPerRequest: null }) 
+  : new Redis(REDIS_CONFIG);
 
 redis.on("error", (err) => {
   console.error("❌ Redis Client Error:", err.message);
