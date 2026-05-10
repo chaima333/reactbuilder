@@ -1,19 +1,37 @@
 import Redis from "ioredis";
 
-const redisUrl = process.env.REDIS_URL;
+if (!process.env.REDIS_URL) {
+  throw new Error(
+    "REDIS_URL missing"
+  );
+}
 
-// ✅ هكا نضمنو إنو ioredis يستعمل الرابط الكامل متاع Render
-export const REDIS_CONFIG: any = {
-  maxRetriesPerRequest: null,
-  connectTimeout: 10000,
-  retryStrategy: (times: number) => Math.min(times * 50, 2000),
-};
+export const redis =
+  new Redis(
+    process.env.REDIS_URL,
+    {
+      maxRetriesPerRequest:
+        null,
 
-// إنشاء الـ connection باستعمال الـ URL مباشرة
-export const redis = redisUrl 
-  ? new Redis(redisUrl, { maxRetriesPerRequest: null }) 
-  : new Redis(REDIS_CONFIG);
+      tls: {},
+    }
+  );
 
-redis.on("error", (err) => {
-  console.error("❌ Redis Client Error:", err.message);
-});
+redis.on(
+  "connect",
+  () => {
+    console.log(
+      "✅ Redis connected"
+    );
+  }
+);
+
+redis.on(
+  "error",
+  (err) => {
+    console.error(
+      "❌ Redis error:",
+      err.message
+    );
+  }
+);
