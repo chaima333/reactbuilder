@@ -1,4 +1,4 @@
-import { redis  } from "../../queues/config";
+import { redis  } from "../../cache/config";
 import { UnifiedEvent } from "./contracts/unified.contract";
 
 

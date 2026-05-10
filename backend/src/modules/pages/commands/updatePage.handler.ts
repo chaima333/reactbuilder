@@ -2,7 +2,6 @@
 
 import { Page } from "../../../models/page";
 import { emitDomainEvent, getSemanticDiff } from "../domain/diff";
-import { redis } from "../../../core/queues/config";
 import { normalizePage } from "../../../core/plugins/events/contracts/unified.contract";
 import { ActivityService } from "../../dashboard/services/activity.service";
 

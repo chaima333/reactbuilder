@@ -1,7 +1,7 @@
 import { Worker } from "bullmq";
 
 import { cmsRegistry } from "../plugins/plugin.registry";
-import { redis } from "./config";
+import { redis } from "../cache/config";
 
 import {
   UnifiedEvent,

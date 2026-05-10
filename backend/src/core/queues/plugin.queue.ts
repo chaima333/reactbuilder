@@ -1,6 +1,6 @@
 // core/queues/plugin.queue.ts
 import { Queue } from "bullmq";
-import { redis  } from "./config";
+import { redis  } from "../cache/config";
 
 export const pluginQueue = new Queue("plugin-tasks", {
   connection: redis 

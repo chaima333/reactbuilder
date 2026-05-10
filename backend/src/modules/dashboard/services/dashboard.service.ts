@@ -2,7 +2,7 @@ import { QueryTypes } from "sequelize";
 import { Page, Site, ActivityLog } from "../../../models";
 import { sequelize } from "../../../core/database/connection";
 import { cmsRegistry } from "../../../core/plugins/plugin.registry";
-import { redis } from "../../../core/queues/config";
+import { redis } from "../../../core/cache/config";
 
 // =====================================================
 // 🔥 STATS

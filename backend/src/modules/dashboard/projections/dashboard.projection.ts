@@ -1,5 +1,5 @@
 // src/modules/dashboard/projections/dashboard.projection.ts
-import { redis } from "../../../core/queues/config";
+import { redis } from "../../../core/cache/config";
 
 const KEY = (siteId: number) => `dashboard:projection:${siteId}`;
 

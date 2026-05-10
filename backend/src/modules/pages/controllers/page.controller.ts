@@ -4,7 +4,6 @@ import { PageService } from "../services/page.service";
 import { PageVersionService } from "../services/pageVersion.service";
 import { PageMapper } from "../mappers/page.mapper";
 import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
-import { EventBus } from "../../../core/plugins/events/eventBus";
 
 
 export const handleEventDispatch = async (result: any, source: string) => {
