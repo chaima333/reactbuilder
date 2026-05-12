@@ -112,9 +112,39 @@ export const pagesApi = api.injectEndpoints({
       invalidatesTags: [{ type: 'Pages', id: 'LIST' }],
     }),
 
-   getPublicPage: builder.query<Page, { siteId?: string | number; slug?: string }>({
-  query: ({ siteId, slug }) => `/api/public/pages/${siteId}/${slug}`,
-  transformResponse: (response: ApiResponse<Page>) => response.data,
+ getPublicPage:
+
+builder.query<
+  Page,
+  {
+    siteId?: string | number;
+    slug?: string;
+  }
+>({
+
+  query: ({
+
+    siteId,
+
+    slug
+
+  }) => ({
+
+    url:
+
+`https://backend-rmfq.onrender.com/p/public/pages/${siteId}/${slug}`,
+
+    method: "GET"
+  }),
+
+  transformResponse:
+
+    (
+      response:
+        ApiResponse<Page>
+    ) =>
+
+      response.data,
 }),
   }), 
 }); 
