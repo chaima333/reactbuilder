@@ -55,7 +55,9 @@ export const ThemeEditorPanel = () => {
     };
     setTokens(newTokens);
   };
-
+console.log(
+ tokens.colors.background
+);
   return (
     <Box p={2}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">

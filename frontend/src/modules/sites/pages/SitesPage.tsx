@@ -49,7 +49,7 @@ export const Sites: React.FC = () => {
   const [deletePage] = useDeletePageMutation();
   const { enqueueSnackbar } = useSnackbar();
 
-const sites = (data as any)?.data || [];
+const sites = data || [];
 
   console.log("RAW API DATA:", data);
   console.log("SITES ARRAY:", sites);

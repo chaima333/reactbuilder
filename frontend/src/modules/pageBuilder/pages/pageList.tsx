@@ -42,25 +42,25 @@ export const PageList: React.FC = () => {
   const [deletePageAction] = useDeletePageMutation();
   const [publishPageAction] = usePublishPageMutation();
 
-  const handleCreate = async () => {
-    if (!siteId) return;
 
-    try {
-      const res = await createPageAction({
-        siteId,
-        title: "Nouvelle Page",
-        blocks: [],
-      }).unwrap();
+const handleCreate = async () => {
+  if (!siteId) return;
 
-      if (res?.id) {
-       navigate(
-       routes.pageEdit(siteId, res.id)
-       );
-      }
-    } catch (err) {
-      console.error("Erreur de création:", err);
+  try {
+    const res = await createPageAction({
+      siteId,
+      title: "Nouvelle Page",
+      slug: `page-${Math.random().toString(36).substring(7)}`, 
+      blocks: [],
+    }).unwrap();
+
+    if (res?.id) {
+      navigate(routes.pageEdit(siteId, res.id));
     }
-  };
+  } catch (err) {
+    console.error("Erreur de création:", err);
+  }
+};
 
   const handleDelete = async (pageId: number) => {
     if (!siteId) return;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, Toolbar, CircularProgress, Alert } from "@mui/material";
+import { Box, Toolbar, Alert } from "@mui/material";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import { Outlet } from "react-router-dom";
@@ -7,17 +7,21 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../redux/store";
 import { setCurrentSite } from "../../redux/features/siteSlice";
 
-const drawerWidth = 260;
-
 export const Layout: React.FC = () => {
   const dispatch = useDispatch();
   const [mobileOpen, setMobileOpen] = useState(false);
+  
+  // 🟢 الحالة الخاصة بتصغير السايدبار
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const { sites, currentSite } =
-  useSelector((state: RootState) => state.site);
+  const { sites, currentSite } = useSelector((state: RootState) => state.site);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
+  };
+
+  const handleToggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
   };
 
   // auto select site
@@ -27,12 +31,35 @@ export const Layout: React.FC = () => {
     }
   }, [sites, currentSite, dispatch]);
 
-  return (
-    <Box sx={{ display: "flex" }}>
-      <Topbar onMenuClick={handleDrawerToggle} />
-      <Sidebar mobileOpen={mobileOpen} onDrawerToggle={handleDrawerToggle} />
+  // العرض الديناميكي بناءً على الحالة
+  const drawerWidth = isCollapsed ? 70 : 260;
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3, minHeight: "100vh" }}>
+  return (
+    <Box sx={{ display: "flex", minHeight: "100vh" }}>
+      {/* تمرير دوال التحكم للـ Topbar */}
+      <Topbar 
+        onMenuClick={handleDrawerToggle} 
+        onToggleCollapse={handleToggleCollapse}
+        isCollapsed={isCollapsed}
+      />
+      
+      {/* تمرير الحالة للـ Sidebar */}
+      <Sidebar 
+        mobileOpen={mobileOpen} 
+        onDrawerToggle={handleDrawerToggle} 
+        isCollapsed={isCollapsed}
+      />
+
+      <Box 
+        component="main" 
+        sx={{ 
+          flexGrow: 1, 
+          p: 3, 
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          transition: "all 0.3s ease", // انيميشن للتمدد
+          backgroundColor: (theme) => theme.palette.background.default
+        }}
+      >
         <Toolbar />
 
         {sites.length === 0 ? (

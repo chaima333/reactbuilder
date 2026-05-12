@@ -1,48 +1,49 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
-export const useHistory = <T,>(initial: T) => {
-  const [past, setPast] = useState<T[]>([]);
-  const [present, setPresent] = useState<T>(initial);
-  const [future, setFuture] = useState<T[]>([]);
+export function useHistory<T>(initialState: T) {
+  const [history, setHistory] = useState<T[]>([initialState]);
+  const [index, setIndex] = useState(0);
 
-  const set = (newState: T | ((prev: T) => T)) => {
-    setPast((prev) => [...prev, present].slice(-30));
+  const state = history[index];
 
-    setPresent((prev) =>
-      typeof newState === "function"
-        ? (newState as (p: T) => T)(prev)
-        : newState
+  const set = useCallback(
+    (value: T | ((prev: T) => T)) => {
+      setHistory((prevHistory) => {
+        const current = prevHistory[index];
+
+        const next =
+          typeof value === "function"
+            ? (value as (prev: T) => T)(current)
+            : value;
+
+        const updated = prevHistory.slice(0, index + 1);
+
+        updated.push(next);
+
+        return updated;
+      });
+
+      setIndex((prev) => prev + 1);
+    },
+    [index]
+  );
+
+  const undo = useCallback(() => {
+    setIndex((prev) => Math.max(prev - 1, 0));
+  }, []);
+
+  const redo = useCallback(() => {
+    setIndex((prev) =>
+      Math.min(prev + 1, history.length - 1)
     );
-
-    setFuture([]);
-  };
-
-  const undo = () => {
-    if (!past.length) return;
-
-    const previous = past[past.length - 1];
-
-    setPast((prev) => prev.slice(0, -1));
-    setFuture((prev) => [present, ...prev]);
-    setPresent(previous);
-  };
-
-  const redo = () => {
-    if (!future.length) return;
-
-    const next = future[0];
-
-    setFuture((prev) => prev.slice(1));
-    setPast((prev) => [...prev, present]);
-    setPresent(next);
-  };
+  }, [history.length]);
 
   return {
-    state: present,
+    state,
     set,
     undo,
     redo,
-    canUndo: past.length > 0,
-    canRedo: future.length > 0,
+    canUndo: index > 0,
+    canRedo: index < history.length - 1,
   };
-};
+}

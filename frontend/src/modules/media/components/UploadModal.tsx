@@ -45,20 +45,19 @@ export const UploadModal: React.FC<UploadModalProps> = ({ open, onClose, onUploa
     }
   };
 
-  const handleUpload = async () => {
-    if (!selectedFile) return;
-    try {
-      await onUpload(selectedFile, altText);
-      // Reset après succès
-      setSelectedFile(null);
-      setAltText('');
-      setPreview('');
-      setError('');
-      onClose();
-    } catch (err) {
-      setError("Une erreur est survenue lors de l'envoi.");
-    }
-  };
+const handleUpload = async () => {
+  if (!selectedFile) return;
+  try {
+    await onUpload(selectedFile, altText);
+    
+    setSelectedFile(null);
+    setAltText('');
+    setPreview('');
+    setError('');
+  } catch (err: any) {
+    setError(err?.data?.message || "Une erreur est survenue lors de l'envoi.");
+  }
+};
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>

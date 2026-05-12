@@ -1,53 +1,65 @@
-import { Block } from "../types/page.types";
+import { Block, ResponsiveStyle } from "../types/page.types";
 import { blockRegistry } from "../core/blockRegistry";
+export { canDrop } from "../core/validation/canDrop";
 
 /**
- * =========================
- * 🔁 BACKEND → FRONTEND
- * =========================
+ * الـ APIBlock يمثل الداتا الخام اللي جاية من السيرفر
  */
-export const fromAPIToUI = (blocks: any[]): Block[] => {
-  const allowedTypes = Object.keys(blockRegistry);
-
-  const walk = (nodes: any[]): Block[] => {
-    return (nodes || []).map((b) => {
-      
-      // 🛑 VALIDATION LAYER
-      if (!b?.type) {
-        throw new Error("Block missing type");
-      }
-
-      if (!allowedTypes.includes(b.type)) {
-        throw new Error(`Unknown block type: ${b.type}`);
-      }
-
-      return {
-        id: b.id,
-        type: b.type,
-
-        data: {
-          props: b.props ?? {},
-          style: b.style ?? {},
-        },
-
-        children: b.children ? walk(b.children) : [],
-      };
-    });
+type LegacyBlockInput = {
+  id: string;
+  type: string;
+  data?: {
+    props?: Record<string, any>;
+    style?: any; // نجم يكون Object عادي أو ResponsiveStyle
   };
-
-  return walk(blocks);
+  props?: Record<string, any>;
+  style?: any;
+  children?: LegacyBlockInput[];
 };
 
 /**
- * =========================
- * 🔁 FRONTEND → BACKEND
- * =========================
+ * Helper function باش نضمنوا إن الـ Style ديما يرجع ResponsiveStyle
  */
-export const fromUIToAPI = (blocks: Block[]): any[] => {
-  const walk = (nodes: Block[]): any[] => {
+const ensureResponsiveStyle = (style: any): ResponsiveStyle => {
+  if (style?.desktop) {
+    return style as ResponsiveStyle;
+  }
+  return {
+    desktop: style || {},
+    tablet: {},
+    mobile: {}
+  };
+};
+
+export const normalizeBlock = (block: LegacyBlockInput): Block => {
+  if (!block?.id) throw new Error("Block missing id");
+  if (!block?.type) throw new Error(`Block ${block.id} missing type`);
+
+  const props = block.data?.props || block.props || (block.data && !block.data.props ? block.data : {});
+  const style = ensureResponsiveStyle(block.data?.style || block.style);
+
+  return {
+    id: block.id,
+    type: block.type as any,
+    data: {
+      props,
+      style
+    },
+    children: normalizeBlocks(block.children || [])
+  };
+};
+
+export const normalizeBlocks = (blocks: LegacyBlockInput[] = []): Block[] => {
+  return (blocks || []).map(normalizeBlock);
+};
+
+export const fromAPIToUI = (blocks: LegacyBlockInput[]): Block[] => {
+  return normalizeBlocks(blocks);
+};
+
+export const fromUIToAPI = (blocks: Block[]): LegacyBlockInput[] => {
+  const walk = (nodes: Block[]): LegacyBlockInput[] => {
     return nodes.map((b) => {
-      
-      // 🛑 SAFETY CHECK
       if (!blockRegistry[b.type]) {
         throw new Error(`Block not registered: ${b.type}`);
       }
@@ -55,11 +67,11 @@ export const fromUIToAPI = (blocks: Block[]): any[] => {
       return {
         id: b.id,
         type: b.type,
-
-        props: b.data?.props ?? {},
-        style: b.data?.style ?? {},
-
-        children: b.children?.length ? walk(b.children) : [],
+        data: {
+          props: b.data.props,
+          style: b.data.style
+        },
+        children: b.children?.length ? walk(b.children) : []
       };
     });
   };
@@ -67,19 +79,10 @@ export const fromUIToAPI = (blocks: Block[]): any[] => {
   return walk(blocks);
 };
 
-// src/core/validator.ts
-
-// في ملف validator.ts أو blockRegistry.ts
-import { BlockType } from "../types/page.types";
-
-export const canDrop = (parentType: string, childType: string): boolean => {
-  // نحول الـ string إلى BlockType عند التعامل مع الـ Registry
-  const parentConfig = blockRegistry[parentType as BlockType];
-
-  if (!parentConfig || !parentConfig.isContainer) return false;
-
-  const allowed = parentConfig.allowedChildren || [];
-  
-  // نتحقق إذا كان الـ childType (string) موجود في مصفوفة الـ BlockType[]
-  return allowed.includes(childType as BlockType);
+export const adaptPageResponse = (page: any) => {
+  if (!page) return null;
+  return {
+    ...page,
+    blocks: fromAPIToUI(page.blocks || [])
+  };
 };

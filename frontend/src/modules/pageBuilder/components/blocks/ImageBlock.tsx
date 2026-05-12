@@ -1,10 +1,10 @@
 import { Box } from '@mui/material';
-import { useTheme } from "../../core/theme/ThemeProvider";
-import { applyStyles } from "../../core/styleEngine";
+import { useResolvedStyle } from "../../core/theme/useResolvedStyle";
+
+type Device = "desktop" | "tablet" | "mobile";
 
 export const ImageBlock = ({ data, device }: any) => {
-  const { tokens } = useTheme();
-  const styles = applyStyles(data.style, device, tokens);
+  const styles = useResolvedStyle(data.style, (device || "desktop") as Device);
 
   return (
     <Box
@@ -22,8 +22,7 @@ export const ImageBlock = ({ data, device }: any) => {
           maxWidth: '100%',
           height: 'auto',
           objectFit: 'cover',
-          // لو تحب تزيد border مربوط بالـ tokens أوتوماتيكياً
-          borderColor: styles.borderColor || tokens.colors.border.default 
+          borderColor: styles.borderColor
         }}
       />
     </Box>

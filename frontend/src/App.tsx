@@ -91,6 +91,11 @@ const PublicSite = lazy(
   () => import("./modules/sites/pages/PublicSitePage")
     .then(m => ({ default: m.PublicSite }))
 );
+const PublicPage = lazy(
+  () => import("./modules/pageBuilder/pages/PublicPage")
+    .then(m => ({ default: m.PublicPage }))
+);
+
 
 const Profile = lazy(
   () => import("./modules/users/pages/Profile")
@@ -260,7 +265,10 @@ const AppContent: React.FC = () => {
                   path="/site/:siteId"
                   element={<PublicSite />}
                 />
-
+               <Route
+                 path="/p/:siteId/:slug"
+                element={<PublicPage />}
+                 />
                 <Route
                   path="/test-editor"
                   element={<PageEditor mode="edit" />}

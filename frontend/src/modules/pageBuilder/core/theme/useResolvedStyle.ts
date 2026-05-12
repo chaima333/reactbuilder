@@ -1,5 +1,7 @@
 // src/modules/pageBuilder/core/theme/useResolvedStyle.ts
-import { useTheme } from "./ThemeProvider"; // استعملنا useTheme اللي في التصويرة متاعك
+
+import { useTheme }
+from "./ThemeProvider";
 
 import { resolveBlockStyles }
 from "../../runtime/resolveStyles";
@@ -7,7 +9,7 @@ from "../../runtime/resolveStyles";
 export const useResolvedStyle = (
   style: any,
   device:
-    "desktop"
+    | "desktop"
     | "tablet"
     | "mobile"
 ) => {

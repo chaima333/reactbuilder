@@ -1,39 +1,61 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
-
 import {
   useGetPageByIdQuery,
-  useUpdatePageMutation,
+  useGetPageVersionsQuery,
+  useRestorePageVersionMutation,
 } from "../../../redux/services/pages.api";
-
 import { blockRegistry as staticRegistry } from "../core/blockRegistry";
 import { loadBlockRegistry } from "../core/loadBlockRegistry";
-
 import { Block, BlockType } from "../types/page.types";
-
-import { useHistory } from "../core/history/useHistory"; // تأكد أن هذا الـ Hook يطبق الـ Logic اللي حكينا عليه
+import { useHistory } from "../core/history/useHistory";
 import { moveBlockInTree } from "../core/tree/move";
-import {
-  copyBlock,
-  duplicateBlock,
-  pasteBlockIntoTree,
-} from "../core/tree/clipboard";
-
 import { defaultTokens } from "../core/theme/tokens";
-import { fromAPIToUI, fromUIToAPI } from "../adapters/pageAdapter";
+import { fromAPIToUI } from "../adapters/pageAdapter";
+import { insertBlock } from "../core/tree/insert";
+import { useVersionActions } from "./useVersionActions";
+import { duplicateBlock as duplicateBlockUtil } from "../core/tree/clipboard";
+
+// 1. استيراد الـ Hook الجديد اللي صنعناه
+import { usePagePersistence } from "./usePagePersistence";
 
 export const usePageEditor = (mode: "create" | "edit") => {
   const { siteId, pageId } = useParams<{ siteId: string; pageId: string }>();
-  const isEdit = mode === "edit";
 
+  const isEdit = mode === "edit";
+  const sId = Number(siteId) || 0;
+  const pId = Number(pageId) || 0;
+
+  // =========================
+  // API QUERIES
+  // =========================
+  const { data: pageData, isLoading } = useGetPageByIdQuery(
+    { siteId: sId, pageId: pId },
+    { skip: !isEdit || sId === 0 || pId === 0 }
+  );
+
+  const { data: versions = [], isLoading: isLoadingVersions } = useGetPageVersionsQuery(
+    { siteId: sId, pageId: pId },
+    { skip: !isEdit }
+  );
+
+  // تم حذف الـ Mutations القديمة من هنا لأنها انتقلت للـ usePagePersistence
+  const [restorePageVersion] = useRestorePageVersionMutation();
+
+  // =========================
+  // STATES
+  // =========================
   const [pageTitle, setPageTitle] = useState("");
+  const [slug, setSlug] = useState("");
   const [registry, setRegistry] = useState(staticRegistry);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
-  const [clipboard, setClipboard] = useState<any | null>(null);
   const [tokens, setTokens] = useState(defaultTokens);
+  const hasLoadedRef = useRef(false);
 
-  // 1. إعداد الـ History
+  // =========================
+  // HISTORY
+  // =========================
   const {
     state: blocks,
     set: setBlocks,
@@ -43,26 +65,60 @@ export const usePageEditor = (mode: "create" | "edit") => {
     canRedo,
   } = useHistory<Block[]>([]);
 
-  const { data: pageData, isLoading } = useGetPageByIdQuery(
-    { siteId: Number(siteId), pageId: Number(pageId) },
-    { skip: !isEdit || !pageId }
-  );
+  const pushHistory = (snapshot: Block[]) => {
+    setBlocks(structuredClone(snapshot));
+  };
 
-  const [updatePage, { isLoading: isSaving }] = useUpdatePageMutation();
+  // =========================
+  // PERSISTENCE (الربط الجديد) 🚀
+  // =========================
+  const { save, publish, isSaving, isPublishing } = usePagePersistence({
+    sId,
+    pId,
+    pageTitle,
+    slug,
+    blocks,
+    tokens,
+  });
 
+  // =========================
+  // VERSIONS
+  // =========================
+  const versionActions = useVersionActions({
+    blocks,
+    setBlocks,
+    setSelectedBlockId,
+    pushHistory,
+    versions,
+    restorePageVersion,
+    siteId: sId,
+    pageId: pId,
+  });
+
+  // =========================
+  // LOADERS
+  // =========================
   useEffect(() => {
     loadBlockRegistry().then(setRegistry);
   }, []);
 
   useEffect(() => {
-    if (isEdit && (pageData as any)?.data && blocks.length === 0) {
-  const data = (pageData as any).data;
-  setPageTitle(data.title || "");
-  setBlocks(fromAPIToUI(data.blocks || []));
-  setTokens(data.theme || defaultTokens);
-}
+    if (isEdit && pageData && !hasLoadedRef.current) {
+      const data = (pageData as any)?.data || pageData;
+      if (data) {
+        setPageTitle(data.title || "Untitled Page");
+        setTokens(data.theme || defaultTokens);
+        setSlug(data.slug || "");
+        const uiBlocks = fromAPIToUI(data.blocks || []) as Block[];
+        setBlocks(uiBlocks);
+        hasLoadedRef.current = true;
+      }
+    }
   }, [pageData, isEdit, setBlocks]);
 
+  // =========================
+  // HELPERS
+  // =========================
   const findBlockInTree = useCallback((tree: Block[], id: string): Block | null => {
     for (const node of tree) {
       if (node.id === id) return node;
@@ -74,169 +130,121 @@ export const usePageEditor = (mode: "create" | "edit") => {
     return null;
   }, []);
 
-  const selectedBlock = useMemo(() => 
-    findBlockInTree(blocks, selectedBlockId || ""), 
-    [blocks, selectedBlockId, findBlockInTree]
-  );
-
-  const updateToken = (path: string, value: string) => {
-    setTokens((prev: any) => {
-      const copy = structuredClone(prev);
-      const keys = path.split(".");
-      let cur = copy;
-      for (let i = 0; i < keys.length - 1; i++) {
-        cur = cur[keys[i]];
-      }
-      cur[keys[keys.length - 1]] = value;
-      return copy;
-    });
-  };
+  const selectedBlock = useMemo(() => {
+    return findBlockInTree(blocks, selectedBlockId || "");
+  }, [blocks, selectedBlockId, findBlockInTree]);
 
   // =========================
-  // 🛠️ ACTIONS ENGINE
+  // ACTIONS
   // =========================
-  const actions = {
-    updateTree: (newBlocks: Block[]) => {
-      setBlocks(newBlocks);
-    },
+  const actions = useMemo(
+    () => ({
+      addBlock: (type: BlockType, targetId?: string, position: "before" | "after" | "inside" = "inside") => {
+        const config = registry[type];
+        if (!config) return;
 
-    // ✅ تطوير الـ addBlock لدعم الـ Precise Positioning
-    addBlock: (type: string, targetId?: string, position: "before" | "after" | "inside" = "inside") => {
-      const config = registry[type];
-      const newBlock: Block = {
-        id: uuidv4(),
-        type: type as BlockType,
-        data: {
-          props: { ...config?.defaultData?.props },
-          style: { ...config?.defaultData?.style },
-        },
-        children: [],
-      };
-
-      if (!targetId) {
-        setBlocks([...blocks, newBlock]);
-      } else {
-        // نستعملوا الـ move logic لزيادة البلوك الجديد في المكان الصحيح
-        // بما أن الـ moveBlockInTree مصممة للتحريك، يمكننا استغلالها أو عمل insert logic
-        const insertIntoTree = (tree: Block[]): Block[] => {
-          return tree.flatMap((b) => {
-            if (b.id === targetId) {
-              if (position === "before") return [newBlock, b];
-              if (position === "after") return [b, newBlock];
-              if (position === "inside") {
-                return [{ ...b, children: [...(b.children || []), newBlock] }];
-              }
-            }
-            return [{
-              ...b,
-              children: b.children ? insertIntoTree(b.children) : []
-            }];
-          });
+        const newBlock: Block = {
+          id: uuidv4(),
+          type,
+          data: {
+            props: structuredClone(config.defaultData?.props || {}),
+            style: structuredClone(config.defaultData?.style || { desktop: {}, tablet: {}, mobile: {} }),
+          },
+          children: [],
         };
-        setBlocks(insertIntoTree(blocks));
-      }
-      setSelectedBlockId(newBlock.id);
-    },
 
-    updateBlock: (id: string, newData: any) => {
-      const update = (tree: Block[]): Block[] =>
-        tree.map((b) => {
-          if (b.id === id) {
-            return {
-              ...b,
-              data: {
-                ...b.data,
-                props: { ...b.data.props, ...(newData.props || {}) },
-                style: {
-                  ...b.data.style,
-                  desktop: { ...b.data.style?.desktop, ...newData.style?.desktop },
-                  mobile: { ...b.data.style?.mobile, ...newData.style?.mobile },
-                },
-              },
-            };
-          }
-          return {
-            ...b,
-            children: b.children ? update(b.children) : [],
+        setBlocks((currentBlocks) => {
+          if (!targetId || targetId === "canvas-root") return [...currentBlocks, newBlock];
+          const insertIntoTree = (tree: Block[]): Block[] => {
+            return tree.flatMap((b) => {
+              if (b.id === targetId) {
+                if (position === "before") return [newBlock, b];
+                if (position === "after") return [b, newBlock];
+                if (position === "inside") return [{ ...b, children: [...(b.children || []), newBlock] }];
+              }
+              return [{ ...b, children: b.children ? insertIntoTree(b.children) : [] }];
+            });
           };
+          return insertIntoTree(currentBlocks);
         });
-      setBlocks(update(blocks));
-    },
+        setSelectedBlockId(newBlock.id);
+      },
 
-    deleteBlock: (id: string) => {
-      const remove = (tree: Block[]): Block[] =>
-        tree
-          .filter((b) => b.id !== id)
-          .map((b) => ({
-            ...b,
-            children: b.children ? remove(b.children) : [],
-          }));
+      updateBlock: (id: string, newData: any) => {
+        setBlocks((prevBlocks) => {
+          const update = (tree: Block[]): Block[] =>
+            tree.map((b) => {
+              if (b.id === id) {
+                const updated = structuredClone(b);
+                if (newData.props) updated.data.props = { ...updated.data.props, ...newData.props };
+                if (newData.style) {
+                  updated.data.style = {
+                    desktop: { ...(updated.data.style.desktop || {}), ...(newData.style.desktop || {}) },
+                    tablet: { ...(updated.data.style.tablet || {}), ...(newData.style.tablet || {}) },
+                    mobile: { ...(updated.data.style.mobile || {}), ...(newData.style.mobile || {}) },
+                  };
+                }
+                return updated;
+              }
+              return { ...b, children: b.children ? update(b.children) : [] };
+            });
+          return update(prevBlocks);
+        });
+      },
 
-      setBlocks(remove(blocks));
-      if (selectedBlockId === id) setSelectedBlockId(null);
-    },
+      deleteBlock: (id: string) => {
+        setBlocks((prevBlocks) => {
+          const remove = (tree: Block[]): Block[] =>
+            tree.filter((b) => b.id !== id).map((b) => ({ ...b, children: b.children ? remove(b.children) : [] }));
+          return remove(prevBlocks);
+        });
+        setSelectedBlockId((current) => (current === id ? null : current));
+      },
 
-    // ✅ التحريك يستعمل الـ History توّة
-    moveBlock: (activeId: string, dropInfo: any) => {
-      const updated = moveBlockInTree(blocks, activeId, dropInfo);
-      setBlocks(updated);
-    },
+      duplicateBlock: (id: string) => {
+        setBlocks((prevBlocks) => {
+          const target = findBlockInTree(prevBlocks, id);
+          if (!target) return prevBlocks;
+          const duplicated = duplicateBlockUtil(target);
+          return insertBlock(prevBlocks, { targetId: id, type: "after" }, duplicated);
+        });
+      },
 
-    duplicate: (id: string) => {
-      const block = findBlockInTree(blocks, id);
-      if (!block) return;
-      const newBlock = duplicateBlock(block);
-      const updated = pasteBlockIntoTree(blocks, id, newBlock);
-      setBlocks(updated);
-    },
+      moveBlock: (activeId: string, dropInfo: any) => {
+        setBlocks((current) => moveBlockInTree(current, activeId, dropInfo));
+      },
 
-    copy: (id: string) => {
-      const block = findBlockInTree(blocks, id);
-      if (!block) return;
-      const cloned = copyBlock(block);
-      setClipboard(cloned);
-      localStorage.setItem("editor_clipboard", JSON.stringify(cloned));
-    },
-
-    paste: (targetId: string) => {
-      const saved = localStorage.getItem("editor_clipboard");
-      const data = clipboard || (saved ? JSON.parse(saved) : null);
-      if (!data) return;
-      const newBlock = duplicateBlock(data);
-      const updated = pasteBlockIntoTree(blocks, targetId, newBlock);
-      setBlocks(updated);
-    },
-
-    undo,
-    redo,
-
-    save: async () => {
-      await updatePage({
-        title: pageTitle,
-        blocks: fromUIToAPI(blocks),
-        theme: tokens,
-        siteId: Number(siteId) || 1, 
-        pageId: Number(pageId) || 1,
-      });
-    },
-  };
+      undo,
+      redo,
+      // الـ save و الـ publish جايين مالـ usePagePersistence
+      save,
+      publish,
+    }),
+    [registry, blocks, pageTitle, tokens, sId, pId, undo, redo, setBlocks, save, publish, findBlockInTree]
+  );
 
   return {
     blocks,
+    pageTitle,
+    slug,
+    setSlug,
+    setPageTitle,
+    tokens,
+    updateToken: (newTokens: any) => setTokens((prev) => ({ ...prev, ...newTokens })),
     selectedBlock,
     selectedBlockId,
     setSelectedBlockId,
-    actions,
+    actions: {
+      ...actions,
+      restoreVersion: versionActions.restoreVersion,
+    },
     registry,
-    pageTitle,
-    setPageTitle,
-    canUndo,
-    canRedo,
     isLoading,
     isSaving,
-    tokens,
-    setTokens,
-    updateToken,
-    findBlockInTree
+    isPublishing, // زدناها في الـ return
+    isLoadingVersions,
+    versions,
+    canUndo,
+    canRedo,
   };
 };

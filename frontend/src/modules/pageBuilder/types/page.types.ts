@@ -1,26 +1,107 @@
+import { ComponentType } from "react";
+
 export type BlockType =
   | "section"
   | "text"
   | "image"
   | "button"
   | "title"
-  | "gallery"
-  | "video";
+  | "hero";
+
+export type TextAlign =
+  | "left"
+  | "center"
+  | "right";
+
+export interface StyleValue {
+
+  // ========================
+  // Layout
+  // ========================
+
+  display?: string;
+
+  flexDirection?: string;
+
+  justifyContent?: string;
+
+  alignItems?: string;
+
+  gap?: string | number;
+
+  width?: string | number;
+
+  maxWidth?: string | number;
+
+  minHeight?: string | number;
+
+  // ========================
+  // Spacing
+  // ========================
+
+  padding?: string | number;
+
+  paddingTop?: string | number;
+
+  paddingBottom?: string | number;
+
+  marginTop?: string | number;
+
+  marginBottom?: string | number;
+
+  // ========================
+  // Typography
+  // ========================
+
+  textAlign?: TextAlign;
+
+  fontSize?: string | number;
+
+  fontWeight?: string | number;
+
+  lineHeight?: string | number;
+
+  color?: string;
+
+  // ========================
+  // Visual
+  // ========================
+
+  backgroundColor?: string;
+
+  borderRadius?: string | number;
+
+  border?: string;
+
+  cursor?: string;
+
+  opacity?: number | string;
+}
 
 
-  
+export interface ResponsiveStyle {
+  desktop?: Record<string, any>;
+  tablet?: Record<string, any>;
+  mobile?: Record<string, any>;
+  [key: string]: any; 
+}
+
 export interface Block {
   id: string;
   type: BlockType;
-  // خرجناهم مالـ "data" باش يولو أسهل في الـ Access
-  props: Record<string, any>; 
-  style: ResponsiveStyle;
+
+  data: {
+    props: Record<string, any>;
+    style: ResponsiveStyle;
+  };
+
   children: Block[];
-  // زِد هذي مستقبلاً للـ Settings الخاصّة بالـ Engine
+
   meta?: {
     isLocked?: boolean;
     isHidden?: boolean;
-    label?: string; // إسم الـ Block في الـ Layer Tree
+    label?: string;
+    displayName?: string;
   };
 }
 
@@ -31,32 +112,32 @@ export interface PageData {
   blocks: Block[];
 }
 
-
-// blockRegistry.types.ts
-import { ComponentType } from "react";
-
-export type StyleValue = Record<string, any>;
-
-export type ResponsiveStyle = {
-  desktop: StyleValue;
-  tablet?: StyleValue;
-  mobile?: StyleValue;
-};
-
 export type BlockField = {
   key: string;
   label: string;
+  
   type: "text" | "color" | "select";
   target: "props" | "style";
-  options?: string[];
+
+  options?: {
+    label: string;
+    value: string;
+  }[];
+
   responsive?: boolean;
 };
 
 export type BlockConfig = {
   component: ComponentType<any>;
+
   label: string;
+  
+  icon?: React.ReactNode;
+
   isContainer: boolean;
+
   fields: BlockField[];
+
   allowedChildren?: BlockType[];
 
   defaultData: {
@@ -64,3 +145,29 @@ export type BlockConfig = {
     style: ResponsiveStyle;
   };
 };
+
+type Device =
+  | "desktop"
+  | "tablet"
+  | "mobile";
+
+interface HeroAction {
+  label: string;
+  url: string;
+}
+
+interface HeroBlockProps {
+  data: {
+    props: {
+      headline: string;
+      subtext: string;
+
+      primaryAction?: HeroAction;
+      secondaryAction?: HeroAction;
+    };
+
+    style: ResponsiveStyle;
+  };
+
+  device?: Device;
+}

@@ -4,12 +4,12 @@ import { Block } from '../../modules/pageBuilder/types/page.types';
 export type Page = {
   id: number;
   title: string;
-  blocks: Block[]; 
+  blocks: Block[];
   slug: string;
   siteId: number;
   userId: number;
-  status: "draft" | "published"; // 👈 أضفنا الـ status
-  theme: any; // اختصرتها هنا للوضوح
+  status: "draft" | "published" | "deleted";
+  theme: any;
 };
 
 export type PageVersion = {
@@ -20,7 +20,6 @@ export type PageVersion = {
   createdAt: string;
 };
 
-// تعريف الواجهة للردود التي تحتوي على data wrapper
 interface ApiResponse<T> {
   data: T;
   message?: string;
@@ -28,11 +27,11 @@ interface ApiResponse<T> {
 
 export const pagesApi = api.injectEndpoints({
   endpoints: (builder) => ({
-
-    // 1. جلب كل الصفحات مع فك التغليف
+    // 1. جلب كل الصفحات
     getPages: builder.query<Page[], number>({
       query: (siteId) => `/sites/${siteId}/pages`,
-      transformResponse: (response: ApiResponse<Page[]>) => response.data, // 👈 مهم جداً
+      transformResponse: (response: ApiResponse<Page[]>) =>
+        response.data.filter((page) => page.status !== "deleted"),
       providesTags: (result) =>
         result
           ? [
@@ -42,13 +41,14 @@ export const pagesApi = api.injectEndpoints({
           : [{ type: 'Pages', id: 'LIST' }],
     }),
 
+    // 2. جلب صفحة بالـ ID
     getPageById: builder.query<Page, { siteId: number | string; pageId: number | string }>({
       query: ({ siteId, pageId }) => `/sites/${siteId}/pages/${pageId}`,
-      transformResponse: (response: ApiResponse<Page>) => response.data, // 👈 فك التغليف
+      transformResponse: (response: ApiResponse<Page>) => response.data,
       providesTags: (result, error, { pageId }) => [{ type: 'Pages', id: pageId }],
     }),
 
-    // 2. إضافة عملية الـ Publish
+    // 3. عملية الـ Publish
     publishPage: builder.mutation<Page, { siteId: number | string; pageId: number | string }>({
       query: ({ siteId, pageId }) => ({
         url: `/sites/${siteId}/pages/${pageId}/publish`,
@@ -60,12 +60,14 @@ export const pagesApi = api.injectEndpoints({
       ],
     }),
 
+    // 4. جلب نسخ الصفحة (Versions)
     getPageVersions: builder.query<PageVersion[], { siteId: number | string; pageId: number | string }>({
       query: ({ siteId, pageId }) => `/sites/${siteId}/pages/${pageId}/versions`,
       transformResponse: (response: ApiResponse<PageVersion[]>) => response.data,
       providesTags: (result, error, { pageId }) => [{ type: 'Pages', id: `VERSIONS-${pageId}` }],
     }),
 
+    // 5. استرجاع نسخة قديمة
     restorePageVersion: builder.mutation<Page, { siteId: number | string; pageId: number | string; versionId: number | string }>({
       query: ({ siteId, pageId, versionId }) => ({
         url: `/sites/${siteId}/pages/${pageId}/restore/${versionId}`,
@@ -78,16 +80,18 @@ export const pagesApi = api.injectEndpoints({
       ],
     }),
 
-    createPage: builder.mutation<Page, { siteId: number; title: string; blocks: Block[] }>({
+    // 6. إنشاء صفحة جديدة
+    createPage: builder.mutation<Page, { siteId: number; title: string; slug: string; blocks: Block[] }>({
       query: ({ siteId, ...data }) => ({
         url: `/sites/${siteId}/pages`,
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: [{ type: 'Pages', id: 'LIST' }], // 👈 لتحديث القائمة فوراً
+      invalidatesTags: [{ type: 'Pages', id: 'LIST' }],
     }),
 
-    updatePage: builder.mutation<Page, { siteId: number | string; pageId: number | string; title?: string; blocks?: Block[]; theme?: any; }>({
+    // 7. تحديث صفحة
+    updatePage: builder.mutation<Page, { siteId: number | string; pageId: number | string; title?: string; slug?: string; blocks?: Block[]; theme?: any; }>({
       query: ({ siteId, pageId, ...data }) => ({
         url: `/sites/${siteId}/pages/${pageId}`,
         method: 'PUT',
@@ -107,8 +111,13 @@ export const pagesApi = api.injectEndpoints({
       }),
       invalidatesTags: [{ type: 'Pages', id: 'LIST' }],
     }),
-  }),
-});
+
+   getPublicPage: builder.query<Page, { siteId?: string | number; slug?: string }>({
+  query: ({ siteId, slug }) => `/api/public/pages/${siteId}/${slug}`,
+  transformResponse: (response: ApiResponse<Page>) => response.data,
+}),
+  }), 
+}); 
 
 export const {
   useGetPagesQuery,
@@ -118,5 +127,6 @@ export const {
   useCreatePageMutation,
   useUpdatePageMutation,
   useDeletePageMutation,
-  usePublishPageMutation, // 👈 لا تنسى تصديرها
+  usePublishPageMutation,
+  useGetPublicPageQuery
 } = pagesApi;

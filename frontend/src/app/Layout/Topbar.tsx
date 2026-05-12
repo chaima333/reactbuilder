@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon,
+  MenuOpen as MenuOpenIcon,
   Notifications as NotificationsIcon,
   Brightness4 as DarkModeIcon,
   Brightness7 as LightModeIcon,
@@ -25,10 +26,12 @@ import { useLanguage } from '../providers/LanguageProvider';
 
 interface TopbarProps {
   onMenuClick: () => void;
+  onToggleCollapse: () => void; // 👈 إضافة
+  isCollapsed: boolean;       // 👈 إضافة
 }
 
-export const Topbar: React.FC<TopbarProps> = ({ onMenuClick }) => {
-  const { t } = useLanguage();  // ← AJOUTER
+export const Topbar: React.FC<TopbarProps> = ({ onMenuClick, onToggleCollapse, isCollapsed }) => {
+  const { t } = useLanguage();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -49,14 +52,10 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuClick }) => {
     handleMenuClose();
   };
 
-  const handleProfile = () => {
-    navigate('/profile');
-    handleMenuClose();
-  };
-
   return (
     <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
       <Toolbar>
+        {/* زر الموبايل */}
         <IconButton
           color="inherit"
           aria-label="open drawer"
@@ -65,6 +64,15 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuClick }) => {
           sx={{ mr: 2, display: { sm: 'none' } }}
         >
           <MenuIcon />
+        </IconButton>
+
+        {/* 🟢 زر الـ Toggle للـ Desktop */}
+        <IconButton
+          color="inherit"
+          onClick={onToggleCollapse}
+          sx={{ mr: 2, display: { xs: 'none', sm: 'inline-flex' } }}
+        >
+          {isCollapsed ? <MenuOpenIcon /> : <MenuIcon />}
         </IconButton>
         
         <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
@@ -82,7 +90,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuClick }) => {
         </IconButton>
 
         <IconButton onClick={handleMenuOpen} sx={{ ml: 1 }}>
-          <Avatar sx={{ bgcolor: 'secondary.main' }}>
+          <Avatar sx={{ bgcolor: 'secondary.main', width: 32, height: 32 }}>
             {user?.name?.charAt(0)?.toUpperCase() || 'U'}
           </Avatar>
         </IconButton>
@@ -94,14 +102,14 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuClick }) => {
           transformOrigin={{ horizontal: 'right', vertical: 'top' }}
           anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         >
-          <MenuItem onClick={handleProfile}>
-            <Typography>{t.profile}</Typography>  {/* ← t. */}
+          <MenuItem onClick={() => { navigate('/profile'); handleMenuClose(); }}>
+            <Typography>{t.profile}</Typography>
           </MenuItem>
           <MenuItem onClick={handleMenuClose}>
-            <Typography>{t.settings}</Typography>  {/* ← t. */}
+            <Typography>{t.settings}</Typography>
           </MenuItem>
           <MenuItem onClick={handleLogout}>
-            <Typography color="error">{t.logout}</Typography>  {/* ← t. */}
+            <Typography color="error">{t.logout}</Typography>
           </MenuItem>
         </Menu>
       </Toolbar>

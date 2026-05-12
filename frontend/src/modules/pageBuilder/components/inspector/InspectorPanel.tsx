@@ -1,107 +1,386 @@
 import React from "react";
-import { Box, Typography, TextField, MenuItem, Divider } from "@mui/material";
-import { blockRegistry } from "../../core/blockRegistry";
+
+import {
+  Box,
+  Typography,
+  TextField,
+  MenuItem,
+  Divider,
+} from "@mui/material";
+
+import { blockRegistry }
+from "../../core/blockRegistry";
+
+import {
+  BlockType,
+} from "../../types/page.types";
 
 interface Props {
   block: any;
-  device: "desktop" | "tablet" | "mobile";
-  onChange: (data: any) => void;
+
+  device:
+    | "desktop"
+    | "tablet"
+    | "mobile";
+
+  onChange:
+    (data: any) => void;
 }
 
-export const InspectorPanel: React.FC<Props> = ({
+export const InspectorPanel:
+React.FC<Props> = ({
   block,
   device,
-  onChange
+  onChange,
 }) => {
+
   if (!block) {
     return (
-      <Box p={2}>
-        <Typography color="text.secondary">
-          Sélectionnez un bloc
+      <Box
+        p={3}
+        textAlign="center"
+      >
+        <Typography
+          color="text.secondary"
+        >
+          Sélectionnez un bloc pour l'éditer
         </Typography>
       </Box>
     );
   }
 
-  const config = blockRegistry[block.type];
-  const fields = config?.fields || [];
+  const config =
+    blockRegistry[
+      block.type as BlockType
+    ];
 
-  const getEffectiveValue = (field: any) => {
-    if (field.target === "props") {
-      return block.data?.props?.[field.key] ?? "";
+  const fields =
+    config?.fields || [];
+
+  // ===================================
+  // GET EFFECTIVE VALUE
+  // ===================================
+
+  const getEffectiveValue =
+    (field: any) => {
+
+    // =========================
+    // PROPS
+    // =========================
+
+    if (
+      field.target ===
+      "props"
+    ) {
+
+      return field.key
+        .split(".")
+        .reduce(
+          (
+            acc: any,
+            part: string
+          ) =>
+            acc && acc[part],
+
+          block.data?.props
+        ) ?? "";
     }
 
+    // =========================
+    // STYLE
+    // =========================
+
+    // responsive field
+    if (
+      field.responsive
+    ) {
+
+      return (
+        block.data?.style?.[
+          device
+        ]?.[field.key] ??
+
+        block.data?.style
+          ?.desktop?.[
+            field.key
+          ] ??
+
+        ""
+      );
+    }
+
+    // canonical desktop field
     return (
-      block.data?.style?.[device]?.[field.key] ??    // 1. القيمة في الجهاز الحالي
-      block.data?.style?.desktop?.[field.key] ??     // 2. الوراثة من الـ Desktop
-      block.data?.props?.[field.key] ??              // 3. Fallback للـ Props
-      ""
+      block.data?.style
+        ?.desktop?.[
+          field.key
+        ] ?? ""
     );
   };
 
-  const handleFieldChange = (field: any, value: any) => {
-    if (field.target === "props") {
-      onChange({
-        props: {
-          ...block.data.props,
-          [field.key]: value
+  // ===================================
+  // HANDLE CHANGE
+  // ===================================
+
+  const handleFieldChange =
+    (
+      field: any,
+      value: any
+    ) => {
+
+    // deep clone
+    const newData =
+      JSON.parse(
+        JSON.stringify(
+          block.data
+        )
+      );
+
+    // =========================
+    // PROPS
+    // =========================
+
+    if (
+      field.target ===
+      "props"
+    ) {
+
+      const keys =
+        field.key.split(".");
+
+      let current =
+        newData.props;
+
+      for (
+        let i = 0;
+        i <
+        keys.length - 1;
+        i++
+      ) {
+
+        if (
+          !current[
+            keys[i]
+          ]
+        ) {
+
+          current[
+            keys[i]
+          ] = {};
         }
-      });
+
+        current =
+          current[
+            keys[i]
+          ];
+      }
+
+      current[
+        keys[
+          keys.length - 1
+        ]
+      ] = value;
+
+      onChange(newData);
+
       return;
     }
 
-    // 🎯 تحديث الـ Style بطريقة Responsive Safe
-    const currentStyles = block.data.style || {};
-    const currentDeviceStyle = currentStyles[device] || {};
+    // =========================
+    // STYLE
+    // =========================
 
-    onChange({
-      style: {
-        ...currentStyles,
-        [device]: {
-          ...currentDeviceStyle,
-          [field.key]: value
-        }
-      }
-    });
+    const deviceKey =
+      field.responsive
+        ? device
+        : "desktop";
+
+    if (
+      !newData.style
+    ) {
+
+      newData.style = {};
+    }
+
+    if (
+      !newData.style[
+        deviceKey
+      ]
+    ) {
+
+      newData.style[
+        deviceKey
+      ] = {};
+    }
+
+    newData.style[
+      deviceKey
+    ][field.key] = value;
+
+    onChange(newData);
   };
 
   return (
     <Box p={2}>
-      <Typography variant="subtitle1" fontWeight="bold">
-        {config?.label || "Block"}
+
+      {/* ========================= */}
+      {/* HEADER */}
+      {/* ========================= */}
+
+      <Typography
+        variant="subtitle1"
+        fontWeight="800"
+        sx={{
+          mb: 0.5
+        }}
+      >
+        {
+          config?.label ||
+          "Block Settings"
+        }
       </Typography>
 
-      <Typography variant="caption" color="primary">
-        Editing for: {device.toUpperCase()} {device === "desktop" ? "🖥️" : device === "tablet" ? " tablet 📱" : "📱"}
+      <Typography
+        variant="caption"
+        sx={{
+          color:
+            "primary.main",
+
+          fontWeight:
+            "bold",
+
+          display:
+            "block",
+
+          mb: 2,
+        }}
+      >
+        MODE:
+        {" "}
+        {
+          device.toUpperCase()
+        }
+
+        {" "}
+
+        {
+          device ===
+          "desktop"
+
+            ? "🖥️"
+
+            : device ===
+              "tablet"
+
+              ? "💻"
+
+              : "📱"
+        }
       </Typography>
 
-      <Divider sx={{ my: 2 }} />
+      <Divider
+        sx={{
+          mb: 3
+        }}
+      />
 
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {fields.map((field: any) => {
-          
-          const value = getEffectiveValue(field);
+      {/* ========================= */}
+      {/* FIELDS */}
+      {/* ========================= */}
 
-          return (
-            <TextField
-              key={field.key}
-              label={field.label}
-              select={field.type === "select"}
-              type={field.type === "color" ? "color" : "text"}
-              fullWidth
-              size="small"
-              value={value}
-              onChange={(e) => handleFieldChange(field, e.target.value)}
-              SelectProps={field.type === "select" ? { displayEmpty: true } : undefined}
-            >
-              {field.options?.map((opt: string) => (
-                <MenuItem key={opt} value={opt}>
-                  {opt}
+      <Box
+        sx={{
+          display: "flex",
+
+          flexDirection:
+            "column",
+
+          gap: 2.5,
+        }}
+      >
+
+        {fields.map(
+          (field: any) => (
+
+          <TextField
+            key={field.key}
+
+            label={
+              field.label
+            }
+
+            select={
+              field.type ===
+              "select"
+            }
+
+            type={
+              field.type ===
+              "color"
+
+                ? "color"
+
+                : "text"
+            }
+
+            fullWidth
+
+            size="small"
+
+            value={
+              getEffectiveValue(
+                field
+              )
+            }
+
+            onChange={(
+              e
+            ) =>
+              handleFieldChange(
+                field,
+                e.target.value
+              )
+            }
+
+            InputLabelProps={
+              field.type ===
+              "color"
+
+                ? {
+                    shrink: true
+                  }
+
+                : undefined
+            }
+          >
+
+            {field.type ===
+              "select" &&
+
+              field.options?.map(
+                (
+                  opt: any
+                ) => (
+
+                <MenuItem
+                  key={
+                    opt.value ||
+                    opt
+                  }
+
+                  value={
+                    opt.value ||
+                    opt
+                  }
+                >
+                  {
+                    opt.label ||
+                    opt
+                  }
                 </MenuItem>
               ))}
-            </TextField>
-          );
-        })}
+          </TextField>
+        ))}
       </Box>
     </Box>
   );

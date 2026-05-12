@@ -1,8 +1,13 @@
-import { blockRegistry } from "../core/blockRegistry";
+import React from "react";
 
+import { blockRegistry }
+from "../core/blockRegistry";
+
+import { Block }
+from "../types/page.types";
 
 export const renderBlock = (
-  block: any,
+  block: Block,
   children?: React.ReactNode
 ) => {
 
@@ -17,13 +22,10 @@ export const renderBlock = (
     config.component;
 
   return (
-
     <Component
       data={block.data}
-      style={block.style}
     >
       {children}
     </Component>
-
   );
 };

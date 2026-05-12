@@ -1,5 +1,6 @@
 import React from "react";
 import { Box } from "@mui/material";
+import { useResolvedStyle } from "../../core/theme/useResolvedStyle";
 
 interface ColumnBlockProps {
   children?: React.ReactNode;
@@ -12,8 +13,10 @@ interface ColumnBlockProps {
 }
 
 export const ColumnBlock = ({ children, data, device = "desktop" }: ColumnBlockProps) => {
-  // استخراج الـ styles حسب الجهاز (Responsive)
-  const styles = data.style?.[device] || data.style?.desktop || {};
+  const styles = useResolvedStyle(
+    data.style,
+    device as "desktop" | "tablet" | "mobile"
+  );
 
   return (
     <Box

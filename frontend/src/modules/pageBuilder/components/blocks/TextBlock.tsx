@@ -1,14 +1,14 @@
-import { useTheme } from "../../core/theme/ThemeProvider"; // جيب الـ Hook
-import { applyStyles } from "../../core/styleEngine";
+import { useResolvedStyle } from "../../core/theme/useResolvedStyle";
+
+type Device = "desktop" | "tablet" | "mobile";
 
 export const TextBlock = ({ data, onChange, preview, device }: any) => {
-  const { tokens } = useTheme(); // 1. أجبد الخزنة
+  const style = useResolvedStyle(data.style, (device || "desktop") as Device);
 
   return (
     <div
       style={{
-        // 2. عدي الـ tokens للـ engine كـ parameter ثالث
-        ...applyStyles(data.style, device, tokens), 
+        ...style,
         outline: "none",
         minHeight: "1.2em",
       }}

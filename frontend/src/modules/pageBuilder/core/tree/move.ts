@@ -21,25 +21,54 @@ export const moveBlockInTree = (
 const extract = (
   blocks: Block[],
   id: string
-): { tree: Block[]; extracted: Block | null } => {
-  let extracted: Block | null = null;
+): {
+  tree: Block[];
+  extracted: Block | null;
+} => {
 
-  const tree = blocks
-    .filter((b) => {
-      if (b.id === id) {
-        extracted = b;
-        return false;
+  let extracted:
+    Block | null = null;
+
+  const tree =
+    blocks.flatMap((block) => {
+
+      // 🎯 Found target
+      if (block.id === id) {
+
+        extracted = block;
+
+        return [];
       }
-      return true;
-    })
-    .map((block) => ({
-      ...block,
-      children: block.children?.length
-        ? extract(block.children, id).tree
-        : [],
-    }));
 
-  return { tree, extracted };
+      // 🔁 Recursive extraction
+      const childResult =
+        extract(
+          block.children || [],
+          id
+        );
+
+      // ✅ Preserve extracted node
+      if (
+        childResult.extracted
+      ) {
+
+        extracted =
+          childResult.extracted;
+      }
+
+      return [{
+
+        ...block,
+
+        children:
+          childResult.tree,
+      }];
+    });
+
+  return {
+    tree,
+    extracted,
+  };
 };
 
 /**
