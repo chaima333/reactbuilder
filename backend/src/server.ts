@@ -27,6 +27,7 @@ import { bootstrapPlugins } from "./app.bootstrap";
 import { initPluginWorker } from "./core/queues/plugin.worker";
 import commandRoutes from "./modules/dashboard/commands/command.routes";
 import { registerCommands } from "./core/commands/register";
+import publicSiteRoutes from "./modules/sites/publicSite.routes";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 
@@ -49,7 +50,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
    PUBLIC ROUTES
 ======================== */
 app.use("/p", publicRoutes);
-
+app.use("/p/public",publicSiteRoutes);
 /* ========================
    AUTH
 ======================== */

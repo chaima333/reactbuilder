@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request,Response } from 'express';
 import { Site, Page, SiteMember } from '../../models';
 import { AuthRequest } from '../../shared/auth.util';
 import { SiteService } from '../sites/site.service';
@@ -218,4 +218,69 @@ export const getDefaultSite = async (req: AuthRequest, res: Response) => {
     success: true,
     data: membership.site,
   });
+};
+
+
+export const getPublicSite = async (
+
+  req: Request,
+
+  res: Response
+
+) => {
+
+  try {
+
+    const siteId =
+      Number(
+        req.params.siteId
+      );
+
+    const site =
+
+      await Site.findByPk(
+        siteId,
+        {
+
+          include: [
+            {
+              association:
+                "pages"
+            }
+          ]
+        }
+      );
+
+    if (!site) {
+
+      return res
+        .status(404)
+        .json({
+
+          success:false,
+
+          message:
+            "Site not found"
+        });
+    }
+
+    return res.json({
+
+      success:true,
+
+      data: site
+    });
+
+  } catch (error:any) {
+
+    return res
+      .status(500)
+      .json({
+
+        success:false,
+
+        message:
+          error.message
+        });
+  }
 };
