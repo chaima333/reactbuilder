@@ -23,8 +23,7 @@ export class PageService {
     const existing = await PageRepository.findByTitle(siteId, data.title);
     if (existing) throw new Error("PAGE_ALREADY_EXISTS");
 
-    const slug = this.generateSlug(data.title);
-
+    const slug =data.slug || this.generateSlug( data.title);
     const page = await PageRepository.create({
       ...data,
       slug,
