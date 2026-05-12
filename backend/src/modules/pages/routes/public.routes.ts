@@ -6,5 +6,5 @@ const router = Router({ mergeParams: true }); // 👈 زيد هذي ضروري!!
 
 // جرب بدّل الـ Route هكا باش نقطعو الشك
 router.get("/pages/:siteId/:slug", getPublicPage);
-router.get( "/api/public/pages/:siteId/:slug",getPublicPageJSON);
+router.get("/public/pages/:siteId/:slug",getPublicPageJSON);
 export default router;
