@@ -53,6 +53,13 @@ export class Page extends Model {
   // 🛡️ الربط مع المستخدم
   @ForeignKey(() => User)
   @Column({
+  type: DataType.BOOLEAN,
+  allowNull:false,
+  defaultValue: false,
+  field: "is_homepage"
+})
+isHomepage!: boolean;
+  @Column({
     type: DataType.INTEGER,
     allowNull: false,
     field: 'user_id',

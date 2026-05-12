@@ -24,12 +24,16 @@ export class PageService {
     if (existing) throw new Error("PAGE_ALREADY_EXISTS");
 
     const slug =data.slug || this.generateSlug( data.title);
+    const existingHomepage =await Page.findOne({
+      where: {siteId,isHomepage: true }
+     });
     const page = await PageRepository.create({
       ...data,
       slug,
       siteId,
       userId,
-      status: PAGE_STATUS.DRAFT
+      status:
+     PAGE_STATUS.DRAFT,isHomepage:!existingHomepage
     });
 
     await SlugMap.create({
