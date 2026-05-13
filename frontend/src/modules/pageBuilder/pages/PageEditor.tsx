@@ -37,6 +37,7 @@ import { canDrop } from "../adapters/pageAdapter";
 import { ThemeContext } from "../core/theme/themeContext";
 import { StructurePanel } from "../components/sidebar/StructurePanel";
 import { SettingsPanel }from "../components/inspector/SettingsPanel";
+import { useParams } from "react-router-dom";
 // --- 🛠️ Helpers ---
 const findBlockInTree = (blocks: Block[], id: string): Block | null => {
   for (const block of blocks) {
@@ -113,6 +114,7 @@ const DragGhost = ({ type, isAllowed }: { type: string, isAllowed: boolean }) =>
 
 // --- 🚀 Main Editor Component ---
 export const PageEditor = ({ mode }: { mode: "create" | "edit" }) => {
+  const { pageId } = useParams();
   const editor = usePageEditor(mode);
   
   const {
@@ -438,6 +440,7 @@ const type =
               isPreview={isPreview}
               onPreview={() => setIsPreview(!isPreview)}
               onPublish={actions.publish}
+              hasPageId={!!pageId}
             />
           }
           leftSidebar={

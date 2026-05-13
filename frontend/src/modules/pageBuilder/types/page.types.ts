@@ -116,7 +116,7 @@ export type BlockField = {
   key: string;
   label: string;
   
-  type: "text" | "color" | "select";
+  type: "text" | "color" | "select"| "textarea";
   target: "props" | "style";
 
   options?: {

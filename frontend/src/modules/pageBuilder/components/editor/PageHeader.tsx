@@ -46,7 +46,7 @@ interface PageHeaderProps {
   onSave: () => void;
 
   onPublish: () => void;
-
+  hasPageId: boolean;
   loading: boolean;
 
   canUndo: boolean;
@@ -75,6 +75,8 @@ export const PageHeader = ({
   onPublish,
 
   loading,
+
+  hasPageId,
 
   canUndo,
 
@@ -325,6 +327,8 @@ export const PageHeader = ({
           color="success"
 
           onClick={onPublish}
+           
+          disabled={!hasPageId}
 
           startIcon={
             <Publish fontSize="small" />

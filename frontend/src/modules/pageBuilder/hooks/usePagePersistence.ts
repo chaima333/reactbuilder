@@ -50,6 +50,17 @@ export const usePagePersistence = ({
   // ========================
   // SAVE
   // ========================
+ const generatedSlug =
+
+  pageTitle
+
+    ? pageTitle
+        .toLowerCase()
+        .trim()
+        .replaceAll(" ", "-")
+
+    : "untitled-page";
+
 
   const save = async () => {
 
@@ -66,7 +77,7 @@ export const usePagePersistence = ({
           title:
             pageTitle,
 
-          slug,
+          slug:generatedSlug,
 
           blocks:
             fromUIToAPI(
@@ -92,37 +103,41 @@ export const usePagePersistence = ({
 
       else {
 
-        const createdPage =
+  console.log(
+    "GENERATED SLUG:",
+    generatedSlug
+  );
 
-          await createPage({
+  const createdPage =
 
-            siteId:
-              sId,
+    await createPage({
 
-            title:
-              pageTitle,
+      siteId:
+        sId,
 
-            slug,
+      title:
+        pageTitle,
 
-            blocks:
-              fromUIToAPI(
-                blocks
-              ) as any,
+      slug:
+        generatedSlug,
 
-          }).unwrap();
+      blocks:
+        fromUIToAPI(
+          blocks
+        ) as any,
 
-        console.log(
-          "NEW PAGE:",
-          createdPage
-        );
+    }).unwrap();
 
-        // ✅ important fix
+  console.log(
+    "NEW PAGE:",
+    createdPage
+  );
 
-        navigate(
+  navigate(
 
-          `/sites/${sId}/pages/${createdPage.id}`
-        );
-      }
+`/sites/${sId}/pages/${createdPage.id}/edit`
+  );
+}
 
     } catch (err) {
 

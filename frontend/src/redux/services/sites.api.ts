@@ -1,15 +1,28 @@
 import { api } from '../api/api';
 
-// src/types/site.ts
+import { Page }
+from "./pages.api";
+
 export type Site = {
+
   id: number;
+
   name: string;
+
   subdomain: string;
+
   title?: string;
-  description?: string | null;
+
+  description?:
+    string | null;
+
   status: string;
+
   createdAt: string;
+
   updatedAt: string;
+
+  pages?: Page[];
 };
 
 export type SitesResponse = {
@@ -77,14 +90,45 @@ export const sitesApi = api.injectEndpoints({
       }),
       invalidatesTags: [{ type: 'Sites', id: 'LIST' }],
     }),
+    getPublicSite:
+
+builder.query<
+  Site,
+  number
+>({
+
+  query:
+    (siteId) => ({
+
+      url:
+
+`https://backend-rmfq.onrender.com/p/public/sites/${siteId}`,
+
+      method:
+        "GET"
+    }),
+
+  transformResponse:
+    (response:any) =>
+
+      response.data,
+}),
 
   }),
 });
 
-export const { 
-  useGetSitesQuery, 
-  useGetSiteByIdQuery, 
-  useCreateSiteMutation, 
-  useUpdateSiteMutation, 
-  useDeleteSiteMutation 
+export const {
+
+  useGetPublicSiteQuery,
+
+  useGetSitesQuery,
+
+  useGetSiteByIdQuery,
+
+  useCreateSiteMutation,
+
+  useUpdateSiteMutation,
+
+  useDeleteSiteMutation
+
 } = sitesApi;
