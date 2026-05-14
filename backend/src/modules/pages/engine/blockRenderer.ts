@@ -1,4 +1,3 @@
-// src/modules/pages/rendering/page.renderer.ts
 
 /**
  * =========================================================
