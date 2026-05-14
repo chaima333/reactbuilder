@@ -40,7 +40,7 @@ export const SEOPlugin: ICmsPlugin = {
 
         siteId,
 
-        seoTitle: {
+         slug: {
           [Op.ne]: null
         }
       }
