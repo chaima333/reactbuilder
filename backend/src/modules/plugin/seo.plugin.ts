@@ -34,17 +34,10 @@ export const SEOPlugin: ICmsPlugin = {
     });
 
   const optimizedPages =
-    await Page.count({
+  await Page.count({
 
-      where: {
-
-        siteId,
-
-         slug: {
-          [Op.ne]: null
-        }
-      }
-    });
+    where: { siteId }
+  });
 
   const seoScore =
     totalPages === 0
