@@ -30,7 +30,7 @@ export const MediaPlugin: ICmsPlugin = {
       limit: 5,
 
       order: [
-        ["createdAt", "DESC"]
+          ["created_at", "DESC"]
       ]
     });
 
@@ -46,6 +46,8 @@ export const MediaPlugin: ICmsPlugin = {
 
     storageUsed:
       `${totalFiles} files`,
+    
+
 
     items
   };
