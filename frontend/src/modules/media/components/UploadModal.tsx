@@ -58,7 +58,6 @@ const handleUpload = async () => {
     setError(err?.data?.message || "Une erreur est survenue lors de l'envoi.");
   }
 };
-
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Uploader un fichier</DialogTitle>
