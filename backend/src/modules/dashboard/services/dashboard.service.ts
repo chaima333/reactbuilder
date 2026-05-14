@@ -21,13 +21,13 @@ export const fetchStats = async (
    * =====================================
    */
 
-  const cached =
-    await redis.get(cacheKey);
+  //const cached =
+    //await redis.get(cacheKey);
 
-  if (cached) {
+  //if (cached) {
 
-    return JSON.parse(cached);
-  }
+   // return JSON.parse(cached);
+  //}
 
   /**
    * =====================================
@@ -134,12 +134,12 @@ export const fetchStats = async (
    * =====================================
    */
 
-  await redis.set(
-    cacheKey,
-    JSON.stringify(result),
-    "EX",
-    30
-  );
+  //await redis.set(
+   // cacheKey,
+    //JSON.stringify(result),
+    //"EX",
+    //30
+  //);
 
   return result;
 };
