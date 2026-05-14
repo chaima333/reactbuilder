@@ -7,45 +7,139 @@ import { redis } from "../../../core/cache/config";
 // =====================================================
 // 🔥 STATS
 // =====================================================
-export const fetchStats = async (siteId: number) => {
-  const cacheKey = `dashboard:stats:${siteId}`;
 
-  // cache
-  const cached = await redis.get(cacheKey);
-  if (cached) return JSON.parse(cached);
+export const fetchStats = async (
+  siteId: number
+) => {
 
-  const site = await Site.findByPk(siteId);
+  const cacheKey =
+    `dashboard:stats:${siteId}`;
 
-  const totalPages = await Page.count({ where: { siteId } });
-  const totalViews = await Page.sum("views", { where: { siteId } }) || 0;
+  /**
+   * =====================================
+   * CACHE
+   * =====================================
+   */
 
-  const monthlyStatsRaw = await sequelize.query(
-    `
-    SELECT DATE_TRUNC('month', created_at) as month, COUNT(*) as count
-    FROM pages
-    WHERE site_id = :siteId
-    GROUP BY month
-    ORDER BY month DESC
-    LIMIT 12
-    `,
-    {
-      replacements: { siteId },
-      type: QueryTypes.SELECT
-    }
-  );
-  
+  const cached =
+    await redis.get(cacheKey);
+
+  if (cached) {
+
+    return JSON.parse(cached);
+  }
+
+  /**
+   * =====================================
+   * SITE
+   * =====================================
+   */
+
+  const site =
+    await Site.findByPk(siteId);
+
+  /**
+   * =====================================
+   * PAGES COUNT
+   * =====================================
+   */
+
+  const totalPages =
+    await Page.count({
+      where: { siteId }
+    });
+
+  /**
+   * =====================================
+   * TOTAL VIEWS
+   * =====================================
+   */
+
+  const totalViews =
+    await Page.sum(
+      "views",
+      {
+        where: { siteId }
+      }
+    ) || 0;
+
+  /**
+   * =====================================
+   * MONTHLY STATS
+   * =====================================
+   */
+
+  const monthlyStatsRaw =
+    await sequelize.query(
+      `
+      SELECT
+        DATE_TRUNC(
+          'month',
+          created_at
+        ) as month,
+
+        COUNT(*) as count
+
+      FROM pages
+
+      WHERE site_id = :siteId
+
+      GROUP BY month
+
+      ORDER BY month DESC
+
+      LIMIT 12
+      `,
+      {
+        replacements: {
+          siteId
+        },
+
+        type:
+          QueryTypes.SELECT
+      }
+    );
+
+  /**
+   * =====================================
+   * FINAL RESULT
+   * =====================================
+   */
+
   const result = {
-    totalSites: 1,
+
+    siteName:
+      site?.name || "Unknown",
+
     totalPages,
-    totalViews: totalViews || 0,
-    siteName: site?.name || "Unknown",
-    chartData: (monthlyStatsRaw as any[]).map((m) => ({
-      month: m.month,
-      count: Number(m.count)
-    }))
+
+    totalViews:
+      Number(totalViews),
+
+    chartData:
+      (monthlyStatsRaw as any[])
+        .map((m) => ({
+
+          month:
+            m.month,
+
+          count:
+            Number(m.count)
+        }))
   };
 
-  await redis.set(cacheKey, JSON.stringify(result), "EX", 30);
+  /**
+   * =====================================
+   * CACHE RESULT
+   * =====================================
+   */
+
+  await redis.set(
+    cacheKey,
+    JSON.stringify(result),
+    "EX",
+    30
+  );
 
   return result;
 };
