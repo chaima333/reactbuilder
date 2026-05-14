@@ -1,4 +1,3 @@
-// modules/plugin/media.plugin.ts
 
 import { UnifiedEvent } from "../../core/plugins/events/contracts/unified.contract";
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
@@ -19,16 +18,40 @@ export const MediaPlugin: ICmsPlugin = {
     }
   },
 
-  async getDashboardData(siteId: number) {
-    const totalFiles = await Media.count({ where: { siteId } });
-    return { totalFiles };
-  },
+ async getDashboardData(
+  siteId: number
+) {
 
-  // ✅ التعديل هنا: بارامتر واحد واستخراج البيانات منه
+  const items =
+    await Media.findAll({
+
+      where: { siteId },
+
+      limit: 5,
+
+      order: [
+        ["createdAt", "DESC"]
+      ]
+    });
+
+  const totalFiles =
+    await Media.count({
+
+      where: { siteId }
+    });
+
+  return {
+
+    totalFiles,
+
+    storageUsed:
+      `${totalFiles} files`,
+
+    items
+  };
+},
   async execute(event: UnifiedEvent) {
     const { data, context, type } = event;
     
-    // منطق الـ Plugin الخاص بك هنا
-    // مثال: console.log(`Processing media for page: ${data.current?.id}`);
   }
 };
