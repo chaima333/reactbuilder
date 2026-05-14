@@ -1,13 +1,17 @@
-
 import { UnifiedEvent } from "../../core/plugins/events/contracts/unified.contract";
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
 import { Media } from "../../models";
 
 export const MediaPlugin: ICmsPlugin = {
+
   name: "media",
+
   priority: 10,
+
   mode: "async",
+
   events: ["page.updated"],
+
   enabled: true,
 
   meta: {
@@ -18,42 +22,58 @@ export const MediaPlugin: ICmsPlugin = {
     }
   },
 
- async getDashboardData(
-  siteId: number
-) {
+  async getDashboardData(siteId: number) {
 
-  const items =
-    await Media.findAll({
+    try {
 
-      where: { siteId },
+      const items =
+        await Media.findAll({
 
-      limit: 5,
+          where: { siteId },
 
-      order: [
-          ["created_at", "DESC"]
-      ]
-    });
+          limit: 5,
 
-  const totalFiles =
-    await Media.count({
+          order: [
+            ["createdAt", "DESC"]
+          ]
+        });
 
-      where: { siteId }
-    });
+      const totalFiles =
+        await Media.count({
 
-  return {
+          where: { siteId }
+        });
 
-    totalFiles,
+      return {
 
-    storageUsed:
-      `${totalFiles} files`,
-    
+        totalFiles,
 
+        storageUsed:
+          `${totalFiles} files`,
 
-    items
-  };
-},
+        items
+      };
+
+    } catch (err) {
+
+      console.error(
+        "MEDIA PLUGIN ERROR:",
+        err
+      );
+
+      return {
+        error: true
+      };
+    }
+  }, 
+
   async execute(event: UnifiedEvent) {
-    const { data, context, type } = event;
-    
+
+    const {
+      data,
+      context,
+      type
+    } = event;
+
   }
 };
