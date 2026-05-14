@@ -1,24 +1,29 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
+
+// API & Services
 import {
   useGetPageByIdQuery,
   useGetPageVersionsQuery,
   useRestorePageVersionMutation,
 } from "../../../redux/services/pages.api";
+
+// Core Utilities
 import { blockRegistry as staticRegistry } from "../core/blockRegistry";
 import { loadBlockRegistry } from "../core/loadBlockRegistry";
 import { Block, BlockType } from "../types/page.types";
 import { useHistory } from "../core/history/useHistory";
 import { moveBlockInTree } from "../core/tree/move";
+import { insertBlock } from "../core/tree/insert";
+import { duplicateBlock as duplicateBlockUtil } from "../core/tree/clipboard";
 import { defaultTokens } from "../core/theme/tokens";
 import { fromAPIToUI } from "../adapters/pageAdapter";
-import { insertBlock } from "../core/tree/insert";
-import { useVersionActions } from "./useVersionActions";
-import { duplicateBlock as duplicateBlockUtil } from "../core/tree/clipboard";
 
-// 1. استيراد الـ Hook الجديد اللي صنعناه
+// Secondary Hooks
 import { usePagePersistence } from "./usePagePersistence";
+import { useVersionActions } from "./useVersionActions";
+import { normalizeTree } from "../runtime/normalizeTree";
 
 export const usePageEditor = (mode: "create" | "edit") => {
   const { siteId, pageId } = useParams<{ siteId: string; pageId: string }>();
@@ -28,7 +33,7 @@ export const usePageEditor = (mode: "create" | "edit") => {
   const pId = Number(pageId) || 0;
 
   // =========================
-  // API QUERIES
+  // 1. API QUERIES
   // =========================
   const { data: pageData, isLoading } = useGetPageByIdQuery(
     { siteId: sId, pageId: pId },
@@ -40,11 +45,10 @@ export const usePageEditor = (mode: "create" | "edit") => {
     { skip: !isEdit }
   );
 
-  // تم حذف الـ Mutations القديمة من هنا لأنها انتقلت للـ usePagePersistence
   const [restorePageVersion] = useRestorePageVersionMutation();
 
   // =========================
-  // STATES
+  // 2. STATES & HISTORY
   // =========================
   const [pageTitle, setPageTitle] = useState("");
   const [slug, setSlug] = useState("");
@@ -53,24 +57,54 @@ export const usePageEditor = (mode: "create" | "edit") => {
   const [tokens, setTokens] = useState(defaultTokens);
   const hasLoadedRef = useRef(false);
 
-  // =========================
-  // HISTORY
-  // =========================
   const {
     state: blocks,
     set: setBlocks,
     undo,
     redo,
+    reset: resetHistory,
     canUndo,
     canRedo,
   } = useHistory<Block[]>([]);
 
-  const pushHistory = (snapshot: Block[]) => {
-    setBlocks(structuredClone(snapshot));
-  };
+  // =========================
+  // 3. VALIDATION (FIXED)
+  // =========================
+  const errors = useMemo(() => {
+    const allErrors: any[] = [];
+    
+    const validateTree = (tree: Block[]) => {
+      if (!tree || !Array.isArray(tree)) return; // 🛡️ Safety check
+
+      tree.forEach((block) => {
+        const config = registry[block.type as BlockType];
+        if (config?.fields) {
+          config.fields.forEach((field: any) => {
+            if (field.validation?.required) {
+              const value = block.data.props?.[field.key];
+              if (value === undefined || value === null || value.toString().trim() === "") {
+                allErrors.push({
+                  blockId: block.id,
+                  field: field.key,
+                  message: `${config.label}: الحقل ${field.label} مطلوب`,
+                });
+              }
+            }
+          });
+        }
+        // 🛡️ FIX: Only validate children if they exist and is an array
+        if (block.children && Array.isArray(block.children) && block.children.length > 0) {
+          validateTree(block.children);
+        }
+      });
+    };
+
+    validateTree(blocks);
+    return allErrors;
+  }, [blocks, registry]);
 
   // =========================
-  // PERSISTENCE (الربط الجديد) 🚀
+  // 4. PERSISTENCE
   // =========================
   const { save, publish, isSaving, isPublishing } = usePagePersistence({
     sId,
@@ -82,42 +116,7 @@ export const usePageEditor = (mode: "create" | "edit") => {
   });
 
   // =========================
-  // VERSIONS
-  // =========================
-  const versionActions = useVersionActions({
-    blocks,
-    setBlocks,
-    setSelectedBlockId,
-    pushHistory,
-    versions,
-    restorePageVersion,
-    siteId: sId,
-    pageId: pId,
-  });
-
-  // =========================
-  // LOADERS
-  // =========================
-  useEffect(() => {
-    loadBlockRegistry().then(setRegistry);
-  }, []);
-
-  useEffect(() => {
-    if (isEdit && pageData && !hasLoadedRef.current) {
-      const data = (pageData as any)?.data || pageData;
-      if (data) {
-        setPageTitle(data.title || "Untitled Page");
-        setTokens(data.theme || defaultTokens);
-        setSlug(data.slug || "");
-        const uiBlocks = fromAPIToUI(data.blocks || []) as Block[];
-        setBlocks(uiBlocks);
-        hasLoadedRef.current = true;
-      }
-    }
-  }, [pageData, isEdit, setBlocks]);
-
-  // =========================
-  // HELPERS
+  // 5. HELPERS
   // =========================
   const findBlockInTree = useCallback((tree: Block[], id: string): Block | null => {
     for (const node of tree) {
@@ -135,23 +134,36 @@ export const usePageEditor = (mode: "create" | "edit") => {
   }, [blocks, selectedBlockId, findBlockInTree]);
 
   // =========================
-  // ACTIONS
+  // 6. ACTIONS
   // =========================
   const actions = useMemo(
     () => ({
-      addBlock: (type: BlockType, targetId?: string, position: "before" | "after" | "inside" = "inside") => {
-        const config = registry[type];
-        if (!config) return;
+     addBlock: (type: string, targetId?: string, position: string = "inside", presetData?: any) => {
+  const createBlockWithChildren = (blockData: any): any => {
+    const id = uuidv4();
+    return {
+      id,
+      type: blockData.type,
+      data: blockData.data || { props: {}, style: { desktop: {} } },
+      children: (blockData.children || []).map((child: any) => createBlockWithChildren(child))
+    };
+  };
 
-        const newBlock: Block = {
-          id: uuidv4(),
-          type,
-          data: {
-            props: structuredClone(config.defaultData?.props || {}),
-            style: structuredClone(config.defaultData?.style || { desktop: {}, tablet: {}, mobile: {} }),
-          },
-          children: [],
-        };
+  let newBlock;
+  if (presetData) {
+    newBlock = createBlockWithChildren(presetData);
+  } else {
+    const config = registry[type as BlockType];
+    newBlock = {
+      id: uuidv4(),
+      type,
+      data: {
+        props: structuredClone(config?.defaultData?.props || {}),
+        style: structuredClone(config?.defaultData?.style || { desktop: {} }),
+      },
+      children: [],
+    };
+  }
 
         setBlocks((currentBlocks) => {
           if (!targetId || targetId === "canvas-root") return [...currentBlocks, newBlock];
@@ -176,7 +188,16 @@ export const usePageEditor = (mode: "create" | "edit") => {
             tree.map((b) => {
               if (b.id === id) {
                 const updated = structuredClone(b);
-                if (newData.props) updated.data.props = { ...updated.data.props, ...newData.props };
+                
+                // 📝 تحسين تحديث الـ Props:
+                // نستخدم SpreadOperator باش نحافظو على النص القديم في الحقول اللي متبدلتش
+                if (newData.props) {
+                   updated.data.props = { 
+                     ...updated.data.props, 
+                     ...newData.props 
+                   };
+                }
+
                 if (newData.style) {
                   updated.data.style = {
                     desktop: { ...(updated.data.style.desktop || {}), ...(newData.style.desktop || {}) },
@@ -214,14 +235,75 @@ export const usePageEditor = (mode: "create" | "edit") => {
         setBlocks((current) => moveBlockInTree(current, activeId, dropInfo));
       },
 
+      importPageData: (jsonContent: string) => {
+        try {
+          const data = JSON.parse(jsonContent);
+          const canonicalBlocks = normalizeTree(data.blocks || []);
+          setBlocks(canonicalBlocks);
+          resetHistory(canonicalBlocks);
+          if (data.title) setPageTitle(data.title);
+          if (data.slug) setSlug(data.slug);
+          if (data.theme) setTokens(data.theme);
+        } catch (err) {
+          console.error("❌ Import Failed:", err);
+          alert("Invalid Page JSON");
+        }
+      },
+
+      exportPageData: () => {
+        return JSON.stringify({
+          title: pageTitle,
+          slug,
+          blocks,
+          theme: tokens,
+          version: "1.0",
+          exportedAt: new Date().toISOString(),
+        }, null, 2);
+      },
+
       undo,
       redo,
-      // الـ save و الـ publish جايين مالـ usePagePersistence
       save,
       publish,
     }),
-    [registry, blocks, pageTitle, tokens, sId, pId, undo, redo, setBlocks, save, publish, findBlockInTree]
+    [registry, blocks, pageTitle, tokens, sId, pId, undo, redo, setBlocks, resetHistory, save, publish, findBlockInTree]
   );
+
+  // =========================
+  // 7. VERSION CONTROL
+  // =========================
+  const versionActions = useVersionActions({
+    blocks,
+    setBlocks,
+    setSelectedBlockId,
+    pushHistory: setBlocks,
+    versions,
+    restorePageVersion,
+    siteId: sId,
+    pageId: pId,
+  });
+
+  // =========================
+  // 8. LOADERS
+  // =========================
+  useEffect(() => {
+    loadBlockRegistry().then(setRegistry);
+  }, []);
+
+  useEffect(() => {
+    if (isEdit && pageData && !hasLoadedRef.current) {
+      const data = (pageData as any)?.data || pageData;
+      if (data) {
+        setPageTitle(data.title || "Untitled Page");
+        setTokens(data.theme || defaultTokens);
+        setSlug(data.slug || "");
+        const rawBlocks = fromAPIToUI(data.blocks || []);
+        const canonicalBlocks = normalizeTree(rawBlocks);
+        resetHistory(canonicalBlocks); 
+        hasLoadedRef.current = true;
+      }
+    }
+  }, [pageData, isEdit, resetHistory]);
 
   return {
     blocks,
@@ -230,6 +312,7 @@ export const usePageEditor = (mode: "create" | "edit") => {
     setSlug,
     setPageTitle,
     tokens,
+    errors,
     updateToken: (newTokens: any) => setTokens((prev) => ({ ...prev, ...newTokens })),
     selectedBlock,
     selectedBlockId,
@@ -241,7 +324,7 @@ export const usePageEditor = (mode: "create" | "edit") => {
     registry,
     isLoading,
     isSaving,
-    isPublishing, // زدناها في الـ return
+    isPublishing,
     isLoadingVersions,
     versions,
     canUndo,

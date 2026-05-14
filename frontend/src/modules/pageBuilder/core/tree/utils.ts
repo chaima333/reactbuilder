@@ -57,3 +57,41 @@ export const deleteBlockFromTree = (
         : [],
     }));
 };
+/**
+ * ➕ Add block inside a parent
+ */
+export const addBlockToTree = (
+  blocks: Block[],
+  parentId: string,
+  newBlock: Block
+): Block[] => {
+  return blocks.map((block) => {
+    // 1. إذا لقينا الـ Parent اللي حاجتنا بيه
+    if (block.id === parentId) {
+      return {
+        ...block,
+        children: [...(block.children || []), newBlock],
+      };
+    }
+
+    // 2. إذا ما لقيناروش، نلوجوا في ولادو (Recursion)
+    if (block.children?.length) {
+      return {
+        ...block,
+        children: addBlockToTree(block.children, parentId, newBlock),
+      };
+    }
+
+    return block;
+  });
+};
+export const getTotalBlocksCount = (nodes: Block[]): number => {
+  let count = 0;
+  nodes.forEach((node) => {
+    count++; // نحسب البلوك بيدو
+    if (node.children?.length) {
+      count += getTotalBlocksCount(node.children); // ونزيدو نحسبو ولادو (Recursion)
+    }
+  });
+  return count;
+};

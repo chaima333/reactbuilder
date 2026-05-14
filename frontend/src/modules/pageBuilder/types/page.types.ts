@@ -1,12 +1,29 @@
 import { ComponentType } from "react";
 
+export type ValidationRules = {
+  required?: boolean;
+  cssUnit?: boolean;
+  url?: boolean;
+  number?: boolean;
+  min?: number;
+  max?: number;
+};
+export type BlockRules = {
+  allowedParents?: BlockType[];
+  singleton?: boolean; 
+  isRootOnly?: boolean; 
+};
+
 export type BlockType =
+  | "root"
   | "section"
   | "text"
   | "image"
   | "button"
   | "title"
-  | "hero";
+  | "hero"
+  | "flex"
+  | 'flexItem';
 
 export type TextAlign =
   | "left"
@@ -125,6 +142,7 @@ export type BlockField = {
   }[];
 
   responsive?: boolean;
+  validation?: ValidationRules;
 };
 
 export type BlockConfig = {
@@ -134,11 +152,13 @@ export type BlockConfig = {
   
   icon?: React.ReactNode;
 
-  isContainer: boolean;
+  isContainer?: boolean;
 
   fields: BlockField[];
 
   allowedChildren?: BlockType[];
+ 
+  rules?: BlockRules;
 
   defaultData: {
     props: Record<string, any>;
@@ -171,3 +191,12 @@ interface HeroBlockProps {
 
   device?: Device;
 }
+
+export type ErrorType = "singleton_violation" | "nesting_error" | "root_violation";
+
+export interface ValidationError {
+  blockId: string;
+  type: ErrorType;
+  message: string;
+}
+

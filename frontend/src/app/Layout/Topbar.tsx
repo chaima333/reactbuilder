@@ -23,6 +23,7 @@ import { toggleTheme } from '../../redux/features/themeSlice';
 import { logout } from '../../redux/features/authSlice';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../providers/LanguageProvider';
+import { SiteSelector }from "../../modules/dashboard/components/SiteSelector";
 
 interface TopbarProps {
   onMenuClick: () => void;

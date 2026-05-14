@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 
 export function useHistory<T>(initialState: T) {
-  const [history, setHistory] = useState<T[]>([initialState]);
+  const [history, setHistory] = useState<T[]>(() => [structuredClone(initialState)]);
   const [index, setIndex] = useState(0);
 
   const state = history[index];
@@ -16,16 +16,24 @@ export function useHistory<T>(initialState: T) {
             ? (value as (prev: T) => T)(current)
             : value;
 
-        const updated = prevHistory.slice(0, index + 1);
+        const nextClone = structuredClone(next);
 
-        updated.push(next);
+        const updated = prevHistory.slice(0, index + 1);
+        updated.push(nextClone);
+
+        if (updated.length > 50) {
+            updated.shift();
+        }
 
         return updated;
       });
 
-      setIndex((prev) => prev + 1);
+      setIndex((prev) => {
+          const newIndex = prev + 1;
+          return newIndex;
+      });
     },
-    [index]
+    [index] 
   );
 
   const undo = useCallback(() => {
@@ -33,16 +41,20 @@ export function useHistory<T>(initialState: T) {
   }, []);
 
   const redo = useCallback(() => {
-    setIndex((prev) =>
-      Math.min(prev + 1, history.length - 1)
-    );
+    setIndex((prev) => Math.min(prev + 1, history.length - 1));
   }, [history.length]);
+
+  const reset = useCallback((initial: T) => {
+    setHistory([structuredClone(initial)]);
+    setIndex(0);
+  }, []);
 
   return {
     state,
     set,
     undo,
     redo,
+    reset,
     canUndo: index > 0,
     canRedo: index < history.length - 1,
   };

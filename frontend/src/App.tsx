@@ -311,9 +311,9 @@ const AppContent: React.FC = () => {
                     />
 
                     <Route
-                      path="/media"
-                      element={<Media />}
-                    />
+                    path="/sites/:siteId/media"
+                     element={<Media />}
+                     />
 
                     <Route
                       path="/settings"

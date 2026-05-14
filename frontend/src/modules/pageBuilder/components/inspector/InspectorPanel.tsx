@@ -1,4 +1,4 @@
-import React from "react";
+/*import React from "react";
 
 import {
   Box,
@@ -223,9 +223,9 @@ React.FC<Props> = ({
   return (
     <Box p={2}>
 
-      {/* ========================= */}
-      {/* HEADER */}
-      {/* ========================= */}
+      {/* ========================= *
+      {/* HEADER *
+      {/* ========================= *
 
       <Typography
         variant="subtitle1"
@@ -284,9 +284,9 @@ React.FC<Props> = ({
         }}
       />
 
-      {/* ========================= */}
-      {/* FIELDS */}
-      {/* ========================= */}
+      {/* ========================= */
+      /* FIELDS */
+      /* ========================= *
 
       <Box
         sx={{
@@ -301,87 +301,177 @@ React.FC<Props> = ({
 
         {fields.map(
           (field: any) => (
+           <TextField
+  key={field.key}
+  label={field.label}
+  
+  multiline={field.type === "textarea"}
+  
+  rows={field.type === "textarea" ? 4 : undefined}
 
-          <TextField
-            key={field.key}
-
-            label={
-              field.label
-            }
-
-            select={
-              field.type ===
-              "select"
-            }
-
-            type={
-              field.type ===
-              "color"
-
-                ? "color"
-
-                : "text"
-            }
-
-            fullWidth
-
-            size="small"
-
-            value={
-              getEffectiveValue(
-                field
-              )
-            }
-
-            onChange={(
-              e
-            ) =>
-              handleFieldChange(
-                field,
-                e.target.value
-              )
-            }
-
-            InputLabelProps={
-              field.type ===
-              "color"
-
-                ? {
-                    shrink: true
-                  }
-
-                : undefined
-            }
-          >
-
-            {field.type ===
-              "select" &&
-
-              field.options?.map(
-                (
-                  opt: any
-                ) => (
-
-                <MenuItem
-                  key={
-                    opt.value ||
-                    opt
-                  }
-
-                  value={
-                    opt.value ||
-                    opt
-                  }
-                >
-                  {
-                    opt.label ||
-                    opt
-                  }
-                </MenuItem>
-              ))}
-          </TextField>
+  select={field.type === "select"}
+  
+  type={
+    field.type === "color"
+      ? "color"
+      : "text"
+  }
+  
+  fullWidth
+  size="small"
+  value={getEffectiveValue(field)}
+  onChange={(e) => handleFieldChange(field, e.target.value)}
+  
+  InputLabelProps={
+    field.type === "color"
+      ? { shrink: true }
+      : undefined
+  }
+>
+  {field.type === "select" &&
+    field.options?.map((opt: any) => (
+      <MenuItem
+        key={opt.value || opt}
+        value={opt.value || opt}
+      >
+        {opt.label || opt}
+      </MenuItem>
+    ))}
+</TextField>
+          
         ))}
       </Box>
+    </Box>
+  );
+};*/
+
+import React from "react";
+
+import {
+  Box,
+  Typography,
+  Divider
+} from "@mui/material";
+import { BlockType } from "../../types/page.types";
+import { blockRegistry } from "../../core/blockRegistry";
+import { DynamicInspector } from "./DynamicInspector";
+
+
+
+type Props = {
+
+  block: any;
+
+  device: string;
+
+  onChange: (
+    newData: any
+  ) => void;
+};
+
+export const InspectorPanel:
+React.FC<Props> = ({
+
+  block,
+
+  device,
+
+  onChange
+
+}) => {
+
+  // ========================
+  // NO BLOCK SELECTED
+  // ========================
+
+  if (!block) {
+
+    return (
+
+      <Box p={3}>
+
+        Sélectionnez un bloc
+
+      </Box>
+    );
+  }
+
+  // ========================
+  // BLOCK CONFIG
+  // ========================
+
+  const config =
+
+    blockRegistry[
+      block.type as BlockType
+    ];
+
+  // ========================
+  // UNKNOWN BLOCK
+  // ========================
+
+  if (!config) {
+
+    return (
+
+      <Box p={3}>
+
+        Unknown block
+
+      </Box>
+    );
+  }
+
+  // ========================
+  // FIELDS
+  // ========================
+
+  const fields =
+
+    config.fields || [];
+
+  // ========================
+  // RENDER
+  // ========================
+
+  return (
+
+    <Box p={2}>
+
+      {/* ================== */}
+      {/* HEADER */}
+      {/* ================== */}
+
+      <Typography
+        variant="subtitle1"
+        sx={{
+          fontWeight: 700
+        }}
+      >
+
+        {config.label}
+
+      </Typography>
+
+      <Divider
+        sx={{ my: 2 }}
+      />
+
+      {/* ================== */}
+      {/* DYNAMIC INSPECTOR */}
+      {/* ================== */}
+
+      <DynamicInspector
+
+        block={block}
+
+        fields={fields}
+
+        device={device}
+
+        onChange={onChange}
+      />
+
     </Box>
   );
 };

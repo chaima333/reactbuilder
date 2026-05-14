@@ -1,9 +1,9 @@
-import React from 'react';
+import React from "react";
 
 import {
   useParams,
   Link
-} from 'react-router-dom';
+} from "react-router-dom";
 
 import {
   Box,
@@ -13,17 +13,14 @@ import {
   Toolbar,
   Typography,
   Alert
-} from '@mui/material';
+} from "@mui/material";
 
 // =========================
-// RUNTIME
+// THEME
 // =========================
 
 import { useTheme }
-from '../core/theme/ThemeProvider';
-
-import { RenderTree }
-from '../runtime/renderTree';
+from "../core/theme/ThemeProvider";
 
 // =========================
 // API
@@ -31,60 +28,51 @@ from '../runtime/renderTree';
 
 import {
   useGetPublicSiteQuery
-} from '../../../redux/services/sites.api';
+} from "../../../redux/services/sites.api";
 
-export const PublicSite:
-React.FC = () => {
+// =========================
+// RUNTIME
+// =========================
+
+import {
+  PublicPageRuntime
+} from "./PublicPageRuntime";
+
+export const PublicSite: React.FC = () => {
 
   // =========================
   // PARAMS
   // =========================
 
-  const {
-    siteId
-  } = useParams();
+  const { siteId } = useParams();
 
   // =========================
   // FETCH SITE
   // =========================
 
   const {
-
     data: siteData,
-
     isLoading: loading,
-
     error
-
   } = useGetPublicSiteQuery(
-
     Number(siteId),
-
     {
-      skip:
-        !siteId
+      skip: !siteId
     }
   );
 
   // =========================
-  // THEME / DEVICE
+  // THEME
   // =========================
 
-  const { tokens } =
-    useTheme();
-
-  const device =
-    "desktop";
+  const { tokens } = useTheme();
 
   // =========================
   // LOADING
   // =========================
 
   if (loading) {
-
-    return (
-      <LoadingSpinner />
-    );
+    return <LoadingSpinner />;
   }
 
   // =========================
@@ -95,14 +83,10 @@ React.FC = () => {
 
     return (
 
-      <Container
-        sx={{ py: 10 }}
-      >
+      <Container sx={{ py: 10 }}>
 
         <Alert severity="error">
-
           Site non trouvé
-
         </Alert>
 
       </Container>
@@ -114,27 +98,18 @@ React.FC = () => {
   // =========================
 
   const publishedPages =
-
-    siteData?.pages?.filter(
-
+    siteData.pages?.filter(
       (p: any) =>
-
-        p.status ===
-        "published"
-
+        p.status === "published"
     ) || [];
 
   // =========================
   // HOMEPAGE
   // =========================
-console.log(
-  "PAGES:",
-  publishedPages
-);
+
   const homepage =
     publishedPages.find(
-      (p: any) =>
-        p.isHomepage
+      (p: any) => p.isHomepage
     );
 
   // =========================
@@ -144,14 +119,9 @@ console.log(
   return (
 
     <Box
-
       sx={{
-
-        bgcolor:
-          '#f8fafc',
-
-        minHeight:
-          '100vh'
+        minHeight: "100vh",
+        bgcolor: "#f8fafc"
       }}
     >
 
@@ -160,85 +130,66 @@ console.log(
       {/* ===================== */}
 
       <AppBar
-
         position="sticky"
-
         elevation={0}
-
         sx={{
-
-          bgcolor:
-            'white',
-
-          borderBottom:
-            '1px solid #e2e8f0'
+          bgcolor: "white",
+          borderBottom: "1px solid #e2e8f0"
         }}
       >
 
-        <Toolbar>
+        <Toolbar
+          sx={{
+            minHeight: "72px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 4
+          }}
+        >
 
-          {/* LOGO / SITE NAME */}
+          {/* LOGO */}
 
           <Typography
-
-            variant="h6"
-
+            variant="h5"
             sx={{
-
-              mr: 5,
-
               fontWeight: 800,
-
-              color:
-                tokens.colors.primary
+              color: tokens.colors.primary,
+              whiteSpace: "nowrap",
+              flexShrink: 0
             }}
           >
-
             {siteData.name}
-
           </Typography>
 
           {/* NAVIGATION */}
 
           <Box
-
             sx={{
-
-              display:
-                "flex",
-
-              gap: 3
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              flexWrap: "wrap",
+              justifyContent: "flex-end"
             }}
           >
 
-            {publishedPages.map(
+            {publishedPages.map((page: any) => (
 
-              (page: any) => (
+              <Link
+                key={page.id}
+                to={`/p/${siteId}/${page.slug}`}
+                style={{
+                  textDecoration: "none",
+                  color: "#111827",
+                  fontWeight: 600,
+                  fontSize: "15px"
+                }}
+              >
+                {page.title}
+              </Link>
 
-                <Link
-
-                  key={page.id}
-
-                  to={`/p/${siteId}/${page.slug}`}
-
-                  style={{
-
-                    textDecoration:
-                      "none",
-
-                    color:
-                      "#111",
-
-                    fontWeight:
-                      600
-                  }}
-                >
-
-                  {page.title}
-
-                </Link>
-              )
-            )}
+            ))}
 
           </Box>
 
@@ -247,62 +198,47 @@ console.log(
       </AppBar>
 
       {/* ===================== */}
-      {/* HOMEPAGE */}
+      {/* HOMEPAGE RUNTIME */}
       {/* ===================== */}
 
-      <Container
+      {homepage ? (
 
-        maxWidth="lg"
+        <PublicPageRuntime
+          page={homepage}
+        />
 
-        sx={{ py: 8 }}
-      >
+      ) : (
 
-        {homepage && (
+        <Container sx={{ py: 10 }}>
 
-          <Box>
-              <RenderTree
+          <Alert severity="info">
+            Aucun homepage publié
+          </Alert>
 
-              blocks={
-                homepage.blocks
-              }
+        </Container>
 
-              device={
-                device
-              }
-            />
-
-          </Box>
-        )}
-
-      </Container>
+      )}
 
     </Box>
   );
 };
 
 // =========================
-// LOADING SPINNER
+// LOADING
 // =========================
 
 const LoadingSpinner = () => (
 
   <Box
-
     display="flex"
-
     justifyContent="center"
-
     alignItems="center"
-
     minHeight="100vh"
   >
 
     <CircularProgress
-
       sx={{
-
-        color:
-          '#00C49A'
+        color: "#00C49A"
       }}
     />
 

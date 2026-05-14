@@ -34,7 +34,7 @@ Record<string, any> = {
   "widget.version.summary":
     VersionWidget,
 
-  media:
-    MediaWidget
+ "widget.media.summary":
+  MediaWidget
 
 };

@@ -1,32 +1,28 @@
-// src/modules/pageBuilder/core/validation/canDrop.ts
+import { blockRegistry } from "../blockRegistry";
+import { BlockType } from "../../types/page.types";
 
-import { blockRegistry }
-from "../blockRegistry";
+export const canDrop = (parentType: string, childType: string): boolean => {
+  // 1. إذا كان الـ Parent هو الـ root، نتحقق فقط من الـ child rules
+  if (parentType === "root") {
+    const childConfig = blockRegistry[childType as Exclude<BlockType, "root">];
+    return childConfig?.rules?.allowedParents?.includes("root") ?? false;
+  }
 
-import { BlockType }
-from "../../types/page.types";
+  const parentConfig = blockRegistry[parentType as Exclude<BlockType, "root">];
+  const childConfig = blockRegistry[childType as Exclude<BlockType, "root">];
+  if (!parentConfig || !childConfig) return false;
 
-export const canDrop = (
-  parentType: string,
-  childType: string
-): boolean => {
+  if (!parentConfig.isContainer) return false;
 
-  const parentConfig =
-    blockRegistry[
-      parentType as BlockType
-    ];
-
-  if (
-    !parentConfig ||
-    !parentConfig.isContainer
-  ) {
+  const isAllowedByParent = parentConfig.allowedChildren?.includes(childType as BlockType);
+  if (!isAllowedByParent) return false;
+  if (parentType === "flex") {return true;}
+  const allowedParents = childConfig.rules?.allowedParents;
+  
+  if (allowedParents && !allowedParents.includes(parentType as BlockType)) {
     return false;
   }
 
-  const allowed =
-    parentConfig.allowedChildren || [];
-
-  return allowed.includes(
-    childType as BlockType
-  );
+  
+  return true;
 };

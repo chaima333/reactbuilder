@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";
 import { useGetDashboardFullQuery } from "../../../redux/services/dashboard.api";
 import DashboardRenderer from "./DashboardRenderer";
+import { SiteSelector }from "../components/SiteSelector";
 
 export const DashboardPage: React.FC = () => {
   const siteId = useSelector((state: RootState) => state.site.currentSite?.id);
@@ -55,16 +56,44 @@ export const DashboardPage: React.FC = () => {
       </Box>
     );
   }
-
-  // 5. Success!
-  return (
-    <Box component="main" sx={{ p: 4, backgroundColor: "#F4F7FE", minHeight: "100vh" }}>
-      <Typography variant="h4" sx={{ fontWeight: 800, color: "#1B2559", mb: 4 }}>
-        Dashboard: {data.stats?.siteName || "Current Project"}
+ // 5. Success!
+return (
+  <Box
+    component="main"
+    sx={{
+      p: 4,
+      backgroundColor: "#F4F7FE",
+      minHeight: "100vh"
+    }}
+  >
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent:
+          "space-between",
+        alignItems:
+          "center",
+        mb: 4
+      }}
+    >
+      <Typography
+        variant="h4"
+        sx={{
+          fontWeight: 800,
+          color: "#1B2559"
+        }}
+      >
+        Dashboard:
+        {data.stats?.siteName || "Current Project"}
       </Typography>
-      <DashboardRenderer layout={data.layout} context={data} />
+      <SiteSelector />
     </Box>
-  );
+    <DashboardRenderer
+      layout={data.layout}
+      context={data}
+    />
+  </Box>
+);
 };
 
 export default DashboardPage;

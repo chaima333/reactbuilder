@@ -7,7 +7,8 @@ import {
   IconButton, 
   Tooltip,
   Divider,
-  CircularProgress
+  CircularProgress,
+  Box
 } from '@mui/material';
 
 import { 
@@ -23,14 +24,11 @@ import {
 } from '@mui/icons-material';
 
 interface PageHeaderProps {
-
   title: string;
-
   device:
     "desktop" |
     "tablet" |
     "mobile";
-
   onDeviceChange:
     (
       device:
@@ -38,75 +36,37 @@ interface PageHeaderProps {
         "tablet" |
         "mobile"
     ) => void;
-
   onPreview: () => void;
-
   isPreview: boolean;
-
   onSave: () => void;
-
   onPublish: () => void;
   hasPageId: boolean;
   loading: boolean;
-
   canUndo: boolean;
-
   canRedo: boolean;
-
   onUndo: () => void;
-
   onRedo: () => void;
+  errors: any[];
+  onExport?: () => void; 
+  onImport?: (file: File) => void;
 }
 
 export const PageHeader = ({ 
-
-  title, 
-
-  device, 
-
-  onDeviceChange, 
-
-  onPreview, 
-
-  isPreview, 
-
-  onSave,
-
-  onPublish,
-
-  loading,
-
-  hasPageId,
-
-  canUndo,
-
-  canRedo,
-
-  onUndo,
-
-  onRedo
-
+ title, device, onDeviceChange, onPreview, isPreview, onSave,
+ onPublish,loading,hasPageId,canUndo,canRedo,onUndo,
+ onRedo,errors = [],onExport,onImport,
 }: PageHeaderProps) => {
-
+const hasErrors = errors.length > 0;
   return (
-
     <Stack 
-
       direction="row" 
-
       justifyContent="space-between" 
-
       alignItems="center" 
-
       sx={{ 
-
         p: "8px 16px",
-
         borderBottom:
           '1px solid #e0e0e0',
-
         bgcolor: '#fff',
-
         height: '56px'
       }}
     >
@@ -235,124 +195,82 @@ export const PageHeader = ({
         </Stack>
       </Stack>
 
-      {/* 🚀 ACTIONS */}
-
+    {/* 🚀 ACTIONS */}
       <Stack
         direction="row"
-        spacing={1.5}
+        spacing={1} // نقصت شوية في الـ spacing باش نلقاو بلاصة
+        alignItems="center"
       >
+        {/* 📥 IMPORT BUTTON */}
+        <Tooltip title="Import Page JSON">
+          <IconButton component="label" size="small" color="primary">
+            <Edit sx={{ transform: 'rotate(180deg)', fontSize: 20 }} /> {/* أيقونة تعبيرية */}
+            <input 
+              type="file" 
+              hidden 
+              accept=".json" 
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file && onImport) onImport(file);
+                e.target.value = ''; // يصفر الـ input
+              }} 
+            />
+          </IconButton>
+        </Tooltip>
+
+        {/* 📤 EXPORT BUTTON */}
+        <Tooltip title="Export Page JSON">
+          <IconButton size="small" color="primary" onClick={onExport}>
+             <Save sx={{ fontSize: 20 }} /> {/* أو أيقونة Download */}
+          </IconButton>
+        </Tooltip>
+
+        <Divider orientation="vertical" flexItem sx={{ height: '24px', mx: 0.5 }} />
 
         {/* PREVIEW */}
-
         <Button 
-
           size="small"
-
           onClick={onPreview}
-
           variant="outlined"
-
           color="inherit"
-
-          startIcon={
-
-            isPreview
-
-              ? <Edit fontSize="small" />
-
-              : <Visibility fontSize="small" />
-          }
-
-          sx={{
-
-            textTransform: 'none',
-
-            borderRadius: '6px'
-          }}
+          startIcon={isPreview ? <Edit fontSize="small" /> : <Visibility fontSize="small" />}
+          sx={{ textTransform: 'none', borderRadius: '6px' }}
         >
-
-          {isPreview
-
-            ? "Back to Editor"
-
-            : "Preview"}
+          {isPreview ? "Edit" : "Preview"}
         </Button>
 
-        {/* SAVE */}
-
+        {/* SAVE CHANGES */}
         <Button 
-
           size="small"
-
           variant="contained"
-
           onClick={onSave}
-
           disabled={loading}
-
-          startIcon={
-            <Save fontSize="small" />
-          }
-
+          startIcon={<Save fontSize="small" />}
           sx={{ 
-
-            textTransform: 'none',
-
-            borderRadius: '6px',
-
-            boxShadow: 'none',
-
-            '&:hover': {
-
-              boxShadow: 'none'
-            }
+            textTransform: 'none', borderRadius: '6px', boxShadow: 'none',
+            bgcolor: '#f5f5f5', color: '#333',
+            '&:hover': { bgcolor: '#eeeeee', boxShadow: 'none' }
           }}
         >
-
-          {loading
-
-            ? "Saving..."
-
-            : "Save Changes"}
+          {loading ? "..." : "Save"}
         </Button>
 
         {/* PUBLISH */}
-
-        <Button
-
-          size="small"
-
-          variant="contained"
-
-          color="success"
-
-          onClick={onPublish}
-           
-          disabled={!hasPageId}
-
-          startIcon={
-            <Publish fontSize="small" />
-          }
-
-          sx={{
-
-            textTransform: 'none',
-
-            borderRadius: '6px',
-
-            boxShadow: 'none',
-
-            '&:hover': {
-
-              boxShadow: 'none'
-            }
-          }}
-        >
-
-          Publish
-
-        </Button>
-
+        <Tooltip title={errors.length > 0 ? `Fix ${errors.length} errors` : "Publish"}>
+          <span>
+            <Button
+              size="small"
+              variant="contained"
+              color={errors.length > 0 ? "error" : "success"}
+              onClick={onPublish}
+              disabled={!hasPageId || errors.length > 0 || loading}
+              startIcon={<Publish fontSize="small" />}
+              sx={{ textTransform: 'none', borderRadius: '6px', boxShadow: 'none' }}
+            >
+              Publish
+            </Button>
+          </span>
+        </Tooltip>
       </Stack>
     </Stack>
   );
