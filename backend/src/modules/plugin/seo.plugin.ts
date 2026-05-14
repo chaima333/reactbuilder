@@ -23,7 +23,7 @@ export const SEOPlugin: ICmsPlugin = {
     }
   },
 
-  async getDashboardData(
+async getDashboardData(
   siteId: number
 ) {
 
@@ -33,30 +33,15 @@ export const SEOPlugin: ICmsPlugin = {
       where: { siteId }
     });
 
-  const optimizedPages =
-  await Page.count({
-
-    where: { siteId }
-  });
-
-  const seoScore =
-    totalPages === 0
-
-      ? 0
-
-      : Math.round(
-
-          (
-            optimizedPages /
-            totalPages
-          ) * 100
-        );
-
   return {
 
-    seoScore,
+    seoScore:
+      totalPages > 0
+        ? 100
+        : 0,
 
-    optimizedPages
+    optimizedPages:
+      totalPages
   };
 },
 
