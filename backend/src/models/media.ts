@@ -84,17 +84,17 @@ export class Media extends Model {
   @BelongsTo(() => Site)
   site!: Site;
 
-  @CreatedAt
-  @Column({
-    type: DataType.DATE,
-    field: 'created_at',
-  })
-  createdAt!: Date;
+ @CreatedAt
+@Column({
+  type: DataType.DATE,
+  field: 'createdAt',
+})
+createdAt!: Date;
 
-  @UpdatedAt
-  @Column({
-    type: DataType.DATE,
-    field: 'updated_at',
-  })
-  updatedAt!: Date;
+@UpdatedAt
+@Column({
+  type: DataType.DATE,
+  field: 'updatedAt',
+})
+updatedAt!: Date;
 }
