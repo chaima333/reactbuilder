@@ -24,7 +24,12 @@ static async processUpload(file: any, siteId: string, userId: string, alt?: stri
 
   // 3. Save in DB
   const media = await Media.create({
-    originalName: file.originalname,
+    originalName:
+  Buffer.from(
+    file.originalname,
+    'latin1'
+  ).toString('utf8'),
+  
     filename: cloudResult.public_id,
     url: cloudResult.secure_url,
     type: fileType, // ✅ هنا
