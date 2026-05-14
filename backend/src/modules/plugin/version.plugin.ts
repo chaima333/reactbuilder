@@ -21,11 +21,29 @@ export const VersionPlugin: ICmsPlugin = {
   },
 
   async getDashboardData(siteId: number) {
-    // هنا مثلاً تجيب قداش من نسخة (versions) موجودة في السايت
-    return {
-      totalVersions: 150,
-      lastBackup: new Date().toISOString()
-    };
+    const totalVersions =
+  await PageVersion.count({
+
+    where: { siteId }
+  });
+
+const lastVersion =
+  await PageVersion.findOne({
+
+    where: { siteId },
+
+    order: [
+      ["createdAt", "DESC"]
+    ]
+  });
+
+return {
+
+  totalVersions,
+
+  lastBackup:
+    lastVersion?.createdAt
+};
   },
 
   async execute(event: any) {

@@ -1,6 +1,9 @@
 import { UnifiedEvent } from "../../core/plugins/events/contracts/unified.contract";
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
+import { Op } from "sequelize";
 
+import { Page }
+from "../../models";
 
 export const SEOPlugin: ICmsPlugin = {
   name: "seo-plugin",
@@ -20,13 +23,49 @@ export const SEOPlugin: ICmsPlugin = {
     }
   },
 
-  async getDashboardData(siteId: number) {
-    // هنا تجيب مثلاً قداش من صفحة عاملة SEO مريغل
-    return {
-      seoScore: 85, 
-      optimizedPages: 10
-    };
-  },
+  async getDashboardData(
+  siteId: number
+) {
+
+  const totalPages =
+    await Page.count({
+
+      where: { siteId }
+    });
+
+  const optimizedPages =
+    await Page.count({
+
+      where: {
+
+        siteId,
+
+        seoTitle: {
+          [Op.ne]: null
+        }
+      }
+    });
+
+  const seoScore =
+    totalPages === 0
+
+      ? 0
+
+      : Math.round(
+
+          (
+            optimizedPages /
+            totalPages
+          ) * 100
+        );
+
+  return {
+
+    seoScore,
+
+    optimizedPages
+  };
+},
 
   async execute(event: UnifiedEvent) {
     // 🎯 اقتناص البيانات من العقد الجديد
