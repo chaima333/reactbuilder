@@ -5,9 +5,10 @@ type Props = {
   setPageTitle: (value: string) => void;
   slug: string;
   setSlug: (value: string) => void;
-  // أضفنا هاذم بش TypeScript يرضى علينا
   onExport?: () => void;
   onImport?: (file: File) => void;
+  // 👑 الحقل الجديد باش التايب سكريبت يصفقلك
+  onImportHtml?: () => void; 
 };
 
 export const SettingsPanel = ({
@@ -16,7 +17,8 @@ export const SettingsPanel = ({
   slug,
   setSlug,
   onExport,
-  onImport
+  onImport,
+  onImportHtml // 👑 استقبل الـ Prop الجديدة هوني
 }: Props) => {
   return (
     <Box p={2}>
@@ -61,6 +63,24 @@ export const SettingsPanel = ({
             }} 
           />
         </Button>
+
+        {/* 👑 زر الـ Real HTML Importer الجديد نزل في مكانه المضمون! */}
+        {onImportHtml && (
+          <Button 
+            variant="contained" 
+            fullWidth 
+            onClick={onImportHtml}
+            sx={{ 
+              bgcolor: '#1976d2', 
+              color: '#fff', 
+              fontWeight: 'bold',
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#115293' }
+            }}
+          >
+            📥 IMPORT FROM HTML
+          </Button>
+        )}
       </Stack>
     </Box>
   );

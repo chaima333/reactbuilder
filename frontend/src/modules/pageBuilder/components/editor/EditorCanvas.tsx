@@ -1,8 +1,9 @@
+// frontend/src/modules/pageBuilder/components/editor/EditorCanvas.tsx
 import React from "react";
 import { Box, Typography, Button } from "@mui/material";
-import { BlockRenderer } from "./BlockRenderer";
 import { useDroppable } from "@dnd-kit/core";
 import { Block, ValidationError } from "../../types/page.types";
+import { EditorBlockRenderer } from "../../runtime/renderer/EditorBlockRenderer";
 
 interface EditorCanvasProps {
   blocks: Block[]; 
@@ -25,13 +26,13 @@ export const EditorCanvas = ({
   blocks = [],
   registry,
   onUpdate,
-  onDelete,
+  onDelete, 
   onSelect,
   selectedId,
   device,
   activeId,
   hoverData,
-  onDuplicate,
+  onDuplicate, 
   hoveredId,
   errors = [], 
 }: EditorCanvasProps) => {
@@ -87,8 +88,14 @@ export const EditorCanvas = ({
         }}>
           {blocks.map((block: Block) => { 
             
-            // 🛡️ Fallback Logic: Resilience Check
-            const isUnknown = !registry[block.type];
+            // 🚨 [CRITICAL DEBUG LAYER] 
+            // تفكيك الهوية القادمة في الـ Runtime والمقارنة مع مفاتيح الـ Registry المتاحة
+            console.log("🚨 [CANVAS RUNTIME INSPECTION] BLOCK TYPE IS:", `"${block.type}"`);
+            console.log("📦 [CANVAS RUNTIME INSPECTION] AVAILABLE REGISTRY KEYS:", Object.keys(registry));
+            
+            // جلب الـ Component الحقيقي والـ Implementation من الـ Static Block Registry
+            const registryEntry = registry[block.type];
+            const isUnknown = !registryEntry;
 
             if (isUnknown) {
               return (
@@ -122,21 +129,25 @@ export const EditorCanvas = ({
               );
             }
 
+            // 2️⃣ الحل الصح: نمرروا الـ Component النظيف للـ BlockRenderer المسؤول عن الـ Editor Layer
             return (
-              <BlockRenderer
+              <EditorBlockRenderer
                 key={block.id}
                 block={block}
-                registry={registry}
+                component={registryEntry.component} 
                 device={device}
-                onUpdate={onUpdate}
-                onDelete={onDelete}
-                onSelect={onSelect}
                 selectedId={selectedId}
                 activeId={activeId}
-                hoverData={hoverData}
-                onDuplicate={onDuplicate}
                 hoveredId={hoveredId}
-                errors={errors} 
+                hoverData={hoverData}
+                errors={errors}
+                onUpdate={onUpdate}
+                onDelete={onDelete}
+                onDuplicate={onDuplicate}
+                onSelect={onSelect}
+                onTransform={(id) => {
+                  onSelect(id);
+                }}
               />
             );
           })}

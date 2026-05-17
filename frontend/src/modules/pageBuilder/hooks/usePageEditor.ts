@@ -17,13 +17,15 @@ import { useHistory } from "../core/history/useHistory";
 import { moveBlockInTree } from "../core/tree/move";
 import { insertBlock } from "../core/tree/insert";
 import { duplicateBlock as duplicateBlockUtil } from "../core/tree/clipboard";
-import { defaultTokens } from "../core/theme/tokens";
+import {tokens as defaultTokens } from "../core/theme/tokens";
 import { fromAPIToUI } from "../adapters/pageAdapter";
+import { serializePage } from "../runtime/serialization/serializePage";
+import { deserializePage } from "../runtime/serialization/deserializePage";
 
 // Secondary Hooks
 import { usePagePersistence } from "./usePagePersistence";
 import { useVersionActions } from "./useVersionActions";
-import { normalizeTree } from "../runtime/normalizeTree";
+import { hydrateTree } from "../runtime/normalize/NormalizeTree";
 
 export const usePageEditor = (mode: "create" | "edit") => {
   const { siteId, pageId } = useParams<{ siteId: string; pageId: string }>();
@@ -70,39 +72,48 @@ export const usePageEditor = (mode: "create" | "edit") => {
   // =========================
   // 3. VALIDATION (FIXED)
   // =========================
-  const errors = useMemo(() => {
-    const allErrors: any[] = [];
-    
-    const validateTree = (tree: Block[]) => {
-      if (!tree || !Array.isArray(tree)) return; // 🛡️ Safety check
+// frontend/src/modules/pageBuilder/hooks/usePageEditor.ts
 
-      tree.forEach((block) => {
-        const config = registry[block.type as BlockType];
-        if (config?.fields) {
-          config.fields.forEach((field: any) => {
-            if (field.validation?.required) {
-              const value = block.data.props?.[field.key];
-              if (value === undefined || value === null || value.toString().trim() === "") {
-                allErrors.push({
-                  blockId: block.id,
-                  field: field.key,
-                  message: `${config.label}: الحقل ${field.label} مطلوب`,
-                });
-              }
+// =========================
+// 3. VALIDATION (المحصّن بالكامل ضد الـ الكراش)
+// =========================
+const errors = useMemo(() => {
+  const allErrors: any[] = [];
+  
+  const validateTree = (tree: any) => {
+    // 🛡️ Guard صارم جداً: إذا موش Array أو فارغ، اخرج فوراً وما تعملش Loop
+    if (!tree || !Array.isArray(tree)) return; 
+
+    tree.forEach((block) => {
+      if (!block || typeof block !== 'object') return; // حماية ضد الـ null أو الأشكال الغريبة
+
+      const config = registry[block.type as BlockType];
+      if (config?.fields) {
+        config.fields.forEach((field: any) => {
+          if (field.validation?.required) {
+            // قرص حماية للـ Props
+            const value = block.data?.props?.[field.key] ?? block.props?.[field.key]; 
+            if (value === undefined || value === null || value.toString().trim() === "") {
+              allErrors.push({
+                blockId: block.id,
+                field: field.key,
+                message: `${config.label}: الحقل ${field.label} مطلوب`,
+              });
             }
-          });
-        }
-        // 🛡️ FIX: Only validate children if they exist and is an array
-        if (block.children && Array.isArray(block.children) && block.children.length > 0) {
-          validateTree(block.children);
-        }
-      });
-    };
+          }
+        });
+      }
+      
+      // 🛡️ حماية الـ Children قبل الـ Recursion
+      if (block.children && Array.isArray(block.children)) {
+        validateTree(block.children);
+      }
+    });
+  };
 
-    validateTree(blocks);
-    return allErrors;
-  }, [blocks, registry]);
-
+  validateTree(blocks || []); 
+  return allErrors;
+}, [blocks, registry]);
   // =========================
   // 4. PERSISTENCE
   // =========================
@@ -237,13 +248,9 @@ export const usePageEditor = (mode: "create" | "edit") => {
 
       importPageData: (jsonContent: string) => {
         try {
-          const data = JSON.parse(jsonContent);
-          const canonicalBlocks = normalizeTree(data.blocks || []);
+          const { blocks: canonicalBlocks } = deserializePage(jsonContent);
           setBlocks(canonicalBlocks);
           resetHistory(canonicalBlocks);
-          if (data.title) setPageTitle(data.title);
-          if (data.slug) setSlug(data.slug);
-          if (data.theme) setTokens(data.theme);
         } catch (err) {
           console.error("❌ Import Failed:", err);
           alert("Invalid Page JSON");
@@ -251,16 +258,18 @@ export const usePageEditor = (mode: "create" | "edit") => {
       },
 
       exportPageData: () => {
-        return JSON.stringify({
-          title: pageTitle,
-          slug,
-          blocks,
-          theme: tokens,
-          version: "1.0",
-          exportedAt: new Date().toISOString(),
-        }, null, 2);
+        return JSON.stringify(
+          {
+            ...serializePage(blocks),
+            metadata: {
+              updatedAt: new Date().toISOString()
+            }
+          },
+          null,
+          2
+        );
       },
-
+      setBlocks,
       undo,
       redo,
       save,
@@ -298,7 +307,7 @@ export const usePageEditor = (mode: "create" | "edit") => {
         setTokens(data.theme || defaultTokens);
         setSlug(data.slug || "");
         const rawBlocks = fromAPIToUI(data.blocks || []);
-        const canonicalBlocks = normalizeTree(rawBlocks);
+        const canonicalBlocks = hydrateTree(rawBlocks);
         resetHistory(canonicalBlocks); 
         hasLoadedRef.current = true;
       }

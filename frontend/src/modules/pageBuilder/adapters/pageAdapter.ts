@@ -5,8 +5,8 @@ export { canDrop } from "../core/validation/canDrop";
 /**
  * الـ APIBlock يمثل الداتا الخام اللي جاية من السيرفر
  */
-type LegacyBlockInput = {
-  id: string;
+export type LegacyBlockInput = {
+  id?: string;
   type: string;
   data?: {
     props?: Record<string, any>;

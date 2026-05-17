@@ -20,6 +20,9 @@ import {
   SmartButton,
   Title,
   LocalOffer,
+  ViewCarousel, 
+  ViewStream,   
+  WebAsset,
 } from "@mui/icons-material";
 import { Block, BlockType } from "../../types/page.types";
 
@@ -31,13 +34,18 @@ interface Props {
   onHover?: (id: string | null) => void;
 }
 
-const blockConfig: Record<BlockType, { icon: React.ReactNode; color: string; label: string }> = {
+// 🟢 استعمال Partial يحمي الـ Build من الانهيار عند نقص أي نوع أو اختلاف التسمية
+const blockConfig: Partial<Record<BlockType, { icon: React.ReactNode; color: string; label: string }>> = {
   section: { icon: <Layers fontSize="small" />, color: "#6366f1", label: "Section" },
   text: { icon: <Description fontSize="small" />, color: "#6b7280", label: "Text" },
   image: { icon: <Image fontSize="small" />, color: "#10b981", label: "Image" },
   button: { icon: <SmartButton fontSize="small" />, color: "#3b82f6", label: "Button" },
   title: { icon: <Title fontSize="small" />, color: "#f59e0b", label: "Title" },
   hero: { icon: <LocalOffer fontSize="small" />, color: "#ef4444", label: "Hero" },
+  root: { icon: <WebAsset fontSize="small" />, color: "#14b8a6", label: "Root" },
+  navbar: { icon: <ViewStream fontSize="small" />, color: "#06b6d4", label: "Navigation" },
+  cta: { icon: <SmartButton fontSize="small" />, color: "#ec4899", label: "CTA Section" },
+  features: { icon: <ViewCarousel fontSize="small" />, color: "#8b5cf6", label: "Features" },
 };
 
 const getBlockLabel = (block: Block): string => {
@@ -54,8 +62,9 @@ const getBlockLabel = (block: Block): string => {
   return blockConfig[block.type]?.label || block.type;
 };
 
+// 🟢 الـ Fallback هنا يضمن بقاء الأيقونة واللون مستقرين حتى لو كان النوع مجهولاً للـ Config
 const getBlockIcon = (type: BlockType) => {
-  return blockConfig[type]?.icon || <Article fontSize="small" />;
+  return blockConfig[type]?.icon || <Widgets fontSize="small" />;
 };
 
 const getBlockColor = (type: BlockType) => {
@@ -83,24 +92,58 @@ export const StructurePanel = ({
   const theme = useTheme();
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
 
-  // Effect to expand to selected block
-  React.useEffect(() => {
-    if (selectedId) {
-      const path = findBlockPath(selectedId, blocks);
-      if (path) {
-        const newExpanded = { ...expanded };
-        path.forEach(block => {
-          if (block.children?.length && block.id !== selectedId) {
-            newExpanded[block.id] = true;
-          }
-        });
-        setExpanded(newExpanded);
+React.useEffect(() => {
+
+  if (!selectedId) {
+    return;
+  }
+
+  const path =
+    findBlockPath(
+      selectedId,
+      blocks
+    );
+
+  if (!path) {
+    return;
+  }
+
+  setExpanded((prev) => {
+
+    const next = {
+      ...prev
+    };
+
+    path.forEach((block) => {
+
+      if (
+        block.children?.length &&
+        block.id !== selectedId
+      ) {
+
+        next[block.id] = true;
       }
+    });
+
+    return next;
+  });
+
+}, [selectedId, blocks]);
+
+  const currentPath =
+  React.useMemo(() => {
+
+    if (!selectedId) {
+      return null;
     }
-  }, [selectedId]);
 
-  const currentPath = selectedId ? findBlockPath(selectedId, blocks) : null;
+    return findBlockPath(
+      selectedId,
+      blocks
+    );
 
+  }, [selectedId, blocks]);
+  
   const renderTree = (tree: Block[], depth = 0): React.ReactNode => {
     return tree.map((block) => {
       const hasChildren = block.children && block.children.length > 0;
@@ -146,14 +189,10 @@ export const StructurePanel = ({
             )}
 
             <Box
-              onPointerEnter={(e) => {
-                console.log(
-  "HOVER WORKS",
-  block.id
-);
+              onPointerEnter={() => {
                 onHover?.(block.id);
               }}
-              onPointerLeave={(e) => {
+              onPointerLeave={() => {
                 onHover?.(null);
               }}
               onClick={() => onSelect?.(block.id)}

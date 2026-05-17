@@ -88,11 +88,11 @@ const SiteEditor = lazy(
 );
 
 const PublicSite = lazy(
-  () => import("./modules/pageBuilder/runtime/PublicSitePage")
+  () => import("./modules/pageBuilder/runtime/public/PublicSitePage")
     .then(m => ({ default: m.PublicSite }))
 );
 const PublicPage = lazy(
-  () => import("./modules/pageBuilder/runtime/PublicPage")
+  () => import("./modules/pageBuilder/runtime/public/PublicPage")
     .then(m => ({ default: m.PublicPage }))
 );
 

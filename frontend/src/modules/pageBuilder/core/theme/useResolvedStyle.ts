@@ -3,11 +3,36 @@
 import { useTheme }
 from "./ThemeProvider";
 
-import { resolveBlockStyles }
-from "../../runtime/resolveStyles";
+import {
+  applyStyles
+} from "../styles/applyStyles";
+
+import type {
+  ResponsiveStyle
+} from "../../types/page.types";
+
+// =========================
+// Empty Safe Contract
+// =========================
+
+const EMPTY_STYLE:
+ResponsiveStyle = {
+
+  desktop: {},
+
+  tablet: {},
+
+  mobile: {}
+};
+
+// =========================
+// Hook
+// =========================
 
 export const useResolvedStyle = (
-  style: any,
+  style:
+    ResponsiveStyle | undefined,
+
   device:
     | "desktop"
     | "tablet"
@@ -17,8 +42,16 @@ export const useResolvedStyle = (
   const { tokens } =
     useTheme();
 
-  return resolveBlockStyles(
-    style,
+  // 👑 Runtime Fault Tolerance
+  const safeStyle = {
+
+    ...EMPTY_STYLE,
+
+    ...(style || {})
+  };
+
+  return applyStyles(
+    safeStyle,
     device,
     tokens
   );

@@ -1,129 +1,430 @@
 // src/modules/pageBuilder/components/editor/inspectors/DynamicInspector.tsx
 
-import React, { useState } from "react";
-import { Box, TextField, MenuItem, Typography } from "@mui/material";
-import { getNestedValue, setNestedValue } from "../../utils/pathUtils";
-import { validateField } from "../../utils/validators";
+import React, {
+  useMemo,
+  useState
+} from "react";
+
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Box,
+  Typography
+} from "@mui/material";
+
+import ExpandMoreIcon
+  from "@mui/icons-material/ExpandMore";
+
+import {
+  getNestedValue,
+  setNestedValue
+} from "../../utils/pathUtils";
+
+import {
+  validateField
+} from "../../utils/validators";
+
+import {
+  controlRegistry
+} from "./controlRegistry";
+
+import {
+  groupFieldsByCategory
+} from "./utils/groupFieldsByCategory";
+
+import type {
+  Block,
+  Device
+} from "../../types/page.types";
+
+import type {
+  FieldDefinition,
+  StyleFieldCategory
+} from "../../types/field.types";
+
+import type {
+  StyleObject
+} from "../../types/style.types";
+import { resolveControl } from "./controls/resolveControl";
+
+// =========================
+// Props
+// =========================
 
 type Props = {
-  block: any;
-  fields: any[];
-  device: string;
-  onChange: (newData: any) => void;
+
+  block: Block;
+
+  fields: FieldDefinition[];
+
+  device: Device;
+
+  onChange: (
+    newData: Partial<Block["data"]>
+  ) => void;
 };
 
-export const DynamicInspector = ({ block, fields, device, onChange }: Props) => {
-  const currentStyle = block.data.style?.[device] || {};
-  
-  const [errors, setErrors] = useState<Record<string, string | null>>({});
+// =========================
+// Category Labels
+// =========================
+
+const CATEGORY_LABELS:
+  Record<
+    StyleFieldCategory,
+    string
+  > = {
+
+    layout: "Layout",
+
+    spacing: "Spacing",
+
+    typography: "Typography",
+
+    visual: "Visual"
+  };
+
+// =========================
+// Component
+// =========================
+
+export const DynamicInspector = ({
+  block,
+  fields,
+  device,
+  onChange
+}: Props) => {
+
+  // =========================
+  // Current Responsive Style
+  // =========================
+
+  const currentStyle:
+    StyleObject =
+      block.data.style?.[
+        device
+      ] ?? {};
+
+  // =========================
+  // Errors
+  // =========================
+
+  const [errors, setErrors] =
+    useState<
+      Record<
+        string,
+        string | null
+      >
+    >({});
+
+  // =========================
+  // Grouped Fields
+  // =========================
+
+  const groupedFields =
+    useMemo(
+      () =>
+        groupFieldsByCategory(
+          fields
+        ),
+      [fields]
+    );
+
+  // =========================
+  // Field Renderer
+  // =========================
+
+  const renderField = (
+    field: FieldDefinition
+  ) => {
+
+    // =========================
+    // Value Resolution
+    // =========================
+
+    let value: unknown = "";
+
+    // STYLE
+
+    if (
+      field.target === "style"
+    ) {
+
+      value =
+        currentStyle[
+          field.key as keyof StyleObject
+        ] ?? "";
+    }
+
+    // PROPS
+
+    else {
+
+      value =
+        getNestedValue(
+
+          block.data.props,
+
+          field.key
+
+        ) ?? "";
+    }
+
+    // =========================
+    // Error
+    // =========================
+
+    const fieldError =
+      errors[field.key];
+
+    // =========================
+    // Change Handler
+    // =========================
+
+    const handleFieldChange = (
+      newValue: unknown
+    ) => {
+
+      const error =
+        validateField(
+
+          newValue,
+
+          field.validation
+        );
+
+      setErrors((prev) => ({
+
+        ...prev,
+
+        [field.key]:
+          error
+      }));
+
+      if (error) return;
+
+      // =========================
+      // Props Update
+      // =========================
+
+      if (
+        field.target === "props"
+      ) {
+
+        const updatedProps =
+          setNestedValue(
+
+            block.data.props || {},
+
+            field.key,
+
+            newValue
+          );
+
+        onChange({
+
+          props:
+            updatedProps
+        });
+
+        return;
+      }
+
+      // =========================
+      // Style Update
+      // =========================
+
+      onChange({
+
+        style: {
+
+          ...block.data.style,
+
+          [device]: {
+
+            ...currentStyle,
+
+            [field.key]:
+              newValue
+          }
+        }
+      });
+    };
+
+    // =========================
+    // Control Lookup
+    // =========================
+        const Control =
+      resolveControl(field);
+
+    // =========================
+    // Render
+    // =========================
+
+    return (
+
+      <Control
+        key={field.key}
+
+        label={field.label}
+
+        value={value}
+
+        error={fieldError}
+
+        options={
+          "options" in field
+            ? field.options
+            : undefined
+        }
+
+        itemSchema={
+          "itemSchema" in field
+            ? field.itemSchema
+            : undefined
+        }
+
+        multiline={
+          field.type ===
+          "textarea"
+        }
+
+        rows={
+          field.type ===
+          "textarea"
+            ? 4
+            : 1
+        }
+
+        onChange={
+          handleFieldChange
+        }
+      />
+    );
+  };
+
+  // =========================
+  // Render
+  // =========================
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, p: 1 }}>
-      {fields.map((field) => {
-        let value = "";
-        if (field.target === "style") {
-          value = currentStyle[field.key] || "";
-        } else if (field.target === "props") {
-          value = getNestedValue(block.data.props, field.key) || "";
+
+    <Box
+      sx={{
+
+        display: "flex",
+
+        flexDirection: "column",
+
+        gap: 2.5,
+
+        p: 1
+      }}
+    >
+
+      {/* ========================= */}
+      {/* Props Fields */}
+      {/* ========================= */}
+
+      {groupedFields
+        .uncategorized
+        .length > 0 && (
+
+        <Box
+          sx={{
+
+            display: "flex",
+
+            flexDirection:
+              "column",
+
+            gap: 2
+          }}
+        >
+
+          {groupedFields
+            .uncategorized
+            .map(renderField)}
+
+        </Box>
+      )}
+
+      {/* ========================= */}
+      {/* Style Categories */}
+      {/* ========================= */}
+
+      {(
+        Object.keys(
+          CATEGORY_LABELS
+        ) as StyleFieldCategory[]
+      ).map((category) => {
+
+        const categoryFields =
+          groupedFields[
+            category
+          ];
+
+        if (
+          categoryFields
+            .length === 0
+        ) {
+
+          return null;
         }
 
-        const handleFieldChange = (newValue: any) => {
-          // 1. Validation Check
-          const error = validateField(newValue, field.validation);
-          
-          // 2. Update Local Error State
-          setErrors(prev => ({ ...prev, [field.key]: error }));
+        return (
 
-          // 3. Only trigger onChange if NO error
-          if (!error) {
-            if (field.target === "props") {
-              const updatedProps = setNestedValue(block.data.props || {}, field.key, newValue);
-              onChange({ props: updatedProps });
-            }
+          <Accordion
+            key={category}
 
-            if (field.target === "style") {
-              onChange({
-                style: {
-                  ...block.data.style,
-                  [device]: {
-                    ...currentStyle,
-                    [field.key]: newValue,
-                  },
-                },
-              });
-            }
-          }
-        };
+            disableGutters
 
-        const fieldError = errors[field.key];
+            elevation={0}
+          >
 
-        // --- RENDER LOGIC ---
-        
-        if (field.type === "text" || field.type === "textarea") {
-          return (
-            <TextField
-              key={field.key}
-              label={field.label}
-              fullWidth
-              size="small"
-              error={!!fieldError}
-              helperText={fieldError}
-              multiline={field.type === "textarea"}
-              rows={field.type === "textarea" ? 4 : 1}
-              value={value}
-              onChange={(e) => handleFieldChange(e.target.value)}
-            />
-          );
-        }
-
-        if (field.type === "color") {
-          return (
-            <Box key={field.key}>
-              <Typography variant="caption" sx={{ mb: 0.5, display: 'block', color: fieldError ? 'error.main' : 'text.secondary' }}>
-                {field.label} {fieldError && `(${fieldError})`}
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                <input
-                  type="color"
-                  value={value || "#000000"}
-                  onChange={(e) => handleFieldChange(e.target.value)}
-                  style={{ width: '40px', height: '40px', border: fieldError ? '2px solid red' : 'none', cursor: 'pointer', borderRadius: '4px' }}
-                />
-                <TextField 
-                  size="small" 
-                  error={!!fieldError}
-                  value={value} 
-                  onChange={(e) => handleFieldChange(e.target.value)}
-                  fullWidth
-                />
-              </Box>
-            </Box>
-          );
-        }
-
-        if (field.type === "select") {
-          return (
-            <TextField
-              key={field.key}
-              select
-              label={field.label}
-              fullWidth
-              size="small"
-              error={!!fieldError}
-              helperText={fieldError}
-              value={value}
-              onChange={(e) => handleFieldChange(e.target.value)}
+            <AccordionSummary
+              expandIcon={
+                <ExpandMoreIcon />
+              }
             >
-              {field.options?.map((opt: any) => (
-                <MenuItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </MenuItem>
-              ))}
-            </TextField>
-          );
-        }
 
-        return null;
+              <Typography
+                fontWeight={600}
+              >
+
+                {
+                  CATEGORY_LABELS[
+                    category
+                  ]
+                }
+
+              </Typography>
+
+            </AccordionSummary>
+
+            <AccordionDetails>
+
+              <Box
+                sx={{
+
+                  display: "flex",
+
+                  flexDirection:
+                    "column",
+
+                  gap: 2
+                }}
+              >
+
+                {categoryFields
+                  .map(renderField)}
+
+              </Box>
+
+            </AccordionDetails>
+
+          </Accordion>
+        );
       })}
     </Box>
   );

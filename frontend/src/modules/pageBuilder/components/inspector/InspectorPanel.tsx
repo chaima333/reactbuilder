@@ -352,7 +352,7 @@ import {
   Typography,
   Divider
 } from "@mui/material";
-import { BlockType } from "../../types/page.types";
+import { BlockType, Device } from "../../types/page.types";
 import { blockRegistry } from "../../core/blockRegistry";
 import { DynamicInspector } from "./DynamicInspector";
 
@@ -362,7 +362,7 @@ type Props = {
 
   block: any;
 
-  device: string;
+  device: Device;
 
   onChange: (
     newData: any

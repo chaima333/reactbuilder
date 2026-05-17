@@ -1,5 +1,31 @@
-import { ComponentType } from "react";
+// src/modules/pageBuilder/types/page.types.ts
 
+import React from "react";
+
+// 🔄 Re-exporting everything to be the main Hub
+export type { 
+  FieldDefinition, 
+  BaseField, 
+  SelectField, 
+  ArrayField,
+  FieldType,
+  StyleFieldCategory
+} from "./field.types";
+
+export type { 
+  ResponsiveStyle, 
+  StyleObject,
+  StyleValue
+} from "./style.types";
+
+// ========================
+// Devices
+// ========================
+export type Device = "desktop" | "tablet" | "mobile";
+
+// ========================
+// Validation Rules
+// ========================
 export type ValidationRules = {
   required?: boolean;
   cssUnit?: boolean;
@@ -8,112 +34,45 @@ export type ValidationRules = {
   min?: number;
   max?: number;
 };
-export type BlockRules = {
-  allowedParents?: BlockType[];
-  singleton?: boolean; 
-  isRootOnly?: boolean; 
-};
 
+// ========================
+// Block Types
+// ========================
 export type BlockType =
   | "root"
   | "section"
   | "text"
   | "image"
   | "button"
+  | "navbar"
   | "title"
+  | "cta"
   | "hero"
+  | "features"
   | "flex"
-  | 'flexItem';
+  | "flexItem";
 
-export type TextAlign =
-  | "left"
-  | "center"
-  | "right";
+// ========================
+// Block Rules
+// ========================
+export type BlockRules = {
+  allowedParents?: BlockType[];
+  allowedChildren?: BlockType[];
+  singleton?: boolean;
+  isRootOnly?: boolean;
+};
 
-export interface StyleValue {
-
-  // ========================
-  // Layout
-  // ========================
-
-  display?: string;
-
-  flexDirection?: string;
-
-  justifyContent?: string;
-
-  alignItems?: string;
-
-  gap?: string | number;
-
-  width?: string | number;
-
-  maxWidth?: string | number;
-
-  minHeight?: string | number;
-
-  // ========================
-  // Spacing
-  // ========================
-
-  padding?: string | number;
-
-  paddingTop?: string | number;
-
-  paddingBottom?: string | number;
-
-  marginTop?: string | number;
-
-  marginBottom?: string | number;
-
-  // ========================
-  // Typography
-  // ========================
-
-  textAlign?: TextAlign;
-
-  fontSize?: string | number;
-
-  fontWeight?: string | number;
-
-  lineHeight?: string | number;
-
-  color?: string;
-
-  // ========================
-  // Visual
-  // ========================
-
-  backgroundColor?: string;
-
-  borderRadius?: string | number;
-
-  border?: string;
-
-  cursor?: string;
-
-  opacity?: number | string;
-}
-
-
-export interface ResponsiveStyle {
-  desktop?: Record<string, any>;
-  tablet?: Record<string, any>;
-  mobile?: Record<string, any>;
-  [key: string]: any; 
-}
-
+// ========================
+// Block Runtime Instance
+// ========================
 export interface Block {
   id: string;
   type: BlockType;
-
   data: {
-    props: Record<string, any>;
-    style: ResponsiveStyle;
+    props: Record<string, unknown>;
+    style: any; // تخليه any هوني خاطر الـ ResponsiveStyle باش يصيرلو merge في الـ runtime
   };
-
   children: Block[];
-
   meta?: {
     isLocked?: boolean;
     isHidden?: boolean;
@@ -122,6 +81,9 @@ export interface Block {
   };
 }
 
+// ========================
+// Page Runtime
+// ========================
 export interface PageData {
   id: number;
   siteId: number;
@@ -129,69 +91,56 @@ export interface PageData {
   blocks: Block[];
 }
 
-export type BlockField = {
-  key: string;
-  label: string;
-  
-  type: "text" | "color" | "select"| "textarea";
-  target: "props" | "style";
+// ========================
+// Renderer Props Contract
+// ========================
+export type RuntimeMode = "editor" | "preview" | "public";
 
-  options?: {
-    label: string;
-    value: string;
-  }[];
-
-  responsive?: boolean;
-  validation?: ValidationRules;
-};
-
-export type BlockConfig = {
-  component: ComponentType<any>;
-
-  label: string;
-  
-  icon?: React.ReactNode;
-
-  isContainer?: boolean;
-
-  fields: BlockField[];
-
-  allowedChildren?: BlockType[];
- 
-  rules?: BlockRules;
-
-  defaultData: {
-    props: Record<string, any>;
-    style: ResponsiveStyle;
-  };
-};
-
-type Device =
-  | "desktop"
-  | "tablet"
-  | "mobile";
-
-interface HeroAction {
-  label: string;
-  url: string;
-}
-
-interface HeroBlockProps {
+export interface BlockRendererProps<P = Record<string, any>> { // 🟢 دعم الـ Generic Props للـ Renderer
   data: {
-    props: {
-      headline: string;
-      subtext: string;
-
-      primaryAction?: HeroAction;
-      secondaryAction?: HeroAction;
-    };
-
-    style: ResponsiveStyle;
+    props: P;
+    style: StyleObject; 
   };
-
-  device?: Device;
+  device: Device;
+  context?: {
+    mode?: RuntimeMode;
+  };
 }
 
+// ========================
+// 🏆 The Master Block Config (Hardened with Generics)
+// ========================
+import type { FieldDefinition } from "./field.types";
+import type { ResponsiveStyle, StyleObject } from "./style.types";
+
+// 🟢 الـ Generic <P> هوني يخلّي كل Block يحدد الـ Type متع الـ Props الخاصة بيه حصراً
+export interface BlockConfig<P extends Record<string, unknown> = Record<string, unknown>> {
+  type: BlockType;
+  label: string;
+  icon?: React.ReactNode;
+  category: "layout" | "content" | "semantic";
+  
+  isContainer: boolean; 
+  
+  rules?: BlockRules;
+  allowedChildren?: BlockType[];
+
+  // Inspector schema
+  fields: FieldDefinition[]; 
+
+  // Runtime renderer component
+  component: React.ComponentType<BlockRendererProps<P>>;
+
+  // Initial state (Hardened & Strictly Checked!)
+  defaultData: {
+    props: P; // 🟢 توة الـ props ولّت ملوية وما يقبلش الـ unknown العشوائي
+    style: ResponsiveStyle;
+  };
+}
+
+// ========================
+// Validation Errors
+// ========================
 export type ErrorType = "singleton_violation" | "nesting_error" | "root_violation";
 
 export interface ValidationError {
@@ -200,3 +149,4 @@ export interface ValidationError {
   message: string;
 }
 
+export type BlockField = FieldDefinition;

@@ -20,7 +20,8 @@ import {
   Undo, 
   Redo,
   Edit,
-  Publish
+  Publish,
+  Code
 } from '@mui/icons-material';
 
 interface PageHeaderProps {
@@ -49,6 +50,7 @@ interface PageHeaderProps {
   errors: any[];
   onExport?: () => void; 
   onImport?: (file: File) => void;
+  onImportHtml?: () => void;
 }
 
 export const PageHeader = ({ 
