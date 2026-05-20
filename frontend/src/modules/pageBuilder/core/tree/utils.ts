@@ -1,7 +1,7 @@
 import { Block } from "../../types/page.types";
 
 /**
- * 📦 Find block anywhere
+ * 📦 Find block anywhere (مهمة جداً للـ Pipeline)
  */
 export const findBlockInTree = (
   blocks: Block[],
@@ -9,13 +9,28 @@ export const findBlockInTree = (
 ): Block | null => {
   for (const block of blocks) {
     if (block.id === blockId) return block;
-
     if (block.children?.length) {
       const found = findBlockInTree(block.children, blockId);
       if (found) return found;
     }
   }
+  return null;
+};
 
+/**
+ * 🔍 Find parent block anywhere
+ */
+export const findParentInTree = (
+  blocks: Block[],
+  childId: string
+): Block | null => {
+  for (const block of blocks) {
+    if (block.children?.some((child) => child.id === childId)) return block;
+    if (block.children?.length) {
+      const found = findParentInTree(block.children, childId);
+      if (found) return found;
+    }
+  }
   return null;
 };
 
@@ -29,14 +44,12 @@ export const updateBlockInTree = (
 ): Block[] => {
   return blocks.map((block) => {
     if (block.id === blockId) return updater(block);
-
     if (block.children?.length) {
       return {
         ...block,
         children: updateBlockInTree(block.children, blockId, updater),
       };
     }
-
     return block;
   });
 };
@@ -57,40 +70,48 @@ export const deleteBlockFromTree = (
         : [],
     }));
 };
+
 /**
  * ➕ Add block inside a parent
  */
-export const addBlockToTree = (
+export const insertBlockAt = (
   blocks: Block[],
   parentId: string,
-  newBlock: Block
+  newBlock: Block,
+  index: number // إجباري
 ): Block[] => {
   return blocks.map((block) => {
-    // 1. إذا لقينا الـ Parent اللي حاجتنا بيه
+    // 🎯 إذا وصلنا للـ Parent الصحيح
     if (block.id === parentId) {
-      return {
-        ...block,
-        children: [...(block.children || []), newBlock],
-      };
+      const children = [...(block.children || [])];
+      
+      // إذا كان العنصر موجوداً مسبقاً في الشجرة، نحذفه من مكانه القديم أولاً
+      // (عشان ما يتكررش أو يسبب تضارب)
+      const filteredChildren = children.filter(c => c.id !== newBlock.id);
+      
+      // ندرج العنصر في المكان المطلوب
+      filteredChildren.splice(index, 0, newBlock);
+      
+      return { ...block, children: filteredChildren };
     }
 
-    // 2. إذا ما لقيناروش، نلوجوا في ولادو (Recursion)
+    // 🌳 إذا لم نصل، نغوص في الأعماق
     if (block.children?.length) {
       return {
         ...block,
-        children: addBlockToTree(block.children, parentId, newBlock),
+        children: insertBlockAt(block.children, parentId, newBlock, index),
       };
     }
-
     return block;
   });
 };
+
 export const getTotalBlocksCount = (nodes: Block[]): number => {
   let count = 0;
   nodes.forEach((node) => {
-    count++; // نحسب البلوك بيدو
+    count++;
     if (node.children?.length) {
-      count += getTotalBlocksCount(node.children); // ونزيدو نحسبو ولادو (Recursion)
+      count += getTotalBlocksCount(node.children);
     }
   });
   return count;

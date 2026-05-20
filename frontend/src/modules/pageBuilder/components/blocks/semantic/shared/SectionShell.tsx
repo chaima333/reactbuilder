@@ -1,19 +1,12 @@
-// src/modules/pageBuilder/components/blocks/semantic/shared/SectionShell.tsx
-
 import React from "react";
 
-import {
-  Box
-} from "@mui/material";
+import { Box } from "@mui/material";
 
-import {
-  useResolvedStyle
-} from "../../../../core/theme/useResolvedStyle";
+import { useResolvedStyle } from "../../../../core/theme/useResolvedStyle";
 
 interface SectionShellProps {
 
-  children:
-    React.ReactNode;
+  children: React.ReactNode;
 
   style?: any;
 
@@ -46,6 +39,10 @@ export const SectionShell = ({
 
         width: "100%",
 
+        minWidth: 0,
+
+        maxWidth: "100%",
+
         display: "block",
 
         backgroundColor:
@@ -63,8 +60,7 @@ export const SectionShell = ({
         paddingRight:
           resolved.paddingRight || "24px",
 
-        boxSizing:
-          "border-box"
+        boxSizing: "border-box"
       }}
     >
 
@@ -73,15 +69,22 @@ export const SectionShell = ({
 
           width: "100%",
 
+          minWidth: 0,
+ 
           maxWidth:
-            resolved.maxWidth || "1400px",
+          device === "mobile"
+          ? "100%"
+          : device === "tablet"
+          ? "100%"
+           : resolved.maxWidth || "1400px",
 
           marginLeft: "auto",
 
           marginRight: "auto",
 
-          boxSizing:
-            "border-box"
+          boxSizing: "border-box",
+
+          display: "block"
         }}
       >
 

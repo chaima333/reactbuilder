@@ -18,8 +18,9 @@ export const sectionDefinition: BlockConfig = {
     "image",
     "button",
     "flex",
+    "grid",
     "hero",
-    "features"
+    "features",
   ],
   rules: {
     allowedParents: [

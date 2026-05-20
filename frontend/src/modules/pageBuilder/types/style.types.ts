@@ -51,6 +51,8 @@ export type RadiusToken =
 export type FlexWrap = "nowrap" | "wrap" | "wrap-reverse";
 export type ObjectFit = "cover" | "contain" | "fill" | "none" | "scale-down";
 
+export type GridElementSpan = `span ${number}` | "auto" | string;
+
 export type DisplayValue =
   | "block"
   | "flex"
@@ -186,6 +188,7 @@ export interface StyleObject
   extends
     LayoutStyles,
     SpacingStyles,
+    GridStyles,
     TypographyStyles,
     VisualStyles {}
 
@@ -202,5 +205,15 @@ export interface ResponsiveStyle {
   tablet?: StyleObject;
 
   mobile?: StyleObject;
+}
+
+// ========================
+// Grid Styles 👑
+// ========================
+export interface GridStyles {
+  columns?: number;                     
+  gridTemplateColumns?: string;          
+  gridColumn?: GridElementSpan;        
+  gridRow?: GridElementSpan;            
 }
 

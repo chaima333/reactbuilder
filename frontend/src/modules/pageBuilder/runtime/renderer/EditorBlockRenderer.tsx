@@ -2,7 +2,9 @@
 
 import React from "react";
 import { Box } from "@mui/material";
-import { useDroppable, useDraggable } from "@dnd-kit/core";
+import {
+  useDraggable
+} from "@dnd-kit/core";
 
 import { blockRegistry } from "../../core/blockRegistry";
 
@@ -14,11 +16,9 @@ import {
 
 import { RuntimeRenderer } from "./RuntimeRenderer";
 
-// =========================
-// Strict Contract
-// =========================
-
-export interface BlockComponentProps<T = Record<string, any>> {
+export interface BlockComponentProps<
+  T = Record<string, any>
+> {
   block: Block;
   data?: T;
   device: Device;
@@ -27,16 +27,35 @@ export interface BlockComponentProps<T = Record<string, any>> {
 
 interface Props {
   block: Block;
-
+  children?: React.ReactNode;
+  component?: React.ComponentType<any>;
   device?: Device;
   preview?: boolean;
 
-  onUpdate?: (id: string, data: any) => void;
-  onDelete?: (id: string) => void;
-  onDuplicate?: (id: string) => void;
-  onSelect?: (id: string) => void;
-  onTransform?: (id: string) => void;
-  onHoverChange?: (id: string | null) => void;
+  onUpdate?: (
+    id: string,
+    data: any
+  ) => void;
+
+  onDelete?: (
+    id: string
+  ) => void;
+
+  onDuplicate?: (
+    id: string
+  ) => void;
+
+  onSelect?: (
+    id: string
+  ) => void;
+
+  onTransform?: (
+    id: string
+  ) => void;
+
+  onHoverChange?: (
+    id: string | null
+  ) => void;
 
   selectedId?: string | null;
   activeId?: string | null;
@@ -53,7 +72,6 @@ interface Props {
 
 export const EditorBlockRenderer = ({
   block,
-
   device = "desktop",
   preview = false,
 
@@ -69,12 +87,12 @@ export const EditorBlockRenderer = ({
   hoveredId,
 
   hoverData,
-
   errors = []
+
 }: Props) => {
 
   // =========================
-  // REGISTRY RESOLUTION
+  // REGISTRY
   // =========================
 
   const config =
@@ -93,19 +111,14 @@ export const EditorBlockRenderer = ({
   // DND
   // =========================
 
-  const { setNodeRef } = useDroppable({
-    id: block.id,
-    data: {
-      type: block.type
-    }
-  });
-
   const {
     attributes,
     listeners,
     setNodeRef: setDragRef
   } = useDraggable({
+
     id: block.id,
+
     data: {
       type: block.type,
       isNew: false
@@ -134,212 +147,209 @@ export const EditorBlockRenderer = ({
   const isHovered =
     hoveredId === block.id;
 
-  const feedbackColor =
-    isAllowed
-      ? "#4caf50"
-      : "#f44336";
-
   const indicatorColor =
     isAllowed
       ? "#1976d2"
       : "#f44336";
 
-  const blockError =
-    errors.find(
-      (err) => err.blockId === block.id
-    );
-
-  const hasError = !!blockError;
-
   // =========================
-  // 👑 REAL RECURSION
+  // RECURSION
   // =========================
 
   const recursiveChildren =
-    block.children?.map((child) => (
+    block.children?.map(
+      (child) => (
 
-      <EditorBlockRenderer
-        key={child.id}
-        block={child}
+        <EditorBlockRenderer
+          key={child.id}
 
-        device={device}
-        preview={preview}
+          block={child}
 
-        onUpdate={onUpdate}
-        onDelete={onDelete}
-        onDuplicate={onDuplicate}
-        onSelect={onSelect}
-        onTransform={onTransform}
-        onHoverChange={onHoverChange}
+          device={device}
 
-        selectedId={selectedId}
-        activeId={activeId}
-        hoveredId={hoveredId}
+          preview={preview}
 
-        hoverData={hoverData}
-        errors={errors}
-      />
+          onUpdate={onUpdate}
+          onDelete={onDelete}
+          onDuplicate={onDuplicate}
+          onSelect={onSelect}
+          onTransform={onTransform}
+          onHoverChange={onHoverChange}
 
-    ));
+          selectedId={selectedId}
+          activeId={activeId}
+          hoveredId={hoveredId}
 
-  return (
+          hoverData={hoverData}
 
-    <Box
-  component="div"
-
-  ref={(node: HTMLElement | null) => {
-        setNodeRef(node);
-        setDragRef(node);
-
-      }}
-
-      sx={{
-        display: "contents",
-        position: "relative",
-
-        opacity:
-          isDragging ? 0.3 : 1,
-
-        outline:
-          hasError
-            ? "2px solid #d32f2f"
-            : isHovered && !isSelected
-            ? "2px solid #00bcd4"
-            : "none",
-
-        border:
-          !preview && isSelected
-            ? "2px solid #1976d2"
-            : "1px solid transparent",
-
-        transition: "all 0.2s ease"
-      }}
-    >
-
-      {/* TOP DROP */}
-      {isOver && dropPos === "before" && (
-
-        <Box
-          sx={{
-            position: "absolute",
-            top: -2,
-            left: 0,
-            right: 0,
-            height: 4,
-            bgcolor: indicatorColor,
-            zIndex: 999
-          }}
+          errors={errors}
         />
+      )
+    );
 
-      )}
+  // =========================
+  // RENDER
+  // =========================
+ return (
+  
+<Box
+  ref={setDragRef}
+  id={`editor-${block.id}`}
+  component="div"
+  className="editor-wrapper"
+  
 
-      {/* =========================
-          PURE RUNTIME EXECUTION
-      ========================= */}
+  sx={{
+    pointerEvents: "auto",
+    position: "relative",
+    display: "block",
+    width: "100%",
 
-      <RuntimeRenderer
-        block={block}
-        device={device}
+    minWidth: 0,
+
+    maxWidth: "100%",
+
+   
+    overflow: "visible",
+    
+    boxSizing: "border-box",
+
+    opacity:
+      isDragging
+        ? 0.3
+        : 1
+  }}
+
+  >
+
+    {/* TOP INDICATOR */}
+
+    {isOver &&
+      dropPos === "before" && (
+
+      <Box
+        sx={{
+          position: "absolute",
+          top: -2,
+          left: 0,
+          right: 0,
+          height: 4,
+          bgcolor: indicatorColor,
+          pointerEvents: "none",
+          zIndex: 9999
+        }}
+      />
+    )}
+
+    {/* TOOLBAR */}
+
+    {!preview &&
+      isSelected && (
+
+      <Box
+        sx={{
+          position: "absolute",
+          top: -36,
+          right: 0,
+          zIndex: 99999,
+          display: "flex",
+          gap: 1,
+          bgcolor: "#fff",
+          padding: "4px",
+          borderRadius: "6px",
+          boxShadow:
+            "0 2px 10px rgba(0,0,0,0.12)",
+          pointerEvents: "auto"
+        }}
       >
 
-        {recursiveChildren}
-
-      </RuntimeRenderer>
-
-      {/* =========================
-          TOOLBAR
-      ========================= */}
-
-      {!preview && isSelected && (
-
         <Box
+          {...listeners}
+          {...attributes}
           sx={{
-            position: "absolute",
-            top: -36,
-            right: 0,
-
-            zIndex: 9999,
-
+            width: 32,
+            height: 32,
             display: "flex",
-            gap: 1,
-
-            bgcolor: "#fff",
-
-            padding: "4px",
-
+            alignItems: "center",
+            justifyContent: "center",
+            bgcolor: "#111",
+            color: "#fff",
             borderRadius: "6px",
-
-            boxShadow:
-              "0 2px 10px rgba(0,0,0,0.12)"
+            cursor: "grab"
           }}
         >
-
-          <Box
-            {...listeners}
-            {...attributes}
-            sx={{
-              width: 32,
-              height: 32,
-
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-
-              bgcolor: "#111",
-              color: "#fff",
-
-              borderRadius: "6px",
-
-              cursor: "grab"
-            }}
-          >
-            ⋮⋮
-          </Box>
-
-          <Box
-            onClick={() =>
-              onDelete?.(block.id)
-            }
-            sx={{
-              width: 32,
-              height: 32,
-
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-
-              bgcolor: "#f44336",
-              color: "#fff",
-
-              borderRadius: "6px",
-
-              cursor: "pointer"
-            }}
-          >
-            🗑️
-          </Box>
-
+          ⋮⋮
         </Box>
 
-      )}
-
-      {/* BOTTOM DROP */}
-      {isOver && dropPos === "after" && (
+        <Box
+          onClick={() =>
+            onDuplicate?.(block.id)
+          }
+          sx={{
+            width: 32,
+            height: 32,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            bgcolor: "#1976d2",
+            color: "#fff",
+            borderRadius: "6px",
+            cursor: "pointer"
+          }}
+        >
+          📄
+        </Box>
 
         <Box
+          onClick={() =>
+            onDelete?.(block.id)
+          }
           sx={{
-            position: "absolute",
-            bottom: -2,
-            left: 0,
-            right: 0,
-            height: 4,
-            bgcolor: indicatorColor,
-            zIndex: 999
+            width: 32,
+            height: 32,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            bgcolor: "#f44336",
+            color: "#fff",
+            borderRadius: "6px",
+            cursor: "pointer"
           }}
-        />
+        >
+          🗑️
+        </Box>
 
-      )}
+      </Box>
+    )}
 
-    </Box>
-  );
+    {/* BOTTOM INDICATOR */}
+
+    {isOver &&
+      dropPos === "after" && (
+
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: -2,
+          left: 0,
+          right: 0,
+          height: 4,
+          bgcolor: indicatorColor,
+          pointerEvents: "none",
+          zIndex: 9999
+        }}
+      />
+    )}
+
+    {/* RUNTIME */}
+
+    <RuntimeRenderer
+      block={block}
+      device={device}
+    >
+      {recursiveChildren}
+    </RuntimeRenderer>
+
+  </Box>
+);
 };

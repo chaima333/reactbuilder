@@ -147,23 +147,57 @@ const errors = useMemo(() => {
   // =========================
   // 6. ACTIONS
   // =========================
-  const actions = useMemo(
-    () => ({
-     addBlock: (type: string, targetId?: string, position: string = "inside", presetData?: any) => {
-  const createBlockWithChildren = (blockData: any): any => {
-    const id = uuidv4();
-    return {
-      id,
-      type: blockData.type,
-      data: blockData.data || { props: {}, style: { desktop: {} } },
-      children: (blockData.children || []).map((child: any) => createBlockWithChildren(child))
-    };
-  };
+ const actions = useMemo(
 
-  let newBlock;
-  if (presetData) {
-    newBlock = createBlockWithChildren(presetData);
+
+() => ({
+addBlock: (
+  type: string, 
+  targetId?: string, 
+  position: string = "inside", 
+  presetData?: any, 
+  insertIndex?: number // 👑 الإصلاح 1: فصل الـ Drop Metadata على الـ Component Payload
+) => {
+  let newBlock: any;
+  let focusId: string;
+
+  // 1️⃣ السحر المعماري: تفكيك الـ Smart Auto-Wrap
+  if (presetData && (presetData.initialChildrenType || presetData.presetChildren)) {
+    const configParent = registry[type as BlockType];
+    
+    let childBlocks = [];
+    if (presetData.presetChildren) {
+      childBlocks = presetData.presetChildren;
+    } else {
+      const configChild = registry[presetData.initialChildrenType as BlockType];
+      childBlocks = [
+        {
+          id: uuidv4(),
+          type: presetData.initialChildrenType,
+          data: {
+            props: structuredClone(configChild?.defaultData?.props || {}),
+            style: structuredClone(configChild?.defaultData?.style || { desktop: {} }),
+          },
+          children: []
+        }
+      ];
+    }
+
+    newBlock = {
+      id: uuidv4(),
+      type: type, // الـ Wrapper السيمانتيكي (gridItem أو flexItem)
+      data: {
+        props: structuredClone(configParent?.defaultData?.props || {}),
+        style: structuredClone(configParent?.defaultData?.style || { desktop: {} }),
+      },
+      children: childBlocks
+    };
+
+    // 👑 الإصلاح 3: الـ UX Focus الصح! الفوكس يمشى للولد (button مثلاً) موش للـ Wrapper الوهمي
+    focusId = childBlocks?.[0]?.id || newBlock.id;
+
   } else {
+    // الإضافة العادية للمكوّنات البسيطة والـ Sections
     const config = registry[type as BlockType];
     newBlock = {
       id: uuidv4(),
@@ -174,24 +208,121 @@ const errors = useMemo(() => {
       },
       children: [],
     };
+    
+    focusId = newBlock.id;
   }
 
-        setBlocks((currentBlocks) => {
-          if (!targetId || targetId === "canvas-root") return [...currentBlocks, newBlock];
-          const insertIntoTree = (tree: Block[]): Block[] => {
-            return tree.flatMap((b) => {
-              if (b.id === targetId) {
-                if (position === "before") return [newBlock, b];
-                if (position === "after") return [b, newBlock];
-                if (position === "inside") return [{ ...b, children: [...(b.children || []), newBlock] }];
-              }
-              return [{ ...b, children: b.children ? insertIntoTree(b.children) : [] }];
-            });
-          };
-          return insertIntoTree(currentBlocks);
+  // 2️⃣ غرس الباقة كاملة في الـ State Tree مع الـ Normalization النظيف
+  setBlocks((currentBlocks) => {
+    
+    // 👑 ROOT AUTHORITY: الـ Canvas فارغ أو الضرب في الـ Root ديريكت
+    if (
+      !targetId ||
+      targetId === "canvas-root" ||
+      targetId === "canvas-drop-zone" ||
+      targetId === "ROOT"
+    ) {
+      const updatedRoot = [...currentBlocks];
+      const targetIndex = insertIndex !== undefined ? insertIndex : updatedRoot.length;
+      updatedRoot.splice(targetIndex, 0, newBlock);
+      return updatedRoot;
+    }
+ const insertIntoTree = (
+  tree: Block[]
+): Block[] => {
+
+  const result: Block[] = [];
+
+  for (const b of tree) {
+
+    // =========================
+    // TARGET FOUND
+    // =========================
+
+    if (b.id === targetId) {
+
+      // BEFORE
+      if (position === "before") {
+
+        result.push(newBlock);
+        result.push(b);
+
+        continue;
+      }
+
+      // AFTER
+      if (position === "after") {
+
+        result.push(b);
+        result.push(newBlock);
+
+        continue;
+      }
+
+      // INSIDE
+      if (position === "inside") {
+
+        const children =
+          [...(b.children || [])];
+
+        const targetIndex =
+          insertIndex !== undefined
+            ? insertIndex
+            : children.length;
+
+        children.splice(
+          targetIndex,
+          0,
+          newBlock
+        );
+
+        result.push({
+          ...b,
+          children
         });
-        setSelectedBlockId(newBlock.id);
-      },
+
+        continue;
+      }
+    }
+
+    // =========================
+    // RECURSIVE SEARCH
+    // =========================
+
+    if (
+      b.children &&
+      b.children.length > 0
+    ) {
+
+      result.push({
+
+        ...b,
+
+        children:
+          insertIntoTree(
+            b.children
+          )
+      });
+
+      continue;
+    }
+
+    // =========================
+    // NORMAL BLOCK
+    // =========================
+
+    result.push(b);
+  }
+
+  return result;
+};
+
+    return insertIntoTree(currentBlocks);
+  });
+  
+  // 👑 الفوكس الذكي توا صار شغال 100%
+  setSelectedBlockId(focusId);
+},
 
       updateBlock: (id: string, newData: any) => {
         setBlocks((prevBlocks) => {
@@ -233,15 +364,31 @@ const errors = useMemo(() => {
         setSelectedBlockId((current) => (current === id ? null : current));
       },
 
-      duplicateBlock: (id: string) => {
+duplicateBlock: (id: string) => {
         setBlocks((prevBlocks) => {
-          const target = findBlockInTree(prevBlocks, id);
-          if (!target) return prevBlocks;
-          const duplicated = duplicateBlockUtil(target);
-          return insertBlock(prevBlocks, { targetId: id, type: "after" }, duplicated);
+          if (!prevBlocks || !Array.isArray(prevBlocks)) return [];
+          const duplicateRecursive = (tree: Block[]): Block[] => {
+            if (!tree || !Array.isArray(tree)) return [];
+
+            return tree.flatMap((block) => {
+              const updatedBlock = {
+                ...block,
+                children: block.children?.length 
+                  ? duplicateRecursive(block.children) 
+                  : []
+              };
+              if (block.id === id) {
+                return [
+                  updatedBlock,
+                  duplicateBlockUtil(updatedBlock) // زراعة النسخة الجديدة بجنبه ديريكت كـ أخ
+                ];
+              }
+              return [updatedBlock];
+            });
+          };
+          return duplicateRecursive(structuredClone(prevBlocks));
         });
       },
-
       moveBlock: (activeId: string, dropInfo: any) => {
         setBlocks((current) => moveBlockInTree(current, activeId, dropInfo));
       },
@@ -299,6 +446,13 @@ const errors = useMemo(() => {
     loadBlockRegistry().then(setRegistry);
   }, []);
 
+ // =========================
+  // 8. LOADERS (المحصّن والمصلح للهيكلة القديمة)
+  // =========================
+  useEffect(() => {
+    loadBlockRegistry().then(setRegistry);
+  }, []);
+
   useEffect(() => {
     if (isEdit && pageData && !hasLoadedRef.current) {
       const data = (pageData as any)?.data || pageData;
@@ -306,14 +460,37 @@ const errors = useMemo(() => {
         setPageTitle(data.title || "Untitled Page");
         setTokens(data.theme || defaultTokens);
         setSlug(data.slug || "");
+        
         const rawBlocks = fromAPIToUI(data.blocks || []);
-        const canonicalBlocks = hydrateTree(rawBlocks);
+        
+        // 👑 السحر التونسي: دالة تطهير وإصلاح الهيكلة والأسماء القديمة أوتوماتيكياً
+        const sanitizeAndFixTree = (tree: any[]): any[] => {
+          if (!tree || !Array.isArray(tree)) return [];
+          return tree.map((block) => {
+            let fixedType = block.type;
+            
+            // لو الاسم القديم lowercase، بدلو فوراً لـ CamelCase باش يفهمو الـ Resolver والـ Canvas
+            if (block.type === "flexitem") {
+              fixedType = "flexItem";
+            }
+
+            return {
+              ...block,
+              type: fixedType,
+              // تتبع الـ أولاد لداخل وإصلاحهم زادّة بنفس القاعدة
+              children: block.children ? sanitizeAndFixTree(block.children) : []
+            };
+          });
+        };
+
+        const cleanedBlocks = sanitizeAndFixTree(rawBlocks);
+        const canonicalBlocks = hydrateTree(cleanedBlocks);
+        
         resetHistory(canonicalBlocks); 
         hasLoadedRef.current = true;
       }
     }
   }, [pageData, isEdit, resetHistory]);
-
   return {
     blocks,
     pageTitle,

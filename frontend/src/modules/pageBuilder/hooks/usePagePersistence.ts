@@ -11,6 +11,10 @@ import {
   useNavigate
 } from "react-router-dom";
 
+import {
+  publishCanonicalTree
+} from "../runtime/publishing/publishPipeline";
+
 export const usePagePersistence = ({
   sId,
 
@@ -65,6 +69,10 @@ export const usePagePersistence = ({
   const save = async () => {
 
     try {
+      const publishingResult =
+        publishCanonicalTree(
+          blocks
+        );
 
       // ====================
       // UPDATE EXISTING PAGE
@@ -81,7 +89,8 @@ export const usePagePersistence = ({
 
           blocks:
             fromUIToAPI(
-              blocks
+              publishingResult
+                .canonicalTree
             ) as any,
 
           theme:
@@ -123,7 +132,8 @@ export const usePagePersistence = ({
 
       blocks:
         fromUIToAPI(
-          blocks
+          publishingResult
+            .canonicalTree
         ) as any,
 
     }).unwrap();
@@ -168,6 +178,35 @@ export const usePagePersistence = ({
     }
 
     try {
+      const publishingResult =
+        publishCanonicalTree(
+          blocks
+        );
+
+      await updatePage({
+
+        title:
+          pageTitle,
+
+        slug:
+          generatedSlug,
+
+        blocks:
+          fromUIToAPI(
+            publishingResult
+              .canonicalTree
+          ) as any,
+
+        theme:
+          tokens,
+
+        siteId:
+          sId,
+
+        pageId:
+          pId
+
+      }).unwrap();
 
       await publishPage({
 

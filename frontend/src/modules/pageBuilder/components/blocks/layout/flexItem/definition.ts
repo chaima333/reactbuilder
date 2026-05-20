@@ -6,8 +6,8 @@ import { flexItemFields } from "./fields";
 import { BlockConfig } from "../../../../types/page.types";
 
 export const flexItemDefinition: BlockConfig = {
-  type: "flexItem",
-  label: "Column",
+  type: "flexItem", // 👑 هذا الـ Key الأصلي اللّي الـ Engine يفرز بيه
+  label: "Column",   // 👑 هذا الـ الاسم التجاري المزيان اللّي يظهر للـ User
   category: "layout", 
   icon: React.createElement(ViewColumnIcon),
   component: FlexItemBlock as any,

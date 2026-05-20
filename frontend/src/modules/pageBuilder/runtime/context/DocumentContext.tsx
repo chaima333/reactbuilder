@@ -1,13 +1,13 @@
 // frontend/src/modules/pageBuilder/runtime/context/DocumentContext.tsx
 import React, { createContext, useContext, useState } from "react";
 import { PageData } from "../../types/page.types";
-import { Operation } from "../operations/types";
+import { Operation, OperationDraft } from "../operations/types";
 import { dispatchOperation } from "../operations/dispatchOperation";
 
 interface DocumentContextValue {
   pageData: PageData;
   history: { past: Operation[]; future: Operation[] };
-  executeOperation: (opWithoutMeta: Omit<Operation, "id" | "timestamp">) => void;
+  executeOperation: (opWithoutMeta: OperationDraft) => void;
   undo: () => void;
   redo: () => void;
 }
@@ -19,7 +19,7 @@ export const DocumentProvider = ({ children, initialData }: { children: React.Re
   const [history, setHistory] = useState<{ past: Operation[]; future: Operation[] }>({ past: [], future: [] });
 
   // البوابة الرسمية والمحمية لتنفيذ العمليات داخل الـ Editor
-  const executeOperation = (opWithoutMeta: Omit<Operation, "id" | "timestamp">) => {
+  const executeOperation = (opWithoutMeta: OperationDraft) => {
     const fullOperation: Operation = {
       ...opWithoutMeta,
       id: crypto.randomUUID(),

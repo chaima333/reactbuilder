@@ -50,7 +50,9 @@ export type BlockType =
   | "hero"
   | "features"
   | "flex"
-  | "flexItem";
+  | "flexItem"
+  | "grid"
+  | "gridItem";
 
 // ========================
 // Block Rules
@@ -97,6 +99,7 @@ export interface PageData {
 export type RuntimeMode = "editor" | "preview" | "public";
 
 export interface BlockRendererProps<P = Record<string, any>> { // 🟢 دعم الـ Generic Props للـ Renderer
+  block?: Block;
   data: {
     props: P;
     style: StyleObject; 

@@ -1,58 +1,129 @@
-// src/modules/pageBuilder/core/theme/useResolvedStyle.ts
+import type { Device } from "../../types/page.types";
 
-import { useTheme }
-from "./ThemeProvider";
+const LAYOUT_PROPS = [
 
-import {
-  applyStyles
-} from "../styles/applyStyles";
+  "display",
 
-import type {
-  ResponsiveStyle
-} from "../../types/page.types";
+  "gridTemplateColumns",
+  "gridTemplateRows",
 
-// =========================
-// Empty Safe Contract
-// =========================
+  "gridColumn",
+  "gridRow",
 
-const EMPTY_STYLE:
-ResponsiveStyle = {
+  "flexDirection",
+  "flexWrap",
+  "justifyContent",
+  "alignItems",
 
-  desktop: {},
+  "width",
+  "minWidth",
+  "maxWidth",
 
-  tablet: {},
+  "height",
+  "minHeight",
+  "maxHeight",
 
-  mobile: {}
-};
+  "position",
 
-// =========================
-// Hook
-// =========================
+  "left",
+  "right",
+  "top",
+  "bottom",
+
+  "flex",
+  "flexBasis",
+  "flexGrow",
+  "flexShrink"
+
+];
 
 export const useResolvedStyle = (
-  style:
-    ResponsiveStyle | undefined,
-
-  device:
-    | "desktop"
-    | "tablet"
-    | "mobile"
+  style: any,
+  device: Device
 ) => {
 
-  const { tokens } =
-    useTheme();
+  const desktop =
+    style?.desktop || {};
 
-  // 👑 Runtime Fault Tolerance
-  const safeStyle = {
+  const tablet =
+    style?.tablet || {};
 
-    ...EMPTY_STYLE,
+  const mobile =
+    style?.mobile || {};
 
-    ...(style || {})
+  // =========================
+  // DESKTOP
+  // =========================
+
+  if (device === "desktop") {
+
+    return desktop;
+  }
+
+  // =========================
+  // TABLET
+  // =========================
+
+  if (device === "tablet") {
+
+    const result = {
+      ...desktop,
+      ...tablet
+    };
+
+    // 🚫 prevent layout leakage
+    for (const key of LAYOUT_PROPS) {
+
+      if (
+        tablet[key] === undefined
+      ) {
+
+        delete result[key];
+      }
+    }
+
+    return result;
+  }
+
+  // =========================
+  // MOBILE
+  // =========================
+
+  const result = {
+
+    ...desktop,
+
+    ...tablet,
+
+    ...mobile
   };
 
-  return applyStyles(
-    safeStyle,
-    device,
-    tokens
-  );
+  // 🚫 prevent desktop physics
+  for (const key of LAYOUT_PROPS) {
+
+    if (
+      mobile[key] === undefined
+    ) {
+
+      delete result[key];
+    }
+  }
+
+  // ✅ mobile authority defaults
+
+  if (
+    result.display === "flex"
+  ) {
+
+    result.flexDirection =
+      result.flexDirection || "column";
+
+    result.width =
+      result.width || "100%";
+
+    result.minWidth =
+      result.minWidth || 0;
+  }
+
+  return result;
 };

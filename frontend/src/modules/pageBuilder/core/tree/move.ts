@@ -1,18 +1,53 @@
 import { Block } from "../../types/page.types";
 
 /**
- * 🚀 Move block in tree (before / after / inside)
+ * 🚀 Move block in tree
  */
 export const moveBlockInTree = (
   blocks: Block[],
   activeId: string,
   drop: any
 ): Block[] => {
-  const { tree, extracted } = extract(blocks, activeId);
 
-  if (!extracted) return blocks;
+  const {
+    tree,
+    extracted
+  } = extract(
+    blocks,
+    activeId
+  );
 
-  return insert(tree, drop, extracted);
+  if (!extracted) {
+    return blocks;
+  }
+
+  // 👑 semantic wrapper injection
+  let node = extracted;
+
+  if (drop.wrapperType) {
+
+    node = {
+      id: crypto.randomUUID(),
+
+      type:
+        drop.wrapperType,
+
+      data: {
+        props: {},
+        style: {
+          desktop: {}
+        }
+      },
+
+      children: [extracted]
+    };
+  }
+
+  return insert(
+    tree,
+    drop,
+    node
+  );
 };
 
 /**
@@ -32,7 +67,7 @@ const extract = (
   const tree =
     blocks.flatMap((block) => {
 
-      // 🎯 Found target
+      // 🎯 found target
       if (block.id === id) {
 
         extracted = block;
@@ -40,14 +75,13 @@ const extract = (
         return [];
       }
 
-      // 🔁 Recursive extraction
+      // 🔁 recursive
       const childResult =
         extract(
           block.children || [],
           id
         );
 
-      // ✅ Preserve extracted node
       if (
         childResult.extracted
       ) {
@@ -61,13 +95,13 @@ const extract = (
         ...block,
 
         children:
-          childResult.tree,
+          childResult.tree
       }];
     });
 
   return {
     tree,
-    extracted,
+    extracted
   };
 };
 
@@ -79,28 +113,48 @@ const insert = (
   drop: any,
   node: Block
 ): Block[] => {
-  const result: Block[] = [];
+  
+  const walk = (items: Block[]): Block[] => {
+    // 1. نبحث عن موقع الـ targetId في المستوى الحالي
+    const targetIndex = items.findIndex(b => b.id === drop.targetId);
 
-  for (const block of blocks) {
-    if (block.id === drop.targetId) {
-      if (drop.type === "before") result.push(node, block);
-      if (drop.type === "after") result.push(block, node);
-      if (drop.type === "inside") {
-        result.push({
-          ...block,
-          children: [...(block.children || []), node],
-        });
+    if (targetIndex !== -1) {
+      const newItems = [...items];
+      
+      if (drop.position  === "inside") {
+        // حالة الـ Inside: إضافة داخل الـ Children
+        const targetBlock = { ...newItems[targetIndex] };
+        const children = [...(targetBlock.children || [])];
+        children.splice(drop.index ?? children.length, 0, node);
+        newItems[targetIndex] = { ...targetBlock, children };
+        return newItems;
+      } 
+      
+      // حالة الـ Before أو After: الإضافة في نفس مستوى الأب
+      if (drop.position  === "before") {
+        newItems.splice(targetIndex, 0, node);
+        return newItems;
+      } 
+      
+      if (drop.position  === "after") {
+        newItems.splice(targetIndex + 1, 0, node);
+        return newItems;
       }
-      continue;
     }
 
-    result.push({
+    // 2. إذا لم نجده في المستوى الحالي، ننتقل للأبناء (Recursion)
+    return items.map(block => ({
       ...block,
-      children: block.children?.length
-        ? insert(block.children, drop, node)
-        : [],
-    });
+      children: block.children ? walk(block.children) : []
+    }));
+  };
+
+  // معالجة حالة الـ ROOT
+  if (drop.targetId === "ROOT" || drop.targetId === "canvas-root") {
+    const result = [...blocks];
+    result.splice(drop.index ?? result.length, 0, node);
+    return result;
   }
 
-  return result;
+  return walk(blocks);
 };

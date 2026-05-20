@@ -10,13 +10,13 @@ import {
   Button,
   IconButton,
   Stack,
-  Modal,      // 👑 زدنا الـ Modal
-  TextField,  // 👑 حقل إدخال الكود
+  Modal,       
+  TextField,  
 } from "@mui/material";
 
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import MenuOpenIcon from "@mui/icons-material/MenuOpen";
-import CloseIcon from "@mui/icons-material/Close"; // أيقونة غلق المودال
+import CloseIcon from "@mui/icons-material/Close"; 
 import { ValidationPanel } from "../components/editor/ValidationPanel";
 import { DndContext, pointerWithin, useDraggable } from "@dnd-kit/core";
 import { EditorLayout } from "../components/editor/EditorLayout";
@@ -31,7 +31,7 @@ import { ThemeContext } from "../core/theme/themeContext";
 import { StructurePanel } from "../components/sidebar/StructurePanel";
 import { SettingsPanel } from "../components/inspector/SettingsPanel";
 import { useParams } from "react-router-dom";
-import { useDragAndDrop } from "../hooks/editor/useDragAndDrop";
+import { customCollisionStrategy, useDragAndDrop } from "../hooks/editor/useDragAndDrop"; // 👑 جلب الخوارزمية الذكية متعك
 import { RuntimeProvider } from "../runtime/context/RuntimeProvider";
 import { downloadJsonFile, readJsonFile } from "../services/importExport";
 import { findBlockById } from "../core/tree/findBlockById";
@@ -130,7 +130,6 @@ export const PageEditor = ({ mode }: { mode: "create" | "edit" }) => {
   const [activeTab, setActiveTab] = useState(1); 
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
 
-  // 👑 الـ States الخاصة بالمودال الجديد التابع للـ UI الخاص بك
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [htmlCode, setHtmlCode] = useState("");
 
@@ -139,31 +138,6 @@ export const PageEditor = ({ mode }: { mode: "create" | "edit" }) => {
     return findBlockById(blocks, selectedBlockId);
   }, [blocks, selectedBlockId]);
 
-const handleHtmlImportExecute = () => {
-  if (!htmlCode.trim()) return;
-
-  try {
-    const imported = importHtmlDocument(htmlCode);
-    
-    if (imported && imported.blocks) {
-      const hydrated = hydrateBlocks(
-  imported.blocks.map((block: any) => ({
-    ...block,
-    props: block.data?.props || {},
-    style: block.data?.style || {},
-    children: block.children || []
-  }))
-);
-
-actions.setBlocks(hydrated as any);
-      
-      setIsModalOpen(false);
-      setHtmlCode("");
-    }
-  } catch (error) {
-    console.error("HTML import failed", error);
-  }
-};
   if (isLoading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
@@ -172,10 +146,40 @@ actions.setBlocks(hydrated as any);
     );
   }
 
+  const handleHtmlImportExecute = () => {
+    if (!htmlCode.trim()) return;
+
+    try {
+      const imported = importHtmlDocument(htmlCode);
+      
+      if (imported && imported.blocks) {
+        const hydrated = hydrateBlocks(
+          imported.blocks.map((block: any) => ({
+            ...block,
+            props: block.data?.props || {},
+            style: block.data?.style || {},
+            children: block.children || []
+          }))
+        );
+
+        actions.setBlocks(hydrated as any);
+        setIsModalOpen(false);
+        setHtmlCode("");
+      }
+    } catch (error) {
+      console.error("HTML import failed", error);
+    }
+  };
+
   return (
     <RuntimeProvider value={{ mode: isPreview ? "preview" : "editor", device }}>
       <ThemeContext.Provider value={{ tokens, updateToken }}>
-        <DndContext onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} collisionDetection={pointerWithin}>
+        <DndContext
+          collisionDetection={customCollisionStrategy}
+          onDragStart={handleDragStart} 
+          onDragOver={handleDragOver} 
+          onDragEnd={handleDragEnd}
+        >
           <EditorLayout
             header={
               <PageHeader
@@ -205,7 +209,6 @@ actions.setBlocks(hydrated as any);
                     console.error("Failed to read import file", err);
                   }
                 }}
-                // 👑 نفتح المودال عوضاً عن الـ prompt المقرف
                 onImportHtml={() => setIsModalOpen(true)}
               />
             }
@@ -261,7 +264,6 @@ actions.setBlocks(hydrated as any);
                             console.error("Failed to read settings file", err);
                           }
                         }}
-                        // 👑 نفتح المودال أيضاً من هنا بكفاءة
                         onImportHtml={() => setIsModalOpen(true)}
                       />
                     )}
@@ -281,23 +283,32 @@ actions.setBlocks(hydrated as any);
                 )}
                 <Box sx={{ flexGrow: 1, overflowY: "auto", bgcolor: "#f5f5f5" }}>
                   <EditorCanvas
-                    blocks={blocks} registry={registry} selectedId={selectedBlockId} onSelect={setSelectedBlockId}
-                    onUpdate={actions.updateBlock} onDelete={actions.deleteBlock} device={device} preview={isPreview}
-                    tokens={tokens} activeId={activeId} hoverData={{ overId, dropPosition, isAllowed }}
-                    onDuplicate={actions.duplicateBlock} hoveredId={hoveredBlockId} errors={errors} 
+                    blocks={blocks} 
+                    registry={registry} 
+                    selectedId={selectedBlockId} 
+                    onSelect={setSelectedBlockId}
+                    onUpdate={actions.updateBlock} 
+                    onDelete={actions.deleteBlock} 
+                    device={device} 
+                    preview={isPreview}
+                    tokens={tokens} 
+                    activeId={activeId} 
+                    hoverData={{ overId, dropPosition, isAllowed }}
+                    onDuplicate={actions.duplicateBlock} 
+                    hoveredId={hoveredBlockId} 
+                    errors={errors} 
                   />
                 </Box>
               </Box>
             }
           />
 
-          {/* 👑 نافذة الـ Modal المخصصة والجميلة المدمجة بالكامل بالإنكليزية والـ UI نظيف */}
           <Modal
             open={isModalOpen}
             onClose={() => setIsModalOpen(false)}
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            <Paper sx={{ width: 550, p: 3, borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: 2, position: 'relative' }}>
+            <Paper paper-root="true" sx={{ width: 550, p: 3, borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: 2, position: 'relative' }}>
               <IconButton 
                 onClick={() => setIsModalOpen(false)} 
                 sx={{ position: 'absolute', top: 12, right: 12 }}

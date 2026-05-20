@@ -1,60 +1,71 @@
-// frontend/src/modules/pageBuilder/runtime/operations/types.ts
+import type { Block } from "../../types/page.types";
 
-import { BlockType } from "../../types/page.types";
-
-export interface SerializedBlock {
-  id: string;
-  type: BlockType;
-  props: Record<string, unknown>;
-  style: {
-    desktop?: Record<string, unknown>;
-    tablet?: Record<string, unknown>;
-    mobile?: Record<string, unknown>;
-  };
-  children?: SerializedBlock[];
-}
-
-export type Operation =
-  | InsertBlockOperation
-  | RemoveBlockOperation
-  | MoveBlockOperation
-  | UpdatePropsOperation
-  | UpdateStyleOperation;
+export type OperationType =
+  | "INSERT_BLOCK"
+  | "MOVE_BLOCK"
+  | "WRAP_BLOCK"
+  | "DELETE_BLOCK"
+  | "TRANSFORM_BLOCK"
+  | "UPDATE_PROPS"
+  | "UPDATE_STYLE";
 
 export interface BaseOperation {
-  type: string;
+  type: OperationType;
   id: string;
   timestamp: number;
 }
 
 export interface InsertBlockOperation extends BaseOperation {
-  type: "insert_block";
+  type: "INSERT_BLOCK";
   parentId: string;
   index: number;
-  block: SerializedBlock; // ✅ تم التحويل إلى SerializedBlock لمنع تسريب الـ Runtime Metadata
-}
-
-export interface RemoveBlockOperation extends BaseOperation {
-  type: "remove_block";
-  blockId: string;
+  block: Block;
 }
 
 export interface MoveBlockOperation extends BaseOperation {
-  type: "move_block";
+  type: "MOVE_BLOCK";
   blockId: string;
   targetParentId: string;
   targetIndex: number;
 }
 
+export interface WrapBlockOperation extends BaseOperation {
+  type: "WRAP_BLOCK";
+  blockId: string;
+  wrapper: Block;
+}
+
+export interface DeleteBlockOperation extends BaseOperation {
+  type: "DELETE_BLOCK";
+  blockId: string;
+}
+
+export interface TransformBlockOperation extends BaseOperation {
+  type: "TRANSFORM_BLOCK";
+  blockId: string;
+  nextBlock: Block;
+}
+
 export interface UpdatePropsOperation extends BaseOperation {
-  type: "update_props";
+  type: "UPDATE_PROPS";
   blockId: string;
   propsPatch: Record<string, unknown>;
 }
 
 export interface UpdateStyleOperation extends BaseOperation {
-  type: "update_style";
+  type: "UPDATE_STYLE";
   blockId: string;
-  device: "desktop" | "tablet" | "mobile"; // ✅ إجبارية لتفادي الـ Shallow Overwrite
+  device: "desktop" | "tablet" | "mobile";
   stylePatch: Record<string, unknown>;
 }
+
+export type Operation =
+  | InsertBlockOperation
+  | MoveBlockOperation
+  | WrapBlockOperation
+  | DeleteBlockOperation
+  | TransformBlockOperation
+  | UpdatePropsOperation
+  | UpdateStyleOperation;
+
+export type OperationDraft = Omit<Operation, "id" | "timestamp">;

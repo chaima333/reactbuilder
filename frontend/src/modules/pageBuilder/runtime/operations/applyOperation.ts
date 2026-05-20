@@ -1,182 +1,241 @@
-// frontend/src/modules/pageBuilder/runtime/operations/applyOperation.ts
-
-import { PageData, Block } from "../../types/page.types";
+import { canAcceptChild } from "../../core/schema/canonicalSchema";
+import { Block, PageData } from "../../types/page.types";
+import { assertTreeInvariants } from "../validation/invariants";
 import { Operation } from "./types";
 
-// الحارس الأمين: يمنع الحلقات المفرغة (Cycle Protection) ويتحقق من وجود العناصر
-const validateInvariants = (blocks: Block[], operation: Operation): void => {
-  if (operation.type !== "move_block") return;
-
-  const { blockId, targetParentId } = operation;
-
-  // بناء خريطة لمعرفة الـ Ancestors بـ O(n)
-  const parentMap = new Map<string, string>();
-  const buildParentIndex = (list: Block[], parentId = "root") => {
-    for (const node of list) {
-      parentMap.set(node.id, parentId);
-      if (node.children?.length) buildParentIndex(node.children, node.id);
-    }
-  };
-  buildParentIndex(blocks);
-
-  // تتبع مسار الـ Target Parent صعوداً إلى الـ Root
-  let currentParentId = targetParentId;
-  while (currentParentId && currentParentId !== "root") {
-    if (currentParentId === blockId) {
-      throw new Error(`Invariant Violation: Cannot move parent [${blockId}] into its own descendant [${targetParentId}]. Operation aborted.`);
-    }
-    currentParentId = parentMap.get(currentParentId) || "root";
-  }
+type ExtractResult = {
+  extracted: Block | null;
+  tree: Block[];
 };
 
-export const applyOperation = (page: PageData, operation: Operation): PageData => {
-  // 🚨 فحص الـ Invariants والـ Cycles قبل لمس الـ State
-  validateInvariants(page.blocks, operation);
+const cloneBlock = (block: Block): Block => structuredClone(block);
 
-  switch (operation.type) {
-    case "insert_block":
-      return {
-        ...page,
-        blocks: insertBlockImmutable(page.blocks, operation.parentId, operation.index, operation.block as unknown as Block)
-      };
-
-    case "remove_block":
-      return {
-        ...page,
-        blocks: removeBlockImmutable(page.blocks, operation.blockId)
-      };
-
-    case "move_block": {
-      // الـ Move هو عبارة عن قطبين مستقرين (Pure Extract) متبوع بـ (Pure Insert) بدون أي Mutations
-      const { extractedNode, cleanTree } = extractBlockImmutable(page.blocks, operation.blockId);
-      if (!extractedNode) return page; // لم يعثر على الـ Block المراد نقله
-      
-      return {
-        ...page,
-        blocks: insertBlockImmutable(cleanTree, operation.targetParentId, operation.targetIndex, extractedNode)
-      };
-    }
-
-    case "update_props":
-      return {
-        ...page,
-        blocks: updatePropsImmutable(page.blocks, operation.blockId, operation.propsPatch)
-      };
-
-    case "update_style":
-      return {
-        ...page,
-        blocks: updateStyleImmutable(page.blocks, operation.blockId, operation.device, operation.stylePatch)
-      };
-
-    default:
-      return page;
+const findBlock = (blocks: Block[], id: string): Block | null => {
+  for (const block of blocks) {
+    if (block.id === id) return block;
+    const found = findBlock(block.children || [], id);
+    if (found) return found;
   }
+
+  return null;
 };
 
-// --- 🔥 Pure Structural Sharing Transformers ---
-
-const insertBlockImmutable = (blocks: Block[], parentId: string, index: number, newBlock: Block): Block[] => {
+const insertBlock = (
+  blocks: Block[],
+  parentId: string,
+  index: number,
+  newBlock: Block
+): Block[] => {
   if (parentId === "root") {
-    return [...blocks.slice(0, index), newBlock, ...blocks.slice(index)];
+    return [
+      ...blocks.slice(0, index),
+      newBlock,
+      ...blocks.slice(index)
+    ];
   }
 
   return blocks.map((block) => {
     if (block.id === parentId) {
-      const currentChildren = block.children || [];
+      const children = block.children || [];
+
       return {
         ...block,
-        children: [...currentChildren.slice(0, index), newBlock, ...currentChildren.slice(index)]
+        children: [
+          ...children.slice(0, index),
+          newBlock,
+          ...children.slice(index)
+        ]
       };
     }
-    if (block.children?.length) {
-      return {
-        ...block,
-        children: insertBlockImmutable(block.children, parentId, index, newBlock)
-      };
-    }
-    return block;
+
+    return {
+      ...block,
+      children: insertBlock(block.children || [], parentId, index, newBlock)
+    };
   });
 };
 
-const removeBlockImmutable = (blocks: Block[], blockId: string): Block[] => {
+const deleteBlock = (blocks: Block[], blockId: string): Block[] => {
   return blocks
     .filter((block) => block.id !== blockId)
-    .map((block) => {
-      if (block.children?.length) {
-        return { ...block, children: removeBlockImmutable(block.children, blockId) };
-      }
-      return block;
-    });
+    .map((block) => ({
+      ...block,
+      children: deleteBlock(block.children || [], blockId)
+    }));
 };
 
-const extractBlockImmutable = (blocks: Block[], blockId: string): { extractedNode: Block | null; cleanTree: Block[] } => {
-  let extractedNode: Block | null = null;
+const extractBlock = (blocks: Block[], blockId: string): ExtractResult => {
+  let extracted: Block | null = null;
 
-  const recurse = (list: Block[]): Block[] => {
-    const target = list.find((b) => b.id === blockId);
-    if (target) {
-      extractedNode = target;
-      return list.filter((b) => b.id !== blockId);
-    }
-    return list.map((b) => {
-      if (b.children?.length) {
-        return { ...b, children: recurse(b.children) };
-      }
-      return b;
-    });
-  };
-
-  const cleanTree = recurse(blocks);
-  return { extractedNode, cleanTree };
-};
-
-const updatePropsImmutable = (blocks: Block[], blockId: string, patch: Record<string, unknown>): Block[] => {
-  return blocks.map((block) => {
+  const tree = blocks.flatMap((block) => {
     if (block.id === blockId) {
-      return {
-        ...block,
-        data: {
-          ...block.data,
-          props: { ...block.data?.props, ...patch }
+      extracted = cloneBlock(block);
+      return [];
+    }
+
+    const childResult = extractBlock(block.children || [], blockId);
+
+    if (childResult.extracted) {
+      extracted = childResult.extracted;
+
+      return [
+        {
+          ...block,
+          children: childResult.tree
         }
-      };
+      ];
     }
-    if (block.children?.length) {
-      return { ...block, children: updatePropsImmutable(block.children, blockId, patch) };
-    }
-    return block;
+
+    return [block];
   });
+
+  return { extracted, tree };
 };
 
-const updateStyleImmutable = (
-  blocks: Block[], 
-  blockId: string, 
-  device: "desktop" | "tablet" | "mobile", 
-  patch: Record<string, unknown>
+const updateBlock = (
+  blocks: Block[],
+  blockId: string,
+  updater: (block: Block) => Block
 ): Block[] => {
   return blocks.map((block) => {
     if (block.id === blockId) {
-      const currentStyleSet = block.data?.style || {};
-      const currentDeviceStyle = currentStyleSet[device] || {};
+      return updater(block);
+    }
 
-      return {
+    return {
+      ...block,
+      children: updateBlock(block.children || [], blockId, updater)
+    };
+  });
+};
+
+const assertOperationCanTarget = (
+  blocks: Block[],
+  parentId: string,
+  child: Block
+) => {
+  const parent =
+    parentId === "root" ? null : findBlock(blocks, parentId);
+  const parentType = parent?.type || "root";
+
+  if (!canAcceptChild(parentType, child.type)) {
+    throw new Error(
+      `Operation rejected: ${parentType} cannot contain ${child.type}.`
+    );
+  }
+};
+
+export const applyOperation = (
+  page: PageData,
+  operation: Operation
+): PageData => {
+  assertTreeInvariants(page.blocks);
+
+  let nextBlocks = page.blocks;
+
+  switch (operation.type) {
+    case "INSERT_BLOCK": {
+      assertOperationCanTarget(
+        nextBlocks,
+        operation.parentId,
+        operation.block
+      );
+      nextBlocks = insertBlock(
+        nextBlocks,
+        operation.parentId,
+        operation.index,
+        cloneBlock(operation.block)
+      );
+      break;
+    }
+
+    case "MOVE_BLOCK": {
+      const { extracted, tree } = extractBlock(
+        nextBlocks,
+        operation.blockId
+      );
+
+      if (!extracted) break;
+
+      assertOperationCanTarget(
+        tree,
+        operation.targetParentId,
+        extracted
+      );
+      nextBlocks = insertBlock(
+        tree,
+        operation.targetParentId,
+        operation.targetIndex,
+        extracted
+      );
+      break;
+    }
+
+    case "WRAP_BLOCK": {
+      const { extracted, tree } = extractBlock(
+        nextBlocks,
+        operation.blockId
+      );
+
+      if (!extracted) break;
+
+      const wrapper = {
+        ...cloneBlock(operation.wrapper),
+        children: [extracted]
+      };
+
+      nextBlocks = insertBlock(tree, "root", tree.length, wrapper);
+      break;
+    }
+
+    case "DELETE_BLOCK":
+      nextBlocks = deleteBlock(nextBlocks, operation.blockId);
+      break;
+
+    case "TRANSFORM_BLOCK":
+      nextBlocks = updateBlock(nextBlocks, operation.blockId, () =>
+        cloneBlock(operation.nextBlock)
+      );
+      break;
+
+    case "UPDATE_PROPS":
+      nextBlocks = updateBlock(nextBlocks, operation.blockId, (block) => ({
         ...block,
         data: {
           ...block.data,
-          style: {
-            ...currentStyleSet,
-            [device]: {
-              ...currentDeviceStyle,
-              ...patch // ✅ دمج عميق على مستوى الـ Device المستهدف فقط دون التأثير على البقية
-            }
+          props: {
+            ...(block.data?.props || {}),
+            ...operation.propsPatch
           }
         }
-      };
-    }
-    if (block.children?.length) {
-      return { ...block, children: updateStyleImmutable(block.children, blockId, device, patch) };
-    }
-    return block;
-  });
+      }));
+      break;
+
+    case "UPDATE_STYLE":
+      nextBlocks = updateBlock(nextBlocks, operation.blockId, (block) => {
+        const style = block.data?.style || {};
+
+        return {
+          ...block,
+          data: {
+            ...block.data,
+            style: {
+              ...style,
+              [operation.device]: {
+                ...(style[operation.device] || {}),
+                ...operation.stylePatch
+              }
+            }
+          }
+        };
+      });
+      break;
+  }
+
+  assertTreeInvariants(nextBlocks);
+
+  return {
+    ...page,
+    blocks: nextBlocks
+  };
 };

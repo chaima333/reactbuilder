@@ -52,7 +52,7 @@ export const EditorLayout: React.FC<Props> = ({
           flex: 1, 
           display: "flex", 
           flexDirection: "column",
-          overflow: "hidden",
+          overflow: "visible",
           bgcolor: "#f8f9fa", 
           position: "relative"
         }}>

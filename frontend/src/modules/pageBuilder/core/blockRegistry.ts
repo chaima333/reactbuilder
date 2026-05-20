@@ -17,6 +17,14 @@ import {
   flexItemDefinition
 } from "../components/blocks/layout/flexItem";
 
+import {
+  gridDefinition
+} from "../components/blocks/layout/grid";
+
+import {
+  gridItemDefinition
+} from "../components/blocks/layout/gridItem";
+
 // =========================
 // PRIMITIVES
 // =========================
@@ -67,6 +75,12 @@ Record<string, BlockConfig> = {
   flexItem:
     flexItemDefinition,
 
+  grid:
+    gridDefinition,
+
+  gridItem:
+    gridItemDefinition,
+
   // =====================
   // PRIMITIVES
   // =====================
@@ -89,9 +103,10 @@ Record<string, BlockConfig> = {
 
   hero:
     heroDefinition,
-    cta: ctaDefinition,
 
+  cta:
+    ctaDefinition,
 
-    features:
-  featuresDefinition,
+  features:
+    featuresDefinition
 };

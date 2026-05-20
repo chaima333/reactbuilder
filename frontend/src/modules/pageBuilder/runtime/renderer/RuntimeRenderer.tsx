@@ -52,14 +52,10 @@ export const RuntimeRenderer = ({
       }
     >;
 
-  // ✅ Pure Runtime Rendering
-  // No overlays
-  // No editor chrome
-  // No hover logic
-
   return (
 
     <Component
+     block={block}
       data={block.data}
       device={device}
     >

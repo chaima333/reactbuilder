@@ -1,105 +1,48 @@
-// src/modules/pageBuilder/components/blocks/layout/flexItem/FlexItemBlock.tsx
-
 import React from "react";
-
-import { useResolvedStyle }
-from "../../../../core/theme/useResolvedStyle";
-
-import type {
-  BlockComponentProps
-} from "../../../../runtime/renderer/EditorBlockRenderer";
-
-type Device =
-  | "desktop"
-  | "tablet"
-  | "mobile";
+import { useDroppable } from "@dnd-kit/core";
 
 export const FlexItemBlock = ({
   block,
   children,
   device = "desktop"
-}: BlockComponentProps) => {
+}: any) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: block?.id,
+    data: { type: "flexItem", blockId: block?.id }
+  });
 
-  const resolved =
-    useResolvedStyle(
-      block?.data?.style || {},
-      device as Device
-    );
+  const getWidth = () => {
+    if (device === "mobile") return "100%";
+    if (device === "tablet") return "calc(50% - 12px)";
+    return "calc(25% - 18px)";
+  };
 
-  const itemStyle:
-    React.CSSProperties = {
-
-    // =========================
-    // 👑 AUTHORITATIVE WIDTH ENGINE
-    // =========================
-
-    width:
-      device === "mobile"
-        ? "100%"
-        : device === "tablet"
-        ? "calc(50% - 24px)"
-        : "calc(25% - 24px)",
-
-    flexShrink: 0,
-
-    flexGrow: 0,
-
-    // =========================
-    // STRUCTURE
-    // =========================
-
+  const itemStyle: React.CSSProperties = {
     display: "flex",
-
     flexDirection: "column",
-
-    gap:
-      resolved.gap || "16px",
-
-    // =========================
-    // VISUAL TOKENS
-    // =========================
-
-    backgroundColor:
-      resolved.backgroundColor,
-
-    color:
-      resolved.color,
-
-    borderRadius:
-      resolved.borderRadius || "16px",
-
-    paddingTop:
-      resolved.paddingTop,
-
-    paddingBottom:
-      resolved.paddingBottom,
-
-    paddingLeft:
-      resolved.paddingLeft,
-
-    paddingRight:
-      resolved.paddingRight,
-
-    // =========================
-    // SAFETY
-    // =========================
-
-    overflow: "hidden",
-
+    flex: `0 0 ${getWidth()}`,
+    maxWidth: getWidth(),
+    minHeight: "120px",
     boxSizing: "border-box",
-
-    minWidth: 0
+    backgroundColor: "#fff",
+    border: isOver ? "2px solid #3b82f6" : "1px solid #e5e7eb",
+    borderRadius: "12px",
+    padding: "16px",
+    overflow: "visible",
+    pointerEvents: "auto",
+    position: "relative"
   };
 
   return (
-
     <div
-      className="runtime-flex-item"
+      ref={setNodeRef}
+      data-droppable-container="true"
+      data-block-type="flexItem"
+      id={`pb-runtime-${block?.id}`}
       style={itemStyle}
+      className="pb-flex-item"
     >
-
       {children}
-
     </div>
   );
 };

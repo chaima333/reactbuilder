@@ -1,0 +1,65 @@
+import { BlockType } from "../../types/page.types";
+import {
+  canAcceptChild,
+  getWrapperRule
+} from "../schema/canonicalSchema";
+
+export interface DropResolution {
+  allowed: boolean;
+  position: "before" | "after" | "inside";
+  index: number;
+  autoWrap?: boolean;
+  wrapperType?: "gridItem" | "flexItem";
+}
+
+interface ResolveDropParams {
+  draggedType: BlockType;
+  targetType: BlockType;
+  calculatedPosition: "before" | "after" | "inside";
+  calculatedIndex: number;
+  targetChildrenCount: number;
+}
+
+const denied = (
+  calculatedPosition: ResolveDropParams["calculatedPosition"],
+  calculatedIndex: number
+): DropResolution => ({
+  allowed: false,
+  position: calculatedPosition,
+  index: calculatedIndex
+});
+
+const inside = (
+  index: number,
+  extra: Partial<DropResolution> = {}
+): DropResolution => ({
+  allowed: true,
+  position: "inside",
+  index,
+  ...extra
+});
+
+export const resolveDropBehavior = ({
+  draggedType,
+  targetType,
+  calculatedPosition,
+  calculatedIndex,
+  targetChildrenCount
+}: ResolveDropParams): DropResolution => {
+  const defaultIndex = targetChildrenCount;
+
+  if (canAcceptChild(targetType, draggedType)) {
+    return inside(defaultIndex);
+  }
+
+  const wrapperRule = getWrapperRule(targetType, draggedType);
+
+  if (wrapperRule) {
+    return inside(defaultIndex, {
+      autoWrap: true,
+      wrapperType: wrapperRule.wrapper as "gridItem" | "flexItem"
+    });
+  }
+
+  return denied(calculatedPosition, calculatedIndex);
+};
