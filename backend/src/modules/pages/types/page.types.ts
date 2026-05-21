@@ -1,10 +1,29 @@
 import { Page } from "../../../models/page";
 
 export type PageStatus = "draft" | "published" | "scheduled" | "deleted";
+
 export interface PageBlock {
+
+  id: string;
+
   type: string;
-  content: string;
+
+  data?: {
+
+    props?: Record<
+      string,
+      any
+    >;
+
+    style?: Record<
+      string,
+      any
+    >;
+  };
+
+  children?: PageBlock[];
 }
+
 export interface PageCreateInput {
   title: string;
   content?: string;
