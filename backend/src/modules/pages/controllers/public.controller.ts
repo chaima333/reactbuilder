@@ -49,6 +49,11 @@ const allBlocks = [
   ...page.blocks
 ];
 
+console.log(
+  "🔥 ALL BLOCKS",
+  allBlocks
+);
+
 const blocksHTML =
   renderBlocks(
     allBlocks
