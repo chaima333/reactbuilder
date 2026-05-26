@@ -4,6 +4,7 @@ import { Page } from "../../../models/page";
 import { emitDomainEvent, getSemanticDiff } from "../domain/diff";
 import { normalizePage } from "../../../core/plugins/events/contracts/unified.contract";
 import { ActivityService } from "../../dashboard/services/activity.service";
+import { Site } from "../../../models/site";
 
 export const updatePageHandler = async (command: any) => {
   try {
@@ -32,11 +33,60 @@ export const updatePageHandler = async (command: any) => {
     const allowedFields = ["title", "content", "blocks", "slug", "status"];
     const safePayload: any = {};
 
+    const blocks =
+  payload?.blocks || [];
+
+const navbar =
+  blocks.find(
+    (b: any) =>
+      b.type === "navbar"
+  );
+
+const filteredBlocks =
+  blocks.filter(
+    (b: any) =>
+      b.type !== "navbar"
+  );
+
+
     for (const field of allowedFields) {
       if (payload[field] !== undefined) {
-        safePayload[field] = payload[field];
+        if (
+  field === "blocks"
+) {
+
+  safePayload.blocks =
+    filteredBlocks;
+
+} else {
+
+  safePayload[field] =
+    payload[field];
+}
       }
     }
+    if (navbar) {
+
+  const site =
+    await Site.findByPk(
+      context.siteId
+    );
+
+  if (site) {
+
+    await site.update({
+
+      globalLayout: {
+
+        ...(site.get(
+          "globalLayout"
+        ) || {}),
+
+        navbar
+      }
+    });
+  }
+}
 
     // 💾 update DB
     await page.update(safePayload);

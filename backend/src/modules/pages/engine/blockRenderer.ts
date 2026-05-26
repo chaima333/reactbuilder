@@ -53,15 +53,56 @@ const renderSectionBlock = (data: any, childrenHTML: string) => `
     ${childrenHTML}
   </section>`;
 
-const renderFlexBlock = (data: any, childrenHTML: string) => `
-  <div class="pb-flex" style="display:flex; gap:24px; padding:20px; width:100%; flex-wrap:wrap;">
-    ${childrenHTML}
-  </div>`;
+const renderFlexBlock = (
+  data: any,
+  childrenHTML: string
+) => {
 
-const renderFlexItemBlock = (data: any, childrenHTML: string) => `
-  <div class="pb-flex-item" style="flex:1; min-width:200px;">
-    ${childrenHTML}
-  </div>`;
+  const style =
+    data.style?.desktop || {};
+
+  return `
+    <div
+      class="pb-flex"
+      style="
+        display:flex;
+        flex-direction:${style.flexDirection || "row"};
+        justify-content:${style.justifyContent || "flex-start"};
+        align-items:${style.alignItems || "stretch"};
+        gap:${style.gap || "0px"};
+        flex-wrap:${style.flexWrap || "nowrap"};
+        width:100%;
+        box-sizing:border-box;
+      "
+    >
+      ${childrenHTML}
+    </div>`;
+};
+
+  
+
+const renderFlexItemBlock = (
+  data: any,
+  childrenHTML: string
+) => {
+
+  const style =
+    data.style?.desktop || {};
+
+  return `
+    <div
+      class="pb-flex-item"
+      style="
+        flex-grow:${style.flexGrow ?? 0};
+        flex-shrink:${style.flexShrink ?? 1};
+        flex-basis:${style.flexBasis || "auto"};
+        min-width:${style.minWidth || "auto"};
+        display:contents;
+      "
+    >
+      ${childrenHTML}
+    </div>`;
+};
 
 const renderGridBlock = (data: any, childrenHTML: string) => `
   <div class="pb-grid-container" style="display:grid; gap:24px; width:100%; grid-template-columns: repeat(${data.props?.columns || 4}, 1fr);">

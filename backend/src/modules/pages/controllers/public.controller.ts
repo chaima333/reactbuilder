@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { RedirectGraphEngine } from "../engine/redirectGraph.engine";
 import { SEOBuilder } from "../engine/seoBuilder";
 import { renderBlocks, renderFullPage } from "../engine/blockRenderer";
+import { Site } from "../../../models/site";
 
 export const getPublicPage = async (req: Request, res: Response) => {
   try {
@@ -27,7 +28,31 @@ export const getPublicPage = async (req: Request, res: Response) => {
 
     res.set("Cache-Control", "public, max-age=60");
     
-    const blocksHTML = renderBlocks(page.blocks);
+    const site =
+  await Site.findByPk(
+    siteId
+  );
+
+const globalLayout =
+  site?.get(
+    "globalLayout"
+  ) || {};
+
+const allBlocks = [
+
+  ...(globalLayout.navbar
+    ? [
+        globalLayout.navbar
+      ]
+    : []),
+
+  ...page.blocks
+];
+
+const blocksHTML =
+  renderBlocks(
+    allBlocks
+  );
     const html = renderFullPage(page, seo, canonical, blocksHTML);
 
     return res.status(200).send(html);

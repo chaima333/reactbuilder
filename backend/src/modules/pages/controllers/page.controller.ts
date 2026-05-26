@@ -11,8 +11,6 @@ export const handleEventDispatch = async (result: any, source: string) => {
 
   if (!eventPayload?.shouldEmit) return;
 
-  // الميثاق الموحد: يجب أن يكون الـ Object المرسل للـ Dispatcher 
-  // يحتوي على type, data, context, meta مباشرة في السطح
   const envelope = {
     type: eventPayload.type,
     data: eventPayload.data || eventPayload.payload, // دعم التسميتين مؤقتاً
@@ -22,7 +20,6 @@ export const handleEventDispatch = async (result: any, source: string) => {
       timestamp: Date.now()
     }
   };
-// ✅ الصحيح: فكك المحتويات حسب ما يطلبه الـ Dispatcher
 await EventDispatcher.dispatch(
   envelope.type, // 1. اسم الحدث (مثلاً "page.updated") -> هذا هو الـ String المطلوب
   envelope,      // 2. المحتوى كامل (الـ Object)

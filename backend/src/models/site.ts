@@ -89,6 +89,12 @@ export class Site extends Model {
   })
   settings!: any;
 
+  @Column({
+  type: DataType.JSONB,
+  defaultValue: {}
+})
+globalLayout!: any;
+
   @CreatedAt
   @Column({
     type: DataType.DATE,

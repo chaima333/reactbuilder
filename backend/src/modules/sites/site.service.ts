@@ -2,14 +2,23 @@ import { sequelize } from "../../core/database/connection"; // ثبت في ال�
 import { Site, SiteMember } from "../../models";
 
 export class SiteService {
-  // CREATE مع Transaction
   static async createSite(userId: number, siteData: any) {
     const t = await sequelize.transaction();
     try {
       const site = await Site.create({
-        ...siteData,
-        status: 'active'
-      }, { transaction: t });
+
+  ...siteData,
+
+  status: "active",
+
+  globalLayout: {
+
+    navbar: null,
+
+    footer: null
+  }
+}
+      , { transaction: t });
 
       await SiteMember.create({
         userId,
