@@ -38,6 +38,10 @@ const globalLayout =
     "globalLayout"
   ) || {};
 
+console.log(
+  "🔥 GLOBAL LAYOUT",
+  globalLayout
+);
 const allBlocks = [
 
   ...(globalLayout.navbar
