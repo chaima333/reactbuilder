@@ -64,14 +64,34 @@ const findNavbar = (
 
 const navbar =
   findNavbar(blocks);
-  
+
+const removeNavbar = (
+  items: any[]
+): any[] => {
+
+  return items
+    .filter(
+      (item) =>
+        item.type !== "navbar"
+    )
+    .map((item) => ({
+
+      ...item,
+
+      children:
+        item.children
+
+          ? removeNavbar(
+              item.children
+            )
+
+          : []
+    }));
+};
+
 const filteredBlocks =
-  blocks.filter(
-    (b: any) =>
-      b.type !== "navbar"
-  );
 
-
+  removeNavbar(blocks);
     for (const field of allowedFields) {
       if (payload[field] !== undefined) {
         if (
