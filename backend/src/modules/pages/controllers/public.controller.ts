@@ -102,12 +102,25 @@ export const getPublicPageJSON = async (
             "Page not found"
         });
     }
-    const { page } =
-      result;
-    return res.json({
-      success:true,
-      data: page
-    });
+   const { page } =
+  result;
+
+const site =
+  await Site.findByPk(
+    page.siteId
+  );
+
+return res.json({
+
+  success: true,
+
+  data: {
+
+    ...page.toJSON(),
+
+    site
+  }
+});
   } catch (error:any) {
     console.error(
     "[PUBLIC_PAGE_JSON_ERROR]:",
