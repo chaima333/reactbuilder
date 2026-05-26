@@ -109,7 +109,11 @@ const site =
   await Site.findByPk(
     page.siteId
   );
-
+  
+console.log(
+  "🔥 JSON API SITE",
+  site
+);
 return res.json({
 
   success: true,
