@@ -11,7 +11,6 @@ export const updatePageHandler = async (command: any) => {
     const payload = command?.payload;
     const context = command?.context;
 
-    // 🧱 HARD GUARDS
     if (!payload?.pageId) {
       return { success: false, error: "missing pageId" };
     }
@@ -20,28 +19,52 @@ export const updatePageHandler = async (command: any) => {
       return { success: false, error: "invalid context" };
     }
 
-    // 🔍 fetch page
     const page = await Page.findByPk(payload.pageId);
     if (!page) {
       return { success: false, error: "page not found" };
     }
 
-    // 🧠 normalize old state
     const oldPage = normalizePage(page);
 
-    // 🔒 allow only safe fields
     const allowedFields = ["title", "content", "blocks", "slug", "status"];
     const safePayload: any = {};
 
     const blocks =
   payload?.blocks || [];
 
-const navbar =
-  blocks.find(
-    (b: any) =>
-      b.type === "navbar"
-  );
+const findNavbar = (
+  items: any[]
+): any => {
 
+  for (const item of items) {
+
+    if (
+      item.type === "navbar"
+    ) {
+      return item;
+    }
+
+    if (
+      item.children?.length
+    ) {
+
+      const nested =
+        findNavbar(
+          item.children
+        );
+
+      if (nested) {
+        return nested;
+      }
+    }
+  }
+
+  return null;
+};
+
+const navbar =
+  findNavbar(blocks);
+  
 const filteredBlocks =
   blocks.filter(
     (b: any) =>
@@ -88,14 +111,11 @@ const filteredBlocks =
   }
 }
 
-    // 💾 update DB
     await page.update(safePayload);
 
-    // 🔄 reload updated state
     const updated = await page.reload();
     const current = normalizePage(updated);
 
-    // 🧠 detect meaningful changes
     const changes = getSemanticDiff(oldPage, current);
 
     if (!changes.length) {
