@@ -89,9 +89,10 @@ export class Site extends Model {
   })
   settings!: any;
 
-  @Column({
+ @Column({
   type: DataType.JSONB,
-  defaultValue: {}
+  defaultValue: {},
+  field: "global_layout"
 })
 globalLayout!: any;
 
