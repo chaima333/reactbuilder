@@ -6,6 +6,7 @@ import { Site } from "../../../models/site";
 
 export const getPublicPage = async (req: Request, res: Response) => {
   try {
+    
     const siteId = Number(req.params.siteId);
     const inputSlug = req.params.slug;
 
@@ -28,9 +29,9 @@ export const getPublicPage = async (req: Request, res: Response) => {
 
     res.set("Cache-Control", "public, max-age=60");
     
-    const site =
+   const site =
   await Site.findByPk(
-    siteId
+    page.siteId
   );
 
 const globalLayout =
