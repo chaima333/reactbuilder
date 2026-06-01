@@ -97,25 +97,71 @@ const renderFlexItemBlock = (
         flex-shrink:${style.flexShrink ?? 1};
         flex-basis:${style.flexBasis || "auto"};
         min-width:${style.minWidth || "auto"};
-        display:contents;
+        display:block;
+        width:100%;
       "
     >
       ${childrenHTML}
     </div>`;
 };
 
-const renderGridBlock = (data: any, childrenHTML: string) => `
-  <div class="pb-grid-container" style="display:grid; gap:24px; width:100%; grid-template-columns: repeat(${data.props?.columns || 4}, 1fr);">
+const renderGridBlock = (
+  data: any,
+  childrenHTML: string
+) => `
+  <div
+    class="pb-grid-container"
+
+    style="
+      display:grid;
+      gap:${data.style?.desktop?.gap || "24px"};
+      width:100%;
+
+      grid-template-columns:
+
+      ${
+
+        data.style?.desktop
+          ?.gridTemplateColumns
+
+        ||
+
+        `repeat(${
+          data.style?.desktop
+            ?.columns || 4
+        }, 1fr)`
+      };
+    "
+  >
     ${childrenHTML}
   </div>`;
+  
 
 const renderGridItemBlock = (data: any, childrenHTML: string) => `
   <div class="pb-grid-item" style="padding:20px; border:1px solid #eee; border-radius:8px;">
     ${childrenHTML}
   </div>`;
 
-const renderTitleBlock = (data: any) => `<h2>${escapeHTML(data.props?.text || "Title")}</h2>`;
-const renderTextBlock = (data: any) => `<p>${escapeHTML(data.props?.text || "Text")}</p>`;
+const renderTitleBlock = (data: any) => `
+  <h2>
+    ${escapeHTML(
+      data.props?.content ||
+      data.props?.text ||
+      "Title"
+    )}
+  </h2>
+`;
+
+const renderTextBlock = (data: any) => `
+  <p>
+    ${escapeHTML(
+      data.props?.content ||
+      data.props?.text ||
+      "Text"
+    )}
+  </p>
+`;
+
 const renderImageBlock = (data: any) => `<img src="${data.props?.src || ''}" alt="Image" style="width:100%; max-width:100%;" />`;
 
 /**
