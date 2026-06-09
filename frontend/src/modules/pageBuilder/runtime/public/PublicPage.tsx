@@ -13,13 +13,7 @@ import {
   useGetPublicPageQuery
 } from "../../../../redux/services/pages.api";
 
-import {
-  RenderTree
-} from "../../runtime/renderer/RenderTree";
-
-import {
-  RuntimeProvider
-} from "../context/RuntimeProvider";
+import { PublicPageRuntime } from "./PublicPageRuntime";
 
 export const PublicPage = () => {
 
@@ -66,16 +60,11 @@ export const PublicPage = () => {
     );
   }
 
-  return (
-    <RuntimeProvider
-      value={{
-        mode: "public",
-        device: "desktop"
-      }}
-    >
-      <RenderTree
-        blocks={data.blocks || []}
-      />
-    </RuntimeProvider>
-  );
+return (
+
+  <PublicPageRuntime
+    page={data}
+  />
+
+);
 };

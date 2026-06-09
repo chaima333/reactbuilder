@@ -150,15 +150,24 @@ export const EditorBlockRenderer = ({
   const indicatorColor =
     isAllowed
       ? "#1976d2"
-      : "#f44336";
+      : "#f59e0b";
 
   // =========================
   // RECURSION
   // =========================
 
   const recursiveChildren =
-    block.children?.map(
-      (child) => (
+
+  (block.children || []).map(
+    (child: any) => {
+      console.log(
+        "RENDERER CHILD",
+        child.type,
+        child.id?.slice(0, 8),
+        child.children?.length
+      );
+
+      return (
 
         <EditorBlockRenderer
           key={child.id}
@@ -185,41 +194,61 @@ export const EditorBlockRenderer = ({
           errors={errors}
         />
       )
+    }
     );
 
   // =========================
   // RENDER
   // =========================
- return (
-  
-<Box
-  ref={setDragRef}
-  id={`editor-${block.id}`}
-  component="div"
-  className="editor-wrapper"
-  
+return (
 
-  sx={{
-    pointerEvents: "auto",
-    position: "relative",
-    display: "block",
-    width: "100%",
+  <div
 
-    minWidth: 0,
+    onClick={(e) => {
 
-    maxWidth: "100%",
+      if (
+        isDragging
+      ) {
 
-   
-    overflow: "visible",
-    
-    boxSizing: "border-box",
+        return;
+      }
 
-    opacity:
-      isDragging
-        ? 0.3
-        : 1
-  }}
+      e.stopPropagation();
 
+      onSelect?.(
+        block.id
+      );
+    }}
+
+    id={`editor-${block.id}`}
+
+    className="editor-wrapper"
+
+    style={{
+
+      pointerEvents:
+        "auto",
+
+      position:
+        "relative",
+
+        display:
+  "contents",
+
+      minWidth:
+        0,
+
+      overflow:
+        "visible",
+
+      boxSizing:
+        "border-box",
+
+      opacity:
+        isDragging
+          ? 0.3
+          : 1
+    }}
   >
 
     {/* TOP INDICATOR */}
@@ -249,7 +278,7 @@ export const EditorBlockRenderer = ({
       <Box
         sx={{
           position: "absolute",
-          top: -36,
+          top: 8,
           right: 0,
           zIndex: 99999,
           display: "flex",
@@ -266,6 +295,7 @@ export const EditorBlockRenderer = ({
         <Box
           {...listeners}
           {...attributes}
+
           sx={{
             width: 32,
             height: 32,
@@ -283,8 +313,11 @@ export const EditorBlockRenderer = ({
 
         <Box
           onClick={() =>
-            onDuplicate?.(block.id)
+            onDuplicate?.(
+              block.id
+            )
           }
+
           sx={{
             width: 32,
             height: 32,
@@ -302,8 +335,11 @@ export const EditorBlockRenderer = ({
 
         <Box
           onClick={() =>
-            onDelete?.(block.id)
+            onDelete?.(
+              block.id
+            )
           }
+
           sx={{
             width: 32,
             height: 32,
@@ -350,6 +386,6 @@ export const EditorBlockRenderer = ({
       {recursiveChildren}
     </RuntimeRenderer>
 
-  </Box>
+  </div>
 );
 };

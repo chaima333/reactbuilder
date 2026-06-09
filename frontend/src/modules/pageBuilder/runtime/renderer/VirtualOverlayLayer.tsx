@@ -152,7 +152,7 @@ export const VirtualOverlayLayer = ({
       return null;
     }
 
-    // ❌ ROOT ممنوع
+    // ❌ ROOT 
     if (
       id === "ROOT" ||
       id === "canvas-root"

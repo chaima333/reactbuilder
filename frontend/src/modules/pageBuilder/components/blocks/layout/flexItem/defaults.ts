@@ -5,9 +5,9 @@ export const flexItemDefaults = {
   props: {},
   style: {
     desktop: {
-      flex: "1",           
-      padding: "20px",     
-      minHeight: "100px"   
+      flexGrow: "1",
+      flexShrink: "1",
+      flexBasis: "auto"
     }
   }
 } satisfies BlockConfig["defaultData"]; 

@@ -47,12 +47,17 @@ export const resolveDropBehavior = ({
   targetChildrenCount
 }: ResolveDropParams): DropResolution => {
   const defaultIndex = targetChildrenCount;
-
-  if (canAcceptChild(targetType, draggedType)) {
+  
+const effectiveDraggedType =
+  ["hero", "cta", "features"]
+    .includes(draggedType)
+      ? "section"
+      : draggedType;
+  if (canAcceptChild(targetType, effectiveDraggedType)) {
     return inside(defaultIndex);
   }
 
-  const wrapperRule = getWrapperRule(targetType, draggedType);
+  const wrapperRule = getWrapperRule(targetType, effectiveDraggedType);
 
   if (wrapperRule) {
     return inside(defaultIndex, {

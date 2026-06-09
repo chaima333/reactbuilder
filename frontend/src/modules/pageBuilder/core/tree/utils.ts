@@ -1,8 +1,6 @@
 import { Block } from "../../types/page.types";
 
-/**
- * 📦 Find block anywhere (مهمة جداً للـ Pipeline)
- */
+
 export const findBlockInTree = (
   blocks: Block[],
   blockId: string
@@ -85,17 +83,14 @@ export const insertBlockAt = (
     if (block.id === parentId) {
       const children = [...(block.children || [])];
       
-      // إذا كان العنصر موجوداً مسبقاً في الشجرة، نحذفه من مكانه القديم أولاً
-      // (عشان ما يتكررش أو يسبب تضارب)
+   
       const filteredChildren = children.filter(c => c.id !== newBlock.id);
       
-      // ندرج العنصر في المكان المطلوب
       filteredChildren.splice(index, 0, newBlock);
       
       return { ...block, children: filteredChildren };
     }
 
-    // 🌳 إذا لم نصل، نغوص في الأعماق
     if (block.children?.length) {
       return {
         ...block,

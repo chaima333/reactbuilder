@@ -14,7 +14,24 @@ export const flexDefinition: BlockConfig = {
   isContainer: true,
   rules: {
     allowedParents: ["section", "flexItem", "hero"],
-    allowedChildren: ["flexItem"] 
+    allowedChildren: [
+
+  "flexItem",
+
+  "title",
+  "text",
+  "image",
+  "button",
+  "link",
+
+  "input",
+  "select",
+  "textarea",
+
+  "flex",
+  "grid",
+  "gridItem"
+]
   },
   fields: flexFields,
   defaultData: flexDefaults

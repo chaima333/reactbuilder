@@ -37,7 +37,6 @@ import { downloadJsonFile, readJsonFile } from "../services/importExport";
 import { findBlockById } from "../core/tree/findBlockById";
 import { importHtmlDocument } from "../runtime/importers/html/importHtmlDocument";
 
-// دالة توليد معرفات عشوائية للـ Blocks المستوردة لضمان عمل الـ Canvas
 const generateUniqueId = () => Math.random().toString(36).substring(2, 9);
 const hydrateBlocks = (blocks: any[]): any[] => {
   return blocks.map(block => ({
@@ -146,11 +145,11 @@ export const PageEditor = ({ mode }: { mode: "create" | "edit" }) => {
     );
   }
 
-  const handleHtmlImportExecute = () => {
+  const handleHtmlImportExecute = async () => {
     if (!htmlCode.trim()) return;
 
     try {
-      const imported = importHtmlDocument(htmlCode);
+      const imported = await importHtmlDocument(htmlCode);
       
       if (imported && imported.blocks) {
         const hydrated = hydrateBlocks(
@@ -161,8 +160,37 @@ export const PageEditor = ({ mode }: { mode: "create" | "edit" }) => {
             children: block.children || []
           }))
         );
+console.log(
+  "🚨 IMPORTED BLOCKS",
+  imported.blocks.map((b: any) => ({
+    type: b.type,
+    semantic: b.meta?.semanticType
+  }))
+);
 
-        actions.setBlocks(hydrated as any);
+console.log(
+  "🚨 HYDRATED BLOCKS",
+  hydrated.map((b: any) => ({
+    type: b.type,
+    semantic: b.meta?.semanticType
+  }))
+);
+       actions.setBlocks(
+  hydrated as any
+);
+
+setTimeout(() => {
+  console.log(
+    "🚨 STORE BLOCKS",
+    editor.blocks?.map(
+      (b: any) => ({
+        type: b.type,
+        semantic:
+          b.meta?.semanticType
+      })
+    )
+  );
+}, 1000);
         setIsModalOpen(false);
         setHtmlCode("");
       }
@@ -172,7 +200,7 @@ export const PageEditor = ({ mode }: { mode: "create" | "edit" }) => {
   };
 
   return (
-    <RuntimeProvider value={{ mode: isPreview ? "preview" : "editor", device }}>
+    <RuntimeProvider value={{ mode: isPreview ? "preview" : "editor", device, tokens }}>
       <ThemeContext.Provider value={{ tokens, updateToken }}>
         <DndContext
           collisionDetection={customCollisionStrategy}
@@ -281,7 +309,7 @@ export const PageEditor = ({ mode }: { mode: "create" | "edit" }) => {
                 {!isPreview && errors.length > 0 && (
                   <ValidationPanel errors={errors} onSelectBlock={(blockId) => { setSelectedBlockId(blockId); setActiveTab(1); }} />
                 )}
-                <Box sx={{ flexGrow: 1, overflowY: "auto", bgcolor: "#f5f5f5" }}>
+                <Box sx={{ flexGrow: 1, overflowY: "auto", overflowX: "hidden", bgcolor: "#f5f5f5" }}>
                   <EditorCanvas
                     blocks={blocks} 
                     registry={registry} 

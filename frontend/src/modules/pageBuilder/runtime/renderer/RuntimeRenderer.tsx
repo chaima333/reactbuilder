@@ -35,15 +35,23 @@ export const RuntimeRenderer = ({
   children
 }: RuntimeRendererProps) => {
 
-  const config =
-    blockRegistry[
-      block.type
-    ];
 
-  if (!config) {
 
-    return null;
-  }
+const config =
+  blockRegistry[
+    block.type
+  ];
+
+ if (!config) {
+
+  console.error(
+    "❌ MISSING BLOCK CONFIG",
+    block.type,
+    block
+  );
+
+  return null;
+}
 
   const Component =
     config.component as React.ComponentType<
@@ -59,9 +67,7 @@ export const RuntimeRenderer = ({
       data={block.data}
       device={device}
     >
-
-      {children}
-
+    {children}
     </Component>
   );
 };

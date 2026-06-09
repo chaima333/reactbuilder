@@ -13,10 +13,8 @@ import {
 import {
   validateDocument
 } from "../validation/validateDocument";
+import { hydrateTree } from "../hydrate/hydrateTree";
 
-import {
-  hydrateTree
-} from "../normalize/NormalizeTree";
 
 export type DeserializePageResult = {
   document: PageDocument;

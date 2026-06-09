@@ -21,28 +21,77 @@ export type InvariantViolation = {
   message: string;
 };
 
+const primitiveBlockTypes: BlockType[] = [
+  "title",
+  "text",
+  "image",
+  "button",
+  "link",
+  "input",
+  "select",
+  "textarea"
+];
+
 export type InvariantReport = {
   valid: boolean;
   violations: InvariantViolation[];
   parentMap: Map<string, string>;
 };
 
-const isKnownType = (type: string): type is BlockType => {
+const isKnownType = (
+  type: string
+): type is BlockType => {
+
   return [
+
     "root",
+
+    // =====================
+    // LAYOUT
+    // =====================
+
     "section",
-    "text",
-    "image",
-    "button",
-    "navbar",
-    "title",
-    "cta",
-    "hero",
-    "features",
+
     "flex",
+
     "flexItem",
+
     "grid",
-    "gridItem"
+
+    "gridItem",
+
+    "navbar",
+
+    // =====================
+    // PRIMITIVES
+    // =====================
+
+    "title",
+
+    "text",
+
+    "image",
+
+    "button",
+
+    "link",
+
+    "input",
+
+    "select",
+
+    "textarea",
+
+    // =====================
+    // SEMANTIC
+    // =====================
+
+    "hero",
+
+    "cta",
+
+    "features"
+
   ].includes(type);
 };
 
@@ -51,6 +100,50 @@ const addViolation = (
   violation: InvariantViolation
 ) => {
   violations.push(violation);
+};
+
+const logEmptyTextBlocks = (
+  blocks: Block[],
+  path = "blocks",
+  parentType: BlockType = "root"
+) => {
+
+  blocks.forEach((block, index) => {
+
+    const blockPath =
+      `${path}[${index}]`;
+
+    if (
+      block.type === "text" &&
+      typeof block.data?.props?.content ===
+  "string" &&
+
+!block.data.props.content
+  .trim()
+    ) {
+
+      console.log(
+        "🚨 EMPTY TEXT BEFORE INVARIANTS",
+        {
+          id:
+            block.id,
+          type:
+            block.type,
+          content:
+            block.data?.props?.content,
+          path:
+            blockPath,
+          parentType
+        }
+      );
+    }
+
+    logEmptyTextBlocks(
+      block.children || [],
+      `${blockPath}.children`,
+      block.type
+    );
+  });
 };
 
 export const validateTreeInvariants = (
@@ -121,11 +214,44 @@ export const validateTreeInvariants = (
     }
 
     if (
+      parentType === "section" &&
+      primitiveBlockTypes.includes(block.type)
+    ) {
+      console.error(
+        "INVALID_BLOCK_TREE",
+        {
+          sectionId:
+            parentId,
+          sectionType:
+            parentType,
+          primitiveChildType:
+            block.type,
+          primitiveChildId:
+            block.id,
+          path
+        }
+      );
+
+      addViolation(violations, {
+        severity: "error",
+        code: "INVALID_NESTING",
+        blockId: block.id,
+        parentId,
+        path,
+        message:
+          `section cannot contain primitive ${block.type} directly. Wrap it in flex/grid -> flexItem/gridItem.`
+      });
+    }
+
+    if (
       (block.type === "gridItem" || block.type === "flexItem") &&
       !getWrapperRule(parentType, block.children?.[0]?.type as BlockType)
     ) {
       const legalParent =
-        block.type === "gridItem" ? parentType === "grid" : parentType === "flex";
+        block.type === "gridItem"
+          ? parentType === "grid"
+          : parentType === "flex" ||
+            parentType === "navbar";
 
       if (!legalParent) {
         addViolation(violations, {
@@ -173,9 +299,18 @@ export class InvariantViolationException extends Error {
 }
 
 export const assertTreeInvariants = (blocks: Block[]) => {
+  logEmptyTextBlocks(
+    blocks
+  );
+
   const report = validateTreeInvariants(blocks);
 
   if (!report.valid) {
+    console.log(
+      "🚨 TREE INVARIANT VIOLATIONS",
+      report.violations
+    );
+
     throw new InvariantViolationException(report.violations);
   }
 

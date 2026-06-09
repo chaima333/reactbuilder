@@ -1,9 +1,9 @@
 import type { Block } from "../../types/page.types";
 import type { PageDocument } from "../../types/document/serialized.types";
-import { hydrateTree } from "../normalize/NormalizeTree";
 import { serializePage } from "../serialization/serializePage";
 import { validateDocument } from "../validation/validateDocument";
 import { assertTreeInvariants } from "../validation/invariants";
+import { hydrateTree } from "../hydrate/hydrateTree";
 
 export type PublishingResult = {
   canonicalTree: Block[];

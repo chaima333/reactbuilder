@@ -3,14 +3,23 @@ import { BlockConfig } from "../../../../types/page.types";
 export const flexDefaults = {
   props: {},
   style: {
-    desktop: {
-      flexDirection: "row",         
-      gap: "20px",                
-      justifyContent: "flex-start",
-      alignItems: "stretch",       
-      flexWrap: "nowrap",
-      padding: "0px",
-      minHeight: "120px"
-    }
+  desktop: {
+
+  flexDirection: "row",
+
+  gap: "0px",
+
+  justifyContent: "flex-start",
+
+  alignItems: "stretch",
+
+  flexWrap: "nowrap",
+
+  width: "100%",
+
+  padding: "0px",
+
+  minHeight: "auto"
+}
   }
 } satisfies BlockConfig["defaultData"]; 

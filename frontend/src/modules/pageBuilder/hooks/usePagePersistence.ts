@@ -4,8 +4,9 @@ import {
   useCreatePageMutation
 } from "../../../redux/services/pages.api";
 
-import { fromUIToAPI }
-from "../adapters/pageAdapter";
+import {
+  fromUIToAPI
+} from "../adapters/pageAdapter";
 
 import {
   useNavigate
@@ -16,6 +17,7 @@ import {
 } from "../runtime/publishing/publishPipeline";
 
 export const usePagePersistence = ({
+
   sId,
 
   pId,
@@ -52,27 +54,56 @@ export const usePagePersistence = ({
   ] = useCreatePageMutation();
 
   // ========================
+  // GENERATED SLUG
+  // ========================
+
+  const generatedSlug =
+
+    pageTitle
+
+      ? pageTitle
+          .toLowerCase()
+          .trim()
+          .replaceAll(" ", "-")
+
+      : "untitled-page";
+
+  // ========================
   // SAVE
   // ========================
- const generatedSlug =
-
-  pageTitle
-
-    ? pageTitle
-        .toLowerCase()
-        .trim()
-        .replaceAll(" ", "-")
-
-    : "untitled-page";
-
 
   const save = async () => {
 
     try {
+
+      // 🔥 DEBUG
+      console.log(
+        "🔥 RAW BLOCKS",
+        blocks
+      );
+
       const publishingResult =
         publishCanonicalTree(
           blocks
         );
+
+      // 🔥 DEBUG
+      console.log(
+        "🔥 CANONICAL TREE",
+        publishingResult.canonicalTree
+      );
+
+      // 🔥 DEBUG
+      console.log(
+        "🔥 API BLOCKS JSON",
+        JSON.stringify(
+          fromUIToAPI(
+            publishingResult.canonicalTree
+          ),
+          null,
+          2
+        )
+      );
 
       // ====================
       // UPDATE EXISTING PAGE
@@ -85,7 +116,8 @@ export const usePagePersistence = ({
           title:
             pageTitle,
 
-          slug:generatedSlug,
+          slug:
+            generatedSlug,
 
           blocks:
             fromUIToAPI(
@@ -100,10 +132,13 @@ export const usePagePersistence = ({
             sId,
 
           pageId:
-            pId,
+            pId
 
         }).unwrap();
 
+        console.log(
+          "✅ PAGE UPDATED"
+        );
       }
 
       // ====================
@@ -112,47 +147,43 @@ export const usePagePersistence = ({
 
       else {
 
-  console.log(
-    "GENERATED SLUG:",
-    generatedSlug
-  );
+        const createdPage =
+          await createPage({
 
-  const createdPage =
+            siteId:
+              sId,
 
-    await createPage({
+            title:
+              pageTitle,
 
-      siteId:
-        sId,
+            slug:
+              generatedSlug,
 
-      title:
-        pageTitle,
+            blocks:
+              fromUIToAPI(
+                publishingResult
+                  .canonicalTree
+              ) as any,
 
-      slug:
-        generatedSlug,
+          }).unwrap();
 
-      blocks:
-        fromUIToAPI(
-          publishingResult
-            .canonicalTree
-        ) as any,
+        console.log(
+          "🔥 CREATED PAGE FULL",
+          createdPage
+        );
 
-    }).unwrap();
-
-  console.log(
-    "NEW PAGE:",
-    createdPage
-  );
-
-  navigate(
-
-`/sites/${sId}/pages/${createdPage.id}/edit`
-  );
-}
+        navigate(
+          `/sites/${sId}/pages/${
+            (createdPage as any)
+              ?.data?.id
+          }/edit`
+        );
+      }
 
     } catch (err) {
 
       console.error(
-        "Save Error:",
+        "❌ Save Error:",
         err
       );
     }
@@ -165,23 +196,36 @@ export const usePagePersistence = ({
   const publish = async () => {
 
     console.log(
-      "PUBLISH CLICKED"
+      "🔥 PUBLISH CLICKED"
     );
 
     if (!pId) {
 
       console.warn(
-        "NO PAGE ID"
+        "❌ NO PAGE ID"
       );
 
       return;
     }
 
     try {
+
+      // 🔥 DEBUG
+      console.log(
+        "🔥 RAW BLOCKS",
+        blocks
+      );
+
       const publishingResult =
         publishCanonicalTree(
           blocks
         );
+
+      // 🔥 DEBUG
+      console.log(
+        "🔥 CANONICAL TREE",
+        publishingResult.canonicalTree
+      );
 
       await updatePage({
 
@@ -219,13 +263,13 @@ export const usePagePersistence = ({
       }).unwrap();
 
       console.log(
-        "PAGE PUBLISHED"
+        "✅ PAGE PUBLISHED"
       );
 
     } catch (err) {
 
       console.error(
-        "Publish Error:",
+        "❌ Publish Error:",
         err
       );
     }

@@ -48,11 +48,18 @@ export type BlockType =
   | "title"
   | "cta"
   | "hero"
-  | "features"
   | "flex"
   | "flexItem"
   | "grid"
-  | "gridItem";
+  | "link"
+  | "features"
+| "valuesGrid"
+| "officeTable"
+| "featurePillars"
+| "gridItem"
+| "input"
+  | "select"
+  | "textarea";
 
 // ========================
 // Block Rules
@@ -72,15 +79,21 @@ export interface Block {
   type: BlockType;
   data: {
     props: Record<string, unknown>;
-    style: any; // تخليه any هوني خاطر الـ ResponsiveStyle باش يصيرلو merge في الـ runtime
+    style: any; 
   };
   children: Block[];
-  meta?: {
-    isLocked?: boolean;
-    isHidden?: boolean;
-    label?: string;
-    displayName?: string;
-  };
+
+
+meta?: BlockMeta & {
+
+  isLocked?: boolean;
+
+  isHidden?: boolean;
+
+  label?: string;
+
+  displayName?: string;
+};
 }
 
 // ========================
@@ -115,13 +128,14 @@ export interface BlockRendererProps<P = Record<string, any>> { // 🟢 دعم ا
 // ========================
 import type { FieldDefinition } from "./field.types";
 import type { ResponsiveStyle, StyleObject } from "./style.types";
+import { BlockMeta } from "./blockMeta.types";
 
 // 🟢 الـ Generic <P> هوني يخلّي كل Block يحدد الـ Type متع الـ Props الخاصة بيه حصراً
 export interface BlockConfig<P extends Record<string, unknown> = Record<string, unknown>> {
   type: BlockType;
   label: string;
   icon?: React.ReactNode;
-  category: "layout" | "content" | "semantic";
+  category: "layout" | "content" | "semantic" | "primitive";
   
   isContainer: boolean; 
   

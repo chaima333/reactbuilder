@@ -1,26 +1,15 @@
 import React from "react";
 
 import {
-  useParams,
-  Link
+  useParams
 } from "react-router-dom";
 
 import {
   Box,
   Container,
   CircularProgress,
-  AppBar,
-  Toolbar,
-  Typography,
   Alert
 } from "@mui/material";
-
-// =========================
-// THEME
-// =========================
-
-import { useTheme }
-from "../../core/theme/ThemeProvider";
 
 // =========================
 // API
@@ -62,12 +51,6 @@ export const PublicSite: React.FC = () => {
   );
 
   // =========================
-  // THEME
-  // =========================
-
-  const { tokens } = useTheme();
-
-  // =========================
   // LOADING
   // =========================
 
@@ -107,11 +90,9 @@ export const PublicSite: React.FC = () => {
   // HOMEPAGE
   // =========================
 
-  const homepage =
-    publishedPages.find(
-      (p: any) => p.isHomepage
-    );
-
+ const homepage =
+  publishedPages[0];
+  
   // =========================
   // RENDER
   // =========================
@@ -126,86 +107,15 @@ export const PublicSite: React.FC = () => {
     >
 
       {/* ===================== */}
-      {/* NAVBAR */}
-      {/* ===================== */}
-
-      <AppBar
-        position="sticky"
-        elevation={0}
-        sx={{
-          bgcolor: "white",
-          borderBottom: "1px solid #e2e8f0"
-        }}
-      >
-
-        <Toolbar
-          sx={{
-            minHeight: "72px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 4
-          }}
-        >
-
-          {/* LOGO */}
-
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 800,
-              color: tokens.colors.primary,
-              whiteSpace: "nowrap",
-              flexShrink: 0
-            }}
-          >
-            {siteData.name}
-          </Typography>
-
-          {/* NAVIGATION */}
-
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              flexWrap: "wrap",
-              justifyContent: "flex-end"
-            }}
-          >
-
-            {publishedPages.map((page: any) => (
-
-              <Link
-                key={page.id}
-                to={`/p/${siteId}/${page.slug}`}
-                style={{
-                  textDecoration: "none",
-                  color: "#111827",
-                  fontWeight: 600,
-                  fontSize: "15px"
-                }}
-              >
-                {page.title}
-              </Link>
-
-            ))}
-
-          </Box>
-
-        </Toolbar>
-
-      </AppBar>
-
-      {/* ===================== */}
       {/* HOMEPAGE RUNTIME */}
       {/* ===================== */}
 
       {homepage ? (
 
         <PublicPageRuntime
-          page={homepage}
-        />
+  page={homepage}
+  site={siteData}
+/>
 
       ) : (
 

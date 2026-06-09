@@ -2,14 +2,12 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 
-// API & Services
 import {
   useGetPageByIdQuery,
   useGetPageVersionsQuery,
   useRestorePageVersionMutation,
 } from "../../../redux/services/pages.api";
 
-// Core Utilities
 import { blockRegistry as staticRegistry } from "../core/blockRegistry";
 import { loadBlockRegistry } from "../core/loadBlockRegistry";
 import { Block, BlockType } from "../types/page.types";
@@ -22,10 +20,9 @@ import { fromAPIToUI } from "../adapters/pageAdapter";
 import { serializePage } from "../runtime/serialization/serializePage";
 import { deserializePage } from "../runtime/serialization/deserializePage";
 
-// Secondary Hooks
 import { usePagePersistence } from "./usePagePersistence";
 import { useVersionActions } from "./useVersionActions";
-import { hydrateTree } from "../runtime/normalize/NormalizeTree";
+import { hydrateTree } from "../runtime/hydrate/hydrateTree";
 
 export const usePageEditor = (mode: "create" | "edit") => {
   const { siteId, pageId } = useParams<{ siteId: string; pageId: string }>();
@@ -72,41 +69,83 @@ export const usePageEditor = (mode: "create" | "edit") => {
   // =========================
   // 3. VALIDATION (FIXED)
   // =========================
-// frontend/src/modules/pageBuilder/hooks/usePageEditor.ts
 
-// =========================
-// 3. VALIDATION (المحصّن بالكامل ضد الـ الكراش)
-// =========================
 const errors = useMemo(() => {
   const allErrors: any[] = [];
   
-  const validateTree = (tree: any) => {
-    // 🛡️ Guard صارم جداً: إذا موش Array أو فارغ، اخرج فوراً وما تعملش Loop
+  const validateTree = (
+    tree: any,
+    path = "blocks",
+    parentType = "root"
+  ) => {
+
     if (!tree || !Array.isArray(tree)) return; 
 
-    tree.forEach((block) => {
-      if (!block || typeof block !== 'object') return; // حماية ضد الـ null أو الأشكال الغريبة
+    tree.forEach((block, index) => {
+      if (!block || typeof block !== 'object') return; 
+
+      const blockPath =
+        `${path}[${index}]`;
 
       const config = registry[block.type as BlockType];
       if (config?.fields) {
         config.fields.forEach((field: any) => {
           if (field.validation?.required) {
-            // قرص حماية للـ Props
-            const value = block.data?.props?.[field.key] ?? block.props?.[field.key]; 
+
+
+            const props =
+              block.data?.props ??
+              block.props ??
+              {};
+
+            const value =
+              block.type === "text" &&
+              field.key === "content"
+                ? props.content ?? props.text
+                : props[field.key];
+
             if (value === undefined || value === null || value.toString().trim() === "") {
+              console.log(
+                "🚨 INVALID BLOCK",
+                block
+              );
+
+              console.log(
+                "🚨 INVALID PATH",
+                blockPath
+              );
+
+              console.log(
+                "🚨 INVALID PARENT TYPE",
+                parentType
+              );
+
+              console.log(
+                "🚨 INVALID TYPE",
+                block.type
+              );
+
+              console.log(
+                "🚨 INVALID CONTENT",
+                block.data?.props?.content
+              );
+
               allErrors.push({
                 blockId: block.id,
                 field: field.key,
-                message: `${config.label}: الحقل ${field.label} مطلوب`,
+                message: `${config.label} : le champ "${field.label}" est obligatoire`,
               });
             }
           }
         });
       }
       
-      // 🛡️ حماية الـ Children قبل الـ Recursion
       if (block.children && Array.isArray(block.children)) {
-        validateTree(block.children);
+        validateTree(
+          block.children,
+          `${blockPath}.children`,
+          block.type
+        );
       }
     });
   };
@@ -147,21 +186,17 @@ const errors = useMemo(() => {
   // =========================
   // 6. ACTIONS
   // =========================
- const actions = useMemo(
-
-
-() => ({
-addBlock: (
+ const actions = useMemo( () => ({
+      addBlock: (
   type: string, 
   targetId?: string, 
   position: string = "inside", 
   presetData?: any, 
-  insertIndex?: number // 👑 الإصلاح 1: فصل الـ Drop Metadata على الـ Component Payload
+  insertIndex?: number 
 ) => {
   let newBlock: any;
   let focusId: string;
 
-  // 1️⃣ السحر المعماري: تفكيك الـ Smart Auto-Wrap
   if (presetData && (presetData.initialChildrenType || presetData.presetChildren)) {
     const configParent = registry[type as BlockType];
     
@@ -185,7 +220,7 @@ addBlock: (
 
     newBlock = {
       id: uuidv4(),
-      type: type, // الـ Wrapper السيمانتيكي (gridItem أو flexItem)
+      type: type, 
       data: {
         props: structuredClone(configParent?.defaultData?.props || {}),
         style: structuredClone(configParent?.defaultData?.style || { desktop: {} }),
@@ -193,11 +228,9 @@ addBlock: (
       children: childBlocks
     };
 
-    // 👑 الإصلاح 3: الـ UX Focus الصح! الفوكس يمشى للولد (button مثلاً) موش للـ Wrapper الوهمي
     focusId = childBlocks?.[0]?.id || newBlock.id;
 
   } else {
-    // الإضافة العادية للمكوّنات البسيطة والـ Sections
     const config = registry[type as BlockType];
     newBlock = {
       id: uuidv4(),
@@ -212,15 +245,14 @@ addBlock: (
     focusId = newBlock.id;
   }
 
-  // 2️⃣ غرس الباقة كاملة في الـ State Tree مع الـ Normalization النظيف
   setBlocks((currentBlocks) => {
     
-    // 👑 ROOT AUTHORITY: الـ Canvas فارغ أو الضرب في الـ Root ديريكت
     if (
       !targetId ||
       targetId === "canvas-root" ||
       targetId === "canvas-drop-zone" ||
-      targetId === "ROOT"
+      targetId === "ROOT"||
+      targetId === "pb-runtime-root"
     ) {
       const updatedRoot = [...currentBlocks];
       const targetIndex = insertIndex !== undefined ? insertIndex : updatedRoot.length;
@@ -322,7 +354,40 @@ addBlock: (
   
   // 👑 الفوكس الذكي توا صار شغال 100%
   setSelectedBlockId(focusId);
-},
+      },
+   
+     addBlockTree: (
+  tree: Block,
+  targetId?: string,
+  position: string = "inside",
+  insertIndex?: number
+) => {
+
+  setBlocks((currentBlocks) => {
+
+    return insertBlock(
+
+      currentBlocks,
+
+      {
+        targetId:
+          targetId || "ROOT",
+
+        type:
+          position,
+
+        index:
+          insertIndex
+      },
+
+      tree
+    );
+  });
+
+  setSelectedBlockId(
+    tree.id
+  );
+      },
 
       updateBlock: (id: string, newData: any) => {
         setBlocks((prevBlocks) => {
@@ -364,7 +429,7 @@ addBlock: (
         setSelectedBlockId((current) => (current === id ? null : current));
       },
 
-duplicateBlock: (id: string) => {
+     duplicateBlock: (id: string) => {
         setBlocks((prevBlocks) => {
           if (!prevBlocks || !Array.isArray(prevBlocks)) return [];
           const duplicateRecursive = (tree: Block[]): Block[] => {
@@ -389,8 +454,8 @@ duplicateBlock: (id: string) => {
           return duplicateRecursive(structuredClone(prevBlocks));
         });
       },
-      moveBlock: (activeId: string, dropInfo: any) => {
-        setBlocks((current) => moveBlockInTree(current, activeId, dropInfo));
+     moveBlock: (activeId: string, dropInfo: any) => {
+      setBlocks((current) => moveBlockInTree(current, activeId, dropInfo));
       },
 
       importPageData: (jsonContent: string) => {
@@ -485,8 +550,8 @@ duplicateBlock: (id: string) => {
 
         const cleanedBlocks = sanitizeAndFixTree(rawBlocks);
         const canonicalBlocks = hydrateTree(cleanedBlocks);
-        
-        resetHistory(canonicalBlocks); 
+        setBlocks(canonicalBlocks);
+        resetHistory(canonicalBlocks);
         hasLoadedRef.current = true;
       }
     }

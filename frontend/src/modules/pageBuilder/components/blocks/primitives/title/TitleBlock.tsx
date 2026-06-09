@@ -1,38 +1,252 @@
-import { useResolvedStyle } from "../../../../core/theme/useResolvedStyle";
+import {
+  useEffect,
+  useRef
+} from "react";
 
-type Device = "desktop" | "tablet" | "mobile";
+import {
+  useResolvedStyle
+} from "../../../../core/theme/useResolvedStyle";
+
+type Device =
+  | "desktop"
+  | "tablet"
+  | "mobile";
+
+export const TitleBlock = ({
+  data,
+  device
+}: any) => {
+  const titleRef =
+    useRef<HTMLHeadingElement | null>(
+      null
+    );
 
 
-export const TitleBlock = ({ data, device }: any) => {
-  const rawStyle = data?.style?.[device || "desktop"] || {};
+  const resolvedStyle =
+    useResolvedStyle(
+      data?.style,
+      (
+        device ||
+        "desktop"
+      ) as Device
+    );
 
-  const theme = {
-    spacing: { xs: "8px", sm: "16px", md: "32px", lg: "48px", xl: "80px" },
-    typography: { bodyMD: "20px", bodyLG: "28px", displayLG: "42px", displayXL: "60px" }
+  const content =
+    data?.props?.content ||
+    "Title Text Content";
+
+  const segments =
+    Array.isArray(
+      data?.props?.segments
+    )
+      ? data.props.segments
+      : [];
+
+  const hasSegments =
+    segments.length > 0;
+
+  const hasMargin =
+    !!resolvedStyle.margin ||
+    !!resolvedStyle.marginTop ||
+    !!resolvedStyle.marginBottom ||
+    !!resolvedStyle.marginLeft ||
+    !!resolvedStyle.marginRight;
+
+  const finalStyle = {
+    ...resolvedStyle,
+
+    width:
+      resolvedStyle.width || "100%",
+
+    maxWidth:
+      resolvedStyle.maxWidth || "100%",
+
+    minWidth:
+      0,
+
+    margin:
+      hasMargin
+        ? resolvedStyle.margin
+        : 0,
+
+    marginTop:
+      resolvedStyle.margin
+        ? undefined
+        : resolvedStyle.marginTop,
+
+    marginBottom:
+      resolvedStyle.margin
+        ? undefined
+        : resolvedStyle.marginBottom,
+
+    marginLeft:
+      resolvedStyle.margin
+        ? undefined
+        : resolvedStyle.marginLeft,
+
+    marginRight:
+      resolvedStyle.margin
+        ? undefined
+        : resolvedStyle.marginRight,
+
+    overflowWrap:
+      "break-word",
+
+    wordBreak:
+      "break-word",
+
+    whiteSpace:
+      "normal",
+
+    boxSizing:
+      "border-box"
   };
 
-  const getSpacing = (val: string) => theme.spacing[val as keyof typeof theme.spacing] || val;
-  const getFontSize = (val: string) => theme.typography[val as keyof typeof theme.typography] || val;
+  console.log(
+    "RUNTIME TITLE STYLE TRACE",
+    {
+      content,
+      rawStyle:
+        data?.style,
+      resolvedStyle,
+      finalStyle
+    }
+  );
+
+  if (hasSegments) {
+    console.log(
+      "TITLE_SEGMENTS_RENDERED",
+      {
+        content,
+        segments
+      }
+    );
+  }
+
+  if (
+    String(
+      content
+    ).includes(
+      "Prêt à passer"
+    )
+  ) {
+    console.log(
+      "CTA_TITLE_RUNTIME",
+      {
+        content,
+        rawStyle:
+          data?.style,
+        resolvedStyle,
+        finalStyle,
+        resolvedWidth:
+          resolvedStyle.width,
+        resolvedMaxWidth:
+          resolvedStyle.maxWidth,
+        resolvedFontSize:
+          resolvedStyle.fontSize,
+        resolvedLineHeight:
+          resolvedStyle.lineHeight,
+        textAlign:
+          resolvedStyle.textAlign
+      }
+    );
+  }
+
+  useEffect(
+    () => {
+      console.log(
+        "TITLE_DOM_REPORT_EFFECT_START",
+        content
+      );
+
+      console.log(
+        "TITLE_DOM_REPORT_REF",
+        !!titleRef.current
+      );
+
+      if (
+        !String(
+          content
+        ).includes(
+          "Prêt à passer"
+        ) ||
+        !titleRef.current
+      ) {
+        return;
+      }
+
+      const element =
+        titleRef.current;
+
+      const computed =
+        window.getComputedStyle(
+          element
+        );
+
+      console.log(
+        "TITLE_DOM_REPORT",
+        {
+          content,
+          tagName:
+            element.tagName,
+          clientWidth:
+            element.clientWidth,
+          scrollWidth:
+            element.scrollWidth,
+          computedWidth:
+            computed.width,
+          computedMaxWidth:
+            computed.maxWidth,
+          computedDisplay:
+            computed.display,
+          computedWhiteSpace:
+            computed.whiteSpace,
+          computedWordBreak:
+            computed.wordBreak,
+          computedOverflowWrap:
+            computed.overflowWrap
+        }
+      );
+    },
+    [
+      content,
+      finalStyle
+    ]
+  );
 
   return (
-    <h1
-      style={{
-        display: "block",
-        width: "100%",
-        margin: 0,
-        padding: 0,
-        marginTop: getSpacing(rawStyle.marginTop),
-        marginBottom: getSpacing(rawStyle.marginBottom),
-        fontSize: getFontSize(rawStyle.fontSize),
-        textAlign: rawStyle.textAlign || "left",
-        color: rawStyle.color || "inherit",
-        fontWeight: rawStyle.fontWeight || "bold",
-        // 👑 منغلق للموس وقت الـ Drop
-        pointerEvents: "none", 
-        ...rawStyle,
-      }}
+    <h2
+      ref={titleRef}
+      style={finalStyle}
     >
-      {data?.props?.content || "Title Text Content"}
-    </h1>
+      {hasSegments
+        ? segments.map(
+            (
+              segment: any,
+              index: number
+            ) => (
+              <span
+                key={`${index}-${segment?.text || ""}`}
+                style={
+                  segment?.variant === "accent"
+                    ? {
+                        background:
+                          "linear-gradient(90deg, #0A84FF, #F77F00)",
+                        WebkitBackgroundClip:
+                          "text",
+                        backgroundClip:
+                          "text",
+                        WebkitTextFillColor:
+                          "transparent"
+                      }
+                    : undefined
+                }
+              >
+                {segment?.text || ""}
+              </span>
+            )
+          )
+        : content}
+    </h2>
   );
 };

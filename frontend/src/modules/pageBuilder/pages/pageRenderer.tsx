@@ -22,11 +22,14 @@ interface PageRendererProps {
   blocks: Block[];
 
   device: Device;
+
+  tokens?: any;
 }
 
 export const PageRenderer = ({
   blocks,
-  device
+  device,
+  tokens
 }: PageRendererProps) => {
 
   return (
@@ -35,7 +38,9 @@ export const PageRenderer = ({
 
     mode: "preview",
 
-    device
+    device,
+
+    tokens
   }}
 >
 

@@ -20,6 +20,17 @@ export const flexFields: BlockField[] = [
     responsive: true
   },
   {
+    key: "flexWrap",
+    label: "Wrap",
+    type: "select",
+    target: "style",
+    responsive: true,
+    options: [
+      { label: "No Wrap", value: "nowrap" },
+      { label: "Wrap", value: "wrap" }
+    ]
+  },
+  {
     key: "justifyContent",
     label: "Justify",
     type: "select",

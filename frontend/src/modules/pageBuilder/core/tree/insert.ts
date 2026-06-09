@@ -9,6 +9,40 @@ export const insertBlock = (
   drop: any,
   newBlock: Block
 ): Block[] => {
+  if (
+  drop.targetId === "ROOT"
+) {
+
+  if (
+    drop.type === "inside"
+  ) {
+
+    return [
+      ...blocks,
+      newBlock
+    ];
+  }
+
+  if (
+    drop.type === "before"
+  ) {
+
+    return [
+      newBlock,
+      ...blocks
+    ];
+  }
+
+  if (
+    drop.type === "after"
+  ) {
+
+    return [
+      ...blocks,
+      newBlock
+    ];
+  }
+}
   const result: Block[] = [];
 
   for (const block of blocks) {

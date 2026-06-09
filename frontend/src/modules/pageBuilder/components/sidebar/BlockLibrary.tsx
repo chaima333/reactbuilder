@@ -1,7 +1,28 @@
+// src/modules/pageBuilder/sidebar/BlockLibrary.tsx
+
 import React from "react";
-import { Box, Paper, Typography } from "@mui/material";
-import { useDraggable } from "@dnd-kit/core";
-import { blockRegistry } from "../../core/blockRegistry";
+
+import {
+  Box,
+  Paper,
+  Typography
+} from "@mui/material";
+
+import {
+  useDraggable
+} from "@dnd-kit/core";
+
+import {
+  blockRegistry
+} from "../../core/blockRegistry";
+
+import {
+  presetPalette
+} from "../../presets/presetPalette";
+
+// =========================
+// Draggable Item
+// =========================
 
 const DraggableBlockItem = ({
   type,
@@ -15,7 +36,11 @@ const DraggableBlockItem = ({
     listeners,
     setNodeRef
   } = useDraggable({
-    id: id || `sidebar-${type}`,
+
+  id:
+  id ||
+  `sidebar-${type}-${crypto.randomUUID()}`,
+
     data: {
       isNew: true,
       type,
@@ -23,36 +48,57 @@ const DraggableBlockItem = ({
     }
   });
 
-  if (!config) return null;
+  if (!config) {
+    return null;
+  }
 
   return (
+
     <Paper
       ref={setNodeRef}
+
       {...listeners}
+
       {...attributes}
+
       sx={{
+
         p: 1.5,
+
         mb: 1,
+
         display: "flex",
+
         alignItems: "center",
+
         gap: 1.5,
+
         cursor: "grab",
+
         "&:hover": {
           bgcolor: "action.hover"
         }
       }}
     >
+
       {config.icon}
 
       <Typography
         variant="body2"
-        sx={{ fontWeight: 500 }}
+        sx={{
+          fontWeight: 500
+        }}
       >
         {config.label}
       </Typography>
+
     </Paper>
   );
 };
+
+// =========================
+// Sidebar
+// =========================
 
 export const BlockLibrary = () => {
 
@@ -60,7 +106,10 @@ export const BlockLibrary = () => {
 
     <Box sx={{ p: 2 }}>
 
-      {/* Structures */}
+      {/* =====================
+          STRUCTURES
+      ===================== */}
+
       <Typography
         variant="overline"
         sx={{
@@ -77,9 +126,12 @@ export const BlockLibrary = () => {
 
         <DraggableBlockItem
           id="preset-2-cols"
+
           type="flex"
+
           config={{
             label: "2 Columns (50/50)",
+
             icon:
               blockRegistry.flex?.icon
           }}
@@ -87,10 +139,15 @@ export const BlockLibrary = () => {
           presetData={{
 
             style: {
+
               desktop: {
+
                 display: "flex",
+
                 flexDirection: "row",
+
                 gap: "20px",
+
                 width: "100%"
               }
             },
@@ -130,14 +187,16 @@ export const BlockLibrary = () => {
                   }
                 }
               }
-
             ]
           }}
         />
 
       </Box>
 
-      {/* Components */}
+      {/* =====================
+          COMPONENTS
+      ===================== */}
+
       <Typography
         variant="overline"
         sx={{
@@ -157,6 +216,10 @@ export const BlockLibrary = () => {
           gap: 0.5
         }}
       >
+
+        {/* =====================
+            LAYOUT
+        ===================== */}
 
         <DraggableBlockItem
           type="section"
@@ -190,6 +253,10 @@ export const BlockLibrary = () => {
           }}
         />
 
+        {/* =====================
+            PRIMITIVES
+        ===================== */}
+
         <DraggableBlockItem
           type="title"
           config={blockRegistry.title}
@@ -217,20 +284,24 @@ export const BlockLibrary = () => {
           }}
         />
 
-        <DraggableBlockItem
-          type="hero"
-          config={blockRegistry.hero}
-        />
+        {/* =====================
+            PRESETS
+        ===================== */}
+        
 
-        <DraggableBlockItem
-          type="cta"
-          config={blockRegistry.cta}
-        />
+        {presetPalette.map((preset) => (
 
-        <DraggableBlockItem
-          type="features"
-          config={blockRegistry.features}
-        />
+          <DraggableBlockItem
+            key={preset.type}
+
+            type={preset.type}
+
+            config={{
+              label: preset.label,
+              icon: preset.icon
+            }}
+          />
+        ))}
 
       </Box>
 

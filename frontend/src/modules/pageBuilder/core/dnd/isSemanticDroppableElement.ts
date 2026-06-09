@@ -1,6 +1,8 @@
+
+
 import type { BlockType } from "../../types/page.types";
 
-export const semanticDroppableTypes: BlockType[] = [
+export const semanticDroppableTypes = [
   "root",
   "section",
   "flex",
@@ -12,21 +14,41 @@ export const semanticDroppableTypes: BlockType[] = [
 export const isSemanticDroppableElement = (
   element: Element
 ): element is HTMLElement => {
+
   if (!(element instanceof HTMLElement)) {
     return false;
   }
 
+  const droppable =
+    element.dataset.droppableContainer;
+
   const blockType =
-    element.dataset.blockType as BlockType | undefined;
+    element.dataset.blockType;
+
+  const blockId =
+    element.dataset.blockId;
+
+  console.log(
+    "SEMANTIC DATA",
+    {
+      id: element.id,
+      droppable,
+      blockType,
+      blockId
+    }
+  );
 
   return (
-    element.dataset.droppableContainer === "true" &&
-    element.id.startsWith("pb-runtime-") &&
+    droppable === "true" &&
     !!blockType &&
-    semanticDroppableTypes.includes(blockType)
+    !!blockId &&
+    semanticDroppableTypes.includes(
+      blockType
+    )
   );
 };
 
 export const getSemanticDroppableId = (
   element: HTMLElement
-) => element.id.replace("pb-runtime-", "");
+) =>
+  element.dataset.blockId || "";

@@ -1,4 +1,3 @@
-// src/modules/pageBuilder/components/editor/inspector/controls/primitive/SelectControl.tsx
 import React from "react";
 
 import {

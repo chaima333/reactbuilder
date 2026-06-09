@@ -18,7 +18,6 @@ export const DocumentProvider = ({ children, initialData }: { children: React.Re
   const [pageData, setPageData] = useState<PageData>(initialData);
   const [history, setHistory] = useState<{ past: Operation[]; future: Operation[] }>({ past: [], future: [] });
 
-  // البوابة الرسمية والمحمية لتنفيذ العمليات داخل الـ Editor
   const executeOperation = (opWithoutMeta: OperationDraft) => {
     const fullOperation: Operation = {
       ...opWithoutMeta,
@@ -26,7 +25,6 @@ export const DocumentProvider = ({ children, initialData }: { children: React.Re
       timestamp: Date.now(),
     } as Operation;
 
-    // تمرير الحركة عبر الـ dispatchOperation الـ Pure اللي بنيناها
     const nextState = dispatchOperation(pageData, fullOperation);
     
     setPageData(nextState);
@@ -36,14 +34,12 @@ export const DocumentProvider = ({ children, initialData }: { children: React.Re
     }));
   };
 
-  // الـ Undo يعيد تشغيل الحركات من الـ التاريخ (History Replay)
   const undo = () => {
     if (history.past.length === 0) return;
 
     const previousOperations = [...history.past];
     const poppedOp = previousOperations.pop()!;
 
-    // العودة للـ Initial State الصافية وإعادة تشغيل الحركات ناقص آخر وحدة
     let baseState = { ...initialData, blocks: JSON.parse(JSON.stringify(initialData.blocks)) };
     previousOperations.forEach((op) => {
       baseState = dispatchOperation(baseState, op);
@@ -78,7 +74,6 @@ export const DocumentProvider = ({ children, initialData }: { children: React.Re
   );
 };
 
-// الـ Hook الخاص بالـ Editor والعمليات حصراً
 export const useDocument = () => {
   const context = useContext(DocumentContext);
   if (!context) {

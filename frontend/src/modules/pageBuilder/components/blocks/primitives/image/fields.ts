@@ -23,6 +23,18 @@ export const imageFields: FieldDefinition[] = [
     validation: { cssUnit: true }
   },
   {
+    key: "textAlign",
+    label: "Alignment",
+    type: "select",
+    target: "style",
+    responsive: true,
+    options: [
+      { label: "Start", value: "flex-start" },
+      { label: "Center", value: "center" },
+      { label: "End", value: "flex-end" }
+    ]
+  },
+  {
     key: "borderRadius",
     label: "Border Radius",
     type: "text",

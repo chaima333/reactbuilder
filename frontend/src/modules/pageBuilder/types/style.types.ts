@@ -107,9 +107,15 @@ export interface LayoutStyles {
 
   width?: RawCssSize;
 
+  minWidth?: RawCssSize;
+
   maxWidth?: RawCssSize;
 
+  height?: RawCssSize;
+
   minHeight?: RawCssSize;
+
+  maxHeight?: RawCssSize;
 
   flexWrap?: FlexWrap;
 }
@@ -171,13 +177,19 @@ export interface VisualStyles {
     | RawCssSize;
 
   border?: string;
-  borderColor?: ColorToken | RawColorValue;
+
+  borderColor?:
+    | ColorToken
+    | RawColorValue;
 
   opacity?:
     | number
     | string;
-  
+
   objectFit?: ObjectFit;
+
+  // 👇 ZID HETHI
+  cursor?: string;
 }
 
 // ========================

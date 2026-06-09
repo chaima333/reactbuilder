@@ -23,18 +23,27 @@ const primitives: BlockType[] = [
   "title",
   "text",
   "image",
-  "button"
+  "button",
+  "link",
+   "input",
+  "select",
+  "textarea"
 ];
 
 const semanticBlocks: BlockType[] = [
   "hero",
   "cta",
-  "features"
+  "features",
+  "navbar",
+  "valuesGrid",
+  "officeTable",
+  "featurePillars"
 ];
 
 const containers: BlockType[] = [
   "section",
   "flex",
+  "navbar",
   "grid",
   "flexItem",
   "gridItem"
@@ -44,15 +53,19 @@ const allKnownTypes: BlockType[] = [
   "root",
   ...containers,
   ...primitives,
-  ...semanticBlocks,
-  "navbar"
+  ...semanticBlocks
 ];
 
 const rejectEverythingExcept = (
   accepted: BlockType[]
 ): BlockType[] =>
+
   allKnownTypes.filter(
-    (type) => type !== "root" && !accepted.includes(type)
+    (type) =>
+
+      type !== "root" &&
+
+      !accepted.includes(type)
   );
 
 const schema = (
@@ -61,11 +74,21 @@ const schema = (
   wrapperRules: WrapperRule[] = [],
   transformRules: TransformRule[] = []
 ): CanonicalBlockSchema => ({
+
   type,
+
   accepts,
-  rejects: rejectEverythingExcept(accepts),
-  allowedChildren: accepts,
+
+  rejects:
+    rejectEverythingExcept(
+      accepts
+    ),
+
+  allowedChildren:
+    accepts,
+
   wrapperRules,
+
   transformRules
 });
 
@@ -73,84 +96,263 @@ export const canonicalBlockSchemas: Record<
   BlockType,
   CanonicalBlockSchema
 > = {
-  root: schema("root", ["section", "navbar"]),
 
-  section: schema("section", [
+  // =====================================
+  // ROOT
+  // =====================================
+
+  root: schema(
+    "root",
+    [
+      "section",
+      "navbar"
+    ]
+  ),
+
+  // =====================================
+  // SECTION
+  // =====================================
+
+  section: schema(
+    "section",
+    [
+
+      "title",
+      "text",
+      "image",
+      "button",
+      "link",
+
+      "navbar",
+      "flex",
+      "grid",
+
+      "hero",
+      "cta",
+      "features",
+
+      "valuesGrid",
+      "officeTable",
+      "featurePillars"
+    ]
+  ),
+
+  // =====================================
+  // FLEX
+  // =====================================
+
+flex: schema(
+
+  "flex",
+
+  [
+
+    "flexItem",
+
     "title",
     "text",
     "image",
     "button",
+    "link",
+
+    "input",
+    "select",
+    "textarea",
+
     "flex",
     "grid",
-    "hero",
-    "cta",
-    "features"
-  ]),
+    "gridItem"
+  ],
 
-  flex: schema(
-    "flex",
+  []
+),
+
+  // =====================================
+  // NAVBAR
+  // =====================================
+
+  navbar: schema(
+
+    "navbar",
+
     ["flexItem"],
-    primitives.map((child) => ({
-      child,
-      wrapper: "flexItem"
-    }))
+
+    primitives.map(
+      (child) => ({
+
+        child,
+
+        wrapper:
+          "flexItem"
+      })
+    )
   ),
+
+  // =====================================
+  // GRID
+  // =====================================
 
   grid: schema(
+
     "grid",
+
     ["gridItem"],
-    primitives.map((child) => ({
-      child,
-      wrapper: "gridItem"
-    }))
+
+    primitives.map(
+      (child) => ({
+
+        child,
+
+        wrapper:
+          "gridItem"
+      })
+    )
   ),
 
-  flexItem: schema("flexItem", [
-    "title",
-    "text",
-    "image",
-    "button",
-    "hero",
-    "cta",
-    "features"
-  ]),
+  // =====================================
+  // FLEX ITEM
+  // =====================================
 
-  gridItem: schema("gridItem", [
-    "title",
-    "text",
-    "image",
-    "button",
-    "hero",
-    "cta",
-    "features"
-  ]),
+  flexItem: schema(
+    "flexItem",
+    [
 
-  title: schema("title", []),
-  text: schema("text", []),
-  image: schema("image", []),
-  button: schema("button", []),
-  navbar: schema("navbar", []),
-  hero: schema("hero", []),
-  cta: schema("cta", []),
-  features: schema("features", [])
+      "title",
+      "text",
+      "image",
+      "button",
+      "link",
+
+      "flex",
+      "grid",
+
+      "hero",
+      "cta",
+      "features",
+
+      "valuesGrid",
+      "officeTable",
+      "featurePillars"
+    ]
+  ),
+
+  // =====================================
+  // GRID ITEM
+  // =====================================
+
+  gridItem: schema(
+    "gridItem",
+    [
+
+      "title",
+      "text",
+      "image",
+      "button",
+      "link",
+
+      "flex",
+      "grid",
+
+      "hero",
+      "cta",
+      "features",
+
+      "valuesGrid",
+      "officeTable",
+      "featurePillars",
+
+      "input",
+"select",
+"textarea"
+    ]
+  ),
+
+  // =====================================
+  // PRIMITIVES
+  // =====================================
+
+  title:
+    schema("title", []),
+
+  text:
+    schema("text", []),
+
+  image:
+    schema("image", []),
+
+  button:
+    schema("button", []),
+
+  link:
+    schema("link", []),
+input:
+  schema("input", []),
+
+select:
+  schema("select", []),
+
+textarea:
+  schema("textarea", []),
+  // =====================================
+  // SEMANTIC
+  // =====================================
+
+  hero:
+    schema("hero", []),
+
+  cta:
+    schema("cta", []),
+
+  features:
+    schema("features", []),
+
+  valuesGrid:
+    schema("valuesGrid", []),
+
+  officeTable:
+    schema("officeTable", []),
+
+  featurePillars:
+    schema("featurePillars", [])
 };
 
 export const getCanonicalBlockSchema = (
   type: BlockType
-): CanonicalBlockSchema => canonicalBlockSchemas[type];
+): CanonicalBlockSchema =>
+
+  canonicalBlockSchemas[type];
 
 export const canAcceptChild = (
   parentType: BlockType,
   childType: BlockType
 ) => {
-  return getCanonicalBlockSchema(parentType).accepts.includes(childType);
+
+  return getCanonicalBlockSchema(
+    parentType
+  )
+
+    .accepts
+
+    .includes(
+      childType
+    );
 };
 
 export const getWrapperRule = (
   parentType: BlockType,
   childType: BlockType
 ) => {
-  return getCanonicalBlockSchema(parentType).wrapperRules.find(
-    (rule) => rule.child === childType
-  );
+
+  return getCanonicalBlockSchema(
+    parentType
+  )
+
+    .wrapperRules
+
+    .find(
+      (rule) =>
+
+        rule.child ===
+        childType
+    );
 };

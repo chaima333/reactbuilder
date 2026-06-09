@@ -1,48 +1,216 @@
-import { normalizeBlock, type LegacyBlockInput } from "../../adapters/pageAdapter";
-import { blockRegistry } from "../../core/blockRegistry";
-import { Block } from "../../types/page.types";
+import type {
+  Block
+} from "../../types/page.types";
 
-const withIdentity = (block: LegacyBlockInput): LegacyBlockInput => ({
-  ...block,
-  id: block.id || crypto.randomUUID(),
-  children: (block.children || []).map(withIdentity)
+// =====================================================
+// PRIMITIVE LEAF BLOCKS
+// =====================================================
+
+const primitiveTypes = new Set([
+  "title",
+  "text",
+  "image",
+  "button"
+]);
+
+// =====================================================
+// EMPTY WRAPPER FACTORY
+// =====================================================
+
+const createEmptyWrapper = (
+  id: string,
+  type: "flexItem" | "gridItem",
+  child: Block
+): Block => ({
+
+  id,
+
+  type,
+
+  data: {
+
+    props: {},
+
+    style: {
+
+      desktop: {},
+
+      tablet: {},
+
+      mobile: {}
+    }
+  },
+
+  children: [child]
 });
 
-export const hydrateBlock = (input: LegacyBlockInput): Block => {
-  const block = normalizeBlock(withIdentity(input));
-  const config = blockRegistry[block.type];
+// =====================================================
+// NORMALIZE TREE
+// =====================================================
 
-  if (!config) {
-    return block;
+export const normalizeTree = (
+  blocks: Block[] = []
+): Block[] => {
+
+  if (!Array.isArray(blocks)) {
+
+    return [];
   }
 
-  return {
-    ...block,
-    data: {
-      props: {
-        ...(config.defaultData?.props || {}),
-        ...block.data.props
-      },
-      style: {
-        desktop: {
-          ...(config.defaultData?.style?.desktop || {}),
-          ...(block.data.style?.desktop || {})
-        },
-        tablet: {
-          ...(config.defaultData?.style?.tablet || {}),
-          ...(block.data.style?.tablet || {})
-        },
-        mobile: {
-          ...(config.defaultData?.style?.mobile || {}),
-          ...(block.data.style?.mobile || {})
-        }
-      }
-    },
-    children: hydrateTree(block.children)
-  };
+  return blocks.map(
+    normalizeBlock
+  );
 };
 
-export const hydrateTree = (blocks: LegacyBlockInput[] = []): Block[] => {
-  if (!Array.isArray(blocks)) return [];
-  return blocks.map(hydrateBlock);
+// =====================================================
+// NORMALIZE BLOCK
+// =====================================================
+
+const normalizeBlock = (
+  block: Block
+): Block => {
+
+ if (block.type === "gridItem") {
+  console.log(
+    "🔥 GRIDITEM STYLE",
+    block.id,
+    JSON.stringify(
+      block.data?.style,
+      null,
+      2
+    )
+  );
+}
+
+  // =====================================
+  // RECURSIVE NORMALIZATION
+  // =====================================
+
+  let children =
+
+    (block.children || [])
+      .map(normalizeBlock);
+
+  // =====================================
+  // FLEX → FLEX ITEMS ONLY
+  // =====================================
+
+  if (
+
+    block.type === "flex" ||
+
+    block.type === "navbar"
+  ) {
+
+    children =
+
+      children.map(
+        (child, index) => {
+
+          // =================================
+          // KEEP VALID CONTAINERS
+          // =================================
+
+          if (
+
+            child.type ===
+              "flexItem"
+
+            ||
+
+            !primitiveTypes.has(
+              child.type
+            )
+          ) {
+
+            return child;
+          }
+
+          // =================================
+          // WRAP PRIMITIVES ONLY
+          // =================================
+
+          return createEmptyWrapper(
+
+            `${block.id}-flex-item-${index}`,
+
+            "flexItem",
+
+            child
+          );
+        }
+      );
+  }
+
+  // =====================================
+  // GRID → GRID ITEMS ONLY
+  // =====================================
+
+  if (
+    block.type === "grid"
+  ) {
+
+    children =
+
+      children.map(
+        (child, index) => {
+
+          // =================================
+          // KEEP VALID CONTAINERS
+          // =================================
+
+          if (
+
+            child.type ===
+              "gridItem"
+
+            ||
+
+            !primitiveTypes.has(
+              child.type
+            )
+          ) {
+
+            return child;
+          }
+
+          // =================================
+          // WRAP PRIMITIVES ONLY
+          // =================================
+
+          return createEmptyWrapper(
+
+            `${block.id}-grid-item-${index}`,
+
+            "gridItem",
+
+            child
+          );
+        }
+      );
+  }
+
+  // =====================================
+  // PRIMITIVES ARE LEAFS
+  // =====================================
+
+  if (
+    primitiveTypes.has(
+      block.type
+    )
+  ) {
+
+    children = [];
+  }
+
+  // =====================================
+  // RETURN NORMALIZED BLOCK
+  // =====================================
+
+  return {
+
+    ...block,
+
+    children
+  };
 };

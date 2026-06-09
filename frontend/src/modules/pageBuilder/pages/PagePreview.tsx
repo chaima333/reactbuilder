@@ -13,14 +13,16 @@ import {
 export const PagePreview = () => {
 
   const {
-    blocks
+    blocks,
+    tokens
   } = usePageEditor("edit");
 
   return (
 <RuntimeProvider
   value={{
   mode: "preview",
-  device: "desktop"
+  device: "desktop",
+  tokens
 }}
 >
       <div className="public-view">

@@ -26,10 +26,6 @@ import {
 } from "../../utils/validators";
 
 import {
-  controlRegistry
-} from "./controlRegistry";
-
-import {
   groupFieldsByCategory
 } from "./utils/groupFieldsByCategory";
 

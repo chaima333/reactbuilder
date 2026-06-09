@@ -16,12 +16,10 @@ export const ButtonPrimitive = ({
   return (
     <Button
       variant="contained"
-      // نلغيو الـ href فقط في الـ Editor باش ما يخرجناش م الصفحة
       href={disabled ? undefined : href}
       disabled={disabled}
       sx={{
         textTransform: "none",
-        // نضمنوا إنو الـ Button ما يقتلش الـ Click باش توصل للـ Renderer
         pointerEvents: disabled ? "none" : "auto",
         ...style,
       }}

@@ -1,129 +1,97 @@
-import type { Device } from "../../types/page.types";
+import type {
+  Device,
+  ResponsiveStyle,
+  StyleObject
+} from "../../types/page.types";
 
-const LAYOUT_PROPS = [
+import {
+  resolveResponsiveStyle
+} from "../styles/resolveResponsiveStyle";
 
-  "display",
+import {
+  useRuntime
+} from "../../runtime/context/RuntimeProvider";
 
-  "gridTemplateColumns",
-  "gridTemplateRows",
-
-  "gridColumn",
-  "gridRow",
-
-  "flexDirection",
-  "flexWrap",
-  "justifyContent",
-  "alignItems",
-
-  "width",
-  "minWidth",
-  "maxWidth",
-
-  "height",
-  "minHeight",
-  "maxHeight",
-
-  "position",
-
-  "left",
-  "right",
-  "top",
-  "bottom",
-
-  "flex",
-  "flexBasis",
-  "flexGrow",
-  "flexShrink"
-
-];
+import {
+  resolveRuntimeDesignTokens
+} from "../../runtime/design/resolveRuntimeDesignTokens";
 
 export const useResolvedStyle = (
-  style: any,
-  device: Device
+  style: ResponsiveStyle | StyleObject,
+  device: Device,
+  defaults: StyleObject = {}
 ) => {
 
-  const desktop =
-    style?.desktop || {};
+  const runtime =
+    useRuntime();
 
-  const tablet =
-    style?.tablet || {};
+  // =====================================
+  // RESOLVE
+  // =====================================
 
-  const mobile =
-    style?.mobile || {};
+  const resolved =
 
-  // =========================
-  // DESKTOP
-  // =========================
+    resolveResponsiveStyle(
 
-  if (device === "desktop") {
+      style || {},
 
-    return desktop;
-  }
+      device,
 
-  // =========================
-  // TABLET
-  // =========================
+      defaults
+    );
 
-  if (device === "tablet") {
-
-    const result = {
-      ...desktop,
-      ...tablet
-    };
-
-    // 🚫 prevent layout leakage
-    for (const key of LAYOUT_PROPS) {
-
-      if (
-        tablet[key] === undefined
-      ) {
-
-        delete result[key];
-      }
+  console.log(
+    "USE_RESOLVED_STYLE_TRACE",
+    {
+      device,
+      rawStyle:
+        style || {},
+      defaults,
+      runtimeTokens:
+        runtime.tokens || {},
+      responsiveResolved:
+        resolved
     }
+  );
 
-    return result;
-  }
+    console.log(
+  "🚨 BEFORE TOKENS",
+  resolved
+);
 
-  // =========================
-  // MOBILE
-  // =========================
+  const tokenResolved =
 
-  const result = {
+    resolveRuntimeDesignTokens(
+      resolved,
+      runtime.tokens || {}
+    );
 
-    ...desktop,
-
-    ...tablet,
-
-    ...mobile
-  };
-
-  // 🚫 prevent desktop physics
-  for (const key of LAYOUT_PROPS) {
-
-    if (
-      mobile[key] === undefined
-    ) {
-
-      delete result[key];
+  console.log(
+    "USE_RESOLVED_STYLE_AFTER_TOKENS",
+    {
+      device,
+      responsiveResolved:
+        resolved,
+      tokenResolved
     }
-  }
+  );
+    console.log(
+  "🚨 AFTER TOKENS",
+  tokenResolved
+);
 
-  // ✅ mobile authority defaults
+  // =====================================
+  // DEBUG
+  // =====================================
 
-  if (
-    result.display === "flex"
-  ) {
+  console.log(
+    "🔥 RESOLVED STYLE OUTPUT",
+    tokenResolved
+  );
 
-    result.flexDirection =
-      result.flexDirection || "column";
+  // =====================================
+  // RETURN
+  // =====================================
 
-    result.width =
-      result.width || "100%";
-
-    result.minWidth =
-      result.minWidth || 0;
-  }
-
-  return result;
+  return tokenResolved;
 };

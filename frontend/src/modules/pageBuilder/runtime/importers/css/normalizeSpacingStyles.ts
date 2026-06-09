@@ -1,0 +1,34 @@
+export const normalizeSpacingStyles = (
+  styles: Record<string, any>
+) => {
+
+  const normalized = {
+    ...styles
+  };
+
+  // =====================
+  // PADDING SHORTHAND
+  // =====================
+
+  if (normalized.padding) {
+
+    delete normalized.paddingTop;
+    delete normalized.paddingBottom;
+    delete normalized.paddingLeft;
+    delete normalized.paddingRight;
+  }
+
+  // =====================
+  // MARGIN SHORTHAND
+  // =====================
+
+  if (normalized.margin) {
+
+    delete normalized.marginTop;
+    delete normalized.marginBottom;
+    delete normalized.marginLeft;
+    delete normalized.marginRight;
+  }
+
+  return normalized;
+};

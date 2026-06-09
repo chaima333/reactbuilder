@@ -1,6 +1,15 @@
-import React from "react";
-import { useResolvedStyle } from "../../../../core/theme/useResolvedStyle";
-import { useDroppable } from "@dnd-kit/core";
+import React, {
+  useEffect,
+  useRef
+} from "react";
+
+import {
+  useResolvedStyle
+} from "../../../../core/theme/useResolvedStyle";
+
+import {
+  useRuntimeNode
+} from "../../../../hooks/useRuntimeNode";
 
 type Device =
   | "desktop"
@@ -8,11 +17,46 @@ type Device =
   | "mobile";
 
 interface GridBlockProps {
+
   block?: any;
+
   data?: any;
+
   children?: React.ReactNode;
+
   device?: Device;
 }
+
+const findSemanticType = (
+  block: any
+): string | null => {
+  if (!block) {
+    return null;
+  }
+
+  const semanticType =
+    block?.meta?.semanticType ||
+    block?.data?.meta?.semanticType;
+
+  if (semanticType) {
+    return semanticType;
+  }
+
+  for (
+    const child of block.children || []
+  ) {
+    const childSemantic =
+      findSemanticType(
+        child
+      );
+
+    if (childSemantic) {
+      return childSemantic;
+    }
+  }
+
+  return null;
+};
 
 export const GridBlock = ({
   block,
@@ -21,8 +65,40 @@ export const GridBlock = ({
   device = "desktop"
 }: GridBlockProps) => {
 
+  const gridRef =
+    useRef<HTMLDivElement | null>(
+      null
+    );
+
+  // =====================================
+  // RUNTIME NODE
+  // =====================================
+
+  const runtime =
+    useRuntimeNode({
+
+      block,
+
+      type: "grid",
+
+      droppable: true
+    });
+
+  const {
+    isOver,
+    rootProps
+  } = runtime;
+
+  // =====================================
+  // SOURCE
+  // =====================================
+
   const source =
     data || block?.data;
+
+  // =====================================
+  // RESOLVED STYLE
+  // =====================================
 
   const resolved =
     useResolvedStyle(
@@ -30,134 +106,359 @@ export const GridBlock = ({
       device
     );
 
-  const {
-    setNodeRef,
-    isOver
-  } = useDroppable({
-    id:
-      block?.id ||
-      "grid-container",
 
-    data: {
-      type: "grid",
-      blockId: block?.id
-    }
-  });
+const templateColumns =
 
-  const columns =
-    device === "mobile"
-      ? 1
-      : device === "tablet"
-      ? 2
-      : source?.style?.desktop?.columns || 4;
-      
-   const hasChildren =
-  (block?.children?.length || 0) > 0;
+  device === "mobile"
+    ? (
+        source?.style?.mobile?.gridTemplateColumns ||
+        "1fr"
+      )
+    : device === "tablet"
+      ? (
+          source?.style?.tablet?.gridTemplateColumns ||
+          "repeat(2, minmax(0, 1fr))"
+        )
+    : resolved.gridTemplateColumns ||
 
-  const gridStyle: React.CSSProperties = {
+  (
+    "repeat(auto-fit, minmax(320px, 1fr))"
+  );
 
-    display: "grid",
 
-    pointerEvents: "auto",
-    overflow: "visible",
-    gridTemplateColumns:
-    device === "mobile"
-    ? "1fr"
-    : `repeat(${columns}, minmax(0, 1fr))`,
+  // =====================================
+  // CHILDREN
+  // =====================================
 
-    gridAutoRows:
-      "minmax(120px, auto)",
+  const hasChildren =
 
-    alignItems: "start",
+    (block?.children?.length || 0)
+    > 0;
+
+  useEffect(
+    () => {
+
+      if (
+        !gridRef.current
+      ) {
+
+        return;
+      }
+
+      const gridElement =
+        gridRef.current;
+
+      const pickComputed = (
+        element: Element
+      ) => {
+
+        const style =
+          window.getComputedStyle(
+            element
+          );
+
+        return {
+          tag:
+            element.tagName.toLowerCase(),
+          className:
+            element.getAttribute(
+              "class"
+            ),
+          id:
+            element.getAttribute(
+              "id"
+            ),
+          blockType:
+            element.getAttribute(
+              "data-block-type"
+            ),
+          display:
+            style.display,
+          width:
+            style.width,
+          minWidth:
+            style.minWidth,
+          maxWidth:
+            style.maxWidth,
+          height:
+            style.height,
+          gridColumn:
+            style.gridColumn,
+          flex:
+            style.flex,
+          overflow:
+            style.overflow
+        };
+      };
+
+      console.log(
+        "GRID DOM STRUCTURE",
+        {
+          grid:
+            {
+              ...pickComputed(
+                gridElement
+              ),
+              gridTemplateColumns:
+                window.getComputedStyle(
+                  gridElement
+                ).gridTemplateColumns
+            },
+          children:
+            Array.from(
+              gridElement.children
+            ).map(
+              child => ({
+                outer:
+                  pickComputed(
+                    child
+                  ),
+                inner:
+                  child.firstElementChild
+                    ? pickComputed(
+                        child.firstElementChild
+                      )
+                    : null
+              })
+            )
+        }
+      );
+    },
+    [
+      block?.children?.length,
+      templateColumns
+    ]
+  );
+
+  // =====================================
+  // GRID STYLE
+  // =====================================
+
+  const gridStyle:
+  React.CSSProperties = {
+
+    display:
+      "grid",
+
+    pointerEvents:
+      "auto",
+
+    overflow:
+      "visible",
+
+   gridTemplateColumns:
+  templateColumns,
+
+  
+
+      gridAutoRows:
+  "auto",
+
+    alignItems:
+      "start",
 
     gap:
       resolved.gap || "24px",
 
-    width: "100%",
+    width:
+      "100%",
 
-    minWidth: 0,
+    minWidth:
+      0,
 
-    minHeight: "180px",
+    minHeight:
+      hasChildren
+        ? undefined
+        : "180px",
 
-    padding: "20px",
+    padding:
+      resolved.padding,
 
-    boxSizing: "border-box",
+    paddingTop:
+      resolved.paddingTop,
 
-    position: "relative",
+    paddingRight:
+      resolved.paddingRight,
 
-    borderRadius: "14px",
+    paddingBottom:
+      resolved.paddingBottom,
+
+    paddingLeft:
+      resolved.paddingLeft,
+
+    boxSizing:
+      "border-box",
+
+    position:
+      "relative",
+
+    borderRadius:
+      "14px",
 
     border:
       isOver
+
         ? "2px solid #3b82f6"
-        : "1px dashed #d1d5db",
+
+        : "none",
 
     background:
       isOver
+
         ? "#eff6ff"
-        : "#fafafa",
+
+        : "transparent",
 
     boxShadow:
       isOver
+
         ? "0 0 0 4px rgba(59,130,246,0.08)"
-        : "0 1px 2px rgba(0,0,0,0.04)",
+
+        : "none",
 
     transition:
       "all 0.15s ease-in-out"
   };
 
-  return (
-    <div
-      ref={setNodeRef}
-      data-droppable-container="true"
-      data-block-type="grid"
-      id={
-        block?.id
-          ? `pb-runtime-${block.id}`
-          : undefined
+  if (
+    device === "mobile"
+  ) {
+    console.log(
+      "MOBILE_LAYOUT_REPORT",
+      {
+        blockType:
+          "grid",
+        id:
+          block?.id,
+        semanticTypeAncestor:
+          findSemanticType(
+            block
+          ),
+        childTypes:
+          (block?.children || []).map(
+            (child: any) => child.type
+          ),
+        rawStyle:
+          source?.style,
+        rawDesktop:
+          source?.style?.desktop,
+        rawMobile:
+          source?.style?.mobile,
+        resolvedStyle:
+          resolved,
+        finalStyle:
+          gridStyle
       }
+    );
+  }
+
+  if (
+    device === "tablet"
+  ) {
+    console.log(
+      "TABLET_LAYOUT_REPORT",
+      {
+        blockType:
+          "grid",
+        id:
+          block?.id,
+        semanticTypeAncestor:
+          findSemanticType(
+            block
+          ),
+        childTypes:
+          (block?.children || []).map(
+            (child: any) => child.type
+          ),
+        rawStyle:
+          source?.style,
+        rawDesktop:
+          source?.style?.desktop,
+        rawTablet:
+          source?.style?.tablet,
+        resolvedStyle:
+          resolved,
+        finalStyle:
+          gridStyle
+      }
+    );
+  }
+
+  // =====================================
+  // RENDER
+  // =====================================
+console.log(
+  "GRID CHILDREN JSX",
+  children
+);
+  return (
+
+    <div
+      {...rootProps}
+
+      ref={gridRef}
+
       style={gridStyle}
-      className="pb-grid-container"
     >
 
       {!hasChildren && (
+
         <div
           style={{
-            gridColumn: `span ${columns}`,
-             pointerEvents: "none",
-            minHeight: "100px",
+            gridColumn: "1 / -1",
 
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            pointerEvents:
+              "none",
 
-            borderRadius: "10px",
+            minHeight:
+              "100px",
+
+            display:
+              "flex",
+
+            alignItems:
+              "center",
+
+            justifyContent:
+              "center",
+
+            borderRadius:
+              "10px",
 
             background:
               isOver
+
                 ? "rgba(59,130,246,0.08)"
+
                 : "rgba(0,0,0,0.02)",
 
             color:
               isOver
+
                 ? "#2563eb"
+
                 : "#6b7280",
 
-            fontSize: "14px",
+            fontSize:
+              "14px",
 
-            fontWeight: 500,
+            fontWeight:
+              500,
 
             transition:
               "all 0.15s ease-in-out"
           }}
         >
+
           {isOver
-            ? "✨ Drop inside Grid Layout"
+            ? " Drop inside Grid Layout"
             : "Grid Layout"}
+
         </div>
       )}
 
       {children}
+
     </div>
   );
 };

@@ -2,7 +2,9 @@ import React from "react";
 
 import { Box } from "@mui/material";
 
-import { useResolvedStyle } from "../../../../core/theme/useResolvedStyle";
+import {
+  useResolvedStyle
+} from "../../../../core/theme/useResolvedStyle";
 
 interface SectionShellProps {
 
@@ -32,60 +34,166 @@ export const SectionShell = ({
       device
     );
 
+  const hasPaddingShorthand =
+    !!resolved.padding;
+
+  const hasMarginShorthand =
+    !!resolved.margin;
+
+  const outerStyle = {
+    width:
+      resolved.width || "100%",
+
+    minWidth: 0,
+
+    minHeight:
+      resolved.minHeight,
+
+    maxWidth:
+      "100%",
+
+    display:
+      resolved.display || "block",
+
+    flexDirection:
+      resolved.flexDirection,
+
+    justifyContent:
+      resolved.justifyContent,
+
+    alignItems:
+      resolved.alignItems,
+
+    gap:
+      resolved.gap,
+
+    textAlign:
+      resolved.textAlign,
+
+    background:
+      resolved.background,
+
+    backgroundColor:
+      resolved.background
+        ? undefined
+        : resolved.backgroundColor || "transparent",
+
+    padding:
+      resolved.padding,
+
+    paddingTop:
+      hasPaddingShorthand
+        ? undefined
+        : resolved.paddingTop || "80px",
+
+    paddingBottom:
+      hasPaddingShorthand
+        ? undefined
+        : resolved.paddingBottom || "80px",
+
+    paddingLeft:
+      hasPaddingShorthand
+        ? undefined
+        : resolved.paddingLeft || "24px",
+
+    paddingRight:
+      hasPaddingShorthand
+        ? undefined
+        : resolved.paddingRight || "24px",
+
+    margin:
+      resolved.margin,
+
+    marginTop:
+      hasMarginShorthand
+        ? undefined
+        : resolved.marginTop,
+
+    marginBottom:
+      hasMarginShorthand
+        ? undefined
+        : resolved.marginBottom,
+
+    marginLeft:
+      hasMarginShorthand
+        ? undefined
+        : resolved.marginLeft,
+
+    marginRight:
+      hasMarginShorthand
+        ? undefined
+        : resolved.marginRight,
+
+    boxSizing:
+      "border-box"
+  };
+
+  const innerStyle = {
+    width:
+      resolved.width || "100%",
+
+    minWidth:
+      0,
+
+    maxWidth:
+      resolved.maxWidth || "100%",
+
+    display:
+      resolved.display === "flex"
+        ? "flex"
+        : undefined,
+
+    flexDirection:
+      resolved.flexDirection,
+
+    justifyContent:
+      resolved.justifyContent,
+
+    alignItems:
+      resolved.alignItems,
+
+    gap:
+      resolved.gap,
+
+    textAlign:
+      resolved.textAlign,
+
+    marginLeft:
+      resolved.marginLeft || "auto",
+
+    marginRight:
+      resolved.marginRight || "auto",
+
+    boxSizing:
+      "border-box",
+
+    position:
+      "relative"
+  };
+
+  console.log(
+    "SECTION_SHELL_RUNTIME",
+    JSON.stringify(
+      {
+        inputStyle:
+          style,
+        resolved,
+        outerStyle,
+        innerStyle
+      },
+      null,
+      2
+    )
+  );
+
   return (
 
     <Box
-      sx={{
-
-        width: "100%",
-
-        minWidth: 0,
-
-        maxWidth: "100%",
-
-        display: "block",
-
-        backgroundColor:
-          resolved.backgroundColor || "transparent",
-
-        paddingTop:
-          resolved.paddingTop || "80px",
-
-        paddingBottom:
-          resolved.paddingBottom || "80px",
-
-        paddingLeft:
-          resolved.paddingLeft || "24px",
-
-        paddingRight:
-          resolved.paddingRight || "24px",
-
-        boxSizing: "border-box"
-      }}
+      sx={outerStyle}
     >
 
       <Box
-        sx={{
-
-          width: "100%",
-
-          minWidth: 0,
- 
-          maxWidth:
-          device === "mobile"
-          ? "100%"
-          : device === "tablet"
-          ? "100%"
-           : resolved.maxWidth || "1400px",
-
-          marginLeft: "auto",
-
-          marginRight: "auto",
-
-          boxSizing: "border-box",
-
-          display: "block"
-        }}
+        sx={innerStyle}
       >
 
         {children}

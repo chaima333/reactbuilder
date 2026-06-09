@@ -16,6 +16,8 @@ import { blockRegistry } from "../../core/blockRegistry";
 import { findBlockInTree } from "../../core/tree/utils";
 import { Block, BlockType } from "../../types/page.types";
 import { VIRTUAL_ROOT_ID } from "../../components/editor/EditorCanvas";
+import React from "react";
+import { presetRegistry } from "../../presets/presetRegistry";
 
 interface InsertionResult {
   position: "before" | "after" | "inside";
@@ -31,8 +33,11 @@ interface DropState {
 }
 
 interface UseDragAndDropProps {
+
   blocks: Block[];
+
   actions: {
+
     addBlock: (
       type: string,
       targetId?: string,
@@ -40,18 +45,28 @@ interface UseDragAndDropProps {
       presetData?: any,
       insertIndex?: number
     ) => void;
+
+    addBlockTree: (
+      tree: Block,
+      targetId?: string,
+      position?: string,
+      insertIndex?: number
+    ) => void;
+
     moveBlock: (
       blockId: string,
       location: {
         targetId?: string;
-        type: "before" | "after" | "inside";
+        position:
+          | "before"
+          | "after"
+          | "inside";
         index?: number;
         wrapperType?: string;
       }
     ) => void;
   };
 }
-
 const semanticPriority: BlockType[] = [
   "gridItem",
   "flexItem",
@@ -146,69 +161,48 @@ const getDraggedType = (
 const isPrimitiveBlock = (type: BlockType) =>
   ["button", "image", "text", "title"].includes(type);
 
-const getTopSemanticTarget = (
-  elements: Element[],
-  blocks: Block[]
-): HTMLElement | null => {
 
-  const semanticElements =
-    elements.filter(
-      isSemanticDroppableElement
-    );
 
-  let fallback:
-    HTMLElement | null =
-      null;
+const getTopSemanticTarget = ( elements: Element[]): HTMLElement | null => {
+const semanticElements = elements.filter((el) =>
+      isSemanticDroppableElement(el)
+    ) as HTMLElement[];
 
-  for (const element of semanticElements) {
+  console.log(
+    "SEMANTIC ELEMENTS",
+    semanticElements
+  );
 
-    const id =
-      getSemanticDroppableId(
-        element
-      );
+  if (!semanticElements.length) { return null; }
 
-    // 👑 VIRTUAL ROOT
-    if (
-      id ===
-      VIRTUAL_ROOT_ID
-    ) {
-      return element as HTMLElement;
-    }
-
-    const block =
-      findBlockInTree(
-        blocks,
-        id
-      );
-
-    if (!block) {
-      continue;
-    }
-
-    if (
-      block.type === "gridItem" ||
-      block.type === "flexItem"
-    ) {
-      return element as HTMLElement;
-    }
-
-    if (
-      !fallback &&
-      (
-        block.type === "section" ||
-        block.type === "flex" ||
-        block.type === "grid"
-      )
-    ) {
-
-      fallback =
-        element as HTMLElement;
-    }
-  }
-
-  return fallback;
+  return (
+    semanticElements.find(
+      (el) =>
+        el.dataset.blockType !==
+        "root"
+    ) || semanticElements[0]
+  );
 };
 
+const normalizeTree = (
+  node: any
+): any => {
+
+  return {
+
+    ...node,
+
+    id:
+      node.id ||
+      crypto.randomUUID(),
+
+    children:
+
+      (node.children || []).map(
+        normalizeTree
+      )
+  };
+};
 
 export const useDragAndDrop = ({
   blocks,
@@ -224,6 +218,7 @@ export const useDragAndDrop = ({
   const [ghost, setGhost] = useState<{ x: number; y: number } | null>(null);
 
   const currentResolutionRef = useRef<DropState | null>(null);
+  const lastValidResolutionRef = useRef<DropState | null>(null);
 
   useEffect(() => {
     if (!activeId) {
@@ -257,100 +252,371 @@ export const useDragAndDrop = ({
     setActiveId(event.active.id.toString());
     setActiveData(event.active.data.current);
   };
+  const [
+  debugElements,
+  setDebugElements
+] = React.useState<any[]>([]);
 
-  const handleDragOver = (event: DragOverEvent) => {
-    const { active, activatorEvent } = event;
+const [
+  pointerDebug,
+  setPointerDebug
+] = React.useState({
+  x: 0,
+  y: 0
+});
 
-    const draggedType = getDraggedType(active, blocks);
+const [
+  semanticDebug,
+  setSemanticDebug
+] = React.useState({
+  targetId: null as string | null,
 
-    if (!draggedType || !(activatorEvent instanceof MouseEvent)) {
-      resetHoverState();
-      return;
-    }
+  targetType: null as string | null,
 
-    const elements = document.elementsFromPoint(
-      activatorEvent.clientX,
-      activatorEvent.clientY
+  allowed: null as boolean | null
+});
+
+ const handleDragOver = (
+  event: DragOverEvent
+) => {
+
+  console.log("DRAG OVER");
+
+  const { active } = event;
+
+const draggedType =
+  getDraggedType(
+    active,
+    blocks
+  );
+
+console.log(
+  "DRAGGED TYPE",
+  draggedType
+);
+
+if (!draggedType) {
+
+  resetDragState();
+
+  return;
+}
+
+const effectiveDraggedType =
+  presetRegistry[
+    draggedType as keyof typeof presetRegistry
+  ]
+    ? "section"
+    : draggedType; 
+  // INVALID DRAG
+  // =========================
+
+  if (!draggedType) {
+
+    resetHoverState();
+
+    return;
+  }
+
+  // =========================
+  // POINTER EVENT
+  // =========================
+const translatedRect =
+  active.rect.current.translated;
+
+let pointerX = 0;
+let pointerY = 0;
+
+if (translatedRect) {
+
+  pointerX =
+    translatedRect.left +
+    translatedRect.width / 2;
+
+  pointerY =
+    translatedRect.top +
+    translatedRect.height / 2;
+
+} else {
+
+  const activatorEvent =
+    event.activatorEvent as MouseEvent;
+
+  pointerX =
+    activatorEvent.clientX;
+
+  pointerY =
+    activatorEvent.clientY;
+}
+
+const elements =
+  document.elementsFromPoint(
+    pointerX,
+    pointerY
+  );
+  
+
+  // 👑 debug raw DOM stack
+  setDebugElements(
+    elements.map((el) => ({
+      tag: el.tagName,
+
+      id:
+        (el as HTMLElement).id,
+
+      className:
+        (el as HTMLElement)
+          .className
+    }))
+  );
+
+  console.log(
+    "RAW ELEMENTS",
+    elements
+  );
+
+  // =========================
+  // SEMANTIC TARGET
+  // =========================
+
+  const semanticElement =
+    getTopSemanticTarget(
+      elements
     );
 
-    const semanticElement = getTopSemanticTarget(elements, blocks);
+  // 👑 semantic debug
+  setSemanticDebug({
+    targetId:
+      semanticElement
+        ?.dataset.blockId ||
+      null,
 
-    if (!semanticElement) {
-      resetHoverState();
-      return;
-    }
+    targetType:
+      semanticElement
+        ?.dataset.blockType ||
+      null,
 
-    const targetId =
-  getSemanticDroppableId(
+    allowed: null
+  });
+
+  console.log(
+    "SEMANTIC ELEMENT",
     semanticElement
   );
 
-// 👑 ROOT HANDLING
-if (targetId === VIRTUAL_ROOT_ID) {
+ if (!semanticElement) {
 
-  setOverId("ROOT");
+  if (
+    lastValidResolutionRef.current
+  ) {
 
-  setDropPosition("inside");
+    currentResolutionRef.current =
+      lastValidResolutionRef.current;
 
-  setIsAllowed(true);
-
-  currentResolutionRef.current = {
-
-    allowed: true,
-
-    position: "inside",
-
-    index: blocks.length,
-
-    targetId: VIRTUAL_ROOT_ID
-  };
-
-  return;
-}
-
-const targetBlock =
-  findBlockInTree(
-    blocks,
-    targetId
-  );
-
-if (!targetBlock) {
+    return;
+  }
 
   resetHoverState();
 
+  currentResolutionRef.current =
+    null;
+
   return;
 }
 
-    const insertionInfo = calculateInsertionIndex(event, targetBlock);
-    const resolution = resolveDropBehavior({
+  // =========================
+  // TARGET ID
+  // =========================
+
+  const targetId =
+    getSemanticDroppableId(
+      semanticElement
+    );
+
+  console.log({
+    semanticElement,
+    targetId
+  });
+
+  // =========================
+  // ROOT DROP
+  // =========================
+
+if (
+  targetId ===
+  VIRTUAL_ROOT_ID
+) {
+
+  const allowed =
+    effectiveDraggedType  ===
+    "section";
+
+  setOverId("ROOT");
+
+  setDropPosition(
+    "inside"
+  );
+
+  setIsAllowed(
+    allowed
+  );
+
+  // 👑 semantic debug
+  setSemanticDebug({
+    targetId:
+      VIRTUAL_ROOT_ID,
+
+    targetType:
+      "root",
+
+    allowed
+  });
+
+  currentResolutionRef.current =
+    {
+      allowed,
+
+      position:
+        "inside",
+
+      index:
+        blocks.length,
+
+      targetId:
+        VIRTUAL_ROOT_ID
+    };
+
+  return;
+}
+  // =========================
+  // TARGET BLOCK
+  // =========================
+
+  const targetBlock =
+    findBlockInTree(
+      blocks,
+      targetId
+    );
+
+  if (!targetBlock) {
+
+    resetHoverState();
+
+    currentResolutionRef.current =
+      null;
+
+    return;
+  }
+
+  // =========================
+  // INSERTION INFO
+  // =========================
+
+  const insertionInfo =
+    calculateInsertionIndex(
+      event,
+      targetBlock
+    );
+
+  // =========================
+  // RESOLVER
+  // =========================
+
+  const resolution =
+    resolveDropBehavior({
       draggedType,
-      targetType: targetBlock.type,
-      calculatedPosition: insertionInfo.position,
-      calculatedIndex: insertionInfo.index,
-      targetChildrenCount: targetBlock.children?.length || 0
+
+      targetType:
+        targetBlock.type,
+
+      calculatedPosition:
+        insertionInfo.position,
+
+      calculatedIndex:
+        insertionInfo.index,
+
+      targetChildrenCount:
+        targetBlock.children
+          ?.length || 0
     });
 
-    setOverId(targetBlock.id);
-    setDropPosition(resolution.position);
-    setIsAllowed(resolution.allowed);
+  console.log(
+    "RESOLUTION",
+    resolution
+  );
 
-    currentResolutionRef.current = {
-      ...resolution,
-      targetId: targetBlock.id
-    };
-  };
+  // 👑 semantic debug
+  setSemanticDebug({
+    targetId:
+      targetBlock.id,
+
+    targetType:
+      targetBlock.type,
+
+    allowed:
+      resolution.allowed
+  });
+
+  // =========================
+  // UI STATE
+  // =========================
+
+  setOverId(
+    targetBlock.id
+  );
+
+  setDropPosition(
+    resolution.position
+  );
+
+  setIsAllowed(
+    resolution.allowed
+  );
+
+  // =========================
+  // CURRENT RESOLUTION REF
+  // =========================
+
+ const finalResolution = {
+
+  ...resolution,
+
+  targetId:
+    targetBlock.id
+};
+
+currentResolutionRef.current =
+  finalResolution;
+
+lastValidResolutionRef.current =
+  finalResolution;
+
+};
 
   const handleDragEnd = (event: DragEndEvent) => {
+    console.log("DRAG END");
     const { active } = event;
-    const resolution = currentResolutionRef.current;
+    console.log(
+  "LAST VALID",
+  lastValidResolutionRef.current
+);
+  const resolution =
 
+  currentResolutionRef.current ||
+
+  lastValidResolutionRef.current;
+  
+    console.log("RESOLUTION", resolution);
+   
     if (!resolution || !resolution.allowed) {
       resetDragState();
       return;
     }
 
     const draggedType = getDraggedType(active, blocks);
-
+ 
+    console.log("DRAGGED TYPE", draggedType);
+   
     if (!draggedType) {
       resetDragState();
       return;
@@ -358,6 +624,10 @@ if (!targetBlock) {
 
   const isRootDrop =
   resolution.targetId === VIRTUAL_ROOT_ID;
+
+    console.log("IS ROOT DROP", isRootDrop);
+
+
 
 const targetBlock =
   isRootDrop
@@ -377,33 +647,30 @@ if (
   return;
 }
 const activePayload = active.data.current as
-  | {
-      type: BlockType;
-      isNew: boolean;
-    }
+  | {type: BlockType; isNew: boolean;}
   | undefined;
 
-const finalPosition =
-  resolution.position;
+const finalPosition = resolution.position;
+const finalIndex = resolution.index;
+const presetFactory =
+  presetRegistry[
+    draggedType as keyof typeof presetRegistry
+  ];
 
-const finalIndex =
-  resolution.index;
+let wrapperType = resolution.wrapperType;
 
-let wrapperType =
-  resolution.wrapperType;
-
-// 👑 ROOT DROP
 const finalTargetId =
   isRootDrop
-    ? undefined
+    ? "ROOT"
     : targetBlock!.id;
 
-
+ const isPresetDrop = !!presetFactory;
 // =========================
 // AUTO WRAP
 // =========================
 
 if (
+  !isPresetDrop &&
   !wrapperType &&
   !isRootDrop &&
   isPrimitiveBlock(
@@ -417,6 +684,7 @@ if (
 }
 
 if (
+  !isPresetDrop &&
   !wrapperType &&
   !isRootDrop &&
   isPrimitiveBlock(
@@ -429,7 +697,6 @@ if (
     "flexItem";
 }
 
-// wrappers ما يتغلفوش
 
 if (
   draggedType === "gridItem" ||
@@ -443,7 +710,10 @@ if (
 // =========================
 // MOVE EXISTING BLOCK
 // =========================
-
+console.log(
+  "ACTIVE PAYLOAD",
+  activePayload
+);
 if (
   activePayload?.isNew === false
 ) {
@@ -454,8 +724,8 @@ if (
       targetId:
         finalTargetId,
 
-      type:
-        finalPosition,
+      position:
+         finalPosition,
 
       index:
         finalIndex,
@@ -473,18 +743,61 @@ if (
 // INSERT NEW BLOCK
 // =========================
 
-if (wrapperType) {
 
-  const childConfig =
-    blockRegistry[
-      draggedType
-    ];
+if (presetFactory) {
+
+  console.log(
+  "PRESET FACTORY WORKS"
+);
+
+  const presetTree =
+    presetFactory();
+
+  let presetPosition =
+    finalPosition;
+
+  if (
+    targetBlock?.type === "section" &&
+    finalPosition === "inside"
+  ) {
+
+    presetPosition =
+      "after";
+  }
+
+
+
+const normalizedTree =
+  normalizeTree(
+    presetTree
+  );
+
+actions.addBlockTree(
+  normalizedTree,
+
+    finalTargetId,
+
+    presetPosition,
+
+    finalIndex
+  );
+
+  resetDragState();
+
+  return;
+}
+
+
+if (wrapperType) {
+const childConfig =  blockRegistry[  draggedType];
 console.log({
   draggedType,
   finalTargetId,
   finalPosition,
   finalIndex
 });
+
+
   actions.addBlock(
     wrapperType,
 
@@ -527,7 +840,18 @@ console.log({
     finalIndex
   );
 
+  
+
 } else {
+  console.log(
+  "ADDING BLOCK",
+  {
+    draggedType,
+    finalTargetId,
+    finalPosition,
+    finalIndex
+  }
+);
 
   actions.addBlock(
     draggedType,
@@ -553,6 +877,9 @@ resetDragState();}
     ghost,
     handleDragStart,
     handleDragOver,
-    handleDragEnd
+    handleDragEnd,
+    debugElements,
+    pointerDebug,
+    semanticDebug,
   };
 };

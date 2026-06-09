@@ -1,5 +1,14 @@
-import { BlockConfig }
-from "../types/page.types";
+import React from "react";
+
+import StarIcon from "@mui/icons-material/Star";
+
+import CampaignIcon from "@mui/icons-material/Campaign";
+
+import GridViewIcon from "@mui/icons-material/GridView";
+
+import {
+  BlockConfig
+} from "../types/page.types";
 
 // =========================
 // LAYOUT
@@ -25,6 +34,10 @@ import {
   gridItemDefinition
 } from "../components/blocks/layout/gridItem";
 
+import {
+  navbarDefinition
+} from "../components/blocks/layout/navbar";
+
 // =========================
 // PRIMITIVES
 // =========================
@@ -44,16 +57,47 @@ import {
 import {
   buttonDefinition
 } from "../components/blocks/primitives/button";
+import { linkDefinition } from "../components/blocks/primitives/link/definition";
+import { inputDefinition } from "../components/blocks/primitives/input/definition";
+import { selectDefinition } from "../components/blocks/primitives/select/definition";
+import { textareaDefinition } from "../components/blocks/primitives/textarea/definition";
 
 // =========================
-// SEMANTIC
+// TRANSITIONAL SEMANTIC
 // =========================
 
-import {
-  heroDefinition,
-  ctaDefinition,
-  featuresDefinition
-} from "../components/blocks/semantic/index";
+const emptySemanticDefinition =
+  (
+    type: any,
+    label: string,
+    icon: React.ReactNode
+  ): BlockConfig => ({
+
+    type,
+
+    label,
+
+    icon,
+
+    category: "semantic",
+
+    isContainer: false,
+
+    fields: [],
+
+    component: () => null,
+
+    defaultData: {
+
+      props: {},
+
+      style: {
+        desktop: {},
+        tablet: {},
+        mobile: {}
+      }
+    }
+  });
 
 // =========================
 // REGISTRY
@@ -81,6 +125,9 @@ Record<string, BlockConfig> = {
   gridItem:
     gridItemDefinition,
 
+  navbar:
+    navbarDefinition,
+
   // =====================
   // PRIMITIVES
   // =====================
@@ -97,16 +144,43 @@ Record<string, BlockConfig> = {
   button:
     buttonDefinition,
 
+    link:
+  linkDefinition,
+
+  input:
+  inputDefinition,
+
+select:
+  selectDefinition,
+
+textarea:
+  textareaDefinition,
+
   // =====================
-  // SEMANTIC
+  // SEMANTIC (TRANSITION)
   // =====================
 
-  hero:
-    heroDefinition,
+hero: emptySemanticDefinition(
+  "hero",
+  "Hero Section",
+  React.createElement(
+    StarIcon
+  )
+),
 
-  cta:
-    ctaDefinition,
+cta: emptySemanticDefinition(
+  "cta",
+  "CTA Section",
+  React.createElement(
+  CampaignIcon 
+  )
+),
 
-  features:
-    featuresDefinition
+features: emptySemanticDefinition(
+  "features",
+  "Features Section",
+  React.createElement(
+  GridViewIcon 
+  )
+)
 };

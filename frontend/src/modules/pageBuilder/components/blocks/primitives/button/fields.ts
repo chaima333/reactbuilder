@@ -22,5 +22,22 @@ export const buttonFields: FieldDefinition[] = [
       { label: "Contained", value: "contained" },
       { label: "Outlined", value: "outlined" }
     ]
+  },
+  {
+    key: "fontSize",
+    label: "Font Size",
+    type: "text",
+    target: "style",
+    responsive: true,
+    validation: {
+      cssUnit: true
+    }
+  },
+  {
+    key: "backgroundColor",
+    label: "Background Color",
+    type: "color",
+    target: "style",
+    responsive: true
   }
 ];

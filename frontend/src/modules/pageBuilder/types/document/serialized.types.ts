@@ -1,11 +1,15 @@
 export interface SerializedBlock {
+
   id: string;
 
   type: string;
 
-  props: Record<string, unknown>;
+  data: {
 
-  style?: unknown;
+    props: Record<string, unknown>;
+
+    style?: unknown;
+  };
 
   children: SerializedBlock[];
 }

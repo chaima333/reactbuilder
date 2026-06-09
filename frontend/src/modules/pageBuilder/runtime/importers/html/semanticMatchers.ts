@@ -1,43 +1,58 @@
 // frontend/src/modules/pageBuilder/runtime/importers/html/semanticMatchers.ts
+// LEGACY - OLD PIPELINE - NOT SOURCE OF TRUTH
 
 import { extractStyleProps } from "../css/extractStyleProps";
+
+import { createDeterministicId }
+from "./createDeterministicId";
 
 export const BLOCK_TYPES = {
   SECTION: "section",
   TITLE: "title",
   TEXT: "text",
   IMAGE: "image",
-  BUTTON: "button",
-  FEATURES_SECTION: "features"
+  BUTTON: "button"
 } as const;
 
 export interface SerializedBlock {
+
   id?: string;
+
   type: string;
+
   data: {
+
     props?: Record<string, any>;
+
     style?: Record<string, any>;
+
     [key: string]: any;
   };
+
   children?: SerializedBlock[];
 }
 
-const generateUniqueId = () =>
-  Math.random().toString(36).substring(2, 9);
-
 export const semanticMatchers: any[] = [
+
   {
-    name: "features-section-matcher",
+
+    name:
+      "features-section-matcher",
 
     threshold: 6,
 
     requiredSignals: [
+
       "repeated-cards",
+
       "heading-inside-card",
+
       "paragraph-inside-card"
     ],
 
-    getScore: (element: HTMLElement): number => {
+    getScore: (
+      element: HTMLElement
+    ): number => {
 
       const cards =
         element.querySelectorAll(
@@ -48,8 +63,11 @@ export const semanticMatchers: any[] = [
         return 0;
       }
 
-      let hasHeading = false;
-      let hasParagraph = false;
+      let hasHeading =
+        false;
+
+      let hasParagraph =
+        false;
 
       cards.forEach(card => {
 
@@ -58,17 +76,25 @@ export const semanticMatchers: any[] = [
             "h3, h4, h5, h6"
           )
         ) {
-          hasHeading = true;
+
+          hasHeading =
+            true;
         }
 
         if (
           card.querySelector("p")
         ) {
-          hasParagraph = true;
+
+          hasParagraph =
+            true;
         }
       });
 
-      if (!hasHeading || !hasParagraph) {
+      if (
+        !hasHeading ||
+        !hasParagraph
+      ) {
+
         return 0;
       }
 
@@ -80,6 +106,7 @@ export const semanticMatchers: any[] = [
           .toLowerCase()
           .includes("feature")
       ) {
+
         score += 3;
       }
 
@@ -87,303 +114,284 @@ export const semanticMatchers: any[] = [
     },
 
     compile: (
+
       element: HTMLElement,
+
       fallbackCompile: any
+
     ): any => {
 
-     const directHeader =
-  Array.from(element.children)
-    .find(child =>
-      child.querySelector?.("h1,h2,h3")
-    );
+      const directHeader =
+        Array.from(
+          element.children
+        )
 
-const sectionHeaderH2 =
-  directHeader
-    ?.querySelector("h1,h2,h3")
-    ?.textContent || "";
+        .find(child =>
+          child.querySelector?.(
+            "h1,h2,h3"
+          )
+        );
 
-     const sectionHeaderP =
-  directHeader
-    ?.querySelector("p")
-    ?.textContent || "";
+      const sectionHeaderH2 =
+        directHeader
+          ?.querySelector(
+            "h1,h2,h3"
+          )
+          ?.textContent || "";
+
+      const sectionHeaderP =
+        directHeader
+          ?.querySelector("p")
+          ?.textContent || "";
 
       const rawCards =
         element.querySelectorAll(
           ".feature-card, [class*='card'], [class*='item']"
         );
 
-    // =====================================================
-// FLEX ITEMS
-// =====================================================
+      const flexItemNodes =
 
-const flexItemNodes =
-  Array.from(rawCards).map((card: any) => {
+        Array.from(rawCards)
 
-    const cardImg =
-      card.querySelector("img");
+          .map(
 
-    const cardHeading =
-      card.querySelector(
-        "h3, h4, h5, h6"
-      );
+            (
+              card: any,
+              index: number
+            ) => {
 
-    const cardParagraph =
-      card.querySelector("p");
+              const cardHeading =
+                card.querySelector(
+                  "h3, h4, h5, h6"
+                );
 
-    const extractedCardStyle =
-      extractStyleProps(
-        card as HTMLElement
-      ).desktop || {};
+              const cardParagraph =
+                card.querySelector("p");
 
-    return {
+              return {
 
-      id:
-        `block-${generateUniqueId()}`,
-
-      type:
-        "flexItem",
-
-      data: {
-
-        props: {},
-
-        style: {
-
-          desktop: {
-
-            // =========================
-            // SAFE VISUAL TOKENS ONLY
-            // =========================
-
-            backgroundColor:
-              extractedCardStyle.backgroundColor,
-
-            borderRadius:
-              extractedCardStyle.borderRadius,
-
-            color:
-              extractedCardStyle.color,
-
-            paddingTop:
-              extractedCardStyle.paddingTop,
-
-            paddingBottom:
-              extractedCardStyle.paddingBottom,
-
-            paddingLeft:
-              extractedCardStyle.paddingLeft,
-
-            paddingRight:
-              extractedCardStyle.paddingRight,
-
-            boxSizing:
-              "border-box"
-          }
-        }
-      },
-
-      children: [
-
-        ...(cardImg
-          ? [
-              {
                 id:
-                  `block-${generateUniqueId()}`,
+                  createDeterministicId(
+                    "flexItem",
+                    [index]
+                  ),
 
                 type:
-                  "image",
+                  "flexItem",
 
                 data: {
 
-                  props: {
+                  props: {},
 
-                    url:
-                      cardImg.getAttribute("src") || "",
+                  style: {
 
-                    alt:
-                      cardImg.getAttribute("alt") || ""
-                  },
+                    desktop: {}
+                  }
+                },
 
-                  style:
-                    extractStyleProps(
-                      cardImg as HTMLElement
-                    )
-                }
-              }
-            ]
-          : []),
+                children: [
 
-        ...(cardHeading
-          ? [
-              {
-                id:
-                  `block-${generateUniqueId()}`,
+                  ...(cardHeading
 
-                type:
-                  "title",
+                    ? [
 
-                data: {
+                        {
 
-                  props: {
+                          id:
+                            createDeterministicId(
+                              "title",
+                              [2, index, 0]
+                            ),
 
-                    content:
-                      cardHeading.textContent?.trim() || "",
+                          type:
+                            "title",
 
-                    level:
-                      "h3"
-                  },
+                          data: {
 
-                  style:
-                    extractStyleProps(
-                      cardHeading as HTMLElement
-                    )
-                }
-              }
-            ]
-          : []),
+                            props: {
 
-        ...(cardParagraph
-          ? [
-              {
-                id:
-                  `block-${generateUniqueId()}`,
+                              content:
+                                cardHeading
+                                  .textContent
+                                  ?.trim() || "",
 
-                type:
-                  "text",
+                              level:
+                                "h3"
+                            },
 
-                data: {
+                            style: {
 
-                  props: {
+                              desktop: {}
+                            }
+                          },
 
-                    content:
-                      cardParagraph.textContent?.trim() || ""
-                  },
+                          children: []
+                        }
+                      ]
 
-                  style:
-                    extractStyleProps(
-                      cardParagraph as HTMLElement
-                    )
-                }
-              }
-            ]
-          : [])
-      ]
-    };
-  });
+                    : []),
 
-// =====================================================
-// FLEX CONTAINER
-// =====================================================
+                  ...(cardParagraph
 
-const flexContainerNode = {
+                    ? [
 
-  id:
-    `block-${generateUniqueId()}`,
+                        {
 
-  type:
-    "flex",
+                          id:
+                            createDeterministicId(
+                              "text",
+                              [2, index, 1]
+                            ),
 
-  data: {
+                          type:
+                            "text",
 
-    props: {
+                          data: {
 
-      direction:
-        "row"
-    },
+                            props: {
 
-    style: {
+                              content:
+                                cardParagraph
+                                  .textContent
+                                  ?.trim() || ""
+                            },
 
-      desktop: {
+                            style: {
 
-        display:
-          "flex",
+                              desktop: {}
+                            }
+                          },
 
-        flexDirection:
-          "row",
+                          children: []
+                        }
+                      ]
 
-        flexWrap:
-          "wrap",
-
-        justifyContent:
-          "center",
-
-        alignItems:
-          "stretch",
-
-        gap:
-          "24px",
-
-        width:
-          "100%",
-
-        boxSizing:
-          "border-box"
-      }
-    }
-  },
-
-  children:
-    flexItemNodes
-};
-      // =====================================================
-      // ROOT FEATURES BLOCK
-      // =====================================================
+                    : [])
+                ]
+              };
+            }
+          );
 
       return {
 
         id:
-          `block-${generateUniqueId()}`,
+          createDeterministicId(
+            "section",
+            [0]
+          ),
 
         type:
-          "features",
+          "section",
 
         data: {
 
-          props: {
-
-            headline:
-              sectionHeaderH2,
-
-            subtext:
-              sectionHeaderP
-          },
+          props: {},
 
           style: {
 
-            desktop: {
-
-              width:
-                "100%",
-
-              maxWidth:
-                "1400px",
-
-              marginLeft:
-                "auto",
-
-              marginRight:
-                "auto",
-
-              paddingTop:
-                "60px",
-
-              paddingBottom:
-                "60px",
-
-              paddingLeft:
-                "20px",
-
-              paddingRight:
-                "20px",
-
-              boxSizing:
-                "border-box"
-            }
+            desktop: {}
           }
         },
 
         children: [
-          flexContainerNode
+
+          ...(sectionHeaderH2
+
+            ? [
+
+                {
+
+                  id:
+                    createDeterministicId(
+                      "title",
+                      [0, 0]
+                    ),
+
+                  type:
+                    "title",
+
+                  data: {
+
+                    props: {
+
+                      content:
+                        sectionHeaderH2,
+
+                      level:
+                        "h2"
+                    },
+
+                    style: {
+
+                      desktop: {}
+                    }
+                  },
+
+                  children: []
+                }
+              ]
+
+            : []),
+
+          ...(sectionHeaderP
+
+            ? [
+
+                {
+
+                  id:
+                    createDeterministicId(
+                      "text",
+                      [0, 1]
+                    ),
+
+                  type:
+                    "text",
+
+                  data: {
+
+                    props: {
+
+                      content:
+                        sectionHeaderP
+                    },
+
+                    style: {
+
+                      desktop: {}
+                    }
+                  },
+
+                  children: []
+                }
+              ]
+
+            : []),
+
+          {
+
+            id:
+              createDeterministicId(
+                "flex",
+                [0, 2]
+              ),
+
+            type:
+              "flex",
+
+            data: {
+
+              props: {},
+
+              style: {
+
+                desktop: {}
+              }
+            },
+
+            children:
+              flexItemNodes
+          }
         ]
       };
     }

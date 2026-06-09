@@ -6,23 +6,25 @@ export const sectionDefaults = {
 
   style: {
 
-    desktop: {
+  desktop: {
 
-      paddingTop: "80px",
+  paddingTop: "0px",
 
-      paddingBottom: "80px",
+  paddingBottom: "0px",
 
-      paddingLeft: "20px",
+  paddingLeft: "0px",
 
-      paddingRight: "20px",
+  paddingRight: "0px",
 
-      backgroundColor: "#ffffff",
+  backgroundColor: "rgba(0,0,0,0)",
 
-      maxWidth: "1200px",
+  width: "100%",
 
-      marginLeft: "auto",
+  maxWidth: "100%",
 
-      marginRight: "auto"
-    }
+  marginLeft: "0px",
+
+  marginRight: "0px"
+},
   }
 } satisfies BlockConfig["defaultData"];

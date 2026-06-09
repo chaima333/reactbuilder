@@ -1,8 +1,5 @@
 import { blockRegistry } from "../../core/blockRegistry";
 import type { FieldDefinition } from "../../types/field.types";
-import type {
-  SerializedBlock
-} from "../../types/document/serialized.types";
 
 export type DocumentValidationError = {
   path: string;
@@ -38,17 +35,73 @@ const isMissing = (
   );
 };
 
+const getBlockProps = (
+  block: Record<string, unknown>
+) => {
+  if (
+    isRecord(
+      block.props
+    )
+  ) {
+    return block.props;
+  }
+
+  if (
+    isRecord(
+      block.data
+    ) &&
+    isRecord(
+      block.data.props
+    )
+  ) {
+    return block.data.props;
+  }
+
+  return undefined;
+};
+
 const validateRequiredProps = (
-  block: SerializedBlock,
+  block: Record<string, unknown>,
   fields: FieldDefinition[],
   path: string,
   errors: DocumentValidationError[]
 ) => {
   fields.forEach((field) => {
+
+  const propsSource =
+    getBlockProps(
+      block
+    );
+
+const value =
+
+  block.type === "text" &&
+  field.key === "content"
+
+    ? readPath(
+        isRecord(propsSource)
+          ? propsSource
+          : {},
+        "content"
+      ) ??
+
+      readPath(
+        isRecord(propsSource)
+          ? propsSource
+          : {},
+        "text"
+      )
+
+    : readPath(
+        isRecord(propsSource)
+          ? propsSource
+          : {},
+        field.key
+      );
     if (
       field.target === "props" &&
       field.validation?.required &&
-      isMissing(readPath(block.props, field.key))
+      isMissing(value)
     ) {
       errors.push({
         path: `${path}.props.${field.key}`,
@@ -88,7 +141,10 @@ export const validateBlock = (
 
   const id = value.id;
   const type = value.type;
-  const props = value.props;
+  const props =
+    getBlockProps(
+      value
+    );
   const children = value.children;
 
   if (typeof id !== "string" || !id.trim()) {
@@ -137,7 +193,7 @@ export const validateBlock = (
     isRecord(props)
   ) {
     validateRequiredProps(
-      value as unknown as SerializedBlock,
+      value,
       blockRegistry[type].fields,
       path,
       errors

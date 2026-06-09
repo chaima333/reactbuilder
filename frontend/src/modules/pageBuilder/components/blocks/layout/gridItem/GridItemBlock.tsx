@@ -1,6 +1,12 @@
 import React from "react";
-import { useDroppable } from "@dnd-kit/core";
-import { useResolvedStyle } from "../../../../core/theme/useResolvedStyle";
+
+import {
+  useResolvedStyle
+} from "../../../../core/theme/useResolvedStyle";
+
+import {
+  useRuntimeNode
+} from "../../../../hooks/useRuntimeNode";
 
 export const GridItemBlock = ({
   block,
@@ -8,93 +14,186 @@ export const GridItemBlock = ({
   children,
   device = "desktop"
 }: any) => {
-  const source = data || block?.data;
-  const resolved = useResolvedStyle((source?.style || {}) as any, device);
 
-  const { setNodeRef, isOver } = useDroppable({
-    id: block?.id,
-    data: {
+  // =====================================
+  // RUNTIME NODE
+  // =====================================
+
+  const runtime =
+    useRuntimeNode({
+
+      block,
+
       type: "gridItem",
-      blockId: block?.id
-    }
-  });
 
-  const hasChildren = (block?.children?.length || 0) > 0;
+      droppable: true
+    });
 
-  const outerStyle: React.CSSProperties = {
-    width: "100%",
-    minWidth: 0,
-    overflow: "visible",
-    display: "flex",
-    flexDirection: "column",
-    height: "100%",
+  const {
+    isOver,
+    rootProps
+  } = runtime;
+
+  // =====================================
+  // SOURCE
+  // =====================================
+
+  const source =
+  block?.data;
+
+  // =====================================
+  // RESOLVED STYLE
+  // =====================================
+  const resolved =
+  
+    useResolvedStyle(
+      (source?.style || {}) as any,
+      device
+    );
+
+  // =====================================
+  // CHILDREN
+  // =====================================
+
+  const hasChildren =
+
+    (block?.children?.length || 0)
+    > 0;
+
+  // =====================================
+  // OUTER STYLE
+  // =====================================
+
+  const outerStyle:
+  React.CSSProperties = {
+
+    width:
+      "100%",
+
+    minWidth:
+      0,
+
+      alignSelf:
+  "start",
+
+    minHeight:
+      0,
+
+    overflow:
+      "hidden",
+
+    boxSizing:
+      "border-box",
+
+    display:
+      "block",
+
     gridColumn:
-      device === "mobile"
+
+      device === "mobile" ||
+      device === "tablet"
+
         ? "span 1"
-        : device === "tablet"
-        ? "span 1"
+
         : resolved.gridColumn || "auto",
-    gridRow: resolved.gridRow || "auto",
-    boxSizing: "border-box",
-    backgroundColor: resolved.backgroundColor || "#ffffff",
-    borderRadius: resolved.borderRadius || "16px",
-    border: isOver ? "2px solid #3b82f6" : "1px solid #e5e7eb",
-    position: "relative",
-    transition: "all 0.15s ease-in-out",
-    pointerEvents: "auto"
+
+    gridRow:
+      resolved.gridRow || "auto",
+
+    backgroundColor:
+      resolved.backgroundColor,
+
+    borderRadius:
+      resolved.borderRadius || "16px",
+
+    border:
+      isOver
+
+        ? "2px solid #3b82f6"
+
+        : resolved.border,
+
+    position:
+      "relative",
+
+    transition:
+      "all 0.15s ease-in-out"
   };
 
-  const innerFlexStyle: React.CSSProperties = {
-    display: "flex",
-    flexDirection: "column",
-    flex: 1,
-    justifyContent: "flex-start",
-    alignItems: "stretch",
-    gap: resolved.gap || "16px",
-    paddingTop: resolved.paddingTop || "20px",
-    paddingBottom: resolved.paddingBottom || "20px",
-    paddingLeft: resolved.paddingLeft || "20px",
-    paddingRight: resolved.paddingRight || "20px",
+  // =====================================
+  // INNER STYLE
+  // =====================================
+
+const innerStyle:
+React.CSSProperties = {
+
+  minWidth:
+    0,
+
+  boxSizing:
+    "border-box",
+
+  display:
+    "flex",
+
+  flexDirection:
+    "column",
+
     width: "100%",
-    height: "100%",
-    boxSizing: "border-box",
-    pointerEvents: "auto"
-  };
+maxWidth: "100%",
+overflow: "visible",
 
+  alignItems:
+    "stretch",
+
+  justifyContent:
+    "flex-start",
+
+  gap:
+    resolved.gap || "16px",
+
+  padding:
+    resolved.padding,
+
+  paddingTop:
+    resolved.paddingTop || "20px",
+
+  paddingRight:
+    resolved.paddingRight || "20px",
+
+  paddingBottom:
+    resolved.paddingBottom || "20px",
+
+  paddingLeft:
+    resolved.paddingLeft || "20px"
+};
+  // =====================================
+  // RENDER
+  // =====================================
   return (
+
     <div
-      ref={setNodeRef}
-      data-droppable-container="true"
-      data-block-type="gridItem"
-      id={`pb-runtime-${block?.id}`}
-      className="pb-grid-item"
+      {...rootProps}
+
       style={outerStyle}
     >
-      <div style={innerFlexStyle}>
+
+      <div style={innerStyle}>
+
         {children}
 
         {!hasChildren && (
-          <div
-            style={{
-              pointerEvents: "none",
-              border: "2px dashed #ccc",
-              borderRadius: "12px",
-              padding: "40px 20px",
-              textAlign: "center",
-              color: isOver ? "#2563eb" : "#999",
-              minHeight: "120px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: isOver ? "#eff6ff" : "#fafafa",
-              width: "100%",
-              boxSizing: "border-box"
-            }}
-          >
-            Drop blocks here (Grid Item)
+
+          <div>
+
+            Drop blocks here
+            (Grid Item)
+
           </div>
         )}
+
       </div>
+
     </div>
   );
 };

@@ -47,7 +47,6 @@ export const EditorRenderTree = ({
       {blocks.map((block) => {
         const registryEntry = registry[block.type];
         
-        // إذا كان الـ Block مش معروف في الـ Registry، نخرجوا null أو fallback بسيط لحماية الـ Tree
         if (!registryEntry) return null;
 
         return (
@@ -68,7 +67,6 @@ export const EditorRenderTree = ({
             onTransform={onTransform}
             onHoverChange={onHoverChange}
           >
-            {/* 2️⃣ هنا السحر متاع الـ Recursion: تمرير الـ Props كاملة للـ أولاد من داخل */}
             {block.children && block.children.length > 0 && (
               <EditorRenderTree
                 blocks={block.children}
