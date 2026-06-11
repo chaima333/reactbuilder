@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { fetchFigmaFile } from "../services/figma/figmaApiClient";
 
 export const importFigma = async (
   req: Request,
@@ -16,19 +17,24 @@ export const importFigma = async (
       });
     }
 
-    console.log("FIGMA IMPORT REQUEST", {
-      fileKey,
-      frameId
-    });
+  console.log("FIGMA IMPORT REQUEST", {
+  fileKey,
+  frameId
+});
 
-    return res.status(200).json({
-      success: true,
-      message: "Token exists and request received",
-      data: {
-        fileKey,
-        frameId
-      }
-    });
+const figmaDoc =
+  await fetchFigmaFile(
+    fileKey,
+    token
+  );
+
+return res.status(200).json({
+  success: true,
+  message: "Figma fetched",
+  data: {
+    name: figmaDoc.name
+  }
+});
   } catch (error: any) {
     return res.status(500).json({
       success: false,
