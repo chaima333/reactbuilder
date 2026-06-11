@@ -13,26 +13,29 @@ import {
   getPageHistory,
   getPageById
 } from "../controllers/page.controller";
+import { importFigma } from "../controllers/figmaImport.controller";
 
 const router = Router({ mergeParams: true });
 
-/**
- * 🔒 FULL ADMIN PIPELINE
- * (auth + permissions only)
- */
+
 router.use(authenticateJWT);
 
-// 📄 CRUD
 router.get("/", requirePermission(PERMISSIONS.SITE_READ), getPages);
 router.post("/", requirePermission(PERMISSIONS.PAGE_CREATE), createPage);
 router.put("/:pageId", requirePermission(PERMISSIONS.PAGE_UPDATE), updatePage);
 router.delete("/:pageId", requirePermission(PERMISSIONS.PAGE_DELETE), deletePage);
 router.get("/:pageId", requirePermission(PERMISSIONS.SITE_READ), getPageById);
-// 🚀 lifecycle
+// lifecycle
 router.post("/:pageId/publish", requirePermission(PERMISSIONS.PAGE_UPDATE), publishPageController);
 
-// 📜 versioning
+//  versioning
 router.get("/:pageId/versions", requirePermission(PERMISSIONS.PAGE_UPDATE), getPageHistory);
 router.post("/:pageId/restore/:versionId", requirePermission(PERMISSIONS.PAGE_UPDATE), restorePageVersion);
 
+// figma import
+router.post(
+  "/figma/import",
+  requirePermission(PERMISSIONS.PAGE_UPDATE),
+  importFigma
+);
 export default router;
