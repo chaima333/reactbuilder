@@ -7,6 +7,15 @@ export const importFigma = async (
   try {
     const { fileKey, frameId } = req.body;
 
+    const token = process.env.FIGMA_ACCESS_TOKEN;
+
+    if (!token) {
+      return res.status(500).json({
+        success: false,
+        message: "FIGMA_ACCESS_TOKEN is missing"
+      });
+    }
+
     console.log("FIGMA IMPORT REQUEST", {
       fileKey,
       frameId
@@ -14,21 +23,16 @@ export const importFigma = async (
 
     return res.status(200).json({
       success: true,
-      message: "Figma import request received",
+      message: "Token exists and request received",
       data: {
         fileKey,
         frameId
       }
     });
   } catch (error: any) {
-    console.error(
-      "[FIGMA_IMPORT_ERROR]:",
-      error.message
-    );
-
     return res.status(500).json({
       success: false,
-      message: "Figma import failed"
+      message: error.message
     });
   }
 };
