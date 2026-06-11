@@ -28,7 +28,7 @@ export const SectionShell = ({
 
 }: SectionShellProps) => {
 
-  const resolved =
+  const resolved : any =
     useResolvedStyle(
       style,
       device
@@ -40,7 +40,7 @@ export const SectionShell = ({
   const hasMarginShorthand =
     !!resolved.margin;
 
-  const outerStyle = {
+  const outerStyle: any = {
     width:
       resolved.width || "100%",
 
@@ -70,13 +70,25 @@ export const SectionShell = ({
     textAlign:
       resolved.textAlign,
 
-    background:
-      resolved.background,
 
-    backgroundColor:
-      resolved.background
-        ? undefined
-        : resolved.backgroundColor || "transparent",
+
+ background:
+  undefined,
+
+backgroundColor:
+  resolved.backgroundColor || "transparent",
+
+backgroundImage:
+  resolved.backgroundImage,
+
+backgroundSize:
+  resolved.backgroundSize,
+
+backgroundRepeat:
+  resolved.backgroundRepeat,
+
+backgroundPosition:
+  resolved.backgroundPosition,
 
     padding:
       resolved.padding,
@@ -128,7 +140,7 @@ export const SectionShell = ({
       "border-box"
   };
 
-  const innerStyle = {
+  const innerStyle: any = {
     width:
       resolved.width || "100%",
 

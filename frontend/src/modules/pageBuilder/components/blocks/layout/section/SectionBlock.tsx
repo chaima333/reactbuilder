@@ -90,18 +90,25 @@ export const SectionBlock = ({
 
     block?.meta?.confidence;
 
-  const sectionShellStyle = {
-    ...(data?.style || {}),
+const responsiveStyle =
+  data?.style?.[device] ||
+  data?.style?.desktop ||
+  data?.style ||
+  {};
 
-    minHeight:
-      "200px",
+const sectionShellStyle = {
+  ...responsiveStyle,
 
-    transition:
-      "all 0.15s ease-in-out"
-  };
+  minHeight:
+    "200px",
 
-  console.log(
-    "SECTION_RUNTIME",
+  transition:
+    "all 0.15s ease-in-out"
+};
+
+console.log(
+  "SECTION_RUNTIME_JSON",
+  JSON.stringify(
     {
       id:
         block?.id,
@@ -109,18 +116,31 @@ export const SectionBlock = ({
         block?.meta?.semanticType,
       rawDataStyle:
         data?.style,
+      resolvedStyle:
+        responsiveStyle,
       sectionShellStyle,
       childTypes:
         (block?.children || []).map(
           (child: any) => child.type
         )
-    }
-  );
+    },
+    null,
+    2
+  )
+);
 
   // =====================================
   // RENDER
   // =====================================
-
+if (
+  block?.meta?.semanticType ===
+  "INFO_BANNER"
+) {
+  console.log(
+    "INFO_BANNER_RUNTIME",
+    data?.style
+  );
+}
   return (
 
     <div

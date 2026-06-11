@@ -25,6 +25,10 @@ import {
 import {
   resolveTrustLogoSection
 } from "../trustLogo/resolveTrustLogoSection";
+import { resolveContentListSection } from "../contentList/resolveContentListSection";
+import { resolveInfoBanner } from "../infoBanner/resolveInfoBanner";
+import { resolveTwoColumnIntro } from "../twoColumnIntro/resolveTwoColumnIntro";
+import { resolveCtaCard } from "../ctaCard/resolveCtaCard";
 
 export const semanticResolverRegistry = [
 
@@ -44,7 +48,16 @@ export const semanticResolverRegistry = [
 
   resolveInsightsSection,
 
+  resolveCtaCard,
+
   resolveCtaSection,
 
-  resolveRepeatedSemanticEntity
-];
+   resolveTwoColumnIntro,
+
+  resolveContentListSection,
+
+  resolveInfoBanner,
+  
+  resolveRepeatedSemanticEntity,
+
+  ];

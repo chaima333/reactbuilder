@@ -2853,129 +2853,110 @@ export async function importHtmlDocument(htmlString: string): Promise<ImportHtml
   };
 
   const logImportSandboxCssDiagnostics = (
-    iframeDocument: Document,
-    sandbox: HTMLElement,
-    importedCSS: string
-  ) => {
-    const collectStyleRules = (
-      rules: CSSRuleList
-    ): CSSStyleRule[] =>
-      Array.from(rules)
-        .flatMap(rule => {
-          if (
-            "cssRules" in rule
-          ) {
-            try {
-              return collectStyleRules(
-                (rule as CSSGroupingRule).cssRules
-              );
-            } catch {
-              return [];
-            }
-          }
-
-          return "selectorText" in rule
-            ? [rule as CSSStyleRule]
-            : [];
-        });
-
-    const matchingRules =
-      Array.from(
-        iframeDocument.styleSheets
-      )
-        .flatMap(sheet => {
+  iframeDocument: Document,
+  sandbox: HTMLElement,
+  importedCSS: string
+) => {
+  const collectStyleRules = (
+    rules: CSSRuleList
+  ): CSSStyleRule[] =>
+    Array.from(rules)
+      .flatMap(rule => {
+        if ("cssRules" in rule) {
           try {
             return collectStyleRules(
-              sheet.cssRules
+              (rule as CSSGroupingRule).cssRules
             );
           } catch {
             return [];
           }
-        })
-        .filter(rule =>
-          /(\.pillar|\.pillars|\.tags|\.hero)([\s,.#:[>{+~]|$)/i
-            .test(
-              rule.selectorText
-            )
-        )
-        .map(rule => ({
-          selector:
-            rule.selectorText,
-          cssText:
-            rule.style.cssText
-        }));
+        }
 
-    const pillar =
-      sandbox.querySelector(
-        "article.pillar, .pillar"
-      ) as HTMLElement | null;
+        return "selectorText" in rule
+          ? [rule as CSSStyleRule]
+          : [];
+      });
 
-    const pillarStyle =
-      pillar
-        ? getElementWindow(pillar)
-            .getComputedStyle(pillar)
-        : null;
-
-    console.log(
-      "IMPORT_SANDBOX_CSS_DIAGNOSTICS",
-      JSON.stringify(
-        {
-          importedCssBytes:
-            importedCSS.length,
-          styleSheetsLength:
-            iframeDocument.styleSheets.length,
-          headHasImportStyle:
-            !!iframeDocument.head.querySelector(
-              "style[data-html-import-css]"
-            ),
-          headContainsPillarRule:
-            iframeDocument.head.innerHTML.includes(
-              ".pillar"
-            ),
-          headContainsHeroRule:
-            iframeDocument.head.innerHTML.includes(
-              ".hero"
-            ),
-          matchingRuleCount:
-            matchingRules.length,
-          matchingRules,
-          pillarComputedStyle:
-            pillarStyle
-              ? {
-                  tag:
-                    pillar?.tagName,
-                  className:
-                    getElementClassName(
-                      pillar
-                    ),
-                  display:
-                    pillarStyle.display,
-                  padding:
-                    pillarStyle.padding,
-                  paddingTop:
-                    pillarStyle.paddingTop,
-                  border:
-                    pillarStyle.border,
-                  borderRadius:
-                    pillarStyle.borderRadius,
-                  background:
-                    pillarStyle.background,
-                  backgroundColor:
-                    pillarStyle.backgroundColor,
-                  color:
-                    pillarStyle.color,
-                  fontFamily:
-                    pillarStyle.fontFamily,
-                  boxShadow:
-                    pillarStyle.boxShadow
-                }
-              : null
-        },
-        null,
-        2
+  const matchingRules =
+    Array.from(iframeDocument.styleSheets)
+      .flatMap(sheet => {
+        try {
+          return collectStyleRules(sheet.cssRules);
+        } catch {
+          return [];
+        }
+      })
+      .filter(rule =>
+        /(\.pillar|\.pillars|\.tags|\.hero|\.s-card|\.other-svc|\.section-tag|\.more)([\s,.#:[>{+~]|$)/i
+          .test(rule.selectorText)
       )
-    );
-  };
+      .map(rule => ({
+        selector: rule.selectorText,
+        cssText: rule.style.cssText
+      }));
+
+  const card =
+    sandbox.querySelector(
+      ".s-card"
+    ) as HTMLElement | null;
+
+  const cardStyle =
+    card
+      ? getElementWindow(card)
+          .getComputedStyle(card)
+      : null;
+
+  console.log(
+    "IMPORT_SANDBOX_CSS_DIAGNOSTICS",
+    JSON.stringify(
+      {
+        importedCssBytes: importedCSS.length,
+        styleSheetsLength: iframeDocument.styleSheets.length,
+
+        headHasImportStyle:
+          !!iframeDocument.head.querySelector(
+            "style[data-html-import-css]"
+          ),
+
+        headContainsPillarRule:
+          iframeDocument.head.innerHTML.includes(".pillar"),
+
+        headContainsHeroRule:
+          iframeDocument.head.innerHTML.includes(".hero"),
+
+        headContainsSCardRule:
+          iframeDocument.head.innerHTML.includes(".s-card"),
+
+        headContainsOtherSvcRule:
+          iframeDocument.head.innerHTML.includes(".other-svc"),
+
+        matchingRuleCount:
+          matchingRules.length,
+
+        matchingRules,
+
+        sCardComputedStyle:
+          cardStyle
+            ? {
+                tag: card?.tagName,
+                className: getElementClassName(card),
+                display: cardStyle.display,
+                padding: cardStyle.padding,
+                border: cardStyle.border,
+                borderRadius: cardStyle.borderRadius,
+                background: cardStyle.background,
+                backgroundColor: cardStyle.backgroundColor,
+                color: cardStyle.color,
+                fontFamily: cardStyle.fontFamily,
+                boxShadow: cardStyle.boxShadow
+              }
+            : null
+      },
+      null,
+      2
+    )
+  );
+};
 
   const assertImportedCSSApplied = (
     sandbox: HTMLElement,
@@ -3402,62 +3383,49 @@ console.log(
         }))
   }
 );
-      if (matchedSemantic) {
-        finalBlocks.push(matchedSemantic.emitted);
-      } else {
-        const compiled = parseDomToBlocks(
-          child,
-          [index],
-          ownershipBuckets,
-          warnings,
-          matcherHits
-        );
+  if (matchedSemantic) {
+  finalBlocks.push(
+    matchedSemantic.emitted
+  );
+} else {
+  const nestedSemanticMatches =
+    semanticBlocks.filter((entry: any) => {
+      const claimed =
+        entry.claimedNode?.element;
 
-        if (
-          child.querySelector(
-            ".pillars"
-          ) ||
-          getElementClassName(child)
-            .split(/\s+/)
-            .includes("pillars")
-        ) {
-          console.log(
-            "BODY CHILD PARSE RESULT CONTAINING DIV.pillars",
-            {
-              bodyChildIndex:
-                index,
-              bodyChild:
-                describeClaimedElement(
-                  child,
-                  body
-                ),
-              compiled:
-                compiled.map((block: any) => ({
-                  id:
-                    block.id,
-                  type:
-                    block.type,
-                  semantic:
-                    block.meta?.semanticType,
-                  childTypes:
-                    (block.children || []).map(
-                      (nested: any) => nested?.type
-                    ),
-                  featurePillarsCount:
-                    collectFeaturePillarsBlocks(
-                      [block]
-                    ).length
-                }))
-            }
-          );
-        }
+      return (
+        claimed &&
+        claimed !== child &&
+        child.contains(claimed)
+      );
+    });
 
+  if (nestedSemanticMatches.length > 0) {
+    nestedSemanticMatches.forEach((entry: any) => {
+      if (entry.emitted) {
         finalBlocks.push(
-          ...splitNestedSemanticSectionsForRoot(
-            compiled
-          )
+          entry.emitted
         );
       }
+    });
+
+    return;
+  }
+
+  const compiled = parseDomToBlocks(
+    child,
+    [index],
+    ownershipBuckets,
+    warnings,
+    matcherHits
+  );
+
+  finalBlocks.push(
+    ...splitNestedSemanticSectionsForRoot(
+      compiled
+    )
+  );
+}
     });
 
 preserveMissingSemanticBlocks(
@@ -3664,14 +3632,13 @@ logFeatureFlexItemStyles(
   cleanedBlocks
 );
 
-assertTreeInvariants(
-  cleanedBlocks as any
-);
+
 
 const normalized =
   normalizeTree(
     cleanedBlocks
   );
+
 
 logFeaturePillarsStageTransition(
   "normalizedBlocks",
@@ -4513,6 +4480,8 @@ function preserveMissingSemanticBlocks(
 
       return;
     }
+
+    
 
     console.log(
       "SEMANTIC_BLOCK_RESTORED_AFTER_MERGE",

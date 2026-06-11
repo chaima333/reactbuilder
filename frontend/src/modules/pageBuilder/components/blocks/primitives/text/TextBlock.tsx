@@ -1,3 +1,4 @@
+import { CSSProperties } from "@mui/material/styles/createTypography";
 import {
   useResolvedStyle
 } from "../../../../core/theme/useResolvedStyle";
@@ -78,7 +79,7 @@ const content =
 
   "";
 
-const finalStyle = {
+const finalStyle: CSSProperties = {
   ...resolvedStyle,
 
   width:

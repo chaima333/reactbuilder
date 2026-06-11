@@ -1,3 +1,5 @@
+import { InfoBannerPayload } from "../runtime/importers/html/semanticResolvers/semanticContracts/InfoBannerPayload";
+
 export type SemanticType =
 
   | "HERO_SECTION"
@@ -14,7 +16,17 @@ export type SemanticType =
 
   | "NAVBAR"
 
-  | "FEATURE_PILLARS";
+  | "FEATURE_PILLARS"
+
+  | "CONTENT_LIST_SECTION"
+
+  | "INFO_BANNER"
+
+  | "TWO_COLUMN_INTRO"
+
+  | "CTA_CARD"
+
+  
 
 export interface BlockMeta {
 

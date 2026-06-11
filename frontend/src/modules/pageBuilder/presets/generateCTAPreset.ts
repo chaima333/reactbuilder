@@ -41,6 +41,27 @@ const desktopOf = (
 ) =>
   style?.desktop || style || {};
 
+const parsePx = (
+  value: unknown
+) => {
+  if (
+    typeof value !== "string"
+  ) {
+    return null;
+  }
+
+  const match =
+    value
+      .trim()
+      .match(/^(\d+(?:\.\d+)?)px$/);
+
+  return match
+    ? Number(
+        match[1]
+      )
+    : null;
+};
+
 const filterActionRowStyle = (
   style: Record<string, any>
 ) =>
@@ -252,6 +273,7 @@ export const generateCTAPreset = (
     textAlign: "center",
     fontSize: "48px",
     fontWeight: "800",
+    maxWidth: "820px",
     color: "#ffffff"
   };
 
@@ -261,6 +283,33 @@ export const generateCTAPreset = (
       titleStyle,
       filterTextStyle
     );
+
+  const titleFontSizeBefore =
+    mergedTitleStyle.desktop?.fontSize;
+
+  const titleFontSizeBeforePx =
+    parsePx(
+      titleFontSizeBefore
+    );
+
+  const shouldClampTitleFontSize =
+    titleFontSizeBeforePx !== null &&
+    titleFontSizeBeforePx > 60;
+
+  const ctaTitleStyle = {
+    ...mergedTitleStyle,
+    desktop: {
+      ...mergedTitleStyle.desktop,
+      maxWidth:
+        mergedTitleStyle.desktop?.maxWidth ||
+        "820px",
+      fontSize:
+        shouldClampTitleFontSize
+          ? "60px"
+          : mergedTitleStyle.desktop?.fontSize ||
+            "48px"
+    }
+  };
 
   const mergedTextStyle =
     mergePresetDesktopStyle(
@@ -293,6 +342,24 @@ export const generateCTAPreset = (
     );
 
   console.log(
+    "CTA_TITLE_SCALE_CLAMPED",
+    {
+      before:
+        titleFontSizeBefore,
+      after:
+        ctaTitleStyle.desktop?.fontSize,
+      maxWidth:
+        ctaTitleStyle.desktop?.maxWidth,
+      reason:
+        shouldClampTitleFontSize
+          ? "desktop-title-max-60"
+          : titleFontSizeBefore
+            ? "source-within-limit"
+            : "fallback-font-size"
+    }
+  );
+
+  console.log(
     "CTA_PRESET_ACTIONS_RENDERED",
     {
       payloadActionsCount:
@@ -309,11 +376,11 @@ export const generateCTAPreset = (
       titleFontSizeBefore:
         titleFallbackStyle.fontSize,
       titleFontSizeAfter:
-        mergedTitleStyle.desktop?.fontSize,
+        ctaTitleStyle.desktop?.fontSize,
       titleMaxWidthBefore:
         titleFallbackStyle.maxWidth,
       titleMaxWidthAfter:
-        mergedTitleStyle.desktop?.maxWidth,
+        ctaTitleStyle.desktop?.maxWidth,
       cardPadding:
         mergedSectionStyle.desktop?.padding ||
         [
@@ -337,11 +404,11 @@ export const generateCTAPreset = (
     "CTA_CONTAINER_REPORT",
     {
       titleMaxWidth:
-        mergedTitleStyle.desktop?.maxWidth,
+        ctaTitleStyle.desktop?.maxWidth,
       titleFontSize:
-        mergedTitleStyle.desktop?.fontSize,
+        ctaTitleStyle.desktop?.fontSize,
       titleLineHeight:
-        mergedTitleStyle.desktop?.lineHeight,
+        ctaTitleStyle.desktop?.lineHeight,
       textMaxWidth:
         mergedTextStyle.desktop?.maxWidth,
       cardWidth:
@@ -451,7 +518,7 @@ export const generateCTAPreset = (
 
                   style: {
 
-                    ...mergedTitleStyle
+                    ...ctaTitleStyle
                   }
                 },
 

@@ -1,4 +1,11 @@
-import { Box, TextField, Typography, Button, Divider, Stack } from "@mui/material";
+import {
+  Box,
+  TextField,
+  Typography,
+  Button,
+  Divider,
+  Stack
+} from "@mui/material";
 
 type Props = {
   pageTitle: string;
@@ -7,8 +14,8 @@ type Props = {
   setSlug: (value: string) => void;
   onExport?: () => void;
   onImport?: (file: File) => void;
-  // 👑 الحقل الجديد باش التايب سكريبت يصفقلك
-  onImportHtml?: () => void; 
+  onImportHtml?: () => void;
+  onImportFigma?: () => void;
 };
 
 export const SettingsPanel = ({
@@ -18,11 +25,14 @@ export const SettingsPanel = ({
   setSlug,
   onExport,
   onImport,
-  onImportHtml // 👑 استقبل الـ Prop الجديدة هوني
+  onImportHtml,
+  onImportFigma
 }: Props) => {
   return (
     <Box p={2}>
-      <Typography variant="h6" fontWeight="bold">Settings</Typography>
+      <Typography variant="h6" fontWeight="bold">
+        Settings
+      </Typography>
 
       <TextField
         fullWidth
@@ -42,43 +52,78 @@ export const SettingsPanel = ({
 
       <Divider sx={{ my: 3 }} />
 
-      <Typography variant="subtitle2" color="primary" sx={{ mb: 2 }}>
+      <Typography
+        variant="subtitle2"
+        color="primary"
+        sx={{ mb: 2 }}
+      >
         JSON SCHEMA TOOLS
       </Typography>
-      
+
       <Stack spacing={2}>
-        <Button variant="outlined" fullWidth onClick={onExport}>
+        <Button
+          variant="outlined"
+          fullWidth
+          onClick={onExport}
+        >
           Export JSON
         </Button>
 
-        <Button variant="outlined" component="label" fullWidth>
+        <Button
+          variant="outlined"
+          component="label"
+          fullWidth
+        >
           Import JSON
-          <input 
-            type="file" 
-            hidden 
-            accept=".json" 
+          <input
+            type="file"
+            hidden
+            accept=".json"
             onChange={(e) => {
               const file = e.target.files?.[0];
-              if (file && onImport) onImport(file);
-            }} 
+
+              if (file && onImport) {
+                onImport(file);
+              }
+            }}
           />
         </Button>
 
-        {/* 👑 زر الـ Real HTML Importer الجديد نزل في مكانه المضمون! */}
         {onImportHtml && (
-          <Button 
-            variant="contained" 
-            fullWidth 
+          <Button
+            variant="contained"
+            fullWidth
             onClick={onImportHtml}
-            sx={{ 
-              bgcolor: '#1976d2', 
-              color: '#fff', 
-              fontWeight: 'bold',
-              textTransform: 'none',
-              '&:hover': { bgcolor: '#115293' }
+            sx={{
+              bgcolor: "#1976d2",
+              color: "#fff",
+              fontWeight: "bold",
+              textTransform: "none",
+              "&:hover": {
+                bgcolor: "#115293"
+              }
             }}
           >
-            📥 IMPORT FROM HTML
+             IMPORT FROM HTML
+          </Button>
+        )}
+
+        {onImportFigma && (
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={onImportFigma}
+            sx={{
+              bgcolor: "#7c3aed",
+              color: "#fff",
+              fontWeight: "bold",
+              textTransform: "none",
+              "&:hover": {
+                bgcolor: "#5b21b6"
+              }
+            }}
+          >
+             IMPORT FROM FIGMA
           </Button>
         )}
       </Stack>

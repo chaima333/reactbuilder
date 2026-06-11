@@ -3,9 +3,12 @@ import {
 } from "./BaseSemanticPayload";
 
 export interface InsightItemPayload {
+  category?: string;
   title: string;
   description?: string;
   meta?: string;
+  source?: string;
+  time?: string;
   href?: string;
   ctaLabel?: string;
 }

@@ -44,12 +44,13 @@ export const GridItemBlock = ({
   // =====================================
   // RESOLVED STYLE
   // =====================================
-  const resolved =
+  const resolved: any =
   
     useResolvedStyle(
       (source?.style || {}) as any,
       device
     );
+
 
   // =====================================
   // CHILDREN
@@ -103,16 +104,24 @@ export const GridItemBlock = ({
     backgroundColor:
       resolved.backgroundColor,
 
-    borderRadius:
-      resolved.borderRadius || "16px",
+boxShadow:
+  resolved.boxShadow,
 
-    border:
-      isOver
+  background:
+  resolved.background ||
+  resolved.backgroundColor,
 
-        ? "2px solid #3b82f6"
+borderRadius:
+  resolved.borderRadius || "16px",
 
-        : resolved.border,
+border:
+  isOver
+    ? "2px solid #3b82f6"
+    : resolved.border,
 
+color:
+  resolved.color,
+    
     position:
       "relative",
 
@@ -170,6 +179,11 @@ overflow: "visible",
   // =====================================
   // RENDER
   // =====================================
+
+  console.log(
+  "GRID_ITEM_OUTER_STYLE",
+  outerStyle
+);
   return (
 
     <div

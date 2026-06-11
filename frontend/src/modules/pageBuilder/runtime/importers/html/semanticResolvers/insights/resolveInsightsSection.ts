@@ -348,9 +348,17 @@ const extractInsightItem = (
   card: HTMLElement,
   index: number
 ) => {
+  const categoryEl =
+    card.querySelector(
+      ".cat, [class*='cat']"
+    );
+
   const titleEl =
     card.querySelector(
-      "h2,h3,h4"
+      "h3"
+    ) ||
+    card.querySelector(
+      "h2,h4"
     );
 
   const descriptionEl =
@@ -360,9 +368,65 @@ const extractInsightItem = (
 
   const metaEl =
     card.querySelector(
-      ".meta, time, [class*='meta'], [class*='date'], [class*='category']"
+      ".meta, [class*='meta']"
+    ) as HTMLElement | null;
+const findTimeText = (
+  metaEl: HTMLElement | null
+) => {
+  if (!metaEl) {
+    return "";
+  }
+
+  const directTime =
+    metaEl.querySelector(
+      "time, .time, [class*='time'], .date, [class*='date'], [class*='min']"
     );
 
+  const directTimeText =
+    normalizeText(
+      directTime?.textContent
+    );
+
+  if (directTimeText) {
+    return directTimeText;
+  }
+
+  const timeLikeChild =
+    Array.from(
+      metaEl.children
+    ).find(child =>
+      /\d+\s*min/i.test(
+        normalizeText(child.textContent)
+      )
+    );
+
+  return normalizeText(
+    timeLikeChild?.textContent
+  );
+};
+  const timeEl =
+    (
+      metaEl?.querySelector(
+        "time, .time, [class*='time'], .date, [class*='date'], [class*='min']"
+      ) ||
+      card.querySelector(
+        "time"
+      )
+    ) as HTMLElement | null;
+
+const sourceEl =
+  (
+    metaEl?.querySelector(
+      ".source, [class*='source'], .label, [class*='label'], .author, [class*='author']"
+    ) ||
+    Array.from(
+      metaEl?.children || []
+    ).find(child =>
+      !/\d+\s*min/i.test(
+        normalizeText(child.textContent)
+      )
+    )
+  ) as HTMLElement | null;
   const actionEl =
     card.querySelector(
       "a,button"
@@ -377,7 +441,37 @@ const extractInsightItem = (
     return null;
   }
 
+  const category =
+    normalizeText(
+      categoryEl?.textContent
+    );
+
+  const source =
+    normalizeText(
+      sourceEl?.textContent
+    );
+
+  const time =
+    findTimeText(
+      metaEl
+    );
+
+  console.log(
+    "INSIGHT_CARD_PAYLOAD_MAPPING",
+    {
+      category,
+      title,
+      description:
+        normalizeText(
+          descriptionEl?.textContent
+        ),
+      source,
+      time
+    }
+  );
+
   return {
+    category,
     title,
     description:
       normalizeText(
@@ -387,6 +481,8 @@ const extractInsightItem = (
       normalizeText(
         metaEl?.textContent
       ),
+    source,
+    time,
     href:
       actionEl?.getAttribute("href") || "",
     ctaLabel:

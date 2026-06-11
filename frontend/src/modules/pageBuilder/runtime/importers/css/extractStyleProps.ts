@@ -49,7 +49,8 @@ const VISUAL_STYLE_KEYS = [
   "letterSpacing",
   "textAlign",
   "textTransform",
-  "cursor"
+  "cursor", 
+  "backgroundImage",
 ];
 
 function rgbToHex(rgbStr: string): string {
@@ -151,10 +152,14 @@ export const extractStyleProps = (
       computed.background.includes("var(--")
         ? undefined
         : computed.background,
+    backgroundImage:
+    computed.backgroundImage.includes("var(--")
+    ? undefined
+    : computed.backgroundImage,
     backgroundColor:
-      computed.backgroundColor.includes("var(--")
-        ? undefined
-        : rgbToHex(computed.backgroundColor),
+  computed.backgroundColor.includes("var(--")
+    ? undefined
+    : computed.backgroundColor,
     color: rgbToHex(computed.color),
     border: computed.border,
     borderRadius: computed.borderRadius,
@@ -166,7 +171,8 @@ export const extractStyleProps = (
     letterSpacing: computed.letterSpacing,
     textAlign: computed.textAlign,
     textTransform: computed.textTransform,
-    cursor: computed.cursor
+    cursor: computed.cursor,
+
   };
 
   if (computed.display !== "flex") {

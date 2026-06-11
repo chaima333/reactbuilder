@@ -18,9 +18,15 @@ export interface ValuesGridPayload
 
   items: ValuesGridItem[];
 
+  eyebrow?: string;
+
+  title?: string;
+
   columnCount?: number;
 
   sectionStyle?: any;
+
+  sourceElement?: HTMLElement;
 
   gridStyle?: any;
 }

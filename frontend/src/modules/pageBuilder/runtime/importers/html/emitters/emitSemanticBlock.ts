@@ -12,10 +12,20 @@ import {
   extractLayoutStyles
 } from "../../css/extractStyleProps";
 import {
+  getLocalVisualContext,
+  resolveInheritedBackground,
+  resolveInheritedContainerWidth,
+  resolveInheritedSectionSpacing
+} from "../../design/visualContext";
+import {
   filterCardStyle,
   filterHeroSectionStyle,
   filterSectionStyle
 } from "../../../../presets/styleFilters";
+import { ContentListSectionPayload } from "../semanticResolvers/semanticContracts/ContentListSectionPayload";
+import { InfoBannerPayload } from "../semanticResolvers/semanticContracts/InfoBannerPayload";
+import { TwoColumnIntroPayload } from "../semanticResolvers/semanticContracts/TwoColumnIntroPayload";
+import { CtaCardPayload } from "../semanticResolvers/semanticContracts/CtaCardPayload";
 
 export type SemanticPayload =
 
@@ -27,7 +37,11 @@ export type SemanticPayload =
   | CtaSectionPayload
   | InsightsSectionPayload
   | TrustLogoSectionPayload
-  | RepeatedSemanticEntityPayload;
+  | RepeatedSemanticEntityPayload
+  | ContentListSectionPayload
+  | InfoBannerPayload
+  | TwoColumnIntroPayload
+  | CtaCardPayload;
 
 const getComputedDesignStyle = (
   element?: HTMLElement | null
@@ -88,6 +102,325 @@ const getEmittedStyle = (
   block?.data?.style ||
   block?.style ||
   null;
+
+const desktopOf = (
+  style: any
+) =>
+  style?.desktop || style || {};
+
+const normalizePadding = (
+  style: any
+) =>
+  style?.padding ||
+  [
+    style?.paddingTop,
+    style?.paddingRight,
+    style?.paddingBottom,
+    style?.paddingLeft
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+const querySource = (
+  root: HTMLElement | undefined | null,
+  selector: string
+) =>
+  root?.querySelector(
+    selector
+  ) as HTMLElement | null;
+
+const getComputedDensity = (
+  element?: HTMLElement | null
+) => {
+  if (!element) {
+    return {};
+  }
+
+  const computed =
+    (
+      element.ownerDocument.defaultView ||
+      window
+    ).getComputedStyle(
+      element
+    );
+
+  return {
+    padding:
+      computed.padding,
+    width:
+      computed.width,
+    maxWidth:
+      computed.maxWidth,
+    fontSize:
+      computed.fontSize,
+    lineHeight:
+      computed.lineHeight,
+    gridTemplateColumns:
+      computed.gridTemplateColumns,
+    gap:
+      computed.gap,
+    minHeight:
+      computed.minHeight,
+    borderRadius:
+      computed.borderRadius
+  };
+};
+
+const findBlockByType = (
+  block: any,
+  type: string
+): any => {
+  if (!block) {
+    return null;
+  }
+
+  if (block.type === type) {
+    return block;
+  }
+
+  for (const child of block.children || []) {
+    const found =
+      findBlockByType(
+        child,
+        type
+      );
+
+    if (found) {
+      return found;
+    }
+  }
+
+  return null;
+};
+
+const findBlockWithChildTypes = (
+  block: any,
+  childTypes: string[]
+): any => {
+  if (!block) {
+    return null;
+  }
+
+  const types =
+    (block.children || []).map(
+      (child: any) => child.type
+    );
+
+  if (
+    childTypes.every(
+      type => types.includes(type)
+    )
+  ) {
+    return block;
+  }
+
+  for (const child of block.children || []) {
+    const found =
+      findBlockWithChildTypes(
+        child,
+        childTypes
+      );
+
+    if (found) {
+      return found;
+    }
+  }
+
+  return null;
+};
+
+const summarizeSectionDensity = (
+  semanticType: string,
+  claimedElement: HTMLElement | undefined,
+  emittedBlock: any
+) => {
+  const sourceContainer =
+    querySource(
+      claimedElement,
+      ".container, [class*='container'], .inner, [class*='inner'], .wrap, [class*='wrap']"
+    ) || claimedElement || null;
+
+  const sourceTitle =
+    querySource(
+      claimedElement,
+      "h1,h2"
+    );
+
+  const sourceDescription =
+    querySource(
+      claimedElement,
+      "p"
+    );
+
+  const sourceGrid =
+    querySource(
+      claimedElement,
+      ".grid, [class*='grid'], .pillars, .insights-grid, [class*='logos'], [class*='partners']"
+    );
+
+  const sourceCard =
+    querySource(
+      claimedElement,
+      "article, .card, [class*='card'], .pillar, .insight"
+    );
+
+  const emittedSection =
+    desktopOf(
+      getEmittedStyle(
+        emittedBlock
+      )
+    );
+
+  const emittedContainerBlock =
+    emittedBlock?.children?.[0] || null;
+
+  const emittedContainer =
+    desktopOf(
+      getEmittedStyle(
+        emittedContainerBlock
+      )
+    );
+
+  const emittedTitle =
+    desktopOf(
+      getEmittedStyle(
+        findBlockByType(
+          emittedBlock,
+          "title"
+        )
+      )
+    );
+
+  const emittedDescription =
+    desktopOf(
+      getEmittedStyle(
+        findBlockByType(
+          emittedBlock,
+          "text"
+        )
+      )
+    );
+
+  const emittedGrid =
+    desktopOf(
+      getEmittedStyle(
+        findBlockByType(
+          emittedBlock,
+          "grid"
+        ) ||
+        findBlockWithChildTypes(
+          emittedBlock,
+          ["flexItem", "flexItem"]
+        )
+      )
+    );
+
+  const emittedCard =
+    desktopOf(
+      getEmittedStyle(
+        findBlockByType(
+          emittedBlock,
+          "gridItem"
+        ) ||
+        findBlockWithChildTypes(
+          emittedBlock,
+          ["title", "text"]
+        )
+      )
+    );
+
+  const sourceSectionDensity =
+    getComputedDensity(
+      claimedElement
+    );
+
+  const sourceContainerDensity =
+    getComputedDensity(
+      sourceContainer
+    );
+
+  const sourceTitleDensity =
+    getComputedDensity(
+      sourceTitle
+    );
+
+  const sourceDescriptionDensity =
+    getComputedDensity(
+      sourceDescription
+    );
+
+  const sourceGridDensity =
+    getComputedDensity(
+      sourceGrid
+    );
+
+  const sourceCardDensity =
+    getComputedDensity(
+      sourceCard
+    );
+
+  return {
+    semanticType,
+    source: {
+      sectionPadding:
+        sourceSectionDensity.padding,
+      containerWidth:
+        sourceContainerDensity.width,
+      containerMaxWidth:
+        sourceContainerDensity.maxWidth,
+      titleFontSize:
+        sourceTitleDensity.fontSize,
+      titleLineHeight:
+        sourceTitleDensity.lineHeight,
+      descriptionFontSize:
+        sourceDescriptionDensity.fontSize,
+      descriptionLineHeight:
+        sourceDescriptionDensity.lineHeight,
+      gridTemplateColumns:
+        sourceGridDensity.gridTemplateColumns,
+      gridGap:
+        sourceGridDensity.gap,
+      cardPadding:
+        sourceCardDensity.padding,
+      cardMinHeight:
+        sourceCardDensity.minHeight,
+      cardBorderRadius:
+        sourceCardDensity.borderRadius
+    },
+    emitted: {
+      sectionPadding:
+        normalizePadding(
+          emittedSection
+        ),
+      containerWidth:
+        emittedContainer.width,
+      containerMaxWidth:
+        emittedContainer.maxWidth,
+      titleFontSize:
+        emittedTitle.fontSize,
+      titleLineHeight:
+        emittedTitle.lineHeight,
+      descriptionFontSize:
+        emittedDescription.fontSize,
+      descriptionLineHeight:
+        emittedDescription.lineHeight,
+      gridTemplateColumns:
+        emittedGrid.gridTemplateColumns,
+      gridGap:
+        emittedGrid.gap ||
+        emittedGrid.columnGap ||
+        emittedGrid.rowGap,
+      cardPadding:
+        normalizePadding(
+          emittedCard
+        ),
+      cardMinHeight:
+        emittedCard.minHeight,
+      cardBorderRadius:
+        emittedCard.borderRadius
+    }
+  };
+};
 
 const getSectionFilteredStyle = (
   semanticType: string,
@@ -196,6 +529,61 @@ export const emitSemanticBlock = (
 
   const claimedElement =
     semanticResult.claimedNode?.element;
+
+  const localVisualContext =
+    getLocalVisualContext(
+      claimedElement
+    );
+
+  const visualContextReport = {
+    semanticType:
+      semanticResult.type,
+    localBackground:
+      localVisualContext
+        ? {
+            background:
+              localVisualContext.background,
+            backgroundColor:
+              localVisualContext.backgroundColor,
+            backgroundImage:
+              localVisualContext.backgroundImage
+          }
+        : null,
+    inheritedBackground:
+      resolveInheritedBackground(
+        claimedElement
+      ),
+    localWidth:
+      localVisualContext
+        ? {
+            width:
+              localVisualContext.width,
+            maxWidth:
+              localVisualContext.maxWidth
+          }
+        : null,
+    inheritedWidth:
+      resolveInheritedContainerWidth(
+        claimedElement
+      ),
+    localSpacing:
+      localVisualContext?.spacing || null,
+    inheritedSpacing:
+      resolveInheritedSectionSpacing(
+        claimedElement
+      ),
+    sourceElement:
+      localVisualContext?.sourceElement || null
+  };
+
+  console.log(
+    "VISUAL_CONTEXT_REPORT_JSON",
+    JSON.stringify(
+      visualContextReport,
+      null,
+      2
+    )
+  );
 
   const payloadForLog =
     Object.fromEntries(
@@ -398,6 +786,37 @@ export const emitSemanticBlock = (
     );
 
     return null;
+  }
+
+  if (
+    [
+      "FEATURE_PILLARS",
+      "TRUST_LOGO_SECTION",
+      "INSIGHTS_SECTION",
+      "CTA_SECTION"
+    ].includes(
+      semanticResult.type
+    )
+  ) {
+    const emittedBlock =
+      Array.isArray(
+        emitted
+      )
+        ? emitted[0]
+        : emitted;
+
+    console.log(
+      "SECTION_DENSITY_REPORT",
+      JSON.stringify(
+        summarizeSectionDensity(
+          semanticResult.type,
+          claimedElement,
+          emittedBlock
+        ),
+        null,
+        2
+      )
+    );
   }
 
   if (

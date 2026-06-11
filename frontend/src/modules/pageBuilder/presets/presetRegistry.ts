@@ -12,6 +12,9 @@ import { generateOfficeTablePreset } from "./generateOfficeTablePreset";
 import { generateInsightsPreset } from "./generateInsightsPreset";
 import { generateValuesGridPreset } from "./generateValuesGridPreset";
 import { generateTrustLogoPreset } from "./generateTrustLogoPreset";
+import { generateContentListPreset } from "./generateContentListPreset";
+import { generateInfoBannerPreset } from "./generateInfoBannerPreset";
+import { generateTwoColumnIntroPreset } from "./generateTwoColumnIntroPreset";
 
 export const presetRegistry = {
 
@@ -38,4 +41,13 @@ export const presetRegistry = {
 
   trustLogo:
   generateTrustLogoPreset,
+
+  contentList:
+  generateContentListPreset,
+
+  infoBanner:
+  generateInfoBannerPreset,
+
+  twoColumnIntro:
+  generateTwoColumnIntroPreset,
 };

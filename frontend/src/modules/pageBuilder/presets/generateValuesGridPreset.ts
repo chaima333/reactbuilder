@@ -1,243 +1,163 @@
 
 
-export const generateValuesGridPreset = (
-  payload: any
-) => {
 
-  const uid =
-  crypto.randomUUID();
 
-  const items =
+export const generateValuesGridPreset = (payload: any) => {
+  const uid = crypto.randomUUID();
 
-    payload.items
-      .map(
-        (
-          item: any,
-          index: number
-        ) => {
-
-          if (
-            !item.title
-          ) {
-
-            return null;
-          }
-
-          return {
-
-            id:
-              `value-item-${uid}-${index}`,
-
-            type:
-              "gridItem",
-
-            data: {
-
-              props: {},
-
-              style: {
-
-                desktop: {
-
-                  padding:
-                    "24px",
-
-                  border:
-                    "1px solid rgba(0,0,0,0.08)",
-
-                  borderRadius:
-                    "16px"
-                }
-              }
-            },
-
-            children: [
-
-              // =====================================
-              // TITLE
-              // =====================================
-
-              {
-
-                id:
-                  `value-title-${uid}-${index}`,
-
-                type:
-                  "text",
-
-                data: {
-
-                  props: {
-
-                    content:
-                      item.title
-                  },
-
-                  style: {
-
-                    desktop: {
-
-                      fontSize:
-                        "24px",
-
-                      fontWeight:
-                        "200",
-
-                      marginBottom:
-                        "12px"
-                    }
-                  }
-                },
-
-                children: []
-              },
-
-              // =====================================
-              // DESCRIPTION
-              // =====================================
-
-              item.description
-
-                ? {
-
-                    id:
-                      `value-description-${uid}-${index}`,
-
-                    type:
-                      "text",
-
-                    data: {
-
-                      props: {
-
-                        content:
-                          item.description
-                      },
-
-                      style: {
-
-                        desktop: {
-
-                          fontSize:
-                            "16px",
-
-                          lineHeight:
-                            "1.6"
-                        }
-                      }
-                    },
-
-                    children: []
-                  }
-
-                : null
-            ]
-
-            .filter(
-              (
-                child: any
-              ): child is any =>
-
-                child !== null
-            )
-          };
-        }
-      )
-
-      .filter(
-        (
-          item: any
-        ): item is any =>
-
-          item !== null
-      );
-
-console.log(
-  "VALUES GRID RESULT",
-  {
-    sectionStyle:
-      payload.sectionStyle,
-    gridStyle:
-      payload.gridStyle,
-    columnCount:
-      payload.columnCount
-  }
+  console.log(
+  "VALUES_GRID_PAYLOAD_FIRST_ITEM",
+  payload.items?.[0]
 );
 
+
+  const items = (payload.items || [])
+    .map((item: any, index: number) => {
+
+      console.log(
+  "VALUES_GRID_ITEM_STYLE",
+  item.cardStyle
+);
+      if (!item.title) return null;
+
+      return {
+        id: `value-item-${uid}-${index}`,
+        type: "gridItem",
+        data: {
+          props: {},
+          style: {
+            desktop: item.cardStyle || {}
+          }
+        },
+        children: [
+          item.eyebrow
+            ? {
+                id: `value-eyebrow-${uid}-${index}`,
+                type: "text",
+                data: {
+                  props: { content: item.eyebrow },
+                  style: { desktop: item.eyebrowStyle || {} }
+                },
+                children: []
+              }
+            : null,
+          {
+            id: `value-title-${uid}-${index}`,
+            type: "text",
+            data: {
+              props: { content: item.title },
+              style: { desktop: item.titleStyle || {} }
+            },
+            children: []
+          },
+          item.description
+            ? {
+                id: `value-description-${uid}-${index}`,
+                type: "text",
+                data: {
+                  props: { content: item.description },
+                  style: { desktop: item.descriptionStyle || {} }
+                },
+                children: []
+              }
+            : null,
+          item.cta
+            ? {
+                id: `value-cta-${uid}-${index}`,
+                type: "text",
+                data: {
+                  props: { content: item.cta },
+                  style: { desktop: item.ctaStyle || {} }
+                },
+                children: []
+              }
+            : null
+        ].filter((child: any) => child !== null)
+      };
+    })
+    .filter((item: any) => item !== null);
   return {
-
-    id:
-      `values-grid-section-${uid}`,
-
-    type:
-      "section",
-
-      meta: {
-
-  semanticType:
-    "VALUES_GRID"
-},
-
+    id: `values-grid-section-${uid}`,
+    
+    type: "section",
+    meta: {
+      semanticType: "VALUES_GRID"
+    },
     data: {
-
       props: {},
-
-      style: 
-
-  payload.sectionStyle ||
-
-  {
-    desktop: { padding: "80px 40px"}
-  }
-      },
-   children: [
-
-  {
-
-    id:
-      `values-grid-${uid}`,
-
-    type:
-      "grid",
-
-    data: {
-
-      props: {},
-style: {
-
-  ...payload.gridStyle,
-
-  desktop: {
-
-    ...payload.gridStyle?.desktop,
-
-    display: "grid",
-
-    gridTemplateColumns:
-      `repeat(${payload.columnCount || 5}, minmax(0,1fr))`
-  },
-
-tablet: {
-
-  display: "grid",
-
-  gridTemplateColumns:
-    "repeat(2, minmax(0,1fr))"
-},
-
-mobile: {
-
-  display: "grid",
-
-  gridTemplateColumns:
-    "repeat(1, minmax(0,1fr))"
-}
+      style: payload.sectionStyle || {
+        desktop: { padding: "80px 40px" }
       }
     },
-
-    children:
-      items
-  }
-]
+    children: [
+      ...(payload.title
+        ? [
+            {
+              id: `values-grid-header-${uid}`,
+              type: "flex",
+              data: {
+                props: {},
+                style: payload.headerStyle || {
+                  desktop: {
+                    flexDirection: "column",
+                    gap: "12px",
+                    marginBottom: "32px"
+                  }
+                }
+              },
+              children: [
+                ...(payload.eyebrow
+                  ? [
+                      {
+                        id: `values-grid-eyebrow-${uid}`,
+                        type: "text",
+                        data: {
+                          props: { content: payload.eyebrow },
+                          style: { desktop: payload.eyebrowStyle || {} }
+                        },
+                        children: []
+                      }
+                    ]
+                  : []),
+                {
+                  id: `values-grid-title-${uid}`,
+                  type: "title",
+                  data: {
+                    props: { content: payload.title },
+                    style: { desktop: payload.titleStyle || {} }
+                  },
+                  children: []
+                }
+              ]
+            }
+          ]
+        : []),
+      {
+        id: `values-grid-${uid}`,
+        type: "grid",
+        data: {
+          props: {},
+          style: {
+            ...payload.gridStyle,
+            desktop: {
+              display: "grid",
+              gridTemplateColumns: `repeat(${payload.columnCount || 5}, minmax(0,1fr))`,
+              ...payload.gridStyle?.desktop
+            },
+            tablet: {
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0,1fr))",
+              ...payload.gridStyle?.tablet
+            },
+            mobile: {
+              display: "grid",
+              gridTemplateColumns: "repeat(1, minmax(0,1fr))",
+              ...payload.gridStyle?.mobile
+            }
+          }
+        },
+        children: items
+      }
+    ]
   };
 };

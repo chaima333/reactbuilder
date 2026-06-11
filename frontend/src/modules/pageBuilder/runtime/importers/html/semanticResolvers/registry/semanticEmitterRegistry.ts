@@ -102,5 +102,16 @@ Partial<
   TRUST_LOGO_SECTION:
     presetRegistry.trustLogo,
 
+    CONTENT_LIST_SECTION:
+  presetRegistry.contentList,
+
+  INFO_BANNER:
+  presetRegistry.infoBanner,
+
+  TWO_COLUMN_INTRO:
+  presetRegistry.twoColumnIntro,
+
+  CTA_CARD:
+  generateCTAGroupPreset,
     
 };

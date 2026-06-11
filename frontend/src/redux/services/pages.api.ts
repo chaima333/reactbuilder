@@ -112,6 +112,24 @@ export const pagesApi = api.injectEndpoints({
       invalidatesTags: [{ type: 'Pages', id: 'LIST' }],
     }),
 
+    importFigma: builder.mutation<
+  any,
+  {
+    siteId: number | string;
+    fileKey: string;
+    frameId?: string;
+  }
+>({
+  query: ({ siteId, fileKey, frameId }) => ({
+    url: `/sites/${siteId}/pages/figma/import`,
+    method: "POST",
+    body: {
+      fileKey,
+      frameId
+    }
+  }),
+}),
+
  getPublicPage:
 
 builder.query<
@@ -158,5 +176,6 @@ export const {
   useUpdatePageMutation,
   useDeletePageMutation,
   usePublishPageMutation,
-  useGetPublicPageQuery
+  useGetPublicPageQuery,
+  useImportFigmaMutation,
 } = pagesApi;

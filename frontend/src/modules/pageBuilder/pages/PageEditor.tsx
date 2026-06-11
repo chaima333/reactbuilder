@@ -36,6 +36,7 @@ import { RuntimeProvider } from "../runtime/context/RuntimeProvider";
 import { downloadJsonFile, readJsonFile } from "../services/importExport";
 import { findBlockById } from "../core/tree/findBlockById";
 import { importHtmlDocument } from "../runtime/importers/html/importHtmlDocument";
+import { runFigmaImport } from "../runtime/importers/figma/figmaImporter";
 
 const generateUniqueId = () => Math.random().toString(36).substring(2, 9);
 const hydrateBlocks = (blocks: any[]): any[] => {
@@ -131,6 +132,12 @@ export const PageEditor = ({ mode }: { mode: "create" | "edit" }) => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [htmlCode, setHtmlCode] = useState("");
+  const [isFigmaModalOpen, setIsFigmaModalOpen] = useState(false);
+
+
+// for figma import
+const [figmaUrl, setFigmaUrl] = useState("");
+const [figmaFrameId, setFigmaFrameId] = useState("");
 
   const selectedBlock = useMemo(() => {
     if (!selectedBlockId) return null;
@@ -199,6 +206,49 @@ setTimeout(() => {
     }
   };
 
+// =====================================
+// FIGMA IMPORT HANDLER
+// =====================================
+const handleFigmaImportExecute = async () => {
+  const match = figmaUrl.match(/\/(?:file|design)\/([^/]+)/);
+  const fileKey = match?.[1];
+
+  if (!fileKey) {
+    console.error("Invalid Figma URL");
+    return;
+  }
+
+  const response = await fetch(
+    `https://backend-rmfq.onrender.com/api/sites/2/pages/figma/import`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        fileKey,
+        frameId: figmaFrameId || null
+      })
+    }
+  );
+
+  const result = await response.json();
+
+  const nodes = parseFigmaDocument(result.data);
+
+  console.log(
+    "FIGMA FRAMES FOUND:",
+    nodes.map(node => ({
+      id: node.id,
+      name: node.name,
+      type: node.type,
+      children: node.children?.length || 0
+    }))
+  );
+
+  setIsFigmaModalOpen(false);
+};
+
   return (
     <RuntimeProvider value={{ mode: isPreview ? "preview" : "editor", device, tokens }}>
       <ThemeContext.Provider value={{ tokens, updateToken }}>
@@ -237,7 +287,7 @@ setTimeout(() => {
                     console.error("Failed to read import file", err);
                   }
                 }}
-                onImportHtml={() => setIsModalOpen(true)}
+                onImportHtml={() => setIsModalOpen(true)} 
               />
             }
             leftSidebar={
@@ -293,6 +343,7 @@ setTimeout(() => {
                           }
                         }}
                         onImportHtml={() => setIsModalOpen(true)}
+                        onImportFigma={() => setIsFigmaModalOpen(true)}
                       />
                     )}
                     {activeTab === 1 && (
@@ -351,7 +402,6 @@ setTimeout(() => {
               <Typography variant="body2" color="text.secondary">
                 Paste your clean HTML snippet below. The compiler will structure it into editable canvas blocks.
               </Typography>
-
               <TextField
                 fullWidth
                 multiline
@@ -378,6 +428,71 @@ setTimeout(() => {
               </Stack>
             </Paper>
           </Modal>
+<Modal
+  open={isFigmaModalOpen}
+  onClose={() => setIsFigmaModalOpen(false)}
+  sx={{
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  }}
+>
+  <Paper
+    sx={{
+      width: 500,
+      p: 3,
+      borderRadius: 3,
+      display: "flex",
+      flexDirection: "column",
+      gap: 2
+    }}
+  >
+    <Typography variant="h6" fontWeight="bold">
+      Import From Figma
+    </Typography>
+
+    <TextField
+      fullWidth
+      label="Figma URL"
+      placeholder="https://www.figma.com/design/FILE_KEY/project-name"
+      value={figmaUrl}
+      onChange={(e) =>
+        setFigmaUrl(e.target.value)
+      }
+    />
+
+    <TextField
+      fullWidth
+      label="Frame ID (optional)"
+      placeholder="Example: 12:34"
+      value={figmaFrameId}
+      onChange={(e) =>
+        setFigmaFrameId(e.target.value)
+      }
+    />
+
+    <Stack
+      direction="row"
+      justifyContent="flex-end"
+      spacing={2}
+    >
+      <Button
+        onClick={() =>
+          setIsFigmaModalOpen(false)
+        }
+      >
+        Cancel
+      </Button>
+
+      <Button
+        variant="contained"
+        onClick={handleFigmaImportExecute}
+      >
+        Import
+      </Button>
+    </Stack>
+  </Paper>
+</Modal>
 
           {ghost && activeId && (
             <Box sx={{ position: "fixed", top: ghost.y, left: ghost.x, zIndex: 9999, pointerEvents: "none" }}>
