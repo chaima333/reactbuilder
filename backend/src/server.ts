@@ -1,6 +1,13 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
+console.log(
+  "FIGMA TOKEN:",
+  process.env.FIGMA_ACCESS_TOKEN
+    ? "FOUND"
+    : "NOT FOUND"
+);
+
 import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import path from "path";
