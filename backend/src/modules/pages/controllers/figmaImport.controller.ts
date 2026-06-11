@@ -32,8 +32,9 @@ return res.status(200).json({
   success: true,
   message: "Figma fetched",
   data: {
-    name: figmaDoc.name
-  }
+  name: figmaDoc.name,
+  document: figmaDoc.document
+}
 });
   } catch (error: any) {
     return res.status(500).json({
