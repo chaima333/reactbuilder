@@ -61,3 +61,47 @@ export const importFigma = async (
     });
   }
 };
+// This function is meant to be used inside the Figma plugin code
+export const importFigmaRaw = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { payload, source } = req.body;
+
+    if (!payload) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing Figma payload"
+      });
+    }
+
+    console.log("[FIGMA_RAW_IMPORT]", {
+      source,
+      frameId: payload.id,
+      frameName: payload.name,
+      frameType: payload.type,
+      childrenCount: Array.isArray(payload.children)
+        ? payload.children.length
+        : 0
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Figma raw payload received",
+      data: {
+        source: source || "figma-plugin",
+        payload
+      }
+    });
+  } catch (error: any) {
+    console.error("[FIGMA_RAW_IMPORT_ERROR]", error);
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error?.message ||
+        "Figma raw import failed"
+    });
+  }
+};

@@ -13,7 +13,7 @@ import {
   getPageHistory,
   getPageById
 } from "../controllers/page.controller";
-import { importFigma } from "../controllers/figmaImport.controller";
+import { importFigma, importFigmaRaw } from "../controllers/figmaImport.controller";
 
 const router = Router({ mergeParams: true });
 
@@ -37,5 +37,11 @@ router.post(
   "/figma/import",
   requirePermission(PERMISSIONS.PAGE_UPDATE),
   importFigma
+);
+
+router.post(
+  "/figma/import/raw",
+  requirePermission(PERMISSIONS.PAGE_UPDATE),
+  importFigmaRaw
 );
 export default router;
