@@ -11,9 +11,19 @@ export const fetchFigmaFile = async (
     }
   );
 
+  console.log("FIGMA STATUS:", response.status);
+  console.log(
+    "FIGMA HEADERS:",
+    Object.fromEntries(response.headers.entries())
+  );
+
   if (!response.ok) {
+    const errorText = await response.text();
+
+    console.error("FIGMA ERROR BODY:", errorText);
+
     throw new Error(
-      `Figma API failed with status ${response.status}`
+      `Figma API failed with status ${response.status}: ${errorText}`
     );
   }
 
