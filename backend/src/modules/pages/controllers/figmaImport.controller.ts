@@ -36,10 +36,15 @@ return res.status(200).json({
   document: figmaDoc.document
 }
 });
-  } catch (error: any) {
+    } catch (error: any) {
+    console.error(
+      "[FIGMA_IMPORT_ERROR_FULL]",
+      error
+    );
+
     return res.status(500).json({
       success: false,
-      message: error.message
+      message: error?.message || "Figma import failed"
     });
   }
 };
