@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import unzipper from "unzipper";
+import { MediaService } from "../media/media.service";
 
 export const importHtmlZip = async (
   req: any,
@@ -139,6 +140,50 @@ export const importHtmlZip = async (
       "INDEX HTML FOUND",
       !!indexHtml
     );
+    let processedHtml =
+  indexHtml || "";
+
+const imageFiles =
+  files.filter(file =>
+    /\.(png|jpg|jpeg|webp|gif|svg)$/i.test(file)
+  );
+
+const assetMap: Record<string, string> = {};
+
+for (const imagePath of imageFiles) {
+  const buffer =
+    fs.readFileSync(imagePath);
+
+  const relativePath =
+    path
+      .relative(extractDir, imagePath)
+      .replace(/\\/g, "/");
+
+  const fakeFile = {
+    buffer,
+    originalname:
+      path.basename(imagePath),
+    mimetype:
+      "image/" + path.extname(imagePath).replace(".", ""),
+    size:
+      buffer.length
+  };
+
+  const media =
+    await MediaService.processUpload(
+      fakeFile,
+      String(req.params.siteId),
+      String(req.user.id)
+    );
+
+  assetMap[relativePath] =
+    media.url;
+
+  processedHtml =
+    processedHtml
+      .split(relativePath)
+      .join(media.url);
+}
 
     // =========================
     // RESPONSE
@@ -158,7 +203,9 @@ export const importHtmlZip = async (
       indexHtmlFound:
         !!indexHtml,
 
-      files
+      files,
+      assetMap,
+processedHtmlPreview: processedHtml.slice(0, 500)
     });
 
   } catch (error: any) {

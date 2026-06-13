@@ -32,7 +32,7 @@ static async processUpload(file: any, siteId: string, userId: string, alt?: stri
   
     filename: cloudResult.public_id,
     url: cloudResult.secure_url,
-    type: fileType, // ✅ هنا
+    type: fileType, 
     size: file.size,
     alt: alt || '',
     userId,
