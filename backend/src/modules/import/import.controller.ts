@@ -254,6 +254,15 @@ for (const imagePath of imageFiles) {
       .split(relativePath)
       .join(media.url);
 }
+console.log("ZIP HTML AFTER ASSET REPLACE", {
+  hasLocalLogoPath:
+    processedHtml.includes("assets/logo.png"),
+
+  hasCloudinary:
+    processedHtml.includes("res.cloudinary.com"),
+
+  assetMap
+});
 
 
     // =========================

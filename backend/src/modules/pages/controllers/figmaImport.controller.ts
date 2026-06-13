@@ -69,11 +69,15 @@ export const importFigmaRaw = async (
       });
     }
 
-    const importId =
-      saveFigmaImportPayload(
-        payload,
-        source || "figma-plugin"
-      );
+    const siteId = Number(req.params.siteId);
+const userId = (req as any).user?.userId;
+
+const importId = await saveFigmaImportPayload(
+  payload,
+  source || "figma-plugin",
+  siteId,
+  userId
+);
 
     console.log("[FIGMA_RAW_IMPORT_SAVED]", {
       importId,
@@ -112,6 +116,7 @@ export const getFigmaRawImport = async (
 ) => {
   try {
     const { importId } = req.params;
+    
 
     const item =
       getFigmaImportPayload(importId);

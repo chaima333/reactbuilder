@@ -1,34 +1,23 @@
-// backend/src/modules/pages/services/figma/figmaImportStore.ts
+import { FigmaImport } from "../../../../models/FigmaImport";
 
-import crypto from "crypto";
-
-type StoredFigmaImport = {
-  id: string;
-  payload: any;
-  source: string;
-  createdAt: number;
-};
-
-const store = new Map<string, StoredFigmaImport>();
-
-export const saveFigmaImportPayload = (
+export const saveFigmaImportPayload = async (
   payload: any,
-  source = "figma-plugin"
-): string => {
-  const id = crypto.randomUUID();
-
-  store.set(id, {
-    id,
+  source = "figma-plugin",
+  siteId: number,
+  userId: number
+): Promise<string> => {
+  const item = await FigmaImport.create({
     payload,
     source,
-    createdAt: Date.now()
+    siteId,
+    userId
   });
 
-  return id;
+  return item.id;
 };
 
-export const getFigmaImportPayload = (
+export const getFigmaImportPayload = async (
   id: string
-): StoredFigmaImport | null => {
-  return store.get(id) || null;
+) => {
+  return FigmaImport.findByPk(id);
 };
