@@ -8,7 +8,7 @@ export const importHtmlZip = async (
   res: any
 ) => {
   try {
-
+console.log("🚀 ZIP IMPORT V2 LOADED");
     if (!req.file) {
       return res.status(400).json({
         success: false,
