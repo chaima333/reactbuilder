@@ -2,8 +2,9 @@ import { Router } from "express";
 import multer from "multer";
 import { importHtmlZip } from "./import.controller";
 
-const router = Router();
-
+const router = Router({
+  mergeParams: true
+});
 const upload = multer({
   dest: "temp/"
 });
