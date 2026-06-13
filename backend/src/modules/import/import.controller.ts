@@ -181,18 +181,19 @@ console.log("ZIP HTML AFTER INJECTION", {
 });
   if (navHtml) {
     processedHtml =
-      processedHtml.replace(
-        '<div id="site-nav"></div>',
-        navHtml
-      );
+      processedHtml =
+  processedHtml.replace(
+    /<div\s+id=["']site-nav["']\s*><\/div>/i,
+    navHtml
+  );
   }
 
   if (footerHtml) {
     processedHtml =
-      processedHtml.replace(
-        '<div id="site-footer"></div>',
-        footerHtml
-      );
+  processedHtml.replace(
+    /<div\s+id=["']site-footer["']\s*><\/div>/i,
+    footerHtml
+  );
   }
 }
 
