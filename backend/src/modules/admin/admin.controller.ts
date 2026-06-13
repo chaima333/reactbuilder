@@ -36,3 +36,58 @@ export const rejectUser = async (req: AuthRequest, res: Response) => {
     res.status(status).json({ success: false, message: error.message });
   }
 };
+
+export const getAdminStats = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const stats =
+      await AdminService.getPlatformStats();
+
+    res.json({
+      success: true,
+      data: stats,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+export const getAdminUsers = async (req: AuthRequest, res: Response) => {
+  try {
+    const users = await AdminService.fetchAdminUsers();
+    res.json({ success: true, data: users });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getAdminSites = async (req: AuthRequest, res: Response) => {
+  try {
+    const sites = await AdminService.fetchAdminSites();
+    res.json({ success: true, data: sites });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getAdminPlugins = async (req: AuthRequest, res: Response) => {
+  try {
+    const plugins = await AdminService.fetchAdminPlugins();
+    res.json({ success: true, data: plugins });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getAdminActivityLogs = async (req: AuthRequest, res: Response) => {
+  try {
+    const logs = await AdminService.fetchAdminActivityLogs();
+    res.json({ success: true, data: logs });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

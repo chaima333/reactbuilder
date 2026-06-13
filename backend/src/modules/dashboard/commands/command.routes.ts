@@ -4,7 +4,6 @@ import { CommandBus } from "../../../core/commands/command.bus";
 
 const router = Router({ mergeParams: true });
 
-// 🔥 IMPORTANT: route = "/"
 router.post("/", authenticateJWT, async (req: AuthRequest, res) => {
   try {
     const { siteId } = req.params;
