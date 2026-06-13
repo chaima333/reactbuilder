@@ -189,7 +189,7 @@ for (const imagePath of imageFiles) {
     // RESPONSE
     // =========================
 
-    return res.json({
+   /* return res.json({
       success: true,
 
       file: req.file,
@@ -206,7 +206,14 @@ for (const imagePath of imageFiles) {
       files,
       assetMap,
 processedHtmlPreview: processedHtml.slice(0, 500)
-    });
+    });*/
+    return res.json({
+  success: true,
+
+  assetMap,
+
+  processedHtml
+});
 
   } catch (error: any) {
 
