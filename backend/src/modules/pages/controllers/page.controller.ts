@@ -13,7 +13,7 @@ export const handleEventDispatch = async (result: any, source: string) => {
 
   const envelope = {
     type: eventPayload.type,
-    data: eventPayload.data || eventPayload.payload, // دعم التسميتين مؤقتاً
+    data: eventPayload.data || eventPayload.payload,
     context: eventPayload.context || {},
     meta: eventPayload.meta || {
       eventId: crypto.randomUUID(),
@@ -21,9 +21,9 @@ export const handleEventDispatch = async (result: any, source: string) => {
     }
   };
 await EventDispatcher.dispatch(
-  envelope.type, // 1. اسم الحدث (مثلاً "page.updated") -> هذا هو الـ String المطلوب
-  envelope,      // 2. المحتوى كامل (الـ Object)
-  source         // 3. المصدر (مثلاً "page.controller")
+  envelope.type, 
+  envelope,     
+  source         
 );
 };
 
@@ -60,27 +60,22 @@ export const getPages = async (req: AuthRequest, res: Response) => {
 // 🟢 UPDATE PAGE
 // ========================
 
-// 🔒 مخزن مؤقت لحفظ الطلبات اللي قاعدة تتخدم توّة
 const activeRequests = new Set<string>();
 
 export const updatePage = async (req: AuthRequest, res: Response) => {
-  // 🔑 نصنعوا مفتاح فريد يعتمد على الـ Site والـ Page
   const lockKey = `${req.siteContext.siteId}:${req.params.pageId}`;
 
   try {
-    // 🛑 1. إذا الطلب هذا ديجا قاعد يتخدم، نرفضوا الطلب الجديد
     if (activeRequests.has(lockKey)) {
-      console.log(`🛑 [CONTROLLER] Duplicate request blocked for Key: ${lockKey}`);
+      console.log(` [CONTROLLER] Duplicate request blocked for Key: ${lockKey}`);
       return res.status(429).json({ 
         success: false, 
         message: "Action already in progress. Please wait." 
       });
     }
 
-    // 🛡️ 2. نسجلوا الطلب كـ "نشط"
     activeRequests.add(lockKey);
 
-    // 🏃 3. نعيطوا للـ Service بالخدمة متاعنا
     const result = await PageService.updatePage(
       Number(req.siteContext.siteId),
       Number(req.params.pageId),
@@ -96,8 +91,6 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
   } finally {
-    // 🔓 4. أهم خطوة: ديما نحيوا الـ Lock في الـ finally (سواء نجحت العملية أو فشلت)
-    // نزيدوا Delay صغير (مثلاً 500ms) باش نضمنوا إنو الـ Frontend ركح
     setTimeout(() => {
       activeRequests.delete(lockKey);
     }, 500);
@@ -150,7 +143,6 @@ export const restorePageVersion = async (req: AuthRequest, res: Response) => {
       req.user.id
     );
 
-    // ✅ نداء واحد بركة للـ Dispatcher النظيف متاعنا
     await handleEventDispatch(result, "PageController.restorePageVersion");
 
     return res.json({ success: true, data: PageMapper.toDTO(result.data) });
@@ -182,7 +174,6 @@ export const getPageById = async (req: AuthRequest, res: Response) => {
     const { pageId } = req.params;
     const siteId = req.siteContext.siteId;
 
-    // نعيطوا للـ Service باش يجيب الصفحة
     const page = await PageService.getPageById(Number(pageId), siteId);
 
     if (!page) {

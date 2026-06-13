@@ -35,6 +35,7 @@ import { initPluginWorker } from "./core/queues/plugin.worker";
 import commandRoutes from "./modules/dashboard/commands/command.routes";
 import { registerCommands } from "./core/commands/register";
 import publicSiteRoutes from "./modules/sites/publicSite.routes";
+import importRoutes from "./modules/import/import.routes";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 
@@ -77,7 +78,11 @@ const tenantStack = [authenticateJWT, tenantResolver];
 app.use("/api/sites/:siteId/dashboard", authenticateJWT, dashboardRoutes);
 app.use("/api/sites/:siteId/pages", tenantStack, pageRoutes);
 app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
-
+app.use(
+  "/api/sites/:siteId/import",
+  tenantStack,
+  importRoutes
+);
 /* ========================
    ADMIN / USERS
 ======================== */

@@ -1,6 +1,11 @@
+// backend/src/modules/pages/controllers/figmaImport.controller.ts
+
 import { Request, Response } from "express";
 import { fetchFigmaFile } from "../services/figma/figmaApiClient";
-import { mockFigmaDocument } from "../services/figma/mockFigmaDocument";
+import {
+  saveFigmaImportPayload,
+  getFigmaImportPayload
+} from "../services/figma/figmaImportStore";
 
 export const importFigma = async (
   req: Request,
@@ -14,16 +19,7 @@ export const importFigma = async (
       frameId
     });
 
-    if (process.env.FIGMA_MOCK_MODE === "true") {
-      return res.status(200).json({
-        success: true,
-        message: "Figma mock fetched",
-        data: {
-          name: "Mock Figma Document",
-          document: mockFigmaDocument
-        }
-      });
-    }
+
 
     const token = process.env.FIGMA_ACCESS_TOKEN;
 
@@ -48,10 +44,7 @@ export const importFigma = async (
       }
     });
   } catch (error: any) {
-    console.error(
-      "[FIGMA_IMPORT_ERROR_FULL]",
-      error
-    );
+    console.error("[FIGMA_IMPORT_ERROR_FULL]", error);
 
     return res.status(500).json({
       success: false,
@@ -61,7 +54,7 @@ export const importFigma = async (
     });
   }
 };
-// This function is meant to be used inside the Figma plugin code
+
 export const importFigmaRaw = async (
   req: Request,
   res: Response
@@ -76,7 +69,14 @@ export const importFigmaRaw = async (
       });
     }
 
-    console.log("[FIGMA_RAW_IMPORT]", {
+    const importId =
+      saveFigmaImportPayload(
+        payload,
+        source || "figma-plugin"
+      );
+
+    console.log("[FIGMA_RAW_IMPORT_SAVED]", {
+      importId,
       source,
       frameId: payload.id,
       frameName: payload.name,
@@ -88,10 +88,10 @@ export const importFigmaRaw = async (
 
     return res.status(200).json({
       success: true,
-      message: "Figma raw payload received",
+      message: "Figma payload saved",
       data: {
-        source: source || "figma-plugin",
-        payload
+        importId,
+        frameName: payload.name
       }
     });
   } catch (error: any) {
@@ -102,6 +102,40 @@ export const importFigmaRaw = async (
       message:
         error?.message ||
         "Figma raw import failed"
+    });
+  }
+};
+
+export const getFigmaRawImport = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { importId } = req.params;
+
+    const item =
+      getFigmaImportPayload(importId);
+
+    if (!item) {
+      return res.status(404).json({
+        success: false,
+        message: "Figma import not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Figma import found",
+      data: item
+    });
+  } catch (error: any) {
+    console.error("[FIGMA_RAW_GET_ERROR]", error);
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error?.message ||
+        "Failed to get Figma import"
     });
   }
 };
