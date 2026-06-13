@@ -143,6 +143,59 @@ export const importHtmlZip = async (
     let processedHtml =
   indexHtml || "";
 
+  const siteJsPath =
+  files.find(file =>
+    file.endsWith("assets/site.js")
+  );
+
+if (siteJsPath) {
+  const siteJs =
+    fs.readFileSync(siteJsPath, "utf-8");
+    const extractTemplateConst = (
+  js: string,
+  name: string
+) => {
+  const match = js.match(
+    new RegExp(`const\\s+${name}\\s*=\\s*\`([\\s\\S]*?)\`;`)
+  );
+
+  return match?.[1] || "";
+};
+
+  const navHtml =
+    extractTemplateConst(siteJs, "NAV_HTML");
+
+  const footerHtml =
+    extractTemplateConst(siteJs, "FOOTER_HTML");
+console.log("ZIP TEMPLATE INJECTION", {
+  siteJsFound: !!siteJsPath,
+  navFound: !!navHtml,
+  footerFound: !!footerHtml,
+  beforeHasNavHost: processedHtml.includes('<div id="site-nav"></div>'),
+  beforeHasFooterHost: processedHtml.includes('<div id="site-footer"></div>')
+});
+console.log("ZIP HTML AFTER INJECTION", {
+  hasNavTag: processedHtml.includes('<nav'),
+  hasFooterTag: processedHtml.includes('<footer'),
+  hasLogoPath: processedHtml.includes('assets/logo.png')
+});
+  if (navHtml) {
+    processedHtml =
+      processedHtml.replace(
+        '<div id="site-nav"></div>',
+        navHtml
+      );
+  }
+
+  if (footerHtml) {
+    processedHtml =
+      processedHtml.replace(
+        '<div id="site-footer"></div>',
+        footerHtml
+      );
+  }
+}
+
 const imageFiles =
   files.filter(file =>
     /\.(png|jpg|jpeg|webp|gif|svg)$/i.test(file)
@@ -185,28 +238,10 @@ for (const imagePath of imageFiles) {
       .join(media.url);
 }
 
+
     // =========================
     // RESPONSE
     // =========================
-
-   /* return res.json({
-      success: true,
-
-      file: req.file,
-
-      extractDir,
-
-      htmlFiles,
-
-      indexHtmlPath,
-
-      indexHtmlFound:
-        !!indexHtml,
-
-      files,
-      assetMap,
-processedHtmlPreview: processedHtml.slice(0, 500)
-    });*/
     return res.json({
   success: true,
 
