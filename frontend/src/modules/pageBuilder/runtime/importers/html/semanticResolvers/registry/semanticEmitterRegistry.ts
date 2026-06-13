@@ -9,6 +9,7 @@ import {
 import {
   presetRegistry
 } from "../../../../../presets/presetRegistry";
+import { generateNavbarPreset } from "../../../../../presets/generateNavbarPreset";
 
 const generateCTAGroupPreset = (
   payload: any
@@ -74,6 +75,8 @@ Partial<
   >
 
 > = {
+
+  NAVBAR: generateNavbarPreset,
 
   HERO_SECTION:
     presetRegistry.hero,

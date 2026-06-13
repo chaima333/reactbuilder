@@ -117,7 +117,12 @@ console.log(
   // CURRENT NODE
   // =====================================
 for (const resolver of semanticResolverRegistry) {
-
+ console.log(
+    "🧪 TRY RESOLVER",
+    resolver.name,
+    node.element.tagName,
+    getElementClassName(node.element)
+  );
   const result = resolver(node);
 
   if (result) {

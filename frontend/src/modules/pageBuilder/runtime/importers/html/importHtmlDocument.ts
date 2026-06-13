@@ -2051,15 +2051,7 @@ const ownedFlexGroup =
       elementId
   );
 
-  const ownedNavbar =
-
-  ownership.navbars?.find(
-    navbar =>
-
-      navbar.elementId ===
-      elementId
-  );
-
+  const ownedNavbar = ownership.navbars?.find( navbar => navbar.elementId === elementId);
 if (ownedNavbar) {
 
   console.log(

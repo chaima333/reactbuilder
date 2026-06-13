@@ -1,14 +1,15 @@
 import React, { useEffect } from "react";
-import { Box, CircularProgress, Alert, Typography, Container } from "@mui/material";
+import { Box, CircularProgress, Alert, Typography, Container, Button } from "@mui/material";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";
 import { useGetDashboardFullQuery } from "../../../redux/services/dashboard.api";
 import DashboardRenderer from "./DashboardRenderer";
 import { SiteSelector }from "../components/SiteSelector";
+import { useNavigate } from "react-router-dom";
 
 export const DashboardPage: React.FC = () => {
   const siteId = useSelector((state: RootState) => state.site.currentSite?.id);
-
+  const navigate = useNavigate();
   const { data, isLoading, isError, error, isFetching, status } = useGetDashboardFullQuery(
     Number(siteId) || 0, 
     { 
@@ -17,14 +18,26 @@ export const DashboardPage: React.FC = () => {
     }
   );
 
-  // 1. If no site is selected
-  if (!siteId) {
-    return (
-      <Box sx={{ p: 4 }}>
-        <Alert severity="warning">Please select a site to continue.</Alert>
-      </Box>
-    );
-  }
+ if (!siteId) {
+  return (
+    <Box sx={{ p: 4 }}>
+      <Alert
+        severity="info"
+        action={
+          <Button
+            color="inherit"
+            size="small"
+            onClick={() => navigate("/sites")}
+          >
+            Create Site
+          </Button>
+        }
+      >
+        Welcome! Create your first website to start using ReactBuilder.
+      </Alert>
+    </Box>
+  );
+}
 
   // 2. THE FIX: If the request is still pending or uninitialized, keep showing the loader
   // We use 'fulfilled' status to ensure data actually arrived from the server

@@ -52,3 +52,21 @@ export const parseFigmaDocument = (
     node => node.type === "FRAME"
   );
 };
+// figma-plugin
+export const parseFigmaPluginPayload = (
+  payload: FigmaNode
+): FigmaNode[] => {
+  if (!payload) {
+    return [];
+  }
+
+  if (
+    payload.type === "FRAME" ||
+    payload.type === "COMPONENT" ||
+    payload.type === "SECTION"
+  ) {
+    return [payload];
+  }
+
+  return payload.children || [];
+};

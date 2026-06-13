@@ -21,10 +21,27 @@ export const PublicPageRuntime = ({
   // =========================
   // GLOBAL LAYOUT
   // =========================
+const globalLayout =
+  site?.globalLayout ||
+  page?.site?.globalLayout ||
+  page?.globalLayout ||
+  {};
+console.log(
+  "PUBLIC_GLOBAL_LAYOUT",
+  {
+    hasSite:
+      !!site,
 
-  const globalLayout =
-  site?.globalLayout || {};
+    hasPageSite:
+      !!page?.site,
 
+    hasGlobalLayout:
+      !!globalLayout?.navbar,
+
+    navbarType:
+      globalLayout?.navbar?.type
+  }
+);
   // =========================
   // NAVBAR
   // =========================
@@ -46,7 +63,14 @@ const navbarBlocks: any[] =
   // =========================
   // RENDER
   // =========================
-
+console.log(
+  "NAVBAR_BLOCKS",
+  navbarBlocks
+);
+console.log(
+  "GLOBAL_LAYOUT",
+  globalLayout
+);
   return (
 
     <RuntimeProvider

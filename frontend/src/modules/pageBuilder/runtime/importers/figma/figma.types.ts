@@ -11,6 +11,8 @@ export type FigmaNode = {
   name: string;
   type: FigmaNodeType;
   children?: FigmaNode[];
+  imageBase64?: string;
+imageMimeType?: string;
 
   
 
@@ -60,12 +62,21 @@ type FigmaTextStyle = {
 
 type FigmaFill = {
   type: "SOLID" | "GRADIENT_LINEAR" | "IMAGE";
+  visible?: boolean;
+  opacity?: number;
+  blendMode?: string;
   color?: { r: number; g: number; b: number; a?: number };
   imageRef?: string;
-  gradientStops?: Array<{ color: { r: number; g: number; b: number }; position: number }>;
+  gradientStops?: Array<{
+    color: { r: number; g: number; b: number; a?: number };
+    position: number;
+  }>;
 };
 type FigmaStroke = {
   type: "SOLID";
+  visible?: boolean;
+  opacity?: number;
+  blendMode?: string;
   color?: {
     r: number;
     g: number;

@@ -57,6 +57,8 @@ import {
   GoogleOAuthProvider
 } from "@react-oauth/google";
 import { useAppBootstrap } from "./modules/dashboard/hooks/useAppBootstrap";
+import AdminDashboard from "./modules/admin/pages/AdminDashboard";
+import { FigmaImportBridge } from "./modules/pageBuilder/pages/figma/FigmaImportBridge";
 
 
 // ======================================================
@@ -173,9 +175,9 @@ const AdminRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
-  if (user?.role !== "Admin") {
-    return <Navigate to="/dashboard" replace />;
-  }
+ if (user?.role !== "ADMIN") {
+  return <Navigate to="/dashboard" replace />;
+}
 
   return <Outlet />;
 };
@@ -284,6 +286,10 @@ const AppContent: React.FC = () => {
                       path="/dashboard"
                       element={<DashboardPage />}
                     />
+                     <Route
+                     path="/figma-import/:importId"
+                      element={<FigmaImportBridge />}
+                       />
 
                     <Route
                       path="/sites"
@@ -321,7 +327,10 @@ const AppContent: React.FC = () => {
                     />
 
                     <Route element={<AdminRoute />}>
-
+                        <Route
+                         path="/admin"
+                         element={<AdminDashboard />}
+                          />
                       <Route
                         path="/users"
                         element={<Users />}

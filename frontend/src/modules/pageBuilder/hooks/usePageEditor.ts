@@ -528,13 +528,11 @@ const errors = useMemo(() => {
         
         const rawBlocks = fromAPIToUI(data.blocks || []);
         
-        // 👑 السحر التونسي: دالة تطهير وإصلاح الهيكلة والأسماء القديمة أوتوماتيكياً
         const sanitizeAndFixTree = (tree: any[]): any[] => {
           if (!tree || !Array.isArray(tree)) return [];
           return tree.map((block) => {
             let fixedType = block.type;
             
-            // لو الاسم القديم lowercase، بدلو فوراً لـ CamelCase باش يفهمو الـ Resolver والـ Canvas
             if (block.type === "flexitem") {
               fixedType = "flexItem";
             }
@@ -542,7 +540,6 @@ const errors = useMemo(() => {
             return {
               ...block,
               type: fixedType,
-              // تتبع الـ أولاد لداخل وإصلاحهم زادّة بنفس القاعدة
               children: block.children ? sanitizeAndFixTree(block.children) : []
             };
           });

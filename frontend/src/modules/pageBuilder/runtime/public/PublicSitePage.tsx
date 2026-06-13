@@ -76,6 +76,11 @@ export const PublicSite: React.FC = () => {
     );
   }
 
+  console.log(
+  "PUBLIC_SITE_DATA",
+  siteData
+);
+
   // =========================
   // PUBLISHED PAGES
   // =========================
@@ -91,8 +96,33 @@ export const PublicSite: React.FC = () => {
   // =========================
 
  const homepage =
-  publishedPages[0];
-  
+  publishedPages.find(
+    (p: any) => p.isHomepage === true
+  ) || publishedPages[0];
+  console.log(
+  "RAW_HOMEPAGE",
+  homepage
+);
+
+console.log(
+  "RAW_HOMEPAGE_BLOCKS",
+  homepage?.blocks
+);
+
+console.log(
+  "RAW_HOMEPAGE_CONTENT",
+  homepage
+);
+ console.log(
+  "PUBLISHED_PAGES",
+  publishedPages.map(p => ({
+    id: p.id,
+    title: p.title,
+    slug: p.slug,
+    isHomepage: p.isHomepage,
+    blocks: p.blocks?.length
+  }))
+);
   // =========================
   // RENDER
   // =========================

@@ -68,9 +68,7 @@ export const detectNavbarLayout = (
   return [
 
     {
-
-      type:
-        "FLEX_GROUP",
+type: "NAVBAR",
 
       confidence:
         0.95,

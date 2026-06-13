@@ -24,7 +24,10 @@ export const mapFrameStyles = (node: FigmaNode) => ({
       ? figmaColorToHex(node.fills[0].color!)
       : "transparent",
     borderRadius: node.cornerRadius ? `${node.cornerRadius}px` : undefined,
-    width: `${node.absoluteBoundingBox?.width ?? 0}px`,
+    width: "100%",
+maxWidth: node.absoluteBoundingBox?.width
+  ? `${node.absoluteBoundingBox.width}px`
+  : undefined,
   },
   tablet: {},
   mobile: {}
@@ -40,6 +43,9 @@ export const mapTextStyles = (node: FigmaNode) => ({
     color: node.fills?.[0]?.type === "SOLID"
       ? figmaColorToHex(node.fills[0].color!)
       : "#000000",
+      maxWidth: node.absoluteBoundingBox?.width
+  ? `${node.absoluteBoundingBox.width}px`
+  : undefined,
   },
   tablet: {},
   mobile: {}

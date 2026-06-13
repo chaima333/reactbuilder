@@ -89,9 +89,7 @@ const mapFrameToBlock = (
   const rawChildren =
     (node.children || [])
       .map(child =>
-        figmaNodeToBlock(
-          child
-        )
+        figmaNodeToBlock(child)
       )
       .filter(
         (block): block is SerializedBlock =>
@@ -105,20 +103,46 @@ const mapFrameToBlock = (
         : child
     );
 
+  if (isTopLevel) {
+    return {
+      id: node.id,
+      type: "section",
+      data: {
+        props: {},
+        style: mapFrameStyles(node)
+      },
+      children: [
+        {
+          id: `${node.id}-content`,
+          type: "flex",
+          data: {
+            props: {},
+            style: {
+              desktop: {
+                display: "flex",
+                flexDirection:
+                  node.layoutMode === "HORIZONTAL"
+                    ? "row"
+                    : "column",
+                gap: `${node.itemSpacing || 12}px`,
+                width: "100%"
+              },
+              tablet: {},
+              mobile: {}
+            }
+          },
+          children
+        }
+      ]
+    };
+  }
+
   return {
     id: node.id,
-    type:
-      isTopLevel
-        ? "section"
-        : isAutoLayout
-          ? "flex"
-          : "flex",
+    type: isAutoLayout ? "flex" : "flex",
     data: {
       props: {},
-      style:
-        mapFrameStyles(
-          node
-        )
+      style: mapFrameStyles(node)
     },
     children
   };

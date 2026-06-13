@@ -10,6 +10,7 @@ export type Page = {
   userId: number;
   status: "draft" | "published" | "deleted";
   theme: any;
+   isHomepage?: boolean;
 };
 
 export type PageVersion = {
@@ -129,7 +130,32 @@ export const pagesApi = api.injectEndpoints({
     }
   }),
 }),
+uploadHtmlZip: builder.mutation<
+  {
+    success: boolean;
+    assetMap: Record<string, string>;
+    processedHtml: string;
+  },
+  {
+    siteId: number | string;
+    file: File;
+  }
+>({
+  query: ({ siteId, file }) => {
+    const formData = new FormData();
 
+    formData.append(
+      "zip",
+      file
+    );
+
+    return {
+      url: `/sites/${siteId}/import/html-zip`,
+      method: "POST",
+      body: formData
+    };
+  }
+}),
  getPublicPage:
 
 builder.query<
@@ -178,4 +204,5 @@ export const {
   usePublishPageMutation,
   useGetPublicPageQuery,
   useImportFigmaMutation,
+  useUploadHtmlZipMutation,
 } = pagesApi;

@@ -59,7 +59,19 @@ const config =
         children?: React.ReactNode;
       }
     >;
-
+console.log(
+  "RUNTIME_RENDERER_BLOCK",
+  {
+    id: block?.id,
+    type: block?.type,
+    semantic:
+      block?.meta?.semanticType,
+    childTypes:
+      block?.children?.map(
+        (child: any) => child.type
+      )
+  }
+);
   return (
 
     <Component

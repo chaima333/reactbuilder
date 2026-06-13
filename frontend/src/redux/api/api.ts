@@ -15,7 +15,10 @@ export const api = createApi({
     'User',
      'Stats',
     'PendingUsers',
-    'Activity'
+    'Activity',
+    "AdminStats",
+"Plugins",
+"ActivityLogs",
     ],
 
   endpoints: () => ({}),

@@ -279,8 +279,7 @@ const [
  const handleDragOver = (
   event: DragOverEvent
 ) => {
-
-  console.log("DRAG OVER");
+console.log("🔥 HANDLE DRAG OVER CALLED", event.over?.id);
 
   const { active } = event;
 

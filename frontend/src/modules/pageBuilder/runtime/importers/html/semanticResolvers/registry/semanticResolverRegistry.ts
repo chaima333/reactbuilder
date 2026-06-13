@@ -29,9 +29,11 @@ import { resolveContentListSection } from "../contentList/resolveContentListSect
 import { resolveInfoBanner } from "../infoBanner/resolveInfoBanner";
 import { resolveTwoColumnIntro } from "../twoColumnIntro/resolveTwoColumnIntro";
 import { resolveCtaCard } from "../ctaCard/resolveCtaCard";
+import { resolveNavbar } from "../navbar/resolveNavbar";
 
 export const semanticResolverRegistry = [
-
+resolveNavbar,
+  
   resolveHero,
 
   resolveAuthHero,

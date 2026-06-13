@@ -7,6 +7,19 @@ export const resolveOwnership = (
   candidates: StructuralCandidate[]
 ) => {
   console.log("🔥 BEFORE OWNERSHIP", candidates);
+  console.log(
+  "🔥 NAVBAR CANDIDATES BEFORE OWNERSHIP",
+  candidates
+    .filter((c: any) =>
+      c.type === "NAVBAR" ||
+      c.metadata?.semanticIntent === "NAVBAR"
+    )
+    .map((c: any) => ({
+      type: c.type,
+      elementId: c.elementId,
+      metadata: c.metadata
+    }))
+);
 
   const assignments = candidates
     .map(candidate => {
@@ -40,6 +53,21 @@ export const resolveOwnership = (
   });
 
   console.log("🔥 FINAL OWNERSHIP", ownershipGraph);
+console.log(
+  "🔥 NAVBAR OWNERSHIP AFTER RESOLVE",
+  {
+    resolvedOwners:
+      ownershipGraph.resolvedOwners?.filter((c: any) =>
+        c.type === "NAVBAR" ||
+        c.metadata?.semanticIntent === "NAVBAR"
+      ),
+    unassigned:
+      ownershipGraph.unassigned?.filter((c: any) =>
+        c.type === "NAVBAR" ||
+        c.metadata?.semanticIntent === "NAVBAR"
+      )
+  }
+);
 
   return ownershipGraph;
 };

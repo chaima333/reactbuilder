@@ -66,6 +66,21 @@ export const NavbarBlock = ({
     );
   }
 
+  console.log(
+  "NAVBAR_RENDER",
+  {
+    id: block?.id,
+    type: block?.type,
+    childrenCount:
+      block?.children?.length,
+    resolved,
+    block
+  }
+);
+console.log(
+  "NAVBAR_RESOLVED_STYLE",
+  resolved
+);
   // =====================================
   // RESPONSIVE FLEX
   // =====================================

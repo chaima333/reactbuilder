@@ -5,7 +5,7 @@ type User = {
   id: number;
   name: string;
   email: string;
-  role: 'ADMIN' | 'EDITOR' | 'VIEWER' | 'OWNER';
+  role: 'ADMIN' | 'EDITOR' | 'VIEWER' ;
   isApproved?: boolean;
 };
 

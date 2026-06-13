@@ -3,7 +3,8 @@ import {
 } from "./figmaApiClient";
 
 import {
-  parseFigmaDocument
+  parseFigmaDocument,
+  parseFigmaPluginPayload
 } from "./parseFigmaDocument";
 
 import {
@@ -46,6 +47,43 @@ export const runFigmaImport = async (
 
   console.log(
     "FIGMA_IMPORT_REPORT",
+    {
+      inputNodeCount: nodes.length,
+      outputBlockCount: blocks.length
+    }
+  );
+
+  return blocks;
+};
+
+
+import type {
+  FigmaNode
+} from "./figma.types";
+
+export const runFigmaPluginImport = (
+  payload: FigmaNode
+): SerializedBlock[] => {
+  const nodes =
+    parseFigmaPluginPayload(
+      payload
+    );
+
+  const blocks =
+    nodes
+      .map(node =>
+        figmaNodeToBlock(
+          node,
+          true
+        )
+      )
+      .filter(
+        (block): block is SerializedBlock =>
+          block !== null
+      );
+
+  console.log(
+    "FIGMA_PLUGIN_IMPORT_REPORT",
     {
       inputNodeCount: nodes.length,
       outputBlockCount: blocks.length

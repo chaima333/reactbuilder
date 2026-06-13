@@ -47,14 +47,37 @@ export const SiteEditor: React.FC = () => {
     }
 
     try {
-      await updateSite({
-        id: Number(siteId),
-        name,
-        title,
-        description,
-        language,
-        timezone,
-      }as any ).unwrap();
+     await updateSite({
+  id: Number(siteId),
+  name,
+  title,
+  description,
+  language,
+  timezone,
+
+  globalLayout: {
+  navbar: {
+    id: "test-navbar",
+    type: "navbar",
+    data: {
+      props: {},
+      style: {
+        desktop: {
+          flexDirection: "row",
+          gap: "24px",
+          padding: "16px 24px",
+          backgroundColor: "#111827",
+          color: "#ffffff"
+        },
+        tablet: {},
+        mobile: {}
+      }
+    },
+    children: []
+  },
+  footer: null
+}
+} as any).unwrap();
       
       enqueueSnackbar('Site mis à jour avec succès!', { variant: 'success' });
       navigate('/sites');

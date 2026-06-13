@@ -26,9 +26,10 @@ import { ContentListSectionPayload } from "../semanticResolvers/semanticContract
 import { InfoBannerPayload } from "../semanticResolvers/semanticContracts/InfoBannerPayload";
 import { TwoColumnIntroPayload } from "../semanticResolvers/semanticContracts/TwoColumnIntroPayload";
 import { CtaCardPayload } from "../semanticResolvers/semanticContracts/CtaCardPayload";
+import { NavbarPayload } from "../semanticContracts/NavbarPayload";
 
 export type SemanticPayload =
-
+  | NavbarPayload
   | HeroPayload
   | OfficeTablePayload
   | ValuesGridPayload

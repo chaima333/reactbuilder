@@ -36,7 +36,11 @@ import { RuntimeProvider } from "../runtime/context/RuntimeProvider";
 import { downloadJsonFile, readJsonFile } from "../services/importExport";
 import { findBlockById } from "../core/tree/findBlockById";
 import { importHtmlDocument } from "../runtime/importers/html/importHtmlDocument";
-import { runFigmaImport } from "../runtime/importers/figma/figmaImporter";
+import { parseFigmaDocument } from "../runtime/importers/figma/parseFigmaDocument";
+import { useImportFigmaMutation, useUploadHtmlZipMutation } from "../../../redux/services/pages.api";
+import { figmaNodeToBlock } from "../runtime/importers/figma/figmaNodeToBlock";
+import { figmaToSemanticTree } from "../runtime/importers/figma/figmaToSemanticTree";
+import { semanticTreeToBlocks } from "../runtime/importers/figma/semanticTreeToBlocks";
 
 const generateUniqueId = () => Math.random().toString(36).substring(2, 9);
 const hydrateBlocks = (blocks: any[]): any[] => {
@@ -109,7 +113,7 @@ const DragGhost = ({ type, isAllowed }: { type: string; isAllowed: boolean }) =>
 );
 
 export const PageEditor = ({ mode }: { mode: "create" | "edit" }) => {
-  const { pageId } = useParams();
+  const { siteId,pageId } = useParams();
   const editor = usePageEditor(mode);
 
   const {
@@ -136,8 +140,12 @@ export const PageEditor = ({ mode }: { mode: "create" | "edit" }) => {
 
 
 // for figma import
-const [figmaUrl, setFigmaUrl] = useState("");
-const [figmaFrameId, setFigmaFrameId] = useState("");
+const [importFigma] = useImportFigmaMutation();
+const [figmaPluginJson, setFigmaPluginJson] = useState("");
+
+//import siteweb
+const [zipFile, setZipFile] = useState<File | null>(null);
+const [uploadHtmlZip] = useUploadHtmlZipMutation();
 
   const selectedBlock = useMemo(() => {
     if (!selectedBlockId) return null;
@@ -205,50 +213,119 @@ setTimeout(() => {
       console.error("HTML import failed", error);
     }
   };
+ 
+const handleZipImportExecute = async () => {
+  if (!zipFile) return;
 
-// =====================================
-// FIGMA IMPORT HANDLER
-// =====================================
-const handleFigmaImportExecute = async () => {
-  const match = figmaUrl.match(/\/(?:file|design)\/([^/]+)/);
-  const fileKey = match?.[1];
+  try {
+    const result =
+      await uploadHtmlZip({
+        siteId: Number(siteId),
+        file: zipFile
+      }).unwrap();
 
-  if (!fileKey) {
-    console.error("Invalid Figma URL");
-    return;
-  }
-
-  const response = await fetch(
-    `https://backend-rmfq.onrender.com/api/sites/2/pages/figma/import`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        fileKey,
-        frameId: figmaFrameId || null
-      })
+    if (!result.success || !result.processedHtml) {
+      console.error(
+        "ZIP import failed",
+        result
+      );
+      return;
     }
-  );
 
-  const result = await response.json();
+    const imported =
+      await importHtmlDocument(
+        result.processedHtml
+      );
+console.log(
+  "IMPORTED BLOCK COUNT",
+  imported.blocks.length
+);
 
-  const nodes = parseFigmaDocument(result.data);
-
-  console.log(
-    "FIGMA FRAMES FOUND:",
-    nodes.map(node => ({
-      id: node.id,
-      name: node.name,
-      type: node.type,
-      children: node.children?.length || 0
+console.log(
+  "IMPORTED FIRST BLOCKS",
+  imported.blocks
+    .slice(0, 10)
+    .map((block: any) => ({
+      id: block.id,
+      type: block.type,
+      semantic: block.meta?.semanticType,
+      childTypes: (block.children || []).map(
+        (child: any) => child.type
+      )
     }))
-  );
+);
+    const hydrated =
+      hydrateBlocks(
+        imported.blocks.map((block: any) => ({
+          ...block,
+          props:
+            block.data?.props || {},
+          style:
+            block.data?.style || {},
+          children:
+            block.children || []
+        }))
+      );
 
-  setIsFigmaModalOpen(false);
+    actions.setBlocks(
+      hydrated as any
+    );
+
+    setIsModalOpen(false);
+    setZipFile(null);
+
+  } catch (error) {
+    console.error(
+      "ZIP import failed",
+      error
+    );
+  }
 };
+// =====================================
+// FIGMA PLUGIN IMPORT HANDLER
+// =====================================
+const handleFigmaPluginImportExecute = () => {
+  try {
+    const parsed = JSON.parse(figmaPluginJson);
+    const payload = parsed.payload || parsed;
 
+    const semanticTree =
+      figmaToSemanticTree(payload);
+
+  console.dir(
+  semanticTree,
+  { depth: null }
+);
+
+    const figmaBlocks =
+      semanticTreeToBlocks(semanticTree);
+
+    console.log(
+      "FIGMA BLOCKS DIRECT",
+      figmaBlocks
+    );
+
+    const hydrated =
+      hydrateBlocks(
+        figmaBlocks.map((block: any) => ({
+          ...block,
+          props: block.data?.props || {},
+          style: block.data?.style || {},
+          children: block.children || []
+        }))
+      );
+
+    actions.setBlocks(hydrated as any);
+    setSelectedBlockId(hydrated[0]?.id || null);
+    setActiveTab(1);
+    setIsFigmaModalOpen(false);
+  } catch (error) {
+    console.error(
+      "FIGMA PLUGIN IMPORT ERROR",
+      error
+    );
+  }
+};
   return (
     <RuntimeProvider value={{ mode: isPreview ? "preview" : "editor", device, tokens }}>
       <ThemeContext.Provider value={{ tokens, updateToken }}>
@@ -425,6 +502,31 @@ const handleFigmaImportExecute = async () => {
                 >
                   Parse & Inject
                 </Button>
+                <Button variant="outlined" component="label">
+  Upload Website ZIP
+  <input
+    hidden
+    type="file"
+    accept=".zip"
+    onChange={(e) =>
+      setZipFile(e.target.files?.[0] || null)
+    }
+  />
+</Button>
+
+{zipFile && (
+  <Typography variant="caption">
+    Selected: {zipFile.name}
+  </Typography>
+)}
+<Button
+  variant="contained"
+  color="secondary"
+  onClick={handleZipImportExecute}
+  disabled={!zipFile}
+>
+  Import ZIP
+</Button>
               </Stack>
             </Paper>
           </Modal>
@@ -451,25 +553,17 @@ const handleFigmaImportExecute = async () => {
       Import From Figma
     </Typography>
 
-    <TextField
-      fullWidth
-      label="Figma URL"
-      placeholder="https://www.figma.com/design/FILE_KEY/project-name"
-      value={figmaUrl}
-      onChange={(e) =>
-        setFigmaUrl(e.target.value)
-      }
-    />
-
-    <TextField
-      fullWidth
-      label="Frame ID (optional)"
-      placeholder="Example: 12:34"
-      value={figmaFrameId}
-      onChange={(e) =>
-        setFigmaFrameId(e.target.value)
-      }
-    />
+   <TextField
+  fullWidth
+  multiline
+  rows={12}
+  label="Figma Plugin JSON"
+  placeholder='Paste plugin JSON here'
+  value={figmaPluginJson}
+  onChange={(e) =>
+    setFigmaPluginJson(e.target.value)
+  }
+/>
 
     <Stack
       direction="row"
@@ -485,11 +579,11 @@ const handleFigmaImportExecute = async () => {
       </Button>
 
       <Button
-        variant="contained"
-        onClick={handleFigmaImportExecute}
-      >
-        Import
-      </Button>
+  variant="contained"
+  onClick={handleFigmaPluginImportExecute}
+>
+  Import
+</Button>
     </Stack>
   </Paper>
 </Modal>

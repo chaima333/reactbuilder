@@ -17,6 +17,7 @@ import {
   Image as MediaIcon,
   Settings as SettingsIcon,
   People as UsersIcon,
+  AdminPanelSettings as AdminIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -32,7 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onDrawerToggle, isCollaps
   const navigate = useNavigate();
   const location = useLocation();
   const userRole = useSelector((state: RootState) => state.auth.user?.role);
-  const isAdmin = userRole === 'Admin';
+  const isAdmin = userRole === 'ADMIN';
  const currentSite = useSelector(
   (state: RootState) => state.site.currentSite
 );
@@ -42,6 +43,12 @@ const currentSiteId = currentSite?.id;
   const drawerWidth = isCollapsed ? 70 : 260;
 
   const allMenuItems = [
+    {
+  text: 'Super Admin',
+  icon: <AdminIcon />,
+  path: '/admin',
+  adminOnly: true
+},
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', adminOnly: false },
     { text: 'Mes Sites', icon: <SitesIcon />, path: '/sites', adminOnly: false },
     { text: 'Utilisateurs', icon: <UsersIcon />, path: '/users', adminOnly: true }, 
