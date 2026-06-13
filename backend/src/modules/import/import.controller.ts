@@ -151,50 +151,66 @@ console.log("🚀 ZIP IMPORT V2 LOADED");
 if (siteJsPath) {
   const siteJs =
     fs.readFileSync(siteJsPath, "utf-8");
-    const extractTemplateConst = (
+ const extractTemplateConst = (
   js: string,
   name: string
 ) => {
   const match = js.match(
-    new RegExp(`const\\s+${name}\\s*=\\s*\`([\\s\\S]*?)\`;`)
+    new RegExp(
+      `const\\s+${name}\\s*=\\s*\`([\\s\\S]*?)\`;`
+    )
   );
 
   return match?.[1] || "";
 };
 
-  const navHtml =
-    extractTemplateConst(siteJs, "NAV_HTML");
+const navHtml =
+  extractTemplateConst(siteJs, "NAV_HTML");
 
-  const footerHtml =
-    extractTemplateConst(siteJs, "FOOTER_HTML");
+const footerHtml =
+  extractTemplateConst(siteJs, "FOOTER_HTML");
+
 console.log("ZIP TEMPLATE INJECTION", {
   siteJsFound: !!siteJsPath,
   navFound: !!navHtml,
   footerFound: !!footerHtml,
-  beforeHasNavHost: processedHtml.includes('<div id="site-nav"></div>'),
-  beforeHasFooterHost: processedHtml.includes('<div id="site-footer"></div>')
+  beforeHasNavHost: processedHtml.includes("site-nav"),
+  beforeHasFooterHost: processedHtml.includes("site-footer")
 });
-console.log("ZIP HTML AFTER INJECTION", {
-  hasNavTag: processedHtml.includes('<nav'),
-  hasFooterTag: processedHtml.includes('<footer'),
-  hasLogoPath: processedHtml.includes('assets/logo.png')
-});
-  if (navHtml) {
-    processedHtml =
-      processedHtml =
-  processedHtml.replace(
-    /<div\s+id=["']site-nav["']\s*><\/div>/i,
-    navHtml
-  );
-  }
 
-  if (footerHtml) {
-    processedHtml =
-  processedHtml.replace(
-    /<div\s+id=["']site-footer["']\s*><\/div>/i,
-    footerHtml
-  );
-  }
+console.log(
+  "NAV_HTML_PREVIEW",
+  navHtml.slice(0, 120)
+);
+
+console.log(
+  "HOST_PREVIEW",
+  processedHtml.match(
+    /<div[^>]*id=["']site-nav["'][^>]*>\s*<\/div>/i
+  )?.[0]
+);
+
+if (navHtml) {
+  processedHtml =
+    processedHtml.replace(
+      /<div[^>]*id=["']site-nav["'][^>]*>\s*<\/div>/i,
+      navHtml
+    );
+}
+
+if (footerHtml) {
+  processedHtml =
+    processedHtml.replace(
+      /<div[^>]*id=["']site-footer["'][^>]*>\s*<\/div>/i,
+      footerHtml
+    );
+}
+
+console.log("ZIP HTML AFTER INJECTION", {
+  hasNavTag: processedHtml.includes("<nav"),
+  hasFooterTag: processedHtml.includes("<footer"),
+  hasLogoPath: processedHtml.includes("assets/logo.png")
+});
 }
 
 const imageFiles =
