@@ -70,18 +70,35 @@ export const importFigmaRaw = async (
     }
 
     const siteId = Number(req.params.siteId);
-const userId = (req as any).user?.userId;
+    const authUser = (req as any).user;
 
-const importId = await saveFigmaImportPayload(
-  payload,
-  source || "figma-plugin",
-  siteId,
-  userId
-);
+    const userId =
+      authUser?.userId ||
+      authUser?.id ||
+      authUser?.sub;
+
+    console.log("[FIGMA_AUTH_USER]", authUser);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authenticated user not found"
+      });
+    }
+
+    const importId =
+      await saveFigmaImportPayload(
+        payload,
+        source || "figma-plugin",
+        siteId,
+        userId
+      );
 
     console.log("[FIGMA_RAW_IMPORT_SAVED]", {
       importId,
       source,
+      siteId,
+      userId,
       frameId: payload.id,
       frameName: payload.name,
       frameType: payload.type,
@@ -116,10 +133,9 @@ export const getFigmaRawImport = async (
 ) => {
   try {
     const { importId } = req.params;
-    
 
     const item =
-      getFigmaImportPayload(importId);
+      await getFigmaImportPayload(importId);
 
     if (!item) {
       return res.status(404).json({
@@ -131,7 +147,14 @@ export const getFigmaRawImport = async (
     return res.status(200).json({
       success: true,
       message: "Figma import found",
-      data: item
+      data: {
+        id: item.id,
+        payload: item.payload,
+        source: item.source,
+        siteId: item.siteId,
+        userId: item.userId,
+        createdAt: item.createdAt
+      }
     });
   } catch (error: any) {
     console.error("[FIGMA_RAW_GET_ERROR]", error);
