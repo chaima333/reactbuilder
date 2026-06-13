@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    body {
+      font-family: Inter, Arial, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #f7f7f8;
+      color: #111827;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      margin: 0 0 6px;
+      font-size: 18px;
+    }
+
+    p {
+      margin: 0;
+      color: #6b7280;
+      font-size: 13px;
+    }
+
+    button {
+      width: 100%;
+      padding: 11px;
+      border-radius: 8px;
+      border: 0;
+      background: #111827;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button.secondary {
+      background: #f3f4f6;
+      color: #111827;
+      border: 1px solid #d1d5db;
+    }
+
+    .status {
+      font-size: 13px;
+      margin-top: 8px;
+      color: #374151;
+    }
+
+    pre {
+      max-height: 160px;
+      overflow: auto;
+      white-space: pre-wrap;
+      font-size: 11px;
+      background: #111827;
+      color: #d1d5db;
+      padding: 10px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h2>ReactBuilder Importer</h2>
+
+    <p>
+      Export selected Figma frame into ReactBuilder raw payload.
+    </p>
+    <input
+  id="tokenInput"
+  type="password"
+  placeholder="Paste ReactBuilder token"
+  style="width:100%;padding:10px;margin-top:10px;border:1px solid #d1d5db;border-radius:8px;"
+/>
+
+<button id="saveTokenBtn" class="secondary">
+  Save Token
+</button>
+
+    <button id="exportBtn">
+      Analyze Selected Frame
+    </button>
+
+    <button
+      id="sendBtn"
+      class="secondary"
+    >
+      Send To ReactBuilder
+    </button>
+
+    <div
+      id="status"
+      class="status"
+    >
+      Waiting for selection...
+    </div>
+  </div>
+
+  <div class="card">
+    <p>Preview payload</p>
+
+    <pre id="result">{}</pre>
+  </div>
+
+  <script>
+  let lastPayload = null;
+
+  const statusEl =
+    document.getElementById("status");
+
+  const resultEl =
+    document.getElementById("result");
+
+  const tokenInput =
+    document.getElementById("tokenInput");
+
+  document.getElementById("saveTokenBtn").onclick = () => {
+    statusEl.textContent = "Token ready.";
+  };
+
+  document.getElementById("exportBtn").onclick = () => {
+    statusEl.textContent =
+      "Analyzing selected frame...";
+
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: "EXPORT_SELECTION"
+        }
+      },
+      "*"
+    );
+  };
+
+  document.getElementById("sendBtn").onclick = () => {
+    statusEl.textContent =
+      "Sending selected frame...";
+
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: "SEND_TO_REACTBUILDER",
+          token: tokenInput.value
+        }
+      },
+      "*"
+    );
+  };
+
+  window.onmessage = (event) => {
+    const msg =
+      event.data.pluginMessage;
+
+    if (!msg) {
+      return;
+    }
+
+    resultEl.textContent =
+      JSON.stringify(msg, null, 2);
+
+    if (msg.type === "EXPORT_RESULT") {
+      lastPayload = msg.payload;
+
+      statusEl.textContent =
+        "Frame analyzed: " +
+        msg.payload.name +
+        " (" +
+        msg.payload.type +
+        ")";
+    }
+
+    if (msg.type === "SEND_RESULT") {
+      statusEl.textContent =
+        msg.payload &&
+        msg.payload.success
+          ? "Sent to ReactBuilder successfully."
+          : "Send failed.";
+    }
+
+    if (msg.type === "ERROR") {
+      statusEl.textContent =
+        msg.message;
+    }
+  };
+</script>
+</body>
+</html>
