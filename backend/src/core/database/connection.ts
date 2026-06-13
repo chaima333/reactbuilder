@@ -1,5 +1,5 @@
 import { Sequelize } from "sequelize-typescript";
-import { User, Token, Page, Site, ActivityLog, Media, PageVersion, PageSlug } from "../../models"; // تأكد من الـ index.ts في models
+import { User, Token, Page, Site, ActivityLog, Media, PageVersion, PageSlug, FigmaImport } from "../../models"; 
 import { Seo } from "../../models/Seo";
 import { Plugin } from "../../models/Plugin";
 import { SiteMember } from "../../models/SiteMember";
@@ -29,6 +29,7 @@ export const sequelize = new Sequelize(databaseUrl, {
     SitePlugin,
     PageVersion,
     PageSlug,
+    FigmaImport
   ],
 
   dialectOptions:
