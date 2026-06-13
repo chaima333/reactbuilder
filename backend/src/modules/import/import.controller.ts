@@ -184,21 +184,17 @@ export const importHtmlZip = async (
             "utf-8"
           );
 
-        if (navHtml) {
-          processedHtml =
-            processedHtml.replace(
-              /<div[^>]*id=["']site-nav["'][^>]*>\s*<\/div>/i,
-              navHtml
-            );
-        }
+        processedHtml =
+  processedHtml.replace(
+    /<div[^>]*id=["']site-nav["'][^>]*>\s*<\/div>/i,
+    ""
+  );
 
-        if (footerHtml) {
-          processedHtml =
-            processedHtml.replace(
-              /<div[^>]*id=["']site-footer["'][^>]*>\s*<\/div>/i,
-              footerHtml
-            );
-        }
+processedHtml =
+  processedHtml.replace(
+    /<div[^>]*id=["']site-footer["'][^>]*>\s*<\/div>/i,
+    ""
+  );
 
         for (const [localPath, cloudUrl] of Object.entries(assetMap)) {
           processedHtml =
@@ -222,6 +218,10 @@ export const importHtmlZip = async (
     return res.json({
       success: true,
       assetMap,
+       globalLayout: {
+    navHtml,
+    footerHtml
+  },
       pages
     });
 
