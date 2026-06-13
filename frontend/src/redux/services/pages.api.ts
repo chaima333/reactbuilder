@@ -28,7 +28,6 @@ interface ApiResponse<T> {
 
 export const pagesApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    // 1. جلب كل الصفحات
     getPages: builder.query<Page[], number>({
       query: (siteId) => `/sites/${siteId}/pages`,
       transformResponse: (response: ApiResponse<Page[]>) =>
@@ -42,14 +41,12 @@ export const pagesApi = api.injectEndpoints({
           : [{ type: 'Pages', id: 'LIST' }],
     }),
 
-    // 2. جلب صفحة بالـ ID
     getPageById: builder.query<Page, { siteId: number | string; pageId: number | string }>({
       query: ({ siteId, pageId }) => `/sites/${siteId}/pages/${pageId}`,
       transformResponse: (response: ApiResponse<Page>) => response.data,
       providesTags: (result, error, { pageId }) => [{ type: 'Pages', id: pageId }],
     }),
 
-    // 3. عملية الـ Publish
     publishPage: builder.mutation<Page, { siteId: number | string; pageId: number | string }>({
       query: ({ siteId, pageId }) => ({
         url: `/sites/${siteId}/pages/${pageId}/publish`,
@@ -61,14 +58,12 @@ export const pagesApi = api.injectEndpoints({
       ],
     }),
 
-    // 4. جلب نسخ الصفحة (Versions)
     getPageVersions: builder.query<PageVersion[], { siteId: number | string; pageId: number | string }>({
       query: ({ siteId, pageId }) => `/sites/${siteId}/pages/${pageId}/versions`,
       transformResponse: (response: ApiResponse<PageVersion[]>) => response.data,
       providesTags: (result, error, { pageId }) => [{ type: 'Pages', id: `VERSIONS-${pageId}` }],
     }),
 
-    // 5. استرجاع نسخة قديمة
     restorePageVersion: builder.mutation<Page, { siteId: number | string; pageId: number | string; versionId: number | string }>({
       query: ({ siteId, pageId, versionId }) => ({
         url: `/sites/${siteId}/pages/${pageId}/restore/${versionId}`,
@@ -81,7 +76,6 @@ export const pagesApi = api.injectEndpoints({
       ],
     }),
 
-    // 6. إنشاء صفحة جديدة
     createPage: builder.mutation<Page, { siteId: number; title: string; slug: string; blocks: Block[] }>({
       query: ({ siteId, ...data }) => ({
         url: `/sites/${siteId}/pages`,
@@ -91,7 +85,6 @@ export const pagesApi = api.injectEndpoints({
       invalidatesTags: [{ type: 'Pages', id: 'LIST' }],
     }),
 
-    // 7. تحديث صفحة
     updatePage: builder.mutation<Page, { siteId: number | string; pageId: number | string; title?: string; slug?: string; blocks?: Block[]; theme?: any; }>({
       query: ({ siteId, pageId, ...data }) => ({
         url: `/sites/${siteId}/pages/${pageId}`,
@@ -134,7 +127,12 @@ uploadHtmlZip: builder.mutation<
   {
     success: boolean;
     assetMap: Record<string, string>;
-    processedHtml: string;
+    pages: {
+      title: string;
+      slug: string;
+      sourceFile: string;
+      processedHtml: string;
+    }[];
   },
   {
     siteId: number | string;
@@ -144,10 +142,7 @@ uploadHtmlZip: builder.mutation<
   query: ({ siteId, file }) => {
     const formData = new FormData();
 
-    formData.append(
-      "zip",
-      file
-    );
+    formData.append("zip", file);
 
     return {
       url: `/sites/${siteId}/import/html-zip`,

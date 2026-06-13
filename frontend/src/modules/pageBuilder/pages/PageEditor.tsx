@@ -224,7 +224,7 @@ const handleZipImportExecute = async () => {
         file: zipFile
       }).unwrap();
 
-    if (!result.success || !result.processedHtml) {
+    if (!result.success || !result.pages?.length) {
       console.error(
         "ZIP import failed",
         result
@@ -232,44 +232,44 @@ const handleZipImportExecute = async () => {
       return;
     }
 
-    const imported =
-      await importHtmlDocument(
-        result.processedHtml
-      );
-console.log(
-  "IMPORTED BLOCK COUNT",
-  imported.blocks.length
-);
-
-console.log(
-  "IMPORTED FIRST BLOCKS",
-  imported.blocks
-    .slice(0, 10)
-    .map((block: any) => ({
-      id: block.id,
-      type: block.type,
-      semantic: block.meta?.semanticType,
-      childTypes: (block.children || []).map(
-        (child: any) => child.type
-      )
-    }))
-);
-    const hydrated =
-      hydrateBlocks(
-        imported.blocks.map((block: any) => ({
-          ...block,
-          props:
-            block.data?.props || {},
-          style:
-            block.data?.style || {},
-          children:
-            block.children || []
-        }))
-      );
-
-    actions.setBlocks(
-      hydrated as any
+    console.log(
+      "ZIP PAGES",
+      result.pages.map((page: any) => ({
+        slug: page.slug,
+        title: page.title,
+        sourceFile: page.sourceFile
+      }))
     );
+
+    for (const page of result.pages) {
+      const imported =
+        await importHtmlDocument(
+          page.processedHtml
+        );
+
+      console.log(
+        "IMPORT PAGE",
+        page.slug,
+        imported.blocks.length
+      );
+
+      const hydrated =
+        hydrateBlocks(
+          imported.blocks.map((block: any) => ({
+            ...block,
+            props:
+              block.data?.props || {},
+            style:
+              block.data?.style || {},
+            children:
+              block.children || []
+          }))
+        );
+
+      actions.setBlocks(
+        hydrated as any
+      );
+    }
 
     setIsModalOpen(false);
     setZipFile(null);
