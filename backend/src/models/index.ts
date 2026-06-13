@@ -11,15 +11,16 @@ import Plugin from "./Plugin";
 import { SiteMember } from "./SiteMember";
 import PageVersion from "./pageVersion"; 
 import PageSlug from "./pageSlug"; 
+import { FigmaImport } from "./FigmaImport";
 
 export const models = [
   User, Token, Page, Site, ActivityLog, Media, 
   Seo, Plugin, SitePlugin, SiteMember, 
-  PageVersion, PageSlug 
+  PageVersion, PageSlug, FigmaImport
 ];
 
 export { 
   User, Token, Page, Site, ActivityLog, 
   Media, Seo, Plugin, SitePlugin, SiteMember, 
-  PageVersion, PageSlug 
+  PageVersion, PageSlug, FigmaImport
 };
