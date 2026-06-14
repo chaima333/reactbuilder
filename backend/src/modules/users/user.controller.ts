@@ -15,22 +15,21 @@ const { id } = req.params;
 // Récupérer tous les utilisateurs (admin seulement)
 export const getUsers = async (req: AuthRequest, res: Response) => {
   try {
-    // Version sans les associations Site pour l'instant
     const users = await User.findAll({
-      attributes: { exclude: ['password'],
+      attributes: {
+        exclude: ["password"],
         include: [
-          // ✅ Cette partie ajoute dynamiquement le compte des sites pour chaque utilisateur
           [
             Sequelize.literal(`(
               SELECT COUNT(*)
-              FROM "sites"
+              FROM "site_members"
               WHERE "site_members"."user_id" = "User"."id"
             )`),
-            'siteCount' // C'est le nom de la propriété que tu recevras dans le frontend
+            "siteCount"
           ]
         ]
-       },
-      order: [['createdAt', 'DESC']]
+      },
+      order: [["createdAt", "DESC"]]
     });
 
     res.json({
@@ -38,15 +37,14 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
       data: users
     });
   } catch (error) {
-    console.error('Get users error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Erreur serveur',
+    console.error("Get users error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur",
       error: error instanceof Error ? error.message : String(error)
     });
   }
 };
-
 // Récupérer un utilisateur par ID
 export const getUserById = async (req: AuthRequest, res: Response) => {
   try {

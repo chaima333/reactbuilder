@@ -216,7 +216,33 @@ processedHtml =
     path.basename(htmlPath).toLowerCase() === "index.html"
         };
       });
+const rewriteInternalLinks = (
+  html: string
+) => {
+  let nextHtml =
+    html;
 
+  for (const page of pages) {
+    nextHtml =
+      nextHtml
+        .split(`href="${page.sourceFile}"`)
+        .join(`href="/site/${req.params.siteId}/${page.slug}"`)
+        .split(`href='${page.sourceFile}'`)
+        .join(`href='/site/${req.params.siteId}/${page.slug}'`);
+  }
+
+  return nextHtml;
+};
+
+navHtml =
+  rewriteInternalLinks(
+    navHtml
+  );
+
+footerHtml =
+  rewriteInternalLinks(
+    footerHtml
+  );
     return res.json({
       success: true,
       assetMap,
