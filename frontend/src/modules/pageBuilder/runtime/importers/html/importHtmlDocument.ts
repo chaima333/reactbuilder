@@ -3623,12 +3623,79 @@ logFeatureFlexItemStyles(
   "CLEANED",
   cleanedBlocks
 );
+// helper 
 
+const ROOT_ALLOWED_TYPES =
+
+  new Set([
+
+    "section",
+
+    "navbar"
+
+  ]);
+  
+const wrapInvalidRootBlocks = (
+  blocks: SerializedBlock[]
+): SerializedBlock[] => {
+  const fixed: SerializedBlock[] = [];
+  let pending: SerializedBlock[] = [];
+
+  const flush = () => {
+    if (!pending.length) return;
+
+    fixed.push(
+      createFallbackFlexWrapper(
+        [
+          "autoRoot",
+          fixed.length
+        ],
+        pending
+      ) as any
+    );
+
+    pending = [];
+  };
+
+  blocks.forEach((block) => {
+    if (ROOT_ALLOWED_TYPES.has(block.type)) {
+      flush();
+      fixed.push(block);
+      return;
+    }
+
+    pending.push(block);
+  });
+
+  flush();
+
+  return fixed.map((block, index) => {
+    if (block.type === "flex") {
+      return {
+        id: `auto-root-section-${index}`,
+        type: "section",
+        data: {
+          props: {},
+          style: {
+            desktop: {},
+            tablet: {},
+            mobile: {}
+          }
+        },
+        children: [block]
+      } as SerializedBlock;
+    }
+
+    return block;
+  });
+};
 
 
 const normalized =
-  normalizeTree(
-    cleanedBlocks
+  wrapInvalidRootBlocks(
+    normalizeTree(
+      cleanedBlocks
+    ) as any
   );
 
 
@@ -3667,6 +3734,19 @@ logFeatureFlexItemStyles(
   "NORMALIZED",
   normalized
 );
+
+console.log(
+  "ROOT CHILDREN BEFORE INVARIANT",
+  normalized.map((child: any) => ({
+    id: child.id,
+    type: child.type,
+    semantic: child.meta?.semanticType,
+    childTypes: (child.children || []).map(
+      (c: any) => c.type
+    )
+  }))
+);
+
 
 assertTreeInvariants(
   normalized as any

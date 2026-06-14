@@ -51,6 +51,11 @@ const navbarBlocks: any[] =
     ? [globalLayout.navbar]
     : [];
 
+const footerBlocks: any[] =
+  globalLayout?.footer
+    ? [globalLayout.footer]
+    : [];
+
   // =========================
   // PAGE BLOCKS
   // =========================
@@ -66,6 +71,10 @@ const navbarBlocks: any[] =
 console.log(
   "NAVBAR_BLOCKS",
   navbarBlocks
+);
+console.log(
+  "FOOTER_BLOCKS",
+  footerBlocks
 );
 console.log(
   "GLOBAL_LAYOUT",
@@ -114,6 +123,16 @@ console.log(
   />
 
 </Box>
+
+{/* GLOBAL FOOTER */}
+
+{footerBlocks.length > 0 && (
+
+  <RenderTree
+    blocks={footerBlocks}
+  />
+
+)}
 
 
       </Box>

@@ -2,12 +2,10 @@ import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { RootState } from '../store';
 import { logout, setCredentials } from '../features/authSlice';
 
-// 👇 خليها env بعدين (مش critical توّة)
 const API_URL = 'https://backend-rmfq.onrender.com/api';
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: API_URL,
- // src/redux/services/baseQuery.ts
 
 prepareHeaders: (
   headers,
@@ -19,11 +17,6 @@ prepareHeaders: (
 
   const token =
     state.auth.accessToken;
-
-  console.log(
-    "ACCESS TOKEN:",
-    token
-  );
 
   const siteId =
     state.site.currentSite?.id;

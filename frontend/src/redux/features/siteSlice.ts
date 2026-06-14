@@ -10,9 +10,7 @@ interface SiteState {
 
 const initialState: SiteState = {
   sites: [],
-  currentSite: JSON.parse(
-    localStorage.getItem("currentSite") || "null"
-  )
+  currentSite:null
 };
 
 const siteSlice = createSlice({
@@ -47,8 +45,8 @@ const siteSlice = createSlice({
 
       state.currentSite = null;
       state.sites = [];
-
       localStorage.removeItem("currentSite");
+      localStorage.removeItem("siteId");
     }
 
   }

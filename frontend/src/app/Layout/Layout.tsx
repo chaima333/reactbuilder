@@ -11,7 +11,6 @@ export const Layout: React.FC = () => {
   const dispatch = useDispatch();
   const [mobileOpen, setMobileOpen] = useState(false);
   
-  // 🟢 الحالة الخاصة بتصغير السايدبار
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const { sites, currentSite } = useSelector((state: RootState) => state.site);
@@ -31,19 +30,16 @@ export const Layout: React.FC = () => {
     }
   }, [sites, currentSite, dispatch]);
 
-  // العرض الديناميكي بناءً على الحالة
   const drawerWidth = isCollapsed ? 70 : 260;
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
-      {/* تمرير دوال التحكم للـ Topbar */}
       <Topbar 
         onMenuClick={handleDrawerToggle} 
         onToggleCollapse={handleToggleCollapse}
         isCollapsed={isCollapsed}
       />
       
-      {/* تمرير الحالة للـ Sidebar */}
       <Sidebar 
         mobileOpen={mobileOpen} 
         onDrawerToggle={handleDrawerToggle} 
@@ -56,23 +52,12 @@ export const Layout: React.FC = () => {
           flexGrow: 1, 
           p: 3, 
           width: { sm: `calc(100% - ${drawerWidth}px)` },
-          transition: "all 0.3s ease", // انيميشن للتمدد
+          transition: "all 0.3s ease", 
           backgroundColor: (theme) => theme.palette.background.default
         }}
       >
         <Toolbar />
-
-        {sites.length === 0 ? (
-          <Alert severity="info">
-            لا يوجد مواقع. قم بإنشاء أول موقع.
-          </Alert>
-        ) : currentSite ? (
-          <Outlet />
-        ) : (
-          <Alert severity="warning">
-            جاري اختيار الموقع...
-          </Alert>
-        )}
+           <Outlet />
       </Box>
     </Box>
   );

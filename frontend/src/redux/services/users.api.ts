@@ -26,16 +26,17 @@ export const usersApi = api.injectEndpoints({
       invalidatesTags: [{ type: 'User', id: 'PROFILE' }],
     }),
 
-    getUsers: builder.query<User[], void>({
-      query: () => '/users',
-      providesTags: (result) =>
-        result
-          ? [
-              ...result.map((u) => ({ type: 'Users' as const, id: u.id })),
-              { type: 'Users', id: 'LIST' },
-            ]
-          : [{ type: 'Users', id: 'LIST' }],
-    }),
+   getUsers: builder.query<User[], void>({
+  query: () => "/users",
+  transformResponse: (res: any) => res.data,
+  providesTags: (result) =>
+    result
+      ? [
+          ...result.map((u) => ({ type: "Users" as const, id: u.id })),
+          { type: "Users", id: "LIST" },
+        ]
+      : [{ type: "Users", id: "LIST" }],
+}),
 
     createUser: builder.mutation<User, Partial<User>>({
       query: (data) => ({

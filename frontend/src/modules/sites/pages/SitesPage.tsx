@@ -54,12 +54,13 @@ const sites = data || [];
   console.log("RAW API DATA:", data);
   console.log("SITES ARRAY:", sites);
 
-  // 🔥 ONLY ADDITION (AUTO OPEN MODAL)
-  useEffect(() => {
-    if (!isLoading && sites.length === 0) {
-      setModalOpen(true);
-    }
-  }, [isLoading, sites]);
+ useEffect(() => {
+  if (!isLoading && sites.length === 0) {
+    setModalOpen(true);
+  }
+}, [isLoading, sites.length]);
+
+
 
 // Dans handleCreateSite (Sites.tsx)
 const handleCreateSite = async (siteData: any) => {
@@ -78,18 +79,32 @@ const handleCreateSite = async (siteData: any) => {
   }
 };
 
-  const handleDeleteSite = async () => {
-    if (!selectedSite) return;
-    try {
-      await deleteSite(selectedSite.id).unwrap();
-      enqueueSnackbar(t.deleteSuccess, { variant: 'success' });
-      setDeleteDialogOpen(false);
-      setSelectedSite(null);
-      refetch();
-    } catch (err: any) {
-      enqueueSnackbar(err?.data?.message || t.error, { variant: 'error' });
-    }
-  };
+const handleDeleteSite = async () => {
+  if (!selectedSite) return;
+
+  try {
+    const response = await deleteSite(selectedSite.id).unwrap();
+
+    console.log("DELETE RESPONSE:", response);
+
+    enqueueSnackbar("Site supprimé avec succès", {
+      variant: "success"
+    });
+
+    setDeleteDialogOpen(false);
+    setSelectedSite(null);
+
+    await refetch();
+
+  } catch (err: any) {
+    console.error("DELETE ERROR:", err);
+
+    enqueueSnackbar(
+      err?.data?.message || "Erreur suppression site",
+      { variant: "error" }
+    );
+  }
+};
 
   const handleDeletePage = async (siteId: number, pageId: number, pageTitle: string) => {
     if (window.confirm(`${t.confirmDelete} "${pageTitle}" ?`)) {
@@ -129,15 +144,21 @@ const handleCreateSite = async (siteData: any) => {
       </Box>
 
       {sites.length === 0 ? (
-        <Box textAlign="center" py={8}>
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            {t.youHaveNoSites}
-          </Typography>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setModalOpen(true)} sx={{ mt: 2 }}>
-            {t.createFirstSite}
-          </Button>
-        </Box>
-      ) : (
+  <Box textAlign="center" py={8}>
+    <Typography variant="h6" color="text.secondary" gutterBottom>
+      {t.youHaveNoSites}
+    </Typography>
+
+    <Button
+      variant="contained"
+      startIcon={<AddIcon />}
+      onClick={() => setModalOpen(true)}
+      sx={{ mt: 2 }}
+    >
+      {t.createFirstSite}
+    </Button>
+  </Box>
+) : (
         <Grid container spacing={3}>
           {sites.map((site: any) => (
             <Grid item xs={12} md={6} lg={4} key={site.id}>

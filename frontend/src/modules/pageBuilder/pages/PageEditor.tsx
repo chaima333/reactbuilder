@@ -1,5 +1,5 @@
 // frontend/src/modules/pageBuilder/pages/PageEditor.tsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
   CircularProgress,
@@ -18,7 +18,7 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import MenuOpenIcon from "@mui/icons-material/MenuOpen";
 import CloseIcon from "@mui/icons-material/Close"; 
 import { ValidationPanel } from "../components/editor/ValidationPanel";
-import { DndContext, pointerWithin, useDraggable } from "@dnd-kit/core";
+import { DndContext, useDraggable } from "@dnd-kit/core";
 import { EditorLayout } from "../components/editor/EditorLayout";
 import { PageHeader } from "../components/editor/PageHeader";
 import { EditorCanvas } from "../components/editor/EditorCanvas";
@@ -30,15 +30,13 @@ import { blockRegistry } from "../core/blockRegistry";
 import { ThemeContext } from "../core/theme/themeContext";
 import { StructurePanel } from "../components/sidebar/StructurePanel";
 import { SettingsPanel } from "../components/inspector/SettingsPanel";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { customCollisionStrategy, useDragAndDrop } from "../hooks/editor/useDragAndDrop"; // 👑 جلب الخوارزمية الذكية متعك
 import { RuntimeProvider } from "../runtime/context/RuntimeProvider";
 import { downloadJsonFile, readJsonFile } from "../services/importExport";
 import { findBlockById } from "../core/tree/findBlockById";
 import { importHtmlDocument } from "../runtime/importers/html/importHtmlDocument";
-import { parseFigmaDocument } from "../runtime/importers/figma/parseFigmaDocument";
-import { useImportFigmaMutation, useUploadHtmlZipMutation } from "../../../redux/services/pages.api";
-import { figmaNodeToBlock } from "../runtime/importers/figma/figmaNodeToBlock";
+import { useCreatePageMutation, useImportFigmaMutation, usePublishPageMutation, useUploadHtmlZipMutation, useUpdateGlobalLayoutMutation } from "../../../redux/services/pages.api";
 import { figmaToSemanticTree } from "../runtime/importers/figma/figmaToSemanticTree";
 import { semanticTreeToBlocks } from "../runtime/importers/figma/semanticTreeToBlocks";
 
@@ -115,6 +113,8 @@ const DragGhost = ({ type, isAllowed }: { type: string; isAllowed: boolean }) =>
 export const PageEditor = ({ mode }: { mode: "create" | "edit" }) => {
   const { siteId,pageId } = useParams();
   const editor = usePageEditor(mode);
+  const [searchParams] = useSearchParams();
+  const figmaImportId = searchParams.get("figmaImportId");
 
   const {
     blocks, pageTitle, tokens, updateToken, actions, isLoading,
@@ -147,7 +147,97 @@ const [figmaPluginJson, setFigmaPluginJson] = useState("");
 const [zipFile, setZipFile] = useState<File | null>(null);
 const [uploadHtmlZip] = useUploadHtmlZipMutation();
 
-  const selectedBlock = useMemo(() => {
+const [createPage] = useCreatePageMutation();
+const [publishPage] = usePublishPageMutation();
+const [updateGlobalLayout] = useUpdateGlobalLayoutMutation();
+
+useEffect(() => {
+
+  if (!figmaImportId || !siteId) {
+    return;
+  }
+
+  const loadFigmaImport = async () => {
+
+    try {
+
+      console.log(
+        "AUTO FIGMA IMPORT",
+        figmaImportId
+      );
+
+      const response = await fetch(
+        `https://backend-rmfq.onrender.com/api/sites/${siteId}/pages/figma/import/raw/${figmaImportId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem(
+              "accessToken"
+            )}`
+          }
+        }
+      );
+
+      const result =
+        await response.json();
+
+      console.log(
+        "FIGMA RESULT",
+        result
+      );
+
+      const payload =
+        result.data.payload;
+
+      const semanticTree =
+        figmaToSemanticTree(payload);
+
+      const figmaBlocks =
+        semanticTreeToBlocks(
+          semanticTree
+        );
+
+      const hydrated =
+        hydrateBlocks(
+          figmaBlocks.map(
+            (block: any) => ({
+              ...block,
+              props:
+                block.data?.props || {},
+              style:
+                block.data?.style || {},
+              children:
+                block.children || []
+            })
+          )
+        );
+
+      actions.setBlocks(
+        hydrated as any
+      );
+
+      setSelectedBlockId(
+        hydrated[0]?.id || null
+      );
+
+    } catch (error) {
+
+      console.error(
+        "AUTO FIGMA IMPORT FAILED",
+        error
+      );
+
+    }
+
+  };
+
+  loadFigmaImport();
+
+}, [
+  figmaImportId,
+  siteId
+]);
+
+const selectedBlock = useMemo(() => {
     if (!selectedBlockId) return null;
     return findBlockById(blocks, selectedBlockId);
   }, [blocks, selectedBlockId]);
@@ -241,12 +331,92 @@ const handleZipImportExecute = async () => {
       }))
     );
 
+    const importGlobalLayoutBlock = async (
+      html?: string
+    ) => {
+      if (!html?.trim()) {
+        return null;
+      }
+
+      const imported =
+        await importHtmlDocument(
+          html
+        );
+
+      const hydrated =
+        hydrateBlocks(
+          imported.blocks.map((block: any) => ({
+            ...block,
+            props:
+              block.data?.props || {},
+            style:
+              block.data?.style || {},
+            children:
+              block.children || []
+          }))
+        );
+
+      return hydrated[0] || null;
+    };
+
+    const navbarBlock =
+      await importGlobalLayoutBlock(
+        result.globalLayout?.navHtml
+      );
+
+    const footerBlock =
+      await importGlobalLayoutBlock(
+        result.globalLayout?.footerHtml
+      );
+
+    await updateGlobalLayout({
+      siteId: Number(siteId),
+      globalLayout: {
+        navbar: navbarBlock,
+        footer: footerBlock
+      }
+    }).unwrap();
+
+    console.log(
+      "ZIP GLOBAL LAYOUT SAVED",
+      {
+        navbarType:
+          navbarBlock?.type || null,
+        footerType:
+          footerBlock?.type || null
+      }
+    );
+
     for (const page of result.pages) {
+      console.log(
+  "IMPORTING PAGE",
+  page.slug
+);
       const imported =
         await importHtmlDocument(
           page.processedHtml
         );
+try {
 
+  console.log(
+    "IMPORTING PAGE",
+    page.slug
+  );
+
+  const imported =
+    await importHtmlDocument(
+      page.processedHtml
+    );
+
+} catch (e) {
+
+  console.error(
+    "FAILED PAGE",
+    page.slug,
+    e
+  );
+
+}
       console.log(
         "IMPORT PAGE",
         page.slug,
@@ -265,10 +435,32 @@ const handleZipImportExecute = async () => {
               block.children || []
           }))
         );
+try {
+  console.log("CREATING PAGE", page.title, page.slug, page.isHomepage);
 
-      actions.setBlocks(
-        hydrated as any
-      );
+  const createdResponse =
+    await createPage({
+      siteId: Number(siteId),
+      title: page.title,
+      slug: `${page.slug}-${Date.now()}`,
+      blocks: hydrated as any,
+      isHomepage: page.isHomepage
+    }).unwrap();
+
+  const createdPage =
+    (createdResponse as any).data || createdResponse;
+
+  await publishPage({
+    siteId: Number(siteId),
+    pageId: createdPage.id
+  }).unwrap();
+
+  console.log("PAGE CREATED AND PUBLISHED", page.slug);
+} catch (error) {
+  console.error("FAILED PAGE", page.title, page.slug, error);
+  continue;
+}
+
     }
 
     setIsModalOpen(false);

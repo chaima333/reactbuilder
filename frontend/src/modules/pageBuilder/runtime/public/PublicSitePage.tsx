@@ -90,6 +90,15 @@ export const PublicSite: React.FC = () => {
       (p: any) =>
         p.status === "published"
     ) || [];
+    console.log(
+  "PUBLISHED_PAGES_FULL",
+  publishedPages.map((p:any) => ({
+    id: p.id,
+    title: p.title,
+    slug: p.slug,
+    isHomepage: p.isHomepage
+  }))
+);
 
   // =========================
   // HOMEPAGE
@@ -98,7 +107,16 @@ export const PublicSite: React.FC = () => {
  const homepage =
   publishedPages.find(
     (p: any) => p.isHomepage === true
-  ) || publishedPages[0];
+  ) ||
+  publishedPages.find(
+    (p: any) => p.sourceFile === "index.html"
+  ) ||
+  publishedPages.find(
+    (p: any) => p.slug?.startsWith("home")
+  ) ||
+  publishedPages[0];
+
+
   console.log(
   "RAW_HOMEPAGE",
   homepage

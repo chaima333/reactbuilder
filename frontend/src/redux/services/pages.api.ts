@@ -76,7 +76,7 @@ export const pagesApi = api.injectEndpoints({
       ],
     }),
 
-    createPage: builder.mutation<Page, { siteId: number; title: string; slug: string; blocks: Block[] }>({
+    createPage: builder.mutation<Page, { siteId: number; title: string; slug: string; blocks: Block[],isHomepage?: boolean; }>({
       query: ({ siteId, ...data }) => ({
         url: `/sites/${siteId}/pages`,
         method: 'POST',
@@ -127,11 +127,16 @@ uploadHtmlZip: builder.mutation<
   {
     success: boolean;
     assetMap: Record<string, string>;
+    globalLayout?: {
+      navHtml?: string;
+      footerHtml?: string;
+    };
     pages: {
       title: string;
       slug: string;
       sourceFile: string;
       processedHtml: string;
+      isHomepage?: boolean;
     }[];
   },
   {
@@ -150,6 +155,22 @@ uploadHtmlZip: builder.mutation<
       body: formData
     };
   }
+}),
+updateGlobalLayout: builder.mutation<
+  any,
+  {
+    siteId: number | string;
+    globalLayout: {
+      navbar: Block | null;
+      footer: Block | null;
+    };
+  }
+>({
+  query: ({ siteId, globalLayout }) => ({
+    url: `/sites/${siteId}/global-layout`,
+    method: "PUT",
+    body: globalLayout
+  })
 }),
  getPublicPage:
 
@@ -200,4 +221,5 @@ export const {
   useGetPublicPageQuery,
   useImportFigmaMutation,
   useUploadHtmlZipMutation,
+  useUpdateGlobalLayoutMutation,
 } = pagesApi;
