@@ -11,6 +11,7 @@ import {
   getAdminActivityLogs,
 } from "./admin.controller";
 import { authorizeRoles } from "../../core/middleware/role.middleware";
+import { getAdminSettings, updateAdminSettings } from "./adminSettings.controller";
 
 const router = Router();
 
@@ -26,5 +27,15 @@ router.get("/activity-logs", getAdminActivityLogs);
 router.get("/pending-users", getPendingUsers);
 router.post("/approve-user/:id", approveUser);
 router.delete("/reject-user/:id", rejectUser);
+
+router.get(
+  "/settings",
+  getAdminSettings
+);
+
+router.put(
+  "/settings",
+  updateAdminSettings
+);
 
 export default router;

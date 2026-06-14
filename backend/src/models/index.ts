@@ -14,15 +14,16 @@ import PageSlug from "./pageSlug";
 import { FigmaImport } from "./FigmaImport";
 import { ContactSubmission } from "./contactSubmission";
 import { FigmaPluginToken } from "./FigmaPluginToken";
+import PlatformSetting from "./PlatformSetting";
 
 export const models = [
   User, Token, Page, Site, ActivityLog, Media, 
   Seo, Plugin, SitePlugin, SiteMember, 
-  PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken
+  PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken,PlatformSetting
 ];
 
 export { 
   User, Token, Page, Site, ActivityLog, 
   Media, Seo, Plugin, SitePlugin, SiteMember, 
-  PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken
+  PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken,PlatformSetting
 };
