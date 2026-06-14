@@ -16,6 +16,8 @@ export type SemanticType =
 
   | "NAVBAR"
 
+  | "FOOTER"
+
   | "FEATURE_PILLARS"
 
   | "CONTENT_LIST_SECTION"

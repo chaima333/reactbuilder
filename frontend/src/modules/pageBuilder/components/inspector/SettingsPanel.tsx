@@ -123,7 +123,7 @@ export const SettingsPanel = ({
               }
             }}
           >
-             IMPORT FROM FIGMA
+             CONNECT FIGMA PLUGIN
           </Button>
         )}
       </Stack>

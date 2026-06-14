@@ -53,7 +53,7 @@ const currentSiteId = currentSite?.id;
     { text: 'Mes Sites', icon: <SitesIcon />, path: '/sites', adminOnly: false },
     { text: 'Utilisateurs', icon: <UsersIcon />, path: '/users', adminOnly: true }, 
     {text: 'Médiathèque',icon: <MediaIcon />,path: currentSiteId  ? `/sites/${currentSiteId}/media` : '/sites',adminOnly: false},
-    { text: 'Paramètres', icon: <SettingsIcon />, path: '/settings', adminOnly: false },
+    { text: 'Paramètres', icon: <SettingsIcon />, path: '/admin/settings', adminOnly: true },
   ];
 
   const menuItems = allMenuItems.filter(item => !item.adminOnly || isAdmin);

@@ -19,6 +19,8 @@ export const api = createApi({
     "AdminStats",
 "Plugins",
 "ActivityLogs",
+  "AdminSettings",
+
     ],
 
   endpoints: () => ({}),

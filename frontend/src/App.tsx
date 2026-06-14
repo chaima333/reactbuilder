@@ -108,6 +108,9 @@ const Settings = lazy(
   () => import("./modules/users/pages/Settings")
     .then(m => ({ default: m.Settings }))
 );
+const AdminSettings = lazy(
+  () => import("./modules/admin/pages/AdminSettings")
+);
 
 const ForgotPassword = lazy(
   () => import("./modules/auth/pages/ForgotPassword")
@@ -339,6 +342,10 @@ const AppContent: React.FC = () => {
                         path="/users"
                         element={<Users />}
                       />
+                      <Route
+                       path="/admin/settings"
+                      element={<AdminSettings />}
+                       />
 
                     </Route>
 

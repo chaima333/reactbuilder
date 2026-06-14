@@ -36,6 +36,7 @@ import { RuntimeProvider } from "../runtime/context/RuntimeProvider";
 import { downloadJsonFile, readJsonFile } from "../services/importExport";
 import { findBlockById } from "../core/tree/findBlockById";
 import { importHtmlDocument } from "../runtime/importers/html/importHtmlDocument";
+import { footerHtmlToBlock } from "../runtime/importers/html/footerToBlock";
 import { useCreatePageMutation, useImportFigmaMutation, usePublishPageMutation, useUploadHtmlZipMutation, useUpdateGlobalLayoutMutation } from "../../../redux/services/pages.api";
 import { figmaToSemanticTree } from "../runtime/importers/figma/figmaToSemanticTree";
 import { semanticTreeToBlocks } from "../runtime/importers/figma/semanticTreeToBlocks";
@@ -351,8 +352,8 @@ const handleZipImportExecute = async () => {
       );
 
     const footerBlock =
-      await importGlobalLayoutBlock(
-        result.globalLayout?.footerHtml
+      footerHtmlToBlock(
+        result.globalLayout?.footerHtml || ""
       );
 
     await updateGlobalLayout({
