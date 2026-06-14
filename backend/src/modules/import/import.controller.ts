@@ -42,13 +42,19 @@ const makeTitle = (
     )
     .join(" ");
 
+const normalizeHrefPath = (
+  href: string
+) =>
+  href
+    .replace(/\\/g, "/")
+    .replace(/^\.\//, "")
+    .replace(/^\//, "");
+
 export const importHtmlZip = async (
   req: any,
   res: any
 ) => {
   try {
-    console.log("🚀 ZIP IMPORT MULTI PAGE LOADED");
-
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -185,16 +191,16 @@ export const importHtmlZip = async (
           );
 
         processedHtml =
-  processedHtml.replace(
-    /<div[^>]*id=["']site-nav["'][^>]*>\s*<\/div>/i,
-    ""
-  );
+          processedHtml.replace(
+            /<div[^>]*id=["']site-nav["'][^>]*>\s*<\/div>/i,
+            ""
+          );
 
-processedHtml =
-  processedHtml.replace(
-    /<div[^>]*id=["']site-footer["'][^>]*>\s*<\/div>/i,
-    ""
-  );
+        processedHtml =
+          processedHtml.replace(
+            /<div[^>]*id=["']site-footer["'][^>]*>\s*<\/div>/i,
+            ""
+          );
 
         for (const [localPath, cloudUrl] of Object.entries(assetMap)) {
           processedHtml =
@@ -203,53 +209,99 @@ processedHtml =
               .join(cloudUrl);
         }
 
+        const sourceFile =
+          path.relative(
+            extractDir,
+            htmlPath
+          ).replace(/\\/g, "/");
+
         return {
           title,
           slug,
-          sourceFile:
-            path.relative(
-              extractDir,
-              htmlPath
-            ),
+          sourceFile,
           processedHtml,
           isHomepage:
-    path.basename(htmlPath).toLowerCase() === "index.html"
+            path.basename(htmlPath).toLowerCase() === "index.html"
         };
       });
-const rewriteInternalLinks = (
-  html: string
-) => {
-  let nextHtml =
-    html;
 
-  for (const page of pages) {
-    nextHtml =
-      nextHtml
-        .split(`href="${page.sourceFile}"`)
-        .join(`href="/site/${req.params.siteId}/${page.slug}"`)
-        .split(`href='${page.sourceFile}'`)
-        .join(`href='/site/${req.params.siteId}/${page.slug}'`);
-  }
+    const pageByHref =
+      new Map<string, string>();
 
-  return nextHtml;
-};
+    for (const page of pages) {
+      const source =
+        normalizeHrefPath(
+          page.sourceFile
+        );
 
-navHtml =
-  rewriteInternalLinks(
-    navHtml
-  );
+      const basename =
+        path.basename(
+          source
+        );
 
-footerHtml =
-  rewriteInternalLinks(
-    footerHtml
-  );
+      const route =
+        page.slug === "home"
+          ? `/site/${req.params.siteId}`
+          : `/site/${req.params.siteId}/${page.slug}`;
+
+      pageByHref.set(source, route);
+      pageByHref.set(basename, route);
+      pageByHref.set(`./${basename}`, route);
+    }
+
+    const rewriteInternalLinks = (
+      html: string
+    ) =>
+      html.replace(
+        /href=(["'])([^"']+\.html(?:[?#][^"']*)?)\1/gi,
+        (
+          _match,
+          quote,
+          href
+        ) => {
+          const split =
+            String(href).match(
+              /^([^?#]+)([?#].*)?$/
+            );
+
+          const hrefPath =
+            normalizeHrefPath(
+              split?.[1] || ""
+            );
+
+          const suffix =
+            split?.[2] || "";
+
+          const route =
+            pageByHref.get(
+              hrefPath
+            );
+
+          if (!route) {
+            return `href=${quote}${href}${quote}`;
+          }
+
+          return `href=${quote}${route}${suffix}${quote}`;
+        }
+      );
+
+    navHtml =
+      rewriteInternalLinks(
+        navHtml
+      );
+
+    footerHtml =
+      rewriteInternalLinks(
+        footerHtml
+      );
+
     return res.json({
       success: true,
       assetMap,
-       globalLayout: {
-    navHtml,
-    footerHtml
-  },
+      globalLayout: {
+        navHtml,
+        footerHtml
+      },
       pages
     });
 
