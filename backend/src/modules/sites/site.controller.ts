@@ -158,6 +158,16 @@ export const getSites = async (req: AuthRequest, res: Response) => {
 
   } catch (error) {
     console.error("GET_SITES_ERROR:", error);
+    if (
+  error.message ===
+  "MAX_SITES_LIMIT_REACHED"
+) {
+  return res.status(403).json({
+    success: false,
+    message:
+      "Maximum sites limit reached",
+  });
+}
 
     return res.status(500).json({
       success: false,
