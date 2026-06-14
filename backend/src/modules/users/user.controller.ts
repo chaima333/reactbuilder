@@ -196,8 +196,6 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
     console.log('ActivityLogs supprimés');
 
     // 5. Transférer les sites à l'admin ou les supprimer
-    const Site = require('../models').Site;
-    await Site.update({ ownerId: currentUserId }, { where: { ownerId: userId } });
     console.log('Sites transférés');
 
     // 6. Supprimer l'utilisateur

@@ -6,6 +6,7 @@ import {
   saveFigmaImportPayload,
   getFigmaImportPayload
 } from "../services/figma/figmaImportStore";
+import { MediaService } from "../../media/media.service";
 
 export const importFigma = async (
   req: Request,
@@ -54,7 +55,52 @@ export const importFigma = async (
     });
   }
 };
+const processFigmaImages = async (
+  node: any,
+  siteId: number,
+  userId: number
+) => {
+  if (!node) return;
 
+  if (node.imageBase64 && node.imageMimeType) {
+    const buffer = Buffer.from(
+      node.imageBase64,
+      "base64"
+    );
+
+    const ext =
+      node.imageMimeType.split("/")[1] || "png";
+
+    const fakeFile = {
+      buffer,
+      originalname: `${node.name || node.id}.${ext}`,
+      mimetype: node.imageMimeType,
+      size: buffer.length
+    };
+
+    const media =
+      await MediaService.processUpload(
+        fakeFile,
+        String(siteId),
+        String(userId)
+      );
+
+    node.imageUrl = media.url;
+
+    delete node.imageBase64;
+    delete node.imageMimeType;
+  }
+
+  if (Array.isArray(node.children)) {
+    for (const child of node.children) {
+      await processFigmaImages(
+        child,
+        siteId,
+        userId
+      );
+    }
+  }
+};
 export const importFigmaRaw = async (
   req: Request,
   res: Response
@@ -85,7 +131,11 @@ export const importFigmaRaw = async (
         message: "Authenticated user not found"
       });
     }
-
+await processFigmaImages(
+  payload,
+  siteId,
+  userId
+);
     const importId =
       await saveFigmaImportPayload(
         payload,
