@@ -2,7 +2,7 @@ import { Request,Response } from 'express';
 import { Site, Page, SiteMember } from '../../models';
 import { AuthRequest } from '../../shared/auth.util';
 import { SiteService } from '../sites/site.service';
-
+import { Op } from "sequelize";
 
 // =========================
 // CREATE SITE
@@ -18,7 +18,6 @@ export const createSite = async (req: AuthRequest, res: Response) => {
 
     const cleanSubdomain = subdomain.toLowerCase().trim().replace(/\s+/g, "-");
 
-    // استعمال الـ Service اللي فيه الـ Transaction
     const site = await SiteService.createSite(userId, { 
       name, 
       subdomain: cleanSubdomain, 
@@ -65,33 +64,39 @@ export const updateSite = async (req: AuthRequest, res: Response) => {
 // =========================
 // GET SITES
 // =========================
-
 export const getSites = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user.id;
 
-    // 1. نلوجوا على الـ Memberships مع الـ Site والـ Pages اللي داخل الـ Site
     const memberships = await SiteMember.findAll({
       where: { userId },
-      include: [{ 
-        model: Site,
-        include: [{ 
-          model: Page, 
-          as: 'pages', // ثبت الـ Alias لازم يكون كيف ما معرف في الـ Models
-          attributes: ['id', 'title'] // نبعثوا فقط اللي نحتاجوه باش الـ Response يقعد خفيف
-        }]
-      }]
+      include: [
+        {
+          model: Site,
+          where: {
+            status: {
+              [Op.ne]: "deleted"
+            }
+          },
+          include: [
+            {
+              model: Page,
+              as: "pages",
+              attributes: ["id", "title"]
+            }
+          ]
+        }
+      ]
     });
 
-    // 2. نعملوا الـ Mapping مع زيادة الحاجات الناقصة
     const sites = memberships.map((m: any) => ({
       id: m.site.id,
       name: m.site.name,
       subdomain: m.site.subdomain,
       status: m.site.status,
-      createdAt: m.site.createdAt, // ✅ زدنا التاريخ باش ما عادش يجي Invalid
-      pages: m.site.pages || [],   // ✅ زدنا الـ Pages باش يظهروا في الـ Card
-      pagesCount: m.site.pages ? m.site.pages.length : 0 // ✅ نبعثوا الـ Count حاضر
+      createdAt: m.site.createdAt,
+      pages: m.site.pages || [],
+      pagesCount: m.site.pages ? m.site.pages.length : 0
     }));
 
     return res.json({
@@ -101,13 +106,13 @@ export const getSites = async (req: AuthRequest, res: Response) => {
 
   } catch (error) {
     console.error("GET_SITES_ERROR:", error);
+
     return res.status(500).json({
       success: false,
       message: "Internal server error"
     });
   }
 };
-
 
 
 export const getSiteAccess = async (req, res) => {
@@ -178,6 +183,18 @@ export const getSiteById = async (req: AuthRequest, res: Response) => {
 export const deleteSite = async (req: AuthRequest, res: Response) => {
   try {
     const siteId = Number(req.params.siteId);
+    const userId = req.user.id;
+
+    const member = await SiteMember.findOne({
+      where: { siteId, userId }
+    });
+
+    if (!member) {
+      return res.status(403).json({
+        success: false,
+        message: "No access to this site"
+      });
+    }
 
     const [affected] = await Site.update(
       { status: "deleted" },
@@ -186,7 +203,8 @@ export const deleteSite = async (req: AuthRequest, res: Response) => {
 
     if (!affected) {
       return res.status(404).json({
-        success: false
+        success: false,
+        message: "Site not found"
       });
     }
 
@@ -195,9 +213,10 @@ export const deleteSite = async (req: AuthRequest, res: Response) => {
       message: "deleted"
     });
 
-  } catch (error) {
+  } catch (error: any) {
     return res.status(500).json({
-      success: false
+      success: false,
+      message: error.message
     });
   }
 };
