@@ -1,5 +1,5 @@
 import { Sequelize } from "sequelize-typescript";
-import { User, Token, Page, Site, ActivityLog, Media, PageVersion, PageSlug, FigmaImport, ContactSubmission } from "../../models"; 
+import { User, Token, Page, Site, ActivityLog, Media, PageVersion, PageSlug, FigmaImport, ContactSubmission, FigmaPluginToken } from "../../models"; 
 import { Seo } from "../../models/Seo";
 import { Plugin } from "../../models/Plugin";
 import { SiteMember } from "../../models/SiteMember";
@@ -30,7 +30,8 @@ export const sequelize = new Sequelize(databaseUrl, {
     PageVersion,
     PageSlug,
     FigmaImport,
-    ContactSubmission
+    ContactSubmission,
+    FigmaPluginToken
   ],
 
   dialectOptions:
