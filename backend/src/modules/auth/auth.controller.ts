@@ -3,7 +3,6 @@ import { Response } from "express";
 import * as AuthService from "./auth.service";
 import * as AuthValidator from "./auth.validation";
 
-// تأكد من وجود كلمة export قبل كل const
 export const registerController = async (req: any, res: Response) => {
   try {
     const parsedData = AuthValidator.registerSchema.parse(req.body);

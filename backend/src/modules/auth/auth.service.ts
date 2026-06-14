@@ -9,6 +9,7 @@ import {
   revokeUserTokens,
 } from "../../shared/auth.util";
 import { Resend } from "resend";
+import { AdminSettingsService } from "../admin/adminSettings.service";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -38,15 +39,32 @@ export const loginUser = async (email: string, pass: string) => {
 
 // 2. REGISTER
 export const registerUser = async (data: any) => {
-  const existingUser = await User.findOne({ where: { email: data.email } });
-  if (existingUser) throw new Error("User already exists");
+  const settings =
+    await AdminSettingsService.getSettings();
 
-  const hashedPassword = await bcrypt.hash(data.password, 10);
-  const newUser = await User.create({
-    ...data,
-    password: hashedPassword,
-    isApproved: true
-  });
+  if (settings.publicRegistration === false) {
+    throw new Error("Public registration is disabled");
+  }
+
+  const existingUser =
+    await User.findOne({
+      where: { email: data.email },
+    });
+
+  if (existingUser) {
+    throw new Error("User already exists");
+  }
+
+  const hashedPassword =
+    await bcrypt.hash(data.password, 10);
+
+  const newUser =
+    await User.create({
+      ...data,
+      password: hashedPassword,
+      role: settings.defaultRole || "VIEWER",
+      isApproved: settings.autoApproveUsers === true,
+    });
 
   return newUser;
 };
@@ -86,25 +104,58 @@ export const logoutUser = async (refreshToken: string) => {
 export const handleGoogleAuth = async (data: any) => {
   const { email, name, googleId, avatar } = data;
   let user = await User.findOne({ where: { email } });
-
+const settings =
+  await AdminSettingsService.getSettings();
   if (!user) {
-    user = await User.create({
-      email,
-      name: name || email.split('@')[0],
-      googleId,
-      avatar: avatar || null,
-      isApproved: true,
-      role: 'Viewer',
-      password: '',
-    } as any);
-    return { state: "PENDING", message: "Account created. Waiting approval" };
+    if (settings.publicRegistration === false) {
+  return {
+    state: "ERROR",
+    message: "Public registration is disabled",
+  };
+}
+  user = await User.create({
+  email,
+  name: name || email.split("@")[0],
+  googleId,
+  avatar: avatar || null,
+  isApproved: settings.autoApproveUsers === true,
+  role: settings.defaultRole || "VIEWER",
+  password: "",
+} as any);
+
+if (!user.isApproved) {
+  return {
+    state: "PENDING",
+    message: "Account created. Waiting approval",
+  };
+}
+
+await revokeUserTokens(user.id);
+
+const accessToken = generateToken({
+  userId: user.id,
+  type: "access",
+});
+
+const refreshToken = generateToken({
+  userId: user.id,
+  type: "refresh",
+});
+
+await addToken(refreshToken, "refresh", user.id);
+
+return {
+  state: "APPROVED",
+  accessToken,
+  refreshToken,
+  user,
+}; 
   }
 
   if (!user.isApproved) return { state: "PENDING", message: "Waiting admin approval" };
 
   await revokeUserTokens(user.id);
   
-  // 🚀 التعديل: نحينا الـ role
   const accessToken = generateToken({ userId: user.id, type: "access" });
   const refreshToken = generateToken({ userId: user.id, type: "refresh" });
   

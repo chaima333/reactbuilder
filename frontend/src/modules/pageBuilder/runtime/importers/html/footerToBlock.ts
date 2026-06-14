@@ -2,6 +2,12 @@ import type {
   Block
 } from "../../../types/page.types";
 
+type ResponsiveFooterStyle = {
+  desktop?: Record<string, unknown>;
+  tablet?: Record<string, unknown>;
+  mobile?: Record<string, unknown>;
+};
+
 const createId = (
   prefix: string
 ) =>
@@ -16,7 +22,7 @@ const normalizeText = (
 
 const makeTextBlock = (
   content: string,
-  style: Record<string, unknown> = {}
+  style: ResponsiveFooterStyle = {}
 ): Block => ({
   id: createId("footer-text"),
   type: "text",
@@ -25,9 +31,9 @@ const makeTextBlock = (
       content
     },
     style: {
-      desktop: style,
-      tablet: {},
-      mobile: {}
+      desktop: style.desktop || {},
+      tablet: style.tablet || {},
+      mobile: style.mobile || {}
     }
   },
   children: []
@@ -35,7 +41,7 @@ const makeTextBlock = (
 
 const makeTitleBlock = (
   content: string,
-  style: Record<string, unknown> = {}
+  style: ResponsiveFooterStyle = {}
 ): Block => ({
   id: createId("footer-title"),
   type: "title",
@@ -44,9 +50,9 @@ const makeTitleBlock = (
       content
     },
     style: {
-      desktop: style,
-      tablet: {},
-      mobile: {}
+      desktop: style.desktop || {},
+      tablet: style.tablet || {},
+      mobile: style.mobile || {}
     }
   },
   children: []
@@ -55,7 +61,7 @@ const makeTitleBlock = (
 const makeLinkBlock = (
   label: string,
   href: string,
-  style: Record<string, unknown> = {}
+  style: ResponsiveFooterStyle = {}
 ): Block => ({
   id: createId("footer-link"),
   type: "link",
@@ -66,9 +72,9 @@ const makeLinkBlock = (
       href
     },
     style: {
-      desktop: style,
-      tablet: {},
-      mobile: {}
+      desktop: style.desktop || {},
+      tablet: style.tablet || {},
+      mobile: style.mobile || {}
     }
   },
   children: []
@@ -76,7 +82,7 @@ const makeLinkBlock = (
 
 const makeFlexItem = (
   children: Block[],
-  style: Record<string, unknown> = {}
+  style: ResponsiveFooterStyle = {}
 ): Block => ({
   id: createId("footer-flex-item"),
   type: "flexItem",
@@ -85,10 +91,10 @@ const makeFlexItem = (
     style: {
       desktop: {
         minWidth: "0",
-        ...style
+        ...(style.desktop || {})
       },
-      tablet: {},
-      mobile: {}
+      tablet: style.tablet || {},
+      mobile: style.mobile || {}
     }
   },
   children
@@ -96,7 +102,7 @@ const makeFlexItem = (
 
 const makeFlex = (
   children: Block[],
-  style: Record<string, unknown> = {}
+  style: ResponsiveFooterStyle = {}
 ): Block => ({
   id: createId("footer-flex"),
   type: "flex",
@@ -105,10 +111,10 @@ const makeFlex = (
     style: {
       desktop: {
         display: "flex",
-        ...style
+        ...(style.desktop || {})
       },
-      tablet: {},
-      mobile: {}
+      tablet: style.tablet || {},
+      mobile: style.mobile || {}
     }
   },
   children
@@ -147,6 +153,26 @@ export const footerHtmlToBlock = (
     normalizeText(
       root.querySelector(".footer-desc")?.textContent
     );
+
+  const socials =
+    Array.from(
+      root.querySelectorAll(
+        ".socials a, .social-links a, [class*='social'] a"
+      )
+    )
+      .map(link => ({
+        label:
+          normalizeText(
+            link.textContent
+          ) ||
+          normalizeText(
+            link.getAttribute("aria-label")
+          ) ||
+          "Social",
+        href:
+          link.getAttribute("href") || "#"
+      }))
+      .filter(link => link.label);
 
   const columns =
     Array.from(
@@ -212,10 +238,17 @@ export const footerHtmlToBlock = (
     makeTitleBlock(
       logoWord,
       {
-        color: "#ffffff",
-        fontSize: "24px",
-        fontWeight: 800,
-        lineHeight: "1.1"
+        desktop: {
+          color: "#ffffff",
+          fontSize: "26px",
+          fontWeight: 900,
+          letterSpacing: "0.12em",
+          lineHeight: "1.1",
+          textTransform: "uppercase"
+        },
+        mobile: {
+          fontSize: "22px"
+        }
       }
     ),
     ...(description
@@ -223,10 +256,55 @@ export const footerHtmlToBlock = (
           makeTextBlock(
             description,
             {
-              color: "rgba(255,255,255,0.72)",
-              fontSize: "15px",
-              lineHeight: "1.7",
-              maxWidth: "360px"
+              desktop: {
+                color: "rgba(122,158,192,0.9)",
+                fontSize: "15px",
+                lineHeight: "1.75",
+                maxWidth: "380px"
+              },
+              mobile: {
+                maxWidth: "100%"
+              }
+            }
+          )
+        ]
+      : []),
+    ...(socials.length
+      ? [
+          makeFlex(
+            socials.map(social =>
+              makeFlexItem(
+                [
+                  makeLinkBlock(
+                    social.label,
+                    social.href,
+                    {
+                      desktop: {
+                        color: "rgba(255,255,255,0.72)",
+                        fontSize: "13px",
+                        fontWeight: 700,
+                        textDecoration: "none"
+                      }
+                    }
+                  )
+                ],
+                {
+                  desktop: {
+                    flex: "0 0 auto"
+                  }
+                }
+              )
+            ),
+            {
+              desktop: {
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: "14px",
+                marginTop: "10px"
+              },
+              mobile: {
+                gap: "10px"
+              }
             }
           )
         ]
@@ -237,8 +315,17 @@ export const footerHtmlToBlock = (
     makeFlexItem(
       brandChildren,
       {
-        flex: "1 1 320px",
-        maxWidth: "420px"
+        desktop: {
+          flex: "1 1 360px",
+          maxWidth: "430px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "18px"
+        },
+        mobile: {
+          flex: "1 1 100%",
+          maxWidth: "100%"
+        }
       }
     );
 
@@ -251,11 +338,14 @@ export const footerHtmlToBlock = (
                 makeTitleBlock(
                   column.title,
                   {
-                    color: "#ffffff",
-                    fontSize: "14px",
-                    fontWeight: 700,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase"
+                    desktop: {
+                      color: "#ffffff",
+                      fontSize: "13px",
+                      fontWeight: 800,
+                      letterSpacing: "0.12em",
+                      lineHeight: "1.25",
+                      textTransform: "uppercase"
+                    }
                   }
                 )
               ]
@@ -265,15 +355,26 @@ export const footerHtmlToBlock = (
               link.label,
               link.href,
               {
-                color: "rgba(255,255,255,0.68)",
-                fontSize: "14px",
-                textDecoration: "none"
+                desktop: {
+                  color: "rgba(122,158,192,0.92)",
+                  fontSize: "14px",
+                  lineHeight: "1.55",
+                  textDecoration: "none"
+                }
               }
             )
           )
         ],
         {
-          flex: "0 1 180px"
+          desktop: {
+            flex: "0 1 180px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px"
+          },
+          mobile: {
+            flex: "1 1 100%"
+          }
         }
       )
     );
@@ -285,12 +386,22 @@ export const footerHtmlToBlock = (
         ...columnItems
       ],
       {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        gap: "48px",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-        width: "100%"
+        desktop: {
+          flexDirection: "row",
+          flexWrap: "wrap",
+          gap: "56px",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          width: "100%"
+        },
+        tablet: {
+          gap: "40px"
+        },
+        mobile: {
+          flexDirection: "column",
+          gap: "34px",
+          alignItems: "stretch"
+        }
       }
     );
 
@@ -303,14 +414,22 @@ export const footerHtmlToBlock = (
                 makeTextBlock(
                   copyright,
                   {
-                    color: "rgba(255,255,255,0.55)",
-                    fontSize: "13px"
+                    desktop: {
+                      color: "rgba(122,158,192,0.72)",
+                      fontSize: "13px",
+                      lineHeight: "1.6"
+                    }
                   }
                 )
               ]
             : [],
           {
-            flex: "1 1 auto"
+            desktop: {
+              flex: "1 1 auto"
+            },
+            mobile: {
+              flex: "1 1 100%"
+            }
           }
         ),
         makeFlexItem(
@@ -319,29 +438,45 @@ export const footerHtmlToBlock = (
               link.label,
               link.href,
               {
-                color: "rgba(255,255,255,0.6)",
-                fontSize: "13px",
-                textDecoration: "none"
+                desktop: {
+                  color: "rgba(122,158,192,0.72)",
+                  fontSize: "13px",
+                  textDecoration: "none"
+                }
               }
             )
           ),
           {
-            flex: "0 1 auto",
-            display: "flex",
-            flexDirection: "row",
-            flexWrap: "wrap",
-            gap: "18px"
+            desktop: {
+              flex: "0 1 auto",
+              display: "flex",
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: "18px",
+              justifyContent: "flex-end"
+            },
+            mobile: {
+              flex: "1 1 100%",
+              justifyContent: "flex-start",
+              gap: "12px"
+            }
           }
         )
       ],
       {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        gap: "20px",
-        justifyContent: "space-between",
-        alignItems: "center",
-        borderTop: "1px solid rgba(255,255,255,0.12)",
-        paddingTop: "24px"
+        desktop: {
+          flexDirection: "row",
+          flexWrap: "wrap",
+          gap: "20px",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderTop: "1px solid rgba(122,158,192,0.15)",
+          paddingTop: "26px"
+        },
+        mobile: {
+          flexDirection: "column",
+          alignItems: "stretch"
+        }
       }
     );
 
@@ -357,11 +492,15 @@ export const footerHtmlToBlock = (
         desktop: {
           backgroundColor: "#020B18",
           color: "#ffffff",
-          padding: "64px 24px 28px",
+          padding: "72px 24px 30px",
           width: "100%"
         },
-        tablet: {},
-        mobile: {}
+        tablet: {
+          padding: "60px 22px 28px"
+        },
+        mobile: {
+          padding: "48px 20px 26px"
+        }
       }
     },
     children: [
@@ -371,11 +510,16 @@ export const footerHtmlToBlock = (
           bottomRow
         ],
         {
-          flexDirection: "column",
-          gap: "32px",
-          maxWidth: "1180px",
-          margin: "0 auto",
-          width: "100%"
+          desktop: {
+            flexDirection: "column",
+            gap: "38px",
+            maxWidth: "1180px",
+            margin: "0 auto",
+            width: "100%"
+          },
+          mobile: {
+            gap: "32px"
+          }
         }
       )
     ]

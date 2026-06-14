@@ -79,10 +79,12 @@ const serializeNode = async (node) => {
       const bytes = await node.exportAsync({
         format: "PNG"
       });
+base.imageBase64 =
+  figma.base64Encode(bytes);
 
-      base.imageBase64 = undefined;
-base.imageMimeType = undefined;
-base.hasImage = true;
+base.imageMimeType =
+  "image/png";
+
     } catch (error) {
       base.imageExportError =
         error instanceof Error
@@ -137,67 +139,63 @@ figma.ui.onmessage = async (msg) => {
     });
     return;
   }
-
-  if (msg.type === "SEND_TO_REACTBUILDER") {
+if (msg.type === "SEND_TO_REACTBUILDER") {
   try {
-  figma.notify("1 SEND CLICKED");
+    figma.notify("Sending to ReactBuilder...");
 
-  figma.notify("2 BEFORE FETCH");
-
-  const response = await fetch(
-    "https://backend-rmfq.onrender.com/api/sites/2/pages/figma/import/raw",
-    {
-      method: "POST",
-      headers: {
-  "Content-Type": "application/json",
-  "Authorization": "Bearer " + msg.token
-},
-      body: JSON.stringify({
-        source: "figma-plugin",
-        payload
-      })
-    }
-  );
-
-  figma.notify("3 RESPONSE " + response.status);
-
-  const result = await response.json();
-
-  figma.notify("4 JSON OK");
-
-  figma.ui.postMessage({
-    type: "SEND_RESULT",
-    payload: result
-  });
-
-  if (!response.ok) {
-    figma.notify("Backend error: " + response.status);
-    return;
-  }
-
-  if (
-    result &&
-    result.success &&
-    result.data &&
-    result.data.importId
-  ) {
-    figma.notify("5 Sent successfully");
-
-    figma.openExternal(
-      "https://frontend-three-beta-30.vercel.app/figma-import/" +
-      result.data.importId
+    const response = await fetch(
+      "https://backend-rmfq.onrender.com/api/figma-plugin/import/raw",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + msg.pluginToken
+        },
+        body: JSON.stringify({
+          source: "figma-plugin",
+          siteId: msg.siteId,
+          payload
+        })
+      }
     );
-  }
-} catch (error) {
-  figma.notify("Send failed");
 
-  figma.ui.postMessage({
-    type: "ERROR",
-    message:
-      error instanceof Error
-        ? error.message
-        : "Send failed"
-  });
-}
+    const result = await response.json();
+
+    figma.ui.postMessage({
+      type: "SEND_RESULT",
+      payload: result
+    });
+
+    if (!response.ok) {
+      figma.notify("Backend error: " + response.status);
+      return;
+    }
+
+    if (
+      result &&
+      result.success &&
+      result.data &&
+      result.data.importId
+    ) {
+      figma.notify("Sent successfully");
+
+      figma.openExternal(
+        "https://frontend-git-feature-auth-persistence-chaima333s-projects.vercel.app/sites/" +
+        result.data.siteId +
+        "/pages/new?figmaImportId=" +
+        result.data.importId
+      );
+    }
+  } catch (error) {
+    figma.notify("Send failed");
+
+    figma.ui.postMessage({
+      type: "ERROR",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Send failed"
+    });
   }
+}
 };

@@ -30,6 +30,16 @@
       font-size: 13px;
     }
 
+    input,
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+
     button {
       width: 100%;
       padding: 11px;
@@ -70,126 +80,211 @@
 <body>
   <div class="card">
     <h2>ReactBuilder Importer</h2>
+    <p>Connect once, choose a site, then send your selected frame.</p>
 
-    <p>
-      Export selected Figma frame into ReactBuilder raw payload.
-    </p>
     <input
-  id="tokenInput"
-  type="password"
-  placeholder="Paste ReactBuilder token"
-  style="width:100%;padding:10px;margin-top:10px;border:1px solid #d1d5db;border-radius:8px;"
-/>
+      id="pluginTokenInput"
+      type="password"
+      placeholder="Paste Figma Plugin Token"
+    />
 
-<button id="saveTokenBtn" class="secondary">
-  Save Token
-</button>
+    <button id="connectBtn" class="secondary">
+      Connect
+    </button>
+
+    <select id="siteSelect">
+      <option value="">Select site...</option>
+    </select>
 
     <button id="exportBtn">
       Analyze Selected Frame
     </button>
 
-    <button
-      id="sendBtn"
-      class="secondary"
-    >
+    <button id="sendBtn" class="secondary">
       Send To ReactBuilder
     </button>
 
-    <div
-      id="status"
-      class="status"
-    >
-      Waiting for selection...
+    <div id="status" class="status">
+      Paste plugin token to connect.
     </div>
   </div>
 
   <div class="card">
     <p>Preview payload</p>
-
     <pre id="result">{}</pre>
   </div>
 
   <script>
-  let lastPayload = null;
+    const API_URL =
+      "https://backend-rmfq.onrender.com";
 
-  const statusEl =
-    document.getElementById("status");
+    const FRONTEND_URL =
+      "https://frontend-git-feature-auth-persistence-chaima333s-projects.vercel.app";
 
-  const resultEl =
-    document.getElementById("result");
+    let lastPayload = null;
 
-  const tokenInput =
-    document.getElementById("tokenInput");
+    const statusEl =
+      document.getElementById("status");
 
-  document.getElementById("saveTokenBtn").onclick = () => {
-    statusEl.textContent = "Token ready.";
-  };
+    const resultEl =
+      document.getElementById("result");
 
-  document.getElementById("exportBtn").onclick = () => {
-    statusEl.textContent =
-      "Analyzing selected frame...";
+    const pluginTokenInput =
+      document.getElementById("pluginTokenInput");
 
-    parent.postMessage(
-      {
-        pluginMessage: {
-          type: "EXPORT_SELECTION"
+    const siteSelect =
+      document.getElementById("siteSelect");
+
+
+    const setStatus = (message) => {
+      statusEl.textContent = message;
+    };
+
+    const renderSites = (sites) => {
+      siteSelect.innerHTML =
+        '<option value="">Select site...</option>';
+
+      sites.forEach((site) => {
+        const option =
+          document.createElement("option");
+
+        option.value = String(site.id);
+        option.textContent =
+          site.name + " (#" + site.id + ")";
+
+        siteSelect.appendChild(option);
+      });
+
+    };
+
+    document.getElementById("connectBtn").onclick =
+      async () => {
+        const token =
+          pluginTokenInput.value.trim();
+
+        if (!token) {
+          setStatus("Paste plugin token first.");
+          return;
         }
-      },
-      "*"
-    );
-  };
 
-  document.getElementById("sendBtn").onclick = () => {
-    statusEl.textContent =
-      "Sending selected frame...";
+        try {
+          setStatus("Connecting...");
 
-    parent.postMessage(
-      {
-        pluginMessage: {
-          type: "SEND_TO_REACTBUILDER",
-          token: tokenInput.value
+          const response = await fetch(
+            API_URL + "/api/figma-plugin/sites",
+            {
+              headers: {
+                Authorization: "Bearer " + token
+              }
+            }
+          );
+
+          const result =
+            await response.json();
+
+          resultEl.textContent =
+            JSON.stringify(result, null, 2);
+
+          if (!response.ok || !result.success) {
+            setStatus(
+              result.message || "Connection failed."
+            );
+            return;
+          }
+
+          renderSites(result.data || []);
+
+          setStatus("Connected. Select a site.");
+        } catch (error) {
+          setStatus("Connection failed.");
+          resultEl.textContent =
+            String(error);
         }
-      },
-      "*"
-    );
-  };
+      };
 
-  window.onmessage = (event) => {
-    const msg =
-      event.data.pluginMessage;
+    document.getElementById("exportBtn").onclick =
+      () => {
+        setStatus("Analyzing selected frame...");
 
-    if (!msg) {
-      return;
-    }
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "EXPORT_SELECTION"
+            }
+          },
+          "*"
+        );
+      };
 
-    resultEl.textContent =
-      JSON.stringify(msg, null, 2);
+    document.getElementById("sendBtn").onclick =
+      () => {
+        const token =
+          pluginTokenInput.value.trim();
 
-    if (msg.type === "EXPORT_RESULT") {
-      lastPayload = msg.payload;
+        const siteId =
+          siteSelect.value;
 
-      statusEl.textContent =
-        "Frame analyzed: " +
-        msg.payload.name +
-        " (" +
-        msg.payload.type +
-        ")";
-    }
+        if (!token) {
+          setStatus("Paste plugin token first.");
+          return;
+        }
 
-    if (msg.type === "SEND_RESULT") {
-      statusEl.textContent =
-        msg.payload &&
-        msg.payload.success
-          ? "Sent to ReactBuilder successfully."
-          : "Send failed.";
-    }
+        if (!siteId) {
+          setStatus("Select a site first.");
+          return;
+        }
 
-    if (msg.type === "ERROR") {
-      statusEl.textContent =
-        msg.message;
-    }
-  };
-</script>
+        setStatus("Sending selected frame...");
+
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "SEND_TO_REACTBUILDER",
+              pluginToken: token,
+              siteId
+            }
+          },
+          "*"
+        );
+      };
+
+    window.onmessage = (event) => {
+      const msg =
+        event.data.pluginMessage;
+
+      if (!msg) {
+        return;
+      }
+
+      resultEl.textContent =
+        JSON.stringify(msg, null, 2);
+
+      if (msg.type === "EXPORT_RESULT") {
+        lastPayload = msg.payload;
+
+        setStatus(
+          "Frame analyzed: " +
+          msg.payload.name +
+          " (" +
+          msg.payload.type +
+          ")"
+        );
+      }
+
+      if (msg.type === "SEND_RESULT") {
+        if (msg.payload && msg.payload.success) {
+          setStatus("Sent to ReactBuilder successfully.");
+        } else {
+          setStatus(
+            msg.payload?.message || "Send failed."
+          );
+        }
+      }
+
+      if (msg.type === "ERROR") {
+        setStatus(msg.message);
+      }
+    };
+  </script>
 </body>
 </html>
