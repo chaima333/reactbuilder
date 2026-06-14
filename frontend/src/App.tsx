@@ -267,6 +267,10 @@ const AppContent: React.FC = () => {
                   path="/site/:siteId"
                   element={<PublicSite />}
                 />
+                <Route
+                  path="/site/:siteId/:slug"
+                  element={<PublicSite />}
+                />
                <Route
                  path="/p/:siteId/:slug"
                 element={<PublicPage />}

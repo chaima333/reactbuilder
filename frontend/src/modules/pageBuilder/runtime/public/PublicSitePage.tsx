@@ -33,7 +33,10 @@ export const PublicSite: React.FC = () => {
   // PARAMS
   // =========================
 
-  const { siteId } = useParams();
+  const {
+    siteId,
+    slug
+  } = useParams();
 
   // =========================
   // FETCH SITE
@@ -76,11 +79,6 @@ export const PublicSite: React.FC = () => {
     );
   }
 
-  console.log(
-  "PUBLIC_SITE_DATA",
-  siteData
-);
-
   // =========================
   // PUBLISHED PAGES
   // =========================
@@ -90,57 +88,24 @@ export const PublicSite: React.FC = () => {
       (p: any) =>
         p.status === "published"
     ) || [];
-    console.log(
-  "PUBLISHED_PAGES_FULL",
-  publishedPages.map((p:any) => ({
-    id: p.id,
-    title: p.title,
-    slug: p.slug,
-    isHomepage: p.isHomepage
-  }))
-);
 
   // =========================
   // HOMEPAGE
   // =========================
 
- const homepage =
-  publishedPages.find(
-    (p: any) => p.isHomepage === true
-  ) ||
-  publishedPages.find(
-    (p: any) => p.sourceFile === "index.html"
-  ) ||
-  publishedPages.find(
-    (p: any) => p.slug?.startsWith("home")
-  ) ||
-  publishedPages[0];
+ const selectedPage =
+  slug
+    ? publishedPages.find(
+        (p: any) => p.slug === slug
+      )
+    : publishedPages.find(
+        (p: any) => p.isHomepage === true
+      ) ||
+      publishedPages.find(
+        (p: any) => p.slug === "home"
+      ) ||
+      publishedPages[0];
 
-
-  console.log(
-  "RAW_HOMEPAGE",
-  homepage
-);
-
-console.log(
-  "RAW_HOMEPAGE_BLOCKS",
-  homepage?.blocks
-);
-
-console.log(
-  "RAW_HOMEPAGE_CONTENT",
-  homepage
-);
- console.log(
-  "PUBLISHED_PAGES",
-  publishedPages.map(p => ({
-    id: p.id,
-    title: p.title,
-    slug: p.slug,
-    isHomepage: p.isHomepage,
-    blocks: p.blocks?.length
-  }))
-);
   // =========================
   // RENDER
   // =========================
@@ -158,10 +123,10 @@ console.log(
       {/* HOMEPAGE RUNTIME */}
       {/* ===================== */}
 
-      {homepage ? (
+      {selectedPage ? (
 
         <PublicPageRuntime
-  page={homepage}
+  page={selectedPage}
   site={siteData}
 />
 

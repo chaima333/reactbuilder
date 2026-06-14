@@ -26,22 +26,6 @@ const globalLayout =
   page?.site?.globalLayout ||
   page?.globalLayout ||
   {};
-console.log(
-  "PUBLIC_GLOBAL_LAYOUT",
-  {
-    hasSite:
-      !!site,
-
-    hasPageSite:
-      !!page?.site,
-
-    hasGlobalLayout:
-      !!globalLayout?.navbar,
-
-    navbarType:
-      globalLayout?.navbar?.type
-  }
-);
   // =========================
   // NAVBAR
   // =========================
@@ -68,18 +52,6 @@ const footerBlocks: any[] =
   // =========================
   // RENDER
   // =========================
-console.log(
-  "NAVBAR_BLOCKS",
-  navbarBlocks
-);
-console.log(
-  "FOOTER_BLOCKS",
-  footerBlocks
-);
-console.log(
-  "GLOBAL_LAYOUT",
-  globalLayout
-);
   return (
 
     <RuntimeProvider

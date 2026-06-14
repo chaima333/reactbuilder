@@ -322,15 +322,6 @@ const handleZipImportExecute = async () => {
       return;
     }
 
-    console.log(
-      "ZIP PAGES",
-      result.pages.map((page: any) => ({
-        slug: page.slug,
-        title: page.title,
-        sourceFile: page.sourceFile
-      }))
-    );
-
     const importGlobalLayoutBlock = async (
       html?: string
     ) => {
@@ -377,51 +368,11 @@ const handleZipImportExecute = async () => {
       }
     }).unwrap();
 
-    console.log(
-      "ZIP GLOBAL LAYOUT SAVED",
-      {
-        navbarType:
-          navbarBlock?.type || null,
-        footerType:
-          footerBlock?.type || null
-      }
-    );
-
     for (const page of result.pages) {
-      console.log(
-  "IMPORTING PAGE",
-  page.slug
-);
       const imported =
         await importHtmlDocument(
           page.processedHtml
         );
-try {
-
-  console.log(
-    "IMPORTING PAGE",
-    page.slug
-  );
-
-  const imported =
-    await importHtmlDocument(
-      page.processedHtml
-    );
-
-} catch (e) {
-
-  console.error(
-    "FAILED PAGE",
-    page.slug,
-    e
-  );
-
-}
-      console.log(
-        "IMPORT PAGE",
-        page.slug,
-        imported.blocks.length
-      );
 
       const hydrated =
         hydrateBlocks(
@@ -435,31 +386,29 @@ try {
               block.children || []
           }))
         );
-try {
-  console.log("CREATING PAGE", page.title, page.slug, page.isHomepage);
 
-  const createdResponse =
-    await createPage({
-      siteId: Number(siteId),
-      title: page.title,
-      slug: page.slug,
-      blocks: hydrated as any,
-      isHomepage: page.isHomepage
-    }).unwrap();
+      try {
+        const createdResponse =
+          await createPage({
+            siteId: Number(siteId),
+            title: page.title,
+            slug: page.slug,
+            blocks: hydrated as any,
+            isHomepage: page.isHomepage
+          }).unwrap();
 
-  const createdPage =
-    (createdResponse as any).data || createdResponse;
+        const createdPage =
+          (createdResponse as any).data || createdResponse;
 
-  await publishPage({
-    siteId: Number(siteId),
-    pageId: createdPage.id
-  }).unwrap();
+        await publishPage({
+          siteId: Number(siteId),
+          pageId: createdPage.id
+        }).unwrap();
 
-  console.log("PAGE CREATED AND PUBLISHED", page.slug);
-} catch (error) {
-  console.error("FAILED PAGE", page.title, page.slug, error);
-  continue;
-}
+      } catch (error) {
+        console.error("FAILED PAGE", page.title, page.slug, error);
+        continue;
+      }
 
     }
 
