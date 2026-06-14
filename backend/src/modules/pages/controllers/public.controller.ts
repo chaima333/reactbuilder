@@ -51,7 +51,13 @@ const allBlocks = [
       ]
     : []),
 
-  ...page.blocks
+  ...page.blocks,
+
+  ...(globalLayout.footer
+    ? [
+        globalLayout.footer
+      ]
+    : [])
 ];
 
 console.log(

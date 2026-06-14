@@ -41,4 +41,28 @@ export class SiteService {
     
     return await site.update(body);
   }
+
+  static async updateGlobalLayoutService(
+    siteId: number,
+    globalLayout: {
+      navbar?: any | null;
+      footer?: any | null;
+    }
+  ) {
+    const site = await Site.findByPk(siteId);
+    if (!site) throw new Error("SITE_NOT_FOUND");
+
+    const currentLayout =
+      site.get("globalLayout") || {};
+
+    return await site.update({
+      globalLayout: {
+        ...currentLayout,
+        navbar:
+          globalLayout.navbar ?? null,
+        footer:
+          globalLayout.footer ?? null
+      }
+    });
+  }
 }

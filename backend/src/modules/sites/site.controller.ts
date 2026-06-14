@@ -61,6 +61,58 @@ export const updateSite = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const updateGlobalLayout = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const siteId = Number(req.params.siteId);
+
+    const member = await SiteMember.findOne({
+      where: {
+        siteId,
+        userId: req.user.id
+      }
+    });
+
+    if (!member && req.user.role !== "ADMIN") {
+      return res.status(403).json({
+        success: false,
+        message: "No access to this site"
+      });
+    }
+
+    const updatedSite =
+      await SiteService.updateGlobalLayoutService(
+        siteId,
+        {
+          navbar:
+            req.body?.navbar ?? null,
+          footer:
+            req.body?.footer ?? null
+        }
+      );
+
+    return res.json({
+      success: true,
+      data: updatedSite
+    });
+
+  } catch (error: any) {
+    if (error.message === "SITE_NOT_FOUND") {
+      return res.status(404).json({
+        success: false,
+        message: "Site not found"
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 // =========================
 // GET SITES
 // =========================
