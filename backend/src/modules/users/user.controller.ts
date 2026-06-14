@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { User, ActivityLog } from '../../models';
 import { AuthRequest } from '../../shared/auth.util';
 import bcrypt from 'bcrypt';
-import { Sequelize } from 'sequelize-typescript/dist/sequelize/sequelize/sequelize';
+import { Sequelize } from "sequelize";
 
 // Au lieu de (req: Request), utilise (req: AuthRequest)
 export const myController = async (req: AuthRequest, res: Response) => {
