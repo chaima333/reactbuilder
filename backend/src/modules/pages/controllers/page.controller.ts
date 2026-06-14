@@ -40,7 +40,26 @@ export const createPage = async (req: AuthRequest, res: Response) => {
     await handleEventDispatch(result, "PageController.createPage");
     return res.status(201).json({ success: true, data: PageMapper.toDTO(result.data) });
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+    console.error("CREATE_PAGE_ERROR", {
+      name:
+        err?.name,
+      message:
+        err?.message,
+      errors:
+        err?.errors,
+      parent:
+        err?.parent,
+      original:
+        err?.original
+    });
+
+    return res.status(500).json({
+      success: false,
+      message:
+        err?.message,
+      details:
+        err?.errors
+    });
   }
 };
 
