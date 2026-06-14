@@ -19,40 +19,75 @@ export class PageService {
   }
 
   // ================= CREATE =================
-  static async createPage(siteId: number, userId: number, data: any) {
-    const existing = await PageRepository.findByTitle(siteId, data.title);
-    if (existing) throw new Error("PAGE_ALREADY_EXISTS");
+  // ================= CREATE =================
+static async createPage(
+  siteId: number,
+  userId: number,
+  data: any
+) {
+  const existing =
+    await PageRepository.findByTitle(
+      siteId,
+      data.title
+    );
 
-    const slug =data.slug || this.generateSlug( data.title);
-    const existingHomepage =await Page.findOne({
-      where: {siteId,isHomepage: true }
-     });
-    const page = await PageRepository.create({
+  if (existing) {
+    throw new Error("PAGE_ALREADY_EXISTS");
+  }
+
+  const slug =
+    data.slug ||
+    this.generateSlug(
+      data.title
+    );
+
+  const requestedHomepage =
+    data.isHomepage === true;
+
+  if (requestedHomepage) {
+    await Page.update(
+      {
+        isHomepage: false
+      },
+      {
+        where: {
+          siteId
+        }
+      }
+    );
+  }
+
+  const page =
+    await PageRepository.create({
       ...data,
       slug,
       siteId,
       userId,
-      status:
-     PAGE_STATUS.DRAFT,isHomepage:!existingHomepage
+      status: PAGE_STATUS.DRAFT,
+      isHomepage: requestedHomepage
     });
 
-    await SlugMap.create({
-      siteId,
-      slug,
-      pageId: page.id,
-      type: "page",
-      isActive: true
-    });
+  await SlugMap.create({
+    siteId,
+    slug,
+    pageId: page.id,
+    type: "page",
+    isActive: true
+  });
 
-    return {
-      data: page,
-      event: {
-        type: PAGE_EVENTS.CREATED,
-        payload: { page: page.toJSON(), siteId, userId },
-        shouldEmit: true
-      }
-    };
-  }
+  return {
+    data: page,
+    event: {
+      type: PAGE_EVENTS.CREATED,
+      payload: {
+        page: page.toJSON(),
+        siteId,
+        userId
+      },
+      shouldEmit: true
+    }
+  };
+}
 
   // ================= GET =================
   static async getPages(siteId: number) {

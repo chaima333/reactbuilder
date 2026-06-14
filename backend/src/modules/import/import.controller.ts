@@ -211,7 +211,9 @@ processedHtml =
               extractDir,
               htmlPath
             ),
-          processedHtml
+          processedHtml,
+          isHomepage:
+    path.basename(htmlPath).toLowerCase() === "index.html"
         };
       });
 

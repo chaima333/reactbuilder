@@ -12,6 +12,7 @@ import { SiteMember } from "./SiteMember";
 import PageVersion from "./pageVersion"; 
 import PageSlug from "./pageSlug"; 
 import { FigmaImport } from "./FigmaImport";
+import { ContactSubmission } from "./contactSubmission";
 
 export const models = [
   User, Token, Page, Site, ActivityLog, Media, 
@@ -22,5 +23,5 @@ export const models = [
 export { 
   User, Token, Page, Site, ActivityLog, 
   Media, Seo, Plugin, SitePlugin, SiteMember, 
-  PageVersion, PageSlug, FigmaImport
+  PageVersion, PageSlug, FigmaImport,ContactSubmission
 };
