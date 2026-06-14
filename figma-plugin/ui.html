@@ -170,22 +170,25 @@
         try {
           setStatus("Connecting...");
 
-          const response = await fetch(
-            API_URL + "/api/figma-plugin/sites",
-            {
-              headers: {
-                Authorization: "Bearer " + token
-              }
-            }
-          );
+         const response = await fetch(
+  API_URL + "/api/figma-plugin/sites",
+  {
+    headers: {
+      Authorization: "Bearer " + token
+    }
+  }
+);
 
-          const result =
-            await response.json();
+console.log("STATUS", response.status);
 
-          resultEl.textContent =
-            JSON.stringify(result, null, 2);
+const result = await response.json();
 
-          if (!response.ok || !result.success) {
+console.log("RESULT", result);
+
+resultEl.textContent =
+  JSON.stringify(result, null, 2);
+
+            if (!response.ok || !result.success) {
             setStatus(
               result.message || "Connection failed."
             );
