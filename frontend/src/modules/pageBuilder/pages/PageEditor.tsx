@@ -136,12 +136,7 @@ export const PageEditor = ({ mode }: { mode: "create" | "edit" }) => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [htmlCode, setHtmlCode] = useState("");
-  const [isFigmaModalOpen, setIsFigmaModalOpen] = useState(false);
 
-
-// for figma import
-const [importFigma] = useImportFigmaMutation();
-const [figmaPluginJson, setFigmaPluginJson] = useState("");
 
 //import siteweb
 const [zipFile, setZipFile] = useState<File | null>(null);
@@ -422,51 +417,7 @@ const handleZipImportExecute = async () => {
     );
   }
 };
-// =====================================
-// FIGMA PLUGIN IMPORT HANDLER
-// =====================================
-const handleFigmaPluginImportExecute = () => {
-  try {
-    const parsed = JSON.parse(figmaPluginJson);
-    const payload = parsed.payload || parsed;
 
-    const semanticTree =
-      figmaToSemanticTree(payload);
-
-  console.dir(
-  semanticTree,
-  { depth: null }
-);
-
-    const figmaBlocks =
-      semanticTreeToBlocks(semanticTree);
-
-    console.log(
-      "FIGMA BLOCKS DIRECT",
-      figmaBlocks
-    );
-
-    const hydrated =
-      hydrateBlocks(
-        figmaBlocks.map((block: any) => ({
-          ...block,
-          props: block.data?.props || {},
-          style: block.data?.style || {},
-          children: block.children || []
-        }))
-      );
-
-    actions.setBlocks(hydrated as any);
-    setSelectedBlockId(hydrated[0]?.id || null);
-    setActiveTab(1);
-    setIsFigmaModalOpen(false);
-  } catch (error) {
-    console.error(
-      "FIGMA PLUGIN IMPORT ERROR",
-      error
-    );
-  }
-};
   return (
     <RuntimeProvider value={{ mode: isPreview ? "preview" : "editor", device, tokens }}>
       <ThemeContext.Provider value={{ tokens, updateToken }}>
@@ -561,7 +512,8 @@ const handleFigmaPluginImportExecute = () => {
                           }
                         }}
                         onImportHtml={() => setIsModalOpen(true)}
-                        onImportFigma={() => setIsFigmaModalOpen(true)}
+                        onImportFigma={() => {
+                        alert("Use the Figma plugin: Analyze Frame → Send To ReactBuilder");}}
                       />
                     )}
                     {activeTab === 1 && (
@@ -671,64 +623,6 @@ const handleFigmaPluginImportExecute = () => {
               </Stack>
             </Paper>
           </Modal>
-<Modal
-  open={isFigmaModalOpen}
-  onClose={() => setIsFigmaModalOpen(false)}
-  sx={{
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center"
-  }}
->
-  <Paper
-    sx={{
-      width: 500,
-      p: 3,
-      borderRadius: 3,
-      display: "flex",
-      flexDirection: "column",
-      gap: 2
-    }}
-  >
-    <Typography variant="h6" fontWeight="bold">
-      Import From Figma
-    </Typography>
-
-   <TextField
-  fullWidth
-  multiline
-  rows={12}
-  label="Figma Plugin JSON"
-  placeholder='Paste plugin JSON here'
-  value={figmaPluginJson}
-  onChange={(e) =>
-    setFigmaPluginJson(e.target.value)
-  }
-/>
-
-    <Stack
-      direction="row"
-      justifyContent="flex-end"
-      spacing={2}
-    >
-      <Button
-        onClick={() =>
-          setIsFigmaModalOpen(false)
-        }
-      >
-        Cancel
-      </Button>
-
-      <Button
-  variant="contained"
-  onClick={handleFigmaPluginImportExecute}
->
-  Import
-</Button>
-    </Stack>
-  </Paper>
-</Modal>
-
           {ghost && activeId && (
             <Box sx={{ position: "fixed", top: ghost.y, left: ghost.x, zIndex: 9999, pointerEvents: "none" }}>
               <DragGhost type={activeData?.type || "block"} isAllowed={isAllowed} />
