@@ -442,7 +442,7 @@ try {
     await createPage({
       siteId: Number(siteId),
       title: page.title,
-      slug: `${page.slug}-${Date.now()}`,
+      slug: page.slug,
       blocks: hydrated as any,
       isHomepage: page.isHomepage
     }).unwrap();

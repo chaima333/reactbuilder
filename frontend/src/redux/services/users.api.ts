@@ -26,9 +26,11 @@ export const usersApi = api.injectEndpoints({
       invalidatesTags: [{ type: 'User', id: 'PROFILE' }],
     }),
 
-   getUsers: builder.query<User[], void>({
-  query: () => "/users",
-  transformResponse: (res: any) => res.data,
+  getUsers: builder.query<User[], void>({
+  query: () => '/users',
+
+  transformResponse: (response: any) =>
+    response.data || [],
   providesTags: (result) =>
     result
       ? [

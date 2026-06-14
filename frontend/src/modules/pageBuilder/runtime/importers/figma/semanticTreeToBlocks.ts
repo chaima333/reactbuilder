@@ -78,10 +78,13 @@ const makeTextBlock = (
 const makeImagePlaceholder = (
   node: FigmaSemanticNode
 ): SerializedBlock => {
-  const imageUrl =
+const imageUrl =
+  node.source.imageUrl ||
+  (
     node.source.imageBase64
       ? `data:${node.source.imageMimeType || "image/png"};base64,${node.source.imageBase64}`
-      : "";
+      : ""
+  );
 
   if (imageUrl) {
     return {

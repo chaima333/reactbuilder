@@ -60,18 +60,19 @@ export const Users: React.FC = () => {
     name: '',
     email: '',
     password: '',
-    role: 'Viewer',
+    role: "VIEWER",
   });
 
   // RTK Query hooks
   const { data, isLoading, refetch } = useGetUsersQuery(undefined);
+  console.log("RTK USERS:", data);
   const [deleteUser] = useDeleteUserMutation();
   const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
   const [changeRole] = useChangeUserRoleMutation();
 
   // ✅ تغيير الاسم لـ allUsers لتجنب التداخل مع اسم الـ Component (Users)
-  const allUsers = (data as any)?.data || [];
+  const allUsers = data || [];
 
   // --- API CALLS MANUELS (PENDING USERS) ---
   
@@ -367,9 +368,9 @@ export const Users: React.FC = () => {
             value={formData.role}
             onChange={(e) => setFormData({ ...formData, role: e.target.value })}
           >
-            <MenuItem value="Admin">Administrateur</MenuItem>
-            <MenuItem value="Editor">Éدiteur</MenuItem>
-            <MenuItem value="Viewer">Visiteur</MenuItem>
+            <MenuItem value="ADMIN">Administrateur</MenuItem>
+            <MenuItem value="EDITOR">Éditeur</MenuItem>
+            <MenuItem value="VIEWER">Visiteur</MenuItem>
           </TextField>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>

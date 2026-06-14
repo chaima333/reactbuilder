@@ -13,7 +13,7 @@ export type FigmaNode = {
   children?: FigmaNode[];
   imageBase64?: string;
 imageMimeType?: string;
-
+imageUrl?: string;
   
 
   // Layout
