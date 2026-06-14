@@ -356,6 +356,20 @@ const handleZipImportExecute = async () => {
         result.globalLayout?.footerHtml || ""
       );
 
+    console.log(
+      "ZIP_NAVBAR_IMPORT_TRACE",
+      {
+        navHtml:
+          result.globalLayout?.navHtml || "",
+        navbarType:
+          navbarBlock?.type,
+        navbarMeta:
+          navbarBlock?.meta,
+        navbarDesktopStyle:
+          navbarBlock?.data?.style?.desktop
+      }
+    );
+
     await updateGlobalLayout({
       siteId: Number(siteId),
       globalLayout: {
