@@ -134,7 +134,15 @@ export const getFigmaPluginSites = async (
         where: {
           userId: pluginToken.userId
         },
-        include: [Site]
+        include: [
+  {
+    model: Site,
+    required: true,
+    where: {
+      status: "active"
+    }
+  }
+]
       });
 
     const sites =

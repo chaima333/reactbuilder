@@ -37,6 +37,7 @@ import { registerCommands } from "./core/commands/register";
 import publicSiteRoutes from "./modules/sites/publicSite.routes";
 import importRoutes from "./modules/import/import.routes";
 import figmaPluginRoutes from "./modules/figmaPlugin/figmaPlugin.routes";
+import { maintenanceMode } from "./core/middleware/maintenance";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 
@@ -69,13 +70,13 @@ app.use("/api/auth", authRoutes);
    GLOBAL (IMPORTANT FIX 🔥)
    => THIS WAS MISSING (ROOT CAUSE OF 404)
 ======================== */
-const authStack = [authenticateJWT];
+const authStack = [authenticateJWT, maintenanceMode];
 app.use("/api/sites", authStack, siteRoutes);
 
 /* ========================
    TENANT ROUTES (SaaS CORE)
 ======================== */
-const tenantStack = [authenticateJWT, tenantResolver];
+const tenantStack = [authenticateJWT, tenantResolver,tenantResolver];
 app.use("/api/sites/:siteId/dashboard", authenticateJWT, dashboardRoutes);
 app.use("/api/sites/:siteId/pages", tenantStack, pageRoutes);
 app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);

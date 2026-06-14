@@ -18,17 +18,27 @@ export const createSite = async (req: AuthRequest, res: Response) => {
 
     const cleanSubdomain = subdomain.toLowerCase().trim().replace(/\s+/g, "-");
 
-    const site = await SiteService.createSite(userId, { 
-      name, 
-      subdomain: cleanSubdomain, 
-      title 
-    });
+   const site = await SiteService.createSite(
+  userId,
+  {
+    name,
+    subdomain: cleanSubdomain,
+    title
+  },
+  req.user.role
+);
 
     return res.status(201).json({ success: true, data: site });
   } catch (error: any) {
     if (error.name === "SequelizeUniqueConstraintError") {
       return res.status(409).json({ success: false, message: "Subdomain already taken" });
     }
+    if (error.message === "MAX_SITES_LIMIT_REACHED") {
+  return res.status(403).json({
+    success: false,
+    message: "Maximum sites limit reached",
+  });
+}
     return res.status(500).json({ success: false, message: error.message });
   }
 };

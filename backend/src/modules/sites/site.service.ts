@@ -3,22 +3,20 @@ import { Site, SiteMember } from "../../models";
 import { AdminSettingsService } from "../admin/adminSettings.service";
 
 export class SiteService {
-  static async createSite(userId: number, siteData: any) {
-    const settings =
-  await AdminSettingsService.getSettings();
+  static async createSite(userId: number, siteData: any, userRole?: string) {
 
-const maxSites =
-  settings.maxSitesPerUser ?? 5;
+const settings = await AdminSettingsService.getSettings();
 
-const currentSitesCount =
-  await SiteMember.count({
+const maxSites = settings.maxSitesPerUser ?? 5;
+
+if (userRole !== "ADMIN") {
+  const currentSitesCount = await SiteMember.count({
     where: { userId },
   });
 
-if (currentSitesCount >= maxSites) {
-  throw new Error(
-    "MAX_SITES_LIMIT_REACHED"
-  );
+  if (currentSitesCount >= maxSites) {
+    throw new Error("MAX_SITES_LIMIT_REACHED");
+  }
 }
     const t = await sequelize.transaction();
     try {
