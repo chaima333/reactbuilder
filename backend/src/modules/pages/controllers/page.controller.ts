@@ -40,6 +40,13 @@ export const createPage = async (req: AuthRequest, res: Response) => {
     await handleEventDispatch(result, "PageController.createPage");
     return res.status(201).json({ success: true, data: PageMapper.toDTO(result.data) });
   } catch (err: any) {
+    if (err?.message === "MAX_PAGES_LIMIT_REACHED") {
+      return res.status(403).json({
+        success: false,
+        message: "MAX_PAGES_LIMIT_REACHED"
+      });
+    }
+
     console.error("CREATE_PAGE_ERROR", {
       name:
         err?.name,

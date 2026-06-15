@@ -248,7 +248,20 @@ export const importHtmlZip = async (
       pageByHref.set(basename, route);
       pageByHref.set(`./${basename}`, route);
     }
+const rewriteAssetUrls = (
+  html: string
+) => {
+  let output = html;
 
+  for (const [localPath, cloudUrl] of Object.entries(assetMap)) {
+    output =
+      output
+        .split(localPath)
+        .join(cloudUrl);
+  }
+
+  return output;
+};
     const rewriteInternalLinks = (
       html: string
     ) =>
@@ -285,15 +298,15 @@ export const importHtmlZip = async (
         }
       );
 
-    navHtml =
-      rewriteInternalLinks(
-        navHtml
-      );
+   navHtml =
+  rewriteInternalLinks(
+    rewriteAssetUrls(navHtml)
+  );
 
-    footerHtml =
-      rewriteInternalLinks(
-        footerHtml
-      );
+footerHtml =
+  rewriteInternalLinks(
+    rewriteAssetUrls(footerHtml)
+  );
 
     return res.json({
       success: true,

@@ -15,15 +15,16 @@ import { FigmaImport } from "./FigmaImport";
 import { ContactSubmission } from "./contactSubmission";
 import { FigmaPluginToken } from "./FigmaPluginToken";
 import PlatformSetting from "./PlatformSetting";
+import Notification from "./Notification";
 
 export const models = [
   User, Token, Page, Site, ActivityLog, Media, 
   Seo, Plugin, SitePlugin, SiteMember, 
-  PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken,PlatformSetting
+  PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken,PlatformSetting,Notification
 ];
 
 export { 
   User, Token, Page, Site, ActivityLog, 
   Media, Seo, Plugin, SitePlugin, SiteMember, 
-  PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken,PlatformSetting
+  PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken,PlatformSetting,Notification
 };

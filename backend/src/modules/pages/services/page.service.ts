@@ -9,6 +9,7 @@ import { PAGE_EVENTS } from "../../../core/plugins/events/pageEvents";
 import crypto from 'crypto';
 import PageVersion from "../../../models/pageVersion";
 import { updatePageHandler } from "../commands/updatePage.handler";
+import { AdminSettingsService } from "../../admin/adminSettings.service";
 
 const { nanoid } = require("nanoid");
 
@@ -25,6 +26,16 @@ static async createPage(
   userId: number,
   data: any
 ) {
+  const settings = await AdminSettingsService.getSettings();
+  const maxPages = settings.maxPagesPerSite ?? 50;
+  const currentPagesCount = await Page.count({
+    where: { siteId }
+  });
+
+  if (currentPagesCount >= maxPages) {
+    throw new Error("MAX_PAGES_LIMIT_REACHED");
+  }
+
   const existing =
     await PageRepository.findByTitle(
       siteId,

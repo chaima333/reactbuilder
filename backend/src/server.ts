@@ -28,6 +28,7 @@ import mediaRoutes from "./modules/media/media.routes";
 import userRoutes from "./modules/users/user.routes";
 import adminRoutes from "./modules/admin/admin.routes";
 import publicRoutes from "./modules/pages/routes/public.routes";
+import platformRoutes from "./modules/platform/platform.routes";
 
 // CORE
 import { bootstrapPlugins } from "./app.bootstrap";
@@ -65,6 +66,7 @@ app.use("/p/public",publicSiteRoutes);
    AUTH
 ======================== */
 app.use("/api/auth", authRoutes);
+app.use("/api/platform", platformRoutes);
 
 /* ========================
    GLOBAL (IMPORTANT FIX 🔥)
@@ -76,8 +78,8 @@ app.use("/api/sites", authStack, siteRoutes);
 /* ========================
    TENANT ROUTES (SaaS CORE)
 ======================== */
-const tenantStack = [authenticateJWT, tenantResolver,tenantResolver];
-app.use("/api/sites/:siteId/dashboard", authenticateJWT, dashboardRoutes);
+const tenantStack = [authenticateJWT, maintenanceMode, tenantResolver];
+app.use("/api/sites/:siteId/dashboard", authenticateJWT, maintenanceMode, dashboardRoutes);
 app.use("/api/sites/:siteId/pages", tenantStack, pageRoutes);
 app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
 app.use(
@@ -90,14 +92,14 @@ app.use("/api/figma-plugin", figmaPluginRoutes);
    ADMIN / USERS
 ======================== */
 app.use("/api/users", authStack, userRoutes);
-app.use("/api/admin", authStack, adminRoutes);
+app.use("/api/admin", adminRoutes);
 
 /* ========================
    COMMANDS / PLUGINS
 ======================== */
 
 registerCommands();
-app.use("/api/sites/:siteId/commands", commandRoutes);
+app.use("/api/sites/:siteId/commands", authenticateJWT, maintenanceMode, commandRoutes);
 
 
 /* ========================

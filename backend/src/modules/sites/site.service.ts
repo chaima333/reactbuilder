@@ -11,7 +11,10 @@ const maxSites = settings.maxSitesPerUser ?? 5;
 
 if (userRole !== "ADMIN") {
   const currentSitesCount = await SiteMember.count({
-    where: { userId },
+    where: {
+      userId,
+      role: "OWNER"
+    },
   });
 
   if (currentSitesCount >= maxSites) {

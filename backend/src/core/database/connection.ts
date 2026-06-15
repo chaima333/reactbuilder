@@ -4,7 +4,7 @@ import { Seo } from "../../models/Seo";
 import { Plugin } from "../../models/Plugin";
 import { SiteMember } from "../../models/SiteMember";
 import { SitePlugin } from "../../models/SitePlugin";
-
+import Notification from "../../models/Notification";
 const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
@@ -32,7 +32,9 @@ export const sequelize = new Sequelize(databaseUrl, {
     FigmaImport,
     ContactSubmission,
     FigmaPluginToken,
-    PlatformSetting
+    PlatformSetting,
+    Notification
+    
   ],
 
   dialectOptions:

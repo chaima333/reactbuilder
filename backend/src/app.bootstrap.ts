@@ -2,6 +2,7 @@ import { cmsRegistry } from "./core/plugins/plugin.registry";
 import { SEOPlugin } from "./modules/plugin/seo.plugin";
 import { VersionPlugin } from "./modules/plugin/version.plugin";
 import { MediaPlugin } from "./modules/plugin/media.plugin";
+import { NotificationPlugin } from "./modules/plugin/notification.plugin";
 
 let initialized = false;
 
@@ -13,7 +14,9 @@ export const bootstrapPlugins = () => {
 
   cmsRegistry.register(VersionPlugin, 100);
   cmsRegistry.register(SEOPlugin, 50);
-  cmsRegistry.register(MediaPlugin,20);
+  cmsRegistry.register(NotificationPlugin, 30);
+  cmsRegistry.register(MediaPlugin, 20);
+
 
   console.log("✅ Plugins registered:", cmsRegistry.getPlugins());
 

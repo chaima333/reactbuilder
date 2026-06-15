@@ -36,7 +36,7 @@ export const createSite = async (req: AuthRequest, res: Response) => {
     if (error.message === "MAX_SITES_LIMIT_REACHED") {
   return res.status(403).json({
     success: false,
-    message: "Maximum sites limit reached",
+    message: "MAX_SITES_LIMIT_REACHED",
   });
 }
     return res.status(500).json({ success: false, message: error.message });
