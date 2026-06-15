@@ -39,6 +39,7 @@ import publicSiteRoutes from "./modules/sites/publicSite.routes";
 import importRoutes from "./modules/import/import.routes";
 import figmaPluginRoutes from "./modules/figmaPlugin/figmaPlugin.routes";
 import { maintenanceMode } from "./core/middleware/maintenance";
+import notificationRoutes from "./modules/notifications/notification.routes";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 
@@ -88,6 +89,9 @@ app.use(
   importRoutes
 );
 app.use("/api/figma-plugin", figmaPluginRoutes);
+
+
+app.use("/api/notifications", notificationRoutes);
 /* ========================
    ADMIN / USERS
 ======================== */
