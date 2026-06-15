@@ -118,9 +118,6 @@
     const API_URL =
       "https://backend-rmfq.onrender.com";
 
-    const FRONTEND_URL =
-      "https://frontend-git-feature-auth-persistence-chaima333s-projects.vercel.app";
-
     let lastPayload = null;
 
     const statusEl =
@@ -135,9 +132,21 @@
     const siteSelect =
       document.getElementById("siteSelect");
 
-
     const setStatus = (message) => {
       statusEl.textContent = message;
+    };
+
+    const savePluginSettings = () => {
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: "SAVE_PLUGIN_SETTINGS",
+            pluginToken: pluginTokenInput.value.trim(),
+            siteId: siteSelect.value || ""
+          }
+        },
+        "*"
+      );
     };
 
     const renderSites = (sites) => {
@@ -155,6 +164,12 @@
         siteSelect.appendChild(option);
       });
 
+      const savedSiteId =
+        siteSelect.dataset.savedSiteId;
+
+      if (savedSiteId) {
+        siteSelect.value = savedSiteId;
+      }
     };
 
     document.getElementById("connectBtn").onclick =
@@ -170,25 +185,26 @@
         try {
           setStatus("Connecting...");
 
-         const response = await fetch(
-  API_URL + "/api/figma-plugin/sites",
-  {
-    headers: {
-      Authorization: "Bearer " + token
-    }
-  }
-);
+          const response = await fetch(
+            API_URL + "/api/figma-plugin/sites",
+            {
+              headers: {
+                Authorization: "Bearer " + token
+              }
+            }
+          );
 
-console.log("STATUS", response.status);
+          console.log("STATUS", response.status);
 
-const result = await response.json();
+          const result =
+            await response.json();
 
-console.log("RESULT", result);
+          console.log("RESULT", result);
 
-resultEl.textContent =
-  JSON.stringify(result, null, 2);
+          resultEl.textContent =
+            JSON.stringify(result, null, 2);
 
-            if (!response.ok || !result.success) {
+          if (!response.ok || !result.success) {
             setStatus(
               result.message || "Connection failed."
             );
@@ -196,6 +212,7 @@ resultEl.textContent =
           }
 
           renderSites(result.data || []);
+          savePluginSettings();
 
           setStatus("Connected. Select a site.");
         } catch (error) {
@@ -204,6 +221,10 @@ resultEl.textContent =
             String(error);
         }
       };
+
+    siteSelect.onchange = () => {
+      savePluginSettings();
+    };
 
     document.getElementById("exportBtn").onclick =
       () => {
@@ -237,6 +258,8 @@ resultEl.textContent =
           return;
         }
 
+        savePluginSettings();
+
         setStatus("Sending selected frame...");
 
         parent.postMessage(
@@ -262,8 +285,27 @@ resultEl.textContent =
       resultEl.textContent =
         JSON.stringify(msg, null, 2);
 
+      if (msg.type === "STORAGE_LOADED") {
+        pluginTokenInput.value =
+          msg.pluginToken || "";
+
+        if (msg.selectedSiteId) {
+          siteSelect.dataset.savedSiteId =
+            msg.selectedSiteId;
+        }
+
+        if (msg.pluginToken) {
+          setStatus("Saved token loaded. Click Connect.");
+        }
+      }
+
+      if (msg.type === "PLUGIN_SETTINGS_SAVED") {
+        setStatus("Plugin settings saved.");
+      }
+
       if (msg.type === "EXPORT_RESULT") {
-        lastPayload = msg.payload;
+        lastPayload =
+          msg.payload;
 
         setStatus(
           "Frame analyzed: " +

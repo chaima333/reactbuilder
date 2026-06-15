@@ -4,6 +4,16 @@ figma.showUI(__html__, {
   width: 420,
   height: 420
 });
+Promise.all([
+  figma.clientStorage.getAsync("pluginToken"),
+  figma.clientStorage.getAsync("selectedSiteId")
+]).then(([pluginToken, selectedSiteId]) => {
+  figma.ui.postMessage({
+    type: "STORAGE_LOADED",
+    pluginToken: pluginToken || "",
+    selectedSiteId: selectedSiteId || ""
+  });
+});
 
 const hasImageFill = (node) => {
   return (
@@ -103,12 +113,29 @@ base.imageMimeType =
 };
 
 figma.ui.onmessage = async (msg) => {
-  if (
-    msg.type !== "EXPORT_SELECTION" &&
-    msg.type !== "SEND_TO_REACTBUILDER"
-  ) {
-    return;
-  }
+  if (msg.type === "SAVE_PLUGIN_SETTINGS") {
+  await figma.clientStorage.setAsync(
+    "pluginToken",
+    msg.pluginToken
+  );
+
+  await figma.clientStorage.setAsync(
+    "selectedSiteId",
+    msg.siteId
+  );
+
+  figma.ui.postMessage({
+    type: "PLUGIN_SETTINGS_SAVED"
+  });
+
+  return;
+}
+if (
+  msg.type !== "EXPORT_SELECTION" &&
+  msg.type !== "SEND_TO_REACTBUILDER"
+) {
+  return;
+}
 
   const selection = figma.currentPage.selection;
 
@@ -179,12 +206,12 @@ if (msg.type === "SEND_TO_REACTBUILDER") {
     ) {
       figma.notify("Sent successfully");
 
-      figma.openExternal(
-        "https://frontend-git-feature-auth-persistence-chaima333s-projects.vercel.app/sites/" +
-        result.data.siteId +
-        "/pages/new?figmaImportId=" +
-        result.data.importId
-      );
+ figma.openExternal(
+  "https://frontend-git-feature-auth-persistence-chaima333s-projects.vercel.app/sites/" +
+  result.data.siteId +
+  "/pages/new?figmaImportId=" +
+  result.data.importId
+);
     }
   } catch (error) {
     figma.notify("Send failed");
