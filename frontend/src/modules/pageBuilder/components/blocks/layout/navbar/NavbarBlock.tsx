@@ -192,17 +192,17 @@ export const NavbarBlock = ({
   {...rootProps}
   style={navbarStyle}
 >
-  <style>
-    {`
-      .navbar-dropdown-parent > .navbar-submenu {
-        display: none !important;
-      }
+ <style>
+  {`
+    .navbar-dropdown-parent .navbar-submenu {
+      display: none !important;
+    }
 
-      .navbar-dropdown-parent:hover > .navbar-submenu {
-        display: flex !important;
-      }
-    `}
-  </style>
+    .navbar-dropdown-parent:hover .navbar-submenu {
+      display: flex !important;
+    }
+  `}
+</style>
 
   {children}
 
