@@ -21,7 +21,8 @@ export const api = createApi({
 "ActivityLogs",
     "AdminSettings",
     "PlatformSettings",
-    "PlatformSettings"
+    "PlatformSettings",
+   "Notifications"
 
     ],
 

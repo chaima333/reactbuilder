@@ -168,6 +168,23 @@ const styleSource =
 
 const computed =
   view?.getComputedStyle(styleSource);
+  console.log(
+  "NAVBAR ALL CLASSES",
+  Array.from(
+    node.element.ownerDocument.querySelectorAll("*")
+  )
+    .filter((el: any) =>
+      typeof el.className === "string" &&
+      (
+        el.className.includes("header") ||
+        el.className.includes("nav")
+      )
+    )
+    .map((el: any) => ({
+      tag: el.tagName,
+      className: el.className
+    }))
+);
   const parentComputed =
   node.element.parentElement
     ? view?.getComputedStyle(node.element.parentElement)
@@ -231,25 +248,6 @@ const ctaComputed =
   ? view?.getComputedStyle(firstCta)
     : null;
 
-console.log("🧭 NAVBAR TARGET CHECK", {
-  tag: node.element.tagName,
-  className: node.element.className,
-  parentTag: node.element.parentElement?.tagName,
-  parentClass: node.element.parentElement?.className,
-  html: node.element.outerHTML.slice(0, 500)
-});
-console.log("🎨 NAVBAR RAW STYLE", {
-  backgroundColor: computed?.backgroundColor,
-  color: computed?.color,
-  linkColor: linkComputed?.color,
-  submenuBackground: submenuComputed?.backgroundColor,
-  ctaBackground: ctaComputed?.backgroundColor
-});
-console.log("NAVBAR STYLE SOURCE", {
-  navClass: node.element.className,
-  styleSourceTag: styleSource.tagName,
-  styleSourceClass: styleSource.className
-});
 
   return {
     type: "NAVBAR",

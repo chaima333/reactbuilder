@@ -54,36 +54,7 @@ export const NavbarBlock = ({
     rootProps
   } = runtime;
 
-  // =====================================
-  // DEBUG
-  // =====================================
 
-  if (
-    context.mode ===
-    "editor"
-  ) {
-
-    console.log(
-      "🔥 NAVBAR METADATA",
-      block?.data?.props?.semantic
-    );
-  }
-
-  console.log(
-  "NAVBAR_RENDER",
-  {
-    id: block?.id,
-    type: block?.type,
-    childrenCount:
-      block?.children?.length,
-    resolved,
-    block
-  }
-);
-console.log(
-  "STYLE_RESOLVE",
-  block?.id
-);
   // =====================================
   // RESPONSIVE FLEX
   // =====================================
@@ -216,32 +187,24 @@ console.log(
   // =====================================
   // RENDER
   // =====================================
-
   return (
+<nav
+  {...rootProps}
+  style={navbarStyle}
+>
+  <style>
+    {`
+      .navbar-dropdown-parent > .navbar-submenu {
+        display: none !important;
+      }
 
-    <nav
-      {...rootProps}
-      style={navbarStyle}
-    >
+      .navbar-dropdown-parent:hover > .navbar-submenu {
+        display: flex !important;
+      }
+    `}
+  </style>
 
-      {children}
-
-      {(!block?.children ||
-        block.children.length === 0) && (
-
-        <div
-          style={{
-            width: "100%",
-            padding: "20px",
-            textAlign: "center",
-            color: "#6b7280"
-          }}
-        >
-          {isOver
-            ? "Drop here!"
-            : "Navbar Layout (Empty)"}
-        </div>
-      )}
+  {children}
 
     </nav>
   );

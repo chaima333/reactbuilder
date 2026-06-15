@@ -38,8 +38,8 @@ const navTextColor =
   rawStyle.color !== "rgb(0, 0, 0)"
     ? rawStyle.color
     : "#ffffff";
-    const ctaTextColor =
-  rawStyle.ctaColor || navTextColor;
+   const ctaTextColor =
+  rawStyle.ctaColor || "#0A0A0A";
 const submenuBg =
   !isEmptyColor(rawStyle.submenuBackground)
     ? rawStyle.submenuBackground
@@ -48,7 +48,7 @@ const submenuBg =
 const ctaBg =
   !isEmptyColor(rawStyle.ctaBackground)
     ? rawStyle.ctaBackground
-    : "transparent";
+    : "linear-gradient(90deg,#E85D04,#F77F00,#FFAA3B)";
 
   const hasImportedBackground =
     rawStyle.backgroundColor &&
@@ -139,6 +139,9 @@ color:
             desktop: {
               display: "flex",
               alignItems: "center",
+              width: "max-content",
+maxWidth: "none",
+flexShrink: 0,
               gap: "12px",
               flex: "0 0 auto",
               minWidth: "max-content",
@@ -198,6 +201,10 @@ color:
                     },
                     style: {
                       desktop: {
+                        display: "inline-block",
+width: "max-content",
+maxWidth: "none",
+flexShrink: 0,
                         color: navTextColor,
                         fontWeight: "900",
                         fontSize: "17px",
@@ -475,7 +482,8 @@ color:
                         borderRadius: "999px",
                         padding: "0 22px",
                         minHeight: "42px",
-                        backgroundColor: ctaBg,
+                        background: ctaBg,
+                        backgroundColor: undefined,
                         color: ctaTextColor,
                         border: "1px solid rgba(247,127,0,0.9)",
                         fontWeight: "800",

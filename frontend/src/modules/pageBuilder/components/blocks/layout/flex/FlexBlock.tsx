@@ -386,13 +386,24 @@ border:
   // =====================================
   // RENDER
   // =====================================
-
+const isNavbarSubmenu =
+  String(block?.id || "").includes("navbar-submenu");
+if (isNavbarSubmenu) {
+  console.log(
+    "SUBMENU_BLOCK_FOUND",
+    block.id
+  );
+}
   return (
 
     <div
-      {...rootProps}
-      style={flexStyle}
-    >
+  {...rootProps}
+  className={[
+    rootProps.className,
+    isNavbarSubmenu ? "navbar-submenu" : ""
+  ].filter(Boolean).join(" ")}
+  style={flexStyle}
+>
 
       {children}
 

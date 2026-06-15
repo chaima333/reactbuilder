@@ -41,6 +41,24 @@ const { tokens, updateToken } = useTheme();
   updateToken("colors.background.default", preset.bg);
   updateToken("colors.background.surface", preset.surface);
 };
+
+const safeTokens = {
+  colors: {
+    brand: {
+      primary: tokens?.colors?.brand?.primary || "#10b981",
+      secondary: tokens?.colors?.brand?.secondary || "#3b82f6",
+    },
+    background: {
+      default: tokens?.colors?.background?.default || "#ffffff",
+      surface: tokens?.colors?.background?.surface || "#f5f5f5",
+    },
+  },
+  typography: {
+    fontFamily: tokens?.typography?.fontFamily || "'Montserrat', sans-serif",
+    h1: tokens?.typography?.h1 || "32px",
+    body: tokens?.typography?.body || "16px",
+  },
+};
 console.log(
  tokens.colors.background
 );
@@ -68,7 +86,7 @@ console.log(
               sx={{
                 width: 35, height: 35, borderRadius: '8px',
                 bgcolor: p.primary, cursor: 'pointer',
-                border: tokens.colors.brand.primary === p.primary ? '2px solid black' : '2px solid #ddd',
+                border: safeTokens.colors.brand.primary === p.primary ? '2px solid black' : '2px solid #ddd',
                 display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end',
                 overflow: 'hidden',
                 '&:hover': { transform: 'scale(1.1)' },
@@ -88,13 +106,13 @@ console.log(
         <TextField
           label="Primary (Brand Green)"
           type="color" fullWidth size="small"
-          value={tokens.colors.brand.primary}
+          value={safeTokens.colors.brand.primary}
           onChange={(e) => updateToken("colors.brand.primary", e.target.value)}
         />
         <TextField
           label="Secondary (Brand Black)"
           type="color" fullWidth size="small"
-          value={tokens.colors.brand.secondary}
+          value={safeTokens.colors.brand.secondary}
           onChange={(e) => updateToken("colors.brand.secondary", e.target.value)}
         />
       </Stack>
@@ -105,7 +123,7 @@ console.log(
       <Stack spacing={2}>
         <TextField
           select label="Font Family" fullWidth size="small"
-          value={tokens.typography.fontFamily}
+          value={safeTokens.typography.fontFamily}
           onChange={(e) => updateToken("typography.fontFamily", e.target.value)}
         >
           {fontOptions.map((font) => (
@@ -118,12 +136,12 @@ console.log(
         <Stack direction="row" spacing={1}>
            <TextField
             label="H1 Size" fullWidth size="small"
-            value={tokens.typography.h1}
+            value={safeTokens.typography.h1}
             onChange={(e) => updateToken("typography.h1", e.target.value)}
           />
           <TextField
             label="Body Size" fullWidth size="small"
-            value={tokens.typography.body}
+            value={safeTokens.typography.body}
             onChange={(e) => updateToken("typography.body", e.target.value)}
           />
         </Stack>
@@ -136,13 +154,13 @@ console.log(
         <TextField
           label="Background (Gris Clair)"
           type="color" fullWidth size="small"
-          value={tokens.colors.background.default}
+          value={safeTokens.colors.background.default}
           onChange={(e) => updateToken("colors.background.default", e.target.value)}
         />
         <TextField
           label="Surface (White)"
           type="color" fullWidth size="small"
-          value={tokens.colors.background.surface}
+          value={safeTokens.colors.background.surface}
           onChange={(e) => updateToken("colors.background.surface", e.target.value)}
         />
       </Stack>

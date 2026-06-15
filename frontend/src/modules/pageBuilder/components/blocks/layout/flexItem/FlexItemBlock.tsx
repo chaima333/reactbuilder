@@ -206,9 +206,9 @@ const resolved =
 const hasDropdownChild =
   (block?.children || []).some(
     (child: any) =>
-      child?.id?.includes("submenu") ||
-      child?.data?.props?.semanticRole === "dropdown" ||
-      child?.props?.semanticRole === "dropdown"
+      child?.type === "flex" &&
+      String(child?.id || "").startsWith("navbar-submenu-") &&
+      !String(child?.id || "").startsWith("navbar-submenu-link-")
   );
 const itemStyle: React.CSSProperties = {
   flexGrow: forceMobileStackItem
@@ -334,7 +334,6 @@ if (
     )
   );
 }
-
 console.log(
   "RUNTIME FLEXITEM STYLE TRACE",
   {
@@ -456,16 +455,28 @@ if (
   // =====================================
   // RENDER
   // =====================================
-
+console.log(
+  "DROPDOWN_CHECK",
+  {
+    id: block?.id,
+    hasDropdownChild,
+    childrenIds:
+      (block?.children || []).map(
+        (c: any) => c.id
+      )
+  }
+);
   return (
-
-    <div
-      {...rootProps}
-      style={itemStyle}
-    >
-
-      {children}
-
-    </div>
-  );
+  
+  <div
+    {...rootProps}
+    className={[
+      rootProps.className,
+      hasDropdownChild ? "navbar-dropdown-parent" : ""
+    ].filter(Boolean).join(" ")}
+    style={itemStyle}
+  >
+    {children}
+  </div>
+);
 };
