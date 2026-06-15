@@ -37,7 +37,7 @@ import { downloadJsonFile, readJsonFile } from "../services/importExport";
 import { findBlockById } from "../core/tree/findBlockById";
 import { importHtmlDocument } from "../runtime/importers/html/importHtmlDocument";
 import { footerHtmlToBlock } from "../runtime/importers/html/footerToBlock";
-import { useCreatePageMutation, useImportFigmaMutation, usePublishPageMutation, useUploadHtmlZipMutation, useUpdateGlobalLayoutMutation } from "../../../redux/services/pages.api";
+import { useCreatePageMutation, useImportFigmaMutation, usePublishPageMutation, useUploadHtmlZipMutation, useUpdateGlobalLayoutMutation, useGenerateFigmaPluginTokenMutation } from "../../../redux/services/pages.api";
 import { figmaToSemanticTree } from "../runtime/importers/figma/figmaToSemanticTree";
 import { semanticTreeToBlocks } from "../runtime/importers/figma/semanticTreeToBlocks";
 
@@ -147,6 +147,13 @@ const [createPage] = useCreatePageMutation();
 const [publishPage] = usePublishPageMutation();
 const [updateGlobalLayout] = useUpdateGlobalLayoutMutation();
 
+//figma
+
+const [figmaDialogOpen, setFigmaDialogOpen] = useState(false);
+const [figmaToken, setFigmaToken] = useState("");
+const [generateFigmaPluginToken] =
+  useGenerateFigmaPluginTokenMutation();
+  
 useEffect(() => {
 
   if (!figmaImportId || !siteId) {
@@ -321,14 +328,40 @@ const handleZipImportExecute = async () => {
     const importGlobalLayoutBlock = async (
       html?: string
     ) => {
+      console.log(
+        "ZIP_GLOBAL_LAYOUT_TRANSFORMER_CALLED",
+        {
+          hasHtml:
+            !!html?.trim(),
+          html
+        }
+      );
+
       if (!html?.trim()) {
         return null;
       }
+
+      console.log(
+        "ZIP_GLOBAL_LAYOUT_IMPORT_HTML_DOCUMENT_IN",
+        html
+      );
 
       const imported =
         await importHtmlDocument(
           html
         );
+
+      console.log(
+        "ZIP_GLOBAL_LAYOUT_IMPORT_HTML_DOCUMENT_OUT",
+        {
+          blockCount:
+            imported.blocks?.length || 0,
+          blockTypes:
+            imported.blocks?.map((block: any) => block?.type),
+          firstBlock:
+            imported.blocks?.[0]
+        }
+      );
 
       const hydrated =
         hydrateBlocks(
@@ -343,8 +376,25 @@ const handleZipImportExecute = async () => {
           }))
         );
 
+      console.log(
+        "ZIP_GLOBAL_LAYOUT_HYDRATED_OUT",
+        {
+          blockCount:
+            hydrated.length,
+          blockTypes:
+            hydrated.map((block: any) => block?.type),
+          firstBlock:
+            hydrated[0]
+        }
+      );
+
       return hydrated[0] || null;
     };
+
+    console.log(
+      "ZIP_NAVHTML_RECEIVED",
+      result.globalLayout?.navHtml || ""
+    );
 
     const navbarBlock =
       await importGlobalLayoutBlock(
@@ -367,6 +417,16 @@ const handleZipImportExecute = async () => {
           navbarBlock?.meta,
         navbarDesktopStyle:
           navbarBlock?.data?.style?.desktop
+      }
+    );
+
+    console.log(
+      "ZIP_UPDATE_GLOBAL_LAYOUT_PAYLOAD",
+      {
+        navbar:
+          navbarBlock,
+        footer:
+          footerBlock
       }
     );
 
@@ -527,8 +587,7 @@ const handleZipImportExecute = async () => {
                           }
                         }}
                         onImportHtml={() => setIsModalOpen(true)}
-                        onImportFigma={() => {
-                        alert("Use the Figma plugin: Analyze Frame → Send To ReactBuilder");}}
+                        onImportFigma={() => setFigmaDialogOpen(true)}
                       />
                     )}
                     {activeTab === 1 && (
@@ -638,6 +697,70 @@ const handleZipImportExecute = async () => {
               </Stack>
             </Paper>
           </Modal>
+
+          <Modal
+  open={figmaDialogOpen}
+  onClose={() => setFigmaDialogOpen(false)}
+  sx={{
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  }}
+>
+  <Paper
+    sx={{
+      width: 520,
+      p: 3,
+      borderRadius: 3,
+      display: "flex",
+      flexDirection: "column",
+      gap: 2
+    }}
+  >
+    <Typography variant="h6" fontWeight="bold">
+      Connect Figma Plugin
+    </Typography>
+
+    <Typography variant="body2" color="text.secondary">
+      Generate a plugin token, copy it, then paste it once inside the Figma plugin.
+    </Typography>
+
+    <TextField
+      fullWidth
+      label="Plugin Token"
+      value={figmaToken}
+      InputProps={{
+        readOnly: true
+      }}
+    />
+
+    <Stack direction="row" spacing={2} justifyContent="flex-end">
+      <Button onClick={() => setFigmaDialogOpen(false)}>
+        Close
+      </Button>
+
+      <Button
+        variant="outlined"
+        disabled={!figmaToken}
+        onClick={() => navigator.clipboard.writeText(figmaToken)}
+      >
+        Copy
+      </Button>
+
+      <Button
+        variant="contained"
+        onClick={async () => {
+          const result =
+            await generateFigmaPluginToken().unwrap();
+
+          setFigmaToken(result.data.token);
+        }}
+      >
+        Generate Token
+      </Button>
+    </Stack>
+  </Paper>
+</Modal>
           {ghost && activeId && (
             <Box sx={{ position: "fixed", top: ghost.y, left: ghost.x, zIndex: 9999, pointerEvents: "none" }}>
               <DragGhost type={activeData?.type || "block"} isAllowed={isAllowed} />

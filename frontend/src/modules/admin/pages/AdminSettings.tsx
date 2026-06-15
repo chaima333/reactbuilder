@@ -22,22 +22,22 @@ import {
 const defaultSettings = {
   platformName: "ReactBuilder",
   publicRegistration: true,
-  autoApproveUsers: false,
+  autoApproveUsers: true,        // Active (حسب الصورة)
   defaultRole: "VIEWER",
   maxSitesPerUser: 5,
-  maintenanceMode: false,
-  aiEnabled: true,
+  maintenanceMode: false,        // Inactive
+  aiEnabled: true,               // Active
   aiProvider: "Claude",
-  seoPlugin: true,
-  mediaPlugin: true,
-  versionPlugin: true,
-  allowGoogleLogin: true,
-allowEmailLogin: true,
-forceStrongPasswords: false,
-sessionTimeoutHours: 24,
-maxPagesPerSite: 50,
-maxMediaStorageMb: 500,
-maxTeamMembersPerSite: 10,
+  seoPlugin: true,               // Active
+  mediaPlugin: true,             // Active
+  versionPlugin: true,           // Active
+  allowGoogleLogin: true,        // Active
+  allowEmailLogin: true,         // Active
+  forceStrongPasswords: true,    // Active (حسب الصورة)
+  sessionTimeoutHours: 24,
+  maxPagesPerSite: 50,
+  maxMediaStorageMb: 500,
+  maxTeamMembersPerSite: 10,
 };
 
 export default function AdminSettings() {
@@ -86,6 +86,7 @@ export default function AdminSettings() {
       </Typography>
 
       <Grid container spacing={3}>
+        {/* Platform */}
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, borderRadius: 4 }}>
             <Typography variant="h6" fontWeight={800}>
@@ -105,9 +106,7 @@ export default function AdminSettings() {
               control={
                 <Switch
                   checked={settings.maintenanceMode}
-                  onChange={(e) =>
-                    update("maintenanceMode", e.target.checked)
-                  }
+                  onChange={(e) => update("maintenanceMode", e.target.checked)}
                 />
               }
               label="Maintenance Mode"
@@ -117,9 +116,7 @@ export default function AdminSettings() {
               control={
                 <Switch
                   checked={settings.publicRegistration}
-                  onChange={(e) =>
-                    update("publicRegistration", e.target.checked)
-                  }
+                  onChange={(e) => update("publicRegistration", e.target.checked)}
                 />
               }
               label="Allow Public Registration"
@@ -127,6 +124,7 @@ export default function AdminSettings() {
           </Paper>
         </Grid>
 
+        {/* Users */}
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, borderRadius: 4 }}>
             <Typography variant="h6" fontWeight={800}>
@@ -138,9 +136,7 @@ export default function AdminSettings() {
               control={
                 <Switch
                   checked={settings.autoApproveUsers}
-                  onChange={(e) =>
-                    update("autoApproveUsers", e.target.checked)
-                  }
+                  onChange={(e) => update("autoApproveUsers", e.target.checked)}
                 />
               }
               label="Auto Approve New Users"
@@ -163,13 +159,12 @@ export default function AdminSettings() {
               type="number"
               label="Max Sites Per User"
               value={settings.maxSitesPerUser}
-              onChange={(e) =>
-                update("maxSitesPerUser", Number(e.target.value))
-              }
+              onChange={(e) => update("maxSitesPerUser", Number(e.target.value))}
             />
           </Paper>
         </Grid>
 
+        {/* Plugins */}
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, borderRadius: 4 }}>
             <Typography variant="h6" fontWeight={800}>
@@ -209,6 +204,7 @@ export default function AdminSettings() {
           </Paper>
         </Grid>
 
+        {/* AI */}
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, borderRadius: 4 }}>
             <Typography variant="h6" fontWeight={800}>
@@ -241,102 +237,98 @@ export default function AdminSettings() {
           </Paper>
         </Grid>
 
+        {/* Security */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, borderRadius: 4 }}>
+            <Typography variant="h6" fontWeight={800}>
+              Security
+            </Typography>
+            <Divider sx={{ my: 2 }} />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={settings.allowGoogleLogin}
+                  onChange={(e) => update("allowGoogleLogin", e.target.checked)}
+                />
+              }
+              label="Allow Google Login"
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={settings.allowEmailLogin}
+                  onChange={(e) => update("allowEmailLogin", e.target.checked)}
+                />
+              }
+              label="Allow Email Login"
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={settings.forceStrongPasswords}
+                  onChange={(e) => update("forceStrongPasswords", e.target.checked)}
+                />
+              }
+              label="Force Strong Passwords"
+            />
+
+            <TextField
+              fullWidth
+              type="number"
+              label="Session Timeout (Hours)"
+              value={settings.sessionTimeoutHours}
+              onChange={(e) => update("sessionTimeoutHours", Number(e.target.value))}
+              sx={{ mt: 2 }}
+            />
+          </Paper>
+        </Grid>
+
+        {/* Limits */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, borderRadius: 4 }}>
+            <Typography variant="h6" fontWeight={800}>
+              Limits
+            </Typography>
+            <Divider sx={{ my: 2 }} />
+
+            <TextField
+              fullWidth
+              type="number"
+              label="Max Pages Per Site"
+              value={settings.maxPagesPerSite}
+              onChange={(e) => update("maxPagesPerSite", Number(e.target.value))}
+              sx={{ mb: 2 }}
+            />
+
+            <TextField
+              fullWidth
+              type="number"
+              label="Max Media Storage (MB)"
+              value={settings.maxMediaStorageMb}
+              onChange={(e) => update("maxMediaStorageMb", Number(e.target.value))}
+              sx={{ mb: 2 }}
+            />
+
+            <TextField
+              fullWidth
+              type="number"
+              label="Max Team Members Per Site"
+              value={settings.maxTeamMembersPerSite}
+              onChange={(e) => update("maxTeamMembersPerSite", Number(e.target.value))}
+            />
+          </Paper>
+        </Grid>
+
+        {/* Save Button */}
         <Grid item xs={12}>
           <Button variant="contained" size="large" onClick={save}>
             Save Admin Settings
           </Button>
         </Grid>
       </Grid>
-      <Grid item xs={12} md={6}>
-  <Paper sx={{ p: 3, borderRadius: 4 }}>
-    <Typography variant="h6" fontWeight={800}>
-      Security
-    </Typography>
-    <Divider sx={{ my: 2 }} />
-
-    <FormControlLabel
-      control={
-        <Switch
-          checked={settings.allowGoogleLogin}
-          onChange={(e) => update("allowGoogleLogin", e.target.checked)}
-        />
-      }
-      label="Allow Google Login"
-    />
-
-    <FormControlLabel
-      control={
-        <Switch
-          checked={settings.allowEmailLogin}
-          onChange={(e) => update("allowEmailLogin", e.target.checked)}
-        />
-      }
-      label="Allow Email Login"
-    />
-
-    <FormControlLabel
-      control={
-        <Switch
-          checked={settings.forceStrongPasswords}
-          onChange={(e) => update("forceStrongPasswords", e.target.checked)}
-        />
-      }
-      label="Force Strong Passwords"
-    />
-
-    <TextField
-      fullWidth
-      type="number"
-      label="Session Timeout Hours"
-      value={settings.sessionTimeoutHours}
-      onChange={(e) =>
-        update("sessionTimeoutHours", Number(e.target.value))
-      }
-      sx={{ mt: 2 }}
-    />
-  </Paper>
-</Grid>
-
-<Grid item xs={12} md={6}>
-  <Paper sx={{ p: 3, borderRadius: 4 }}>
-    <Typography variant="h6" fontWeight={800}>
-      Limits
-    </Typography>
-    <Divider sx={{ my: 2 }} />
-
-    <TextField
-      fullWidth
-      type="number"
-      label="Max Pages Per Site"
-      value={settings.maxPagesPerSite}
-      onChange={(e) =>
-        update("maxPagesPerSite", Number(e.target.value))
-      }
-      sx={{ mb: 2 }}
-    />
-
-    <TextField
-      fullWidth
-      type="number"
-      label="Max Media Storage MB"
-      value={settings.maxMediaStorageMb}
-      onChange={(e) =>
-        update("maxMediaStorageMb", Number(e.target.value))
-      }
-      sx={{ mb: 2 }}
-    />
-
-    <TextField
-      fullWidth
-      type="number"
-      label="Max Team Members Per Site"
-      value={settings.maxTeamMembersPerSite}
-      onChange={(e) =>
-        update("maxTeamMembersPerSite", Number(e.target.value))
-      }
-    />
-  </Paper>
-</Grid>
     </Box>
   );
 }

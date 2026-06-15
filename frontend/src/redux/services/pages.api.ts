@@ -40,6 +40,12 @@ export const pagesApi = api.injectEndpoints({
             ]
           : [{ type: 'Pages', id: 'LIST' }],
     }),
+    generateFigmaPluginToken: builder.mutation<any, void>({
+  query: () => ({
+    url: "/figma-plugin/token",
+    method: "POST"
+  })
+}),
 
     getPageById: builder.query<Page, { siteId: number | string; pageId: number | string }>({
       query: ({ siteId, pageId }) => `/sites/${siteId}/pages/${pageId}`,
@@ -222,4 +228,5 @@ export const {
   useImportFigmaMutation,
   useUploadHtmlZipMutation,
   useUpdateGlobalLayoutMutation,
+  useGenerateFigmaPluginTokenMutation,
 } = pagesApi;
