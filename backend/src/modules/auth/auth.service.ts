@@ -15,6 +15,12 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 // 1. LOGIN
 export const loginUser = async (email: string, pass: string) => {
+  const settings = await AdminSettingsService.getSettings();
+
+  if (settings.allowEmailLogin === false) {
+    throw new Error("Email login disabled by administrator");
+  }
+
   const user = await User.findOne({ where: { email } });
   if (!user || !user.password) throw new Error("Invalid credentials");
 
@@ -45,7 +51,16 @@ export const registerUser = async (data: any) => {
   if (settings.publicRegistration === false) {
     throw new Error("Public registration is disabled");
   }
+if (settings.forceStrongPasswords === true) {
+  const strongPasswordRegex =
+    /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
+  if (!strongPasswordRegex.test(data.password)) {
+    throw new Error(
+      "Password must contain at least 8 characters, one uppercase letter, one number and one special character"
+    );
+  }
+}
   const existingUser =
     await User.findOne({
       where: { email: data.email },
@@ -106,6 +121,12 @@ export const handleGoogleAuth = async (data: any) => {
   let user = await User.findOne({ where: { email } });
 const settings =
   await AdminSettingsService.getSettings();
+  if (settings.allowGoogleLogin === false) {
+  return {
+    state: "ERROR",
+    message: "Google login disabled by administrator",
+  };
+}
   if (!user) {
     if (settings.publicRegistration === false) {
   return {
@@ -166,6 +187,7 @@ return {
 
 // 6. FORGOT PASSWORD
 export const processForgotPassword = async (email: string) => {
+
   const user = await User.findOne({ where: { email } });
   if (!user) return { message: "If email exists, reset link sent" };
 
