@@ -130,11 +130,12 @@ const EditorCanvasContent = ({
     ? "768px"
     : "1200px";
 
-const canvasMinWidth =
-  canvasWidth;
+const canvasMinWidth = 0;
 
 const canvasMaxWidth =
-  canvasWidth;
+  device === "desktop"
+    ? "1200px"
+    : canvasWidth;
 
   React.useEffect(
     () => {
@@ -324,13 +325,16 @@ const canvasMaxWidth =
   // =====================================
 
   return (
+<Box
+  {...rootProps}
+  ref={(node: HTMLDivElement | null) => {
+    viewportRef.current = node;
 
-    <Box
-      {...rootProps}
-
-      ref={viewportRef}
-
-      sx={{
+    if (typeof rootProps.ref === "function") {
+      rootProps.ref(node);
+    }
+  }}
+  sx={{
 
         px: 4,
         py: 4,
@@ -371,10 +375,14 @@ const canvasMaxWidth =
 
       {!invariantReport.valid ? (
 
-        <Box
-          ref={canvasRef}
+       <Box
+  ref={canvasRef}
+  
+    data-droppable-container="true"
+  data-block-id={VIRTUAL_ROOT_ID}
+  data-block-type="root"
+  sx={{
 
-          sx={{
 
             width:
               "100%",
@@ -421,17 +429,21 @@ const canvasMaxWidth =
 
       ) : (
 
-        <Box
-          sx={{
+      <Box
+  ref={canvasRef}
+  data-droppable-container="true"
+  data-block-id={VIRTUAL_ROOT_ID}
+  data-block-type="root"
+ 
+  sx={{
+    width: "100%",
 
-            width:
-              canvasWidth,
+    minWidth: 0,
 
-            minWidth:
-              canvasMinWidth,
-
-            maxWidth:
-              canvasMaxWidth,
+    maxWidth:
+      device === "desktop"
+        ? "1200px"
+        : canvasWidth,
 
             minHeight:
               "100vh",

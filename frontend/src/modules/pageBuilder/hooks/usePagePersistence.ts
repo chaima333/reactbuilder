@@ -16,6 +16,9 @@ import {
   publishCanonicalTree
 } from "../runtime/publishing/publishPipeline";
 
+import { useSnackbar } from "notistack";
+import { getApiErrorMessage } from "../../../redux/api/errorMessages";
+
 export const usePagePersistence = ({
 
   sId,
@@ -34,6 +37,9 @@ export const usePagePersistence = ({
 
   const navigate =
     useNavigate();
+
+  const { enqueueSnackbar } =
+    useSnackbar();
 
   const [
     updatePage,
@@ -181,6 +187,10 @@ export const usePagePersistence = ({
       }
 
     } catch (err) {
+      enqueueSnackbar(
+        getApiErrorMessage(err),
+        { variant: "error" }
+      );
 
       console.error(
         "❌ Save Error:",

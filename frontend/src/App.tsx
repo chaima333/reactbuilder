@@ -59,6 +59,7 @@ import {
 import { useAppBootstrap } from "./modules/dashboard/hooks/useAppBootstrap";
 import AdminDashboard from "./modules/admin/pages/AdminDashboard";
 import { FigmaImportBridge } from "./modules/pageBuilder/pages/figma/FigmaImportBridge";
+import AdminPlugins from "./modules/admin/pages/AdminPlugins";
 
 
 // ======================================================
@@ -346,6 +347,10 @@ const AppContent: React.FC = () => {
                        path="/admin/settings"
                       element={<AdminSettings />}
                        />
+                       <Route
+  path="/admin/plugins"
+  element={<AdminPlugins />}
+/>
 
                     </Route>
 

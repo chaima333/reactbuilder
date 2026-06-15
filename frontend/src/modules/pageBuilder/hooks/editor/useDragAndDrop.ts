@@ -382,8 +382,6 @@ const elements =
     getTopSemanticTarget(
       elements
     );
-
-  // 👑 semantic debug
   setSemanticDebug({
     targetId:
       semanticElement
@@ -745,12 +743,8 @@ if (
 
 if (presetFactory) {
 
-  console.log(
-  "PRESET FACTORY WORKS"
-);
-
   const presetTree =
-    presetFactory();
+  (presetFactory as any)({});
 
   let presetPosition =
     finalPosition;

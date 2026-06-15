@@ -137,7 +137,7 @@ export const PageEditor = ({ mode }: { mode: "create" | "edit" }) => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [htmlCode, setHtmlCode] = useState("");
-
+const [rightPanelOpen, setRightPanelOpen] = useState(false);
 
 //import siteweb
 const [zipFile, setZipFile] = useState<File | null>(null);
@@ -558,54 +558,127 @@ const handleZipImportExecute = async () => {
                 </Paper>
               )
             }
-            rightSidebar={
-              !isPreview && (
-                <Paper square sx={{ width: 320, height: "100%", display: "flex", flexDirection: "column", borderLeft: "1px solid #ddd" }}>
-                  <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} variant="fullWidth">
-                    <Tab label="Settings" />
-                    <Tab label="Style" />
-                    <Tab label="Theme" />
-                    <Tab label="History" />
-                  </Tabs>
-                  <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
-                    {activeTab === 0 && (
-                      <SettingsPanel
-                        pageTitle={pageTitle}
-                        setPageTitle={setPageTitle}
-                        slug={slug}
-                        setSlug={setSlug}
-                        onExport={() => {
-                          const json = actions.exportPageData();
-                          downloadJsonFile(`${slug || 'page'}.json`, json);
-                        }}
-                        onImport={async (file: File) => {
-                          try {
-                            const content = await readJsonFile(file);
-                            actions.importPageData(content);
-                          } catch (err) {
-                            console.error("Failed to read settings file", err);
-                          }
-                        }}
-                        onImportHtml={() => setIsModalOpen(true)}
-                        onImportFigma={() => setFigmaDialogOpen(true)}
-                      />
-                    )}
-                    {activeTab === 1 && (
-                      <InspectorPanel block={selectedBlock} device={device} onChange={(newData) => actions.updateBlock(selectedBlockId!, newData)} />
-                    )}
-                    {activeTab === 2 && <ThemeEditorPanel />}
-                    {activeTab === 3 && <VersionHistory versions={versions} isLoading={isLoadingVersions || isLoading} onRestore={(id) => actions.restoreVersion?.(id)} />}
-                  </Box>
-                </Paper>
-              )
-            }
-            content={
+rightSidebar={
+  !isPreview && (
+    <Paper
+      square
+      sx={{
+        width: rightPanelOpen ? 360 : 110,
+        minWidth: rightPanelOpen ? 360 : 110,
+        maxWidth: rightPanelOpen ? 360 : 110,
+        height: "100%",
+        borderLeft: "1px solid #ddd",
+        overflow: "hidden",
+        transition: "width 0.25s ease",
+      }}
+    >
+      {!rightPanelOpen ? (
+        <Stack sx={{ p: 1.5, pt: 3 }} spacing={1}>
+          {["Settings", "Style", "Theme", "History"].map(
+            (label, index) => (
+              <Button
+                key={label}
+                fullWidth
+                onClick={() => {
+                  setActiveTab(index);
+                  setRightPanelOpen(true);
+                }}
+                sx={{
+                  justifyContent: "flex-start",
+                  fontWeight: 800,
+                  textTransform: "none",
+                  px: 0.5,
+                  fontSize: 13,
+                  color: "primary.main",
+                }}
+              >
+                {label}
+              </Button>
+            )
+          )}
+        </Stack>
+      ) : (
+        <Box sx={{ height: "100%", overflowY: "auto", p: 2 }}>
+          <Button
+            onClick={() => setRightPanelOpen(false)}
+            sx={{
+              mb: 2,
+              textTransform: "none",
+              fontWeight: 700,
+            }}
+          >
+            ← Retour
+          </Button>
+
+          {activeTab === 0 && (
+            <SettingsPanel
+              pageTitle={pageTitle}
+              setPageTitle={setPageTitle}
+              slug={slug}
+              setSlug={setSlug}
+              onExport={() => {
+                const json = actions.exportPageData();
+                downloadJsonFile(`${slug || "page"}.json`, json);
+              }}
+              onImport={async (file: File) => {
+                try {
+                  const content = await readJsonFile(file);
+                  actions.importPageData(content);
+                } catch (err) {
+                  console.error("Failed to read settings file", err);
+                }
+              }}
+              onImportHtml={() => setIsModalOpen(true)}
+              onImportFigma={() => setFigmaDialogOpen(true)}
+            />
+          )}
+
+          {activeTab === 1 && (
+            <InspectorPanel
+              block={selectedBlock}
+              device={device}
+              onChange={(newData) =>
+                actions.updateBlock(selectedBlockId!, newData)
+              }
+            />
+          )}
+
+          {activeTab === 2 && <ThemeEditorPanel />}
+
+          {activeTab === 3 && (
+            <VersionHistory
+              versions={versions}
+              isLoading={isLoadingVersions || isLoading}
+              onRestore={(id) => actions.restoreVersion?.(id)}
+            />
+          )}
+        </Box>
+      )}
+    </Paper>
+  )
+}          content={
               <Box sx={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
                 {!isPreview && errors.length > 0 && (
                   <ValidationPanel errors={errors} onSelectBlock={(blockId) => { setSelectedBlockId(blockId); setActiveTab(1); }} />
                 )}
-                <Box sx={{ flexGrow: 1, overflowY: "auto", overflowX: "hidden", bgcolor: "#f5f5f5" }}>
-                  <EditorCanvas
+                <Box
+  sx={{
+    flexGrow: 1,
+    overflowY: "auto",
+    overflowX: "hidden",
+    bgcolor: "#f5f5f5",
+    display: "flex",
+    justifyContent: "center",
+    p: 3,
+  }}
+>
+  <Box
+    sx={{
+      width: "100%",
+      maxWidth: device === "desktop" ? 1180 : device === "tablet" ? 768 : 390,
+    }}
+  >
+                <EditorCanvas
                     blocks={blocks} 
                     registry={registry} 
                     selectedId={selectedBlockId} 
@@ -622,6 +695,7 @@ const handleZipImportExecute = async () => {
                     errors={errors} 
                   />
                 </Box>
+              </Box>
               </Box>
             }
           />

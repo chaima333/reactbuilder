@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Typography, Divider, TextField, MenuItem, Tooltip, IconButton, Stack } from "@mui/material";
-import { useTheme } from "../../core/theme/ThemeProvider"; 
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import { useTheme } from "../../core/theme/themeContext";
 
 const themePresets = {
   brand360: {
@@ -28,33 +28,19 @@ const themePresets = {
 };
 
 const fontOptions = [
-  "'Montserrat', sans-serif", // Montserrat هو الأساسي في التصويرة متاعك
+  "'Montserrat', sans-serif", 
   "'Roboto', sans-serif",
   "'Poppins', sans-serif"
 ];
 
 export const ThemeEditorPanel = () => {
-  const { tokens, updateToken, setTokens } = useTheme();
-
-  const applyPreset = (preset: any) => {
-    const newTokens = {
-      ...tokens,
-      colors: {
-        ...tokens.colors,
-        brand: {
-          ...tokens.colors.brand,
-          primary: preset.primary,
-          secondary: preset.secondary || tokens.colors.brand.secondary,
-        },
-        background: {
-          ...tokens.colors.background,
-          default: preset.bg,
-          surface: preset.surface,
-        }
-      }
-    };
-    setTokens(newTokens);
-  };
+const { tokens, updateToken } = useTheme();
+ const applyPreset = (preset: any) => {
+  updateToken("colors.brand.primary", preset.primary);
+  updateToken("colors.brand.secondary", preset.secondary);
+  updateToken("colors.background.default", preset.bg);
+  updateToken("colors.background.surface", preset.surface);
+};
 console.log(
  tokens.colors.background
 );
@@ -168,3 +154,5 @@ console.log(
     </Box>
   );
 };
+
+

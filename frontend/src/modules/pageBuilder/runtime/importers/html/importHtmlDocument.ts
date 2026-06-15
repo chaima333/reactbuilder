@@ -1438,6 +1438,39 @@ function emitFlexContainer(
             child
           );
 
+        const isNavbarContainer =
+          blockType ===
+          COMPILER_BLOCK_TYPES.NAVBAR;
+
+        const childClassName =
+          getElementClassName(
+            child
+          );
+
+        const isNavbarLogoChild =
+          isNavbarContainer &&
+          (
+            childClassName.includes("logo") ||
+            !!child.querySelector(".logo, [class*='logo']")
+          );
+
+        const isNavbarDropdownChild =
+  isNavbarContainer &&
+  (
+    childClassName.includes("dropdown") ||
+    childClassName.includes("submenu") ||
+    childClassName.includes("has-sub") ||
+    !!child.querySelector("ul")
+  );
+
+const isNavbarLinksChild =
+  isNavbarContainer &&
+  !isNavbarDropdownChild &&
+  (
+    childClassName.includes("nav-links") ||
+    childClassName.includes("menu")
+  );
+
         const childOwnedByNestedFlex =
 
           ownership.flexGroups.some(
@@ -1482,9 +1515,40 @@ function emitFlexContainer(
 
             style: {
 
-              desktop: {flexGrow: 1, minWidth: "0" },
+              desktop:
+                isNavbarContainer
+                  ? {
+                      flex:
+                        isNavbarLinksChild
+                          ? "1 1 auto"
+                          : "0 0 auto",
+                      flexGrow:
+                        isNavbarLinksChild
+                          ? 1
+                          : 0,
+                      flexShrink:
+                        isNavbarLogoChild
+                          ? 0
+                          : 1,
+                      minWidth:
+                        isNavbarLogoChild
+                          ? "max-content"
+                          : "0",
+                      whiteSpace:
+                        "nowrap"
+                    }
+                  : {
+                      flexGrow: 1,
+                      minWidth: "0"
+                    },
               tablet: {},
-              mobile: {}
+              mobile:
+                isNavbarContainer
+                  ? {
+                      width: "100%",
+                      minWidth: "0"
+                    }
+                  : {}
             }
           },
 
@@ -2823,25 +2887,33 @@ export async function importHtmlDocument(htmlString: string): Promise<ImportHtml
       }
     }
 
-    console.log(
-      "IMPORT_EXTERNAL_CSS_LOAD_REPORT",
-      {
-        linkCount:
-          links.length,
-        links:
-          links.map(link => ({
-            href:
-              link.getAttribute("href"),
-            rel:
-              link.getAttribute("rel")
-          })),
-        totalBytes:
-          css.length,
-        loadReport
-      }
-    );
+  console.log(
+  "IMPORT_EXTERNAL_CSS_LOAD_REPORT",
+  {
+    linkCount: links.length,
+    links: links.map(link => ({
+      href: link.getAttribute("href"),
+      rel: link.getAttribute("rel")
+    })),
+    totalBytes: css.length,
+    loadReport
+  }
+);
 
-    return css;
+console.log(
+  "CSS RULE PRESENCE CHECK",
+  {
+    hasNavRule: css.includes(".nav"),
+    hasBtnRule: css.includes(".btn"),
+    hasBtnPrimaryRule: css.includes(".btn-primary"),
+    hasLogoRule: css.includes(".logo"),
+    hasContainerRule: css.includes(".container"),
+    hasRootVars: css.includes(":root"),
+    cssFirst1000: css.slice(0, 1000)
+  }
+);
+
+return css;
   };
 
   const logImportSandboxCssDiagnostics = (
@@ -3182,6 +3254,27 @@ export async function importHtmlDocument(htmlString: string): Promise<ImportHtml
       sandbox,
       importedCSS
     );
+    console.log("NAV CSS MATCH CHECK", {
+  cssHasNavRule:
+    importedCSS.includes(".nav"),
+  cssHasRootVars:
+    importedCSS.includes(":root"),
+  navComputed:
+    (() => {
+      const nav = sandbox.querySelector("nav") as HTMLElement | null;
+      const s = nav ? getElementWindow(nav).getComputedStyle(nav) : null;
+
+      return s
+        ? {
+            background: s.background,
+            backgroundColor: s.backgroundColor,
+            color: s.color,
+            display: s.display,
+            padding: s.padding
+          }
+        : null;
+    })()
+});
 
     assertImportedCSSApplied(
       sandbox,

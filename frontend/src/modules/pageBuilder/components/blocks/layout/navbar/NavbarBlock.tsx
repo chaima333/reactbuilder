@@ -31,6 +31,9 @@ export const NavbarBlock = ({
       device
     );
 
+  const resolvedCss =
+    resolved as any;
+
   // =====================================
   // RUNTIME NODE
   // =====================================
@@ -78,8 +81,8 @@ export const NavbarBlock = ({
   }
 );
 console.log(
-  "NAVBAR_RESOLVED_STYLE",
-  resolved
+  "STYLE_RESOLVE",
+  block?.id
 );
   // =====================================
   // RESPONSIVE FLEX
@@ -170,6 +173,21 @@ console.log(
     backgroundColor:
       resolved.backgroundColor,
 
+    background:
+      resolvedCss.background,
+
+    color:
+      resolved.color,
+
+    borderBottom:
+      resolvedCss.borderBottom,
+
+    boxShadow:
+      resolvedCss.boxShadow,
+
+    backdropFilter:
+      resolvedCss.backdropFilter,
+
     borderRadius:
       resolved.borderRadius,
 
@@ -181,6 +199,10 @@ console.log(
 
     overflow:
       "visible",
+
+    whiteSpace:
+      resolvedCss.whiteSpace ||
+      "nowrap",
 
     border:
       isOver

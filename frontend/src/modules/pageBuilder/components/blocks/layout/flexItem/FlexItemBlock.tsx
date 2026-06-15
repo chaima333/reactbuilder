@@ -203,7 +203,13 @@ const resolved =
   // =====================================
   // ITEM STYLE
   // =====================================
-
+const hasDropdownChild =
+  (block?.children || []).some(
+    (child: any) =>
+      child?.id?.includes("submenu") ||
+      child?.data?.props?.semanticRole === "dropdown" ||
+      child?.props?.semanticRole === "dropdown"
+  );
 const itemStyle: React.CSSProperties = {
   flexGrow: forceMobileStackItem
     ? undefined
@@ -257,9 +263,18 @@ const itemStyle: React.CSSProperties = {
     : resolved.backgroundColor,
   border: resolved.border,
   borderRadius: resolved.borderRadius,
+boxSizing: "border-box",
 
-  boxSizing: "border-box",
-  position: "relative"
+position:
+  resolved.position ||
+  "relative",
+
+overflow:
+  resolved.overflow ||
+  "visible",
+
+zIndex:
+  resolved.zIndex
 };
 
 const childTypes =

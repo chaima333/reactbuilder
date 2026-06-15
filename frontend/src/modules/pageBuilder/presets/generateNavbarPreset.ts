@@ -21,6 +21,40 @@ export const generateNavbarPreset = (
   const cta =
     payload.cta || null;
 
+ const rawStyle =
+  payload.rawStyle || {};
+
+const isEmptyColor = (value?: string) =>
+  !value ||
+  value === "transparent" ||
+  value === "rgba(0, 0, 0, 0)";
+
+const navBg =
+  !isEmptyColor(rawStyle.backgroundColor)
+    ? rawStyle.backgroundColor
+    : "#0b1220";
+const navTextColor =
+  rawStyle.color &&
+  rawStyle.color !== "rgb(0, 0, 0)"
+    ? rawStyle.color
+    : "#ffffff";
+    const ctaTextColor =
+  rawStyle.ctaColor || navTextColor;
+const submenuBg =
+  !isEmptyColor(rawStyle.submenuBackground)
+    ? rawStyle.submenuBackground
+    : navBg;
+
+const ctaBg =
+  !isEmptyColor(rawStyle.ctaBackground)
+    ? rawStyle.ctaBackground
+    : "transparent";
+
+  const hasImportedBackground =
+    rawStyle.backgroundColor &&
+    rawStyle.backgroundColor !== "transparent" &&
+    rawStyle.backgroundColor !== "rgba(0, 0, 0, 0)";
+
   const safeLogoImage =
     logo.image?.startsWith("http")
       ? logo.image
@@ -53,11 +87,20 @@ export const generateNavbarPreset = (
           paddingRight: "28px",
           flexWrap: "nowrap",
           overflow: "visible",
-          backgroundColor: "rgba(2, 11, 24, 0.94)",
-          color: "#ffffff",
-          borderBottom: "1px solid rgba(122,158,192,0.16)",
-          boxShadow: "0 12px 32px rgba(0,0,0,0.18)",
-          backdropFilter: "blur(14px)"
+          background:navBg,
+backgroundColor:
+  navBg,
+color:
+  navTextColor,
+          borderBottom:
+            rawStyle.borderBottom ||
+            "1px solid rgba(122,158,192,0.16)",
+          boxShadow:
+            rawStyle.boxShadow ||
+            "0 12px 32px rgba(0,0,0,0.18)",
+          backdropFilter:
+            rawStyle.backdropFilter ||
+            "blur(14px)"
         },
 
         tablet: {
@@ -98,7 +141,10 @@ export const generateNavbarPreset = (
               alignItems: "center",
               gap: "12px",
               flex: "0 0 auto",
-              minWidth: "0"
+              minWidth: "max-content",
+              flexWrap: "nowrap",
+              whiteSpace: "nowrap",
+              overflow: "visible"
             },
             tablet: {
               flex: "0 0 auto"
@@ -152,12 +198,15 @@ export const generateNavbarPreset = (
                     },
                     style: {
                       desktop: {
-                        color: "#ffffff",
+                        color: navTextColor,
                         fontWeight: "900",
                         fontSize: "17px",
                         letterSpacing: "0.11em",
                         lineHeight: "1",
-                        textTransform: "uppercase"
+                        textTransform: "uppercase",
+                        whiteSpace: "nowrap",
+                        wordBreak: "keep-all",
+                        minWidth: "max-content"
                       },
                       tablet: {
                         fontSize: "16px"
@@ -165,6 +214,8 @@ export const generateNavbarPreset = (
                       mobile: {
                         fontSize: "15px",
                         textAlign: "center"
+                        ,
+                        whiteSpace: "nowrap"
                       }
                     }
                   },
@@ -229,6 +280,7 @@ export const generateNavbarPreset = (
                 }
               }
             },
+            
             children: links.map(
               (
                 link: any,
@@ -240,7 +292,8 @@ export const generateNavbarPreset = (
                   props: {},
                   style: {
                     desktop: {
-                      flex: "0 0 auto"
+                      flex: "0 0 auto",
+                      position: "relative"
                     },
                     tablet: {},
                     mobile: {
@@ -266,7 +319,7 @@ export const generateNavbarPreset = (
                       style: {
                         desktop: {
                           textDecoration: "none",
-                          color: "rgba(226,238,251,0.84)",
+                          color: navTextColor,
                           fontSize: "13px",
                           fontWeight: "700",
                           letterSpacing: "0.02em",
@@ -281,12 +334,102 @@ export const generateNavbarPreset = (
                           paddingTop: "8px",
                           paddingBottom: "8px",
                           textAlign: "center",
-                          color: "rgba(226,238,251,0.9)"
+                            color: navTextColor
                         }
                       }
                     },
                     children: []
-                  }
+                  },
+                  ...(Array.isArray(link.children) && link.children.length
+                    ? [
+                        {
+                          id: `navbar-submenu-${id}-${index}`,
+                          type: "flex",
+                          data: {
+                            props: {},
+                            style: {
+                              desktop: {
+  display: "flex",
+  position: "absolute",
+  top: "100%",
+  left: "0",
+  zIndex: 50,
+  flexDirection: "column",
+  gap: "8px",
+  minWidth: "220px",
+  paddingTop: "10px",
+  paddingBottom: "10px",
+  paddingLeft: "12px",
+  paddingRight: "12px",
+  marginTop: "8px",
+  backgroundColor: submenuBg,
+  border: rawStyle.borderBottom || "1px solid rgba(0,0,0,0.12)",
+  borderRadius: "12px",
+  boxShadow: rawStyle.boxShadow || "0 16px 34px rgba(0,0,0,0.18)"
+},
+                              tablet: {
+                                marginTop: "6px"
+                              },
+                              mobile: {
+                                marginTop: "4px",
+                                backgroundColor: "rgba(255,255,255,0.04)"
+                              }
+                            }
+                          },
+                          children: link.children.map(
+                            (
+                              childLink: any,
+                              childIndex: number
+                            ) => ({
+                              id: `navbar-submenu-link-item-${id}-${index}-${childIndex}`,
+                              type: "flexItem",
+                              data: {
+                                props: {},
+                                style: {
+                                  desktop: {
+                                    flex: "0 0 auto"
+                                  },
+                                  tablet: {},
+                                  mobile: {}
+                                }
+                              },
+                              children: [
+                                {
+                                  id: `navbar-submenu-link-${id}-${index}-${childIndex}`,
+                                  type: "link",
+                                  data: {
+                                    props: {
+                                      label:
+                                        childLink.label ||
+                                        childLink.text ||
+                                        "Link",
+                                      href:
+                                        childLink.href ||
+                                        "#"
+                                    },
+                                    style: {
+                                      desktop: {
+                                        textDecoration: "none",
+                                        color: navTextColor,
+                                        fontSize: "12px",
+                                        fontWeight: "650",
+                                        whiteSpace: "nowrap"
+                                      },
+                                      tablet: {},
+                                      mobile: {
+                                        display: "block",
+                                        textAlign: "center"
+                                      }
+                                    }
+                                  },
+                                  children: []
+                                }
+                              ]
+                            })
+                          )
+                        }
+                      ]
+                    : [])
                 ]
               })
             )
@@ -332,8 +475,8 @@ export const generateNavbarPreset = (
                         borderRadius: "999px",
                         padding: "0 22px",
                         minHeight: "42px",
-                        backgroundColor: "#F77F00",
-                        color: "#020B18",
+                        backgroundColor: ctaBg,
+                        color: ctaTextColor,
                         border: "1px solid rgba(247,127,0,0.9)",
                         fontWeight: "800",
                         fontSize: "13px",

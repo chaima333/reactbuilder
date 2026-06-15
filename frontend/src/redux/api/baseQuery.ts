@@ -48,7 +48,7 @@ export const baseQueryWithReauth = async (args: any, api: any, extraOptions: any
   let result = await rawBaseQuery(args, api, extraOptions);
 
   // 🔁 refresh token logic
-  if (result.error && (result.error.status === 401 || result.error.status === 403)) {
+  if (result.error && result.error.status === 401) {
     const refreshToken = (api.getState() as RootState).auth.refreshToken;
 
     if (!refreshToken) {

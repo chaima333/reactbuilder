@@ -19,7 +19,9 @@ export const api = createApi({
     "AdminStats",
 "Plugins",
 "ActivityLogs",
-  "AdminSettings",
+    "AdminSettings",
+    "PlatformSettings",
+    "PlatformSettings"
 
     ],
 

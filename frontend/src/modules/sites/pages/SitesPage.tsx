@@ -34,6 +34,7 @@ import {
   useCreatePageMutation 
 } from '../../../redux/services/pages.api';
 import { useLanguage } from '../../../app/providers/LanguageProvider';
+import { getApiErrorMessage } from '../../../redux/api/errorMessages';
 export const Sites: React.FC = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -75,6 +76,7 @@ const handleCreateSite = async (siteData: any) => {
       setModalOpen(false);
       refetch(); // On force la liste à se mettre à jour
     }
+    enqueueSnackbar(getApiErrorMessage(err), { variant: 'error' });
     console.error("Erreur création:", err);
   }
 };
@@ -129,7 +131,7 @@ const handleDeleteSite = async () => {
   if (error) {
     return (
       <Box p={3}>
-        <Alert severity="error">{t.error}</Alert>
+        <Alert severity="error">{getApiErrorMessage(error)}</Alert>
       </Box>
     );
   }

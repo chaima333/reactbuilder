@@ -22,9 +22,12 @@ import {
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";
 import { routes } from "../../../router/routes";
+import { useSnackbar } from "notistack";
+import { getApiErrorMessage } from "../../../redux/api/errorMessages";
 
 export const PageList: React.FC = () => {
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
 
   // ✅ tenant source of truth (NO HARDCODE)
   const siteId = useSelector(
@@ -58,6 +61,7 @@ const handleCreate = async () => {
       navigate(routes.pageEdit(siteId, res.id));
     }
   } catch (err) {
+    enqueueSnackbar(getApiErrorMessage(err), { variant: "error" });
     console.error("Erreur de création:", err);
   }
 };
@@ -124,7 +128,7 @@ const handleCreate = async () => {
       {/* ERROR */}
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
-          Impossible de charger les pages
+          {getApiErrorMessage(error)}
         </Alert>
       )}
 

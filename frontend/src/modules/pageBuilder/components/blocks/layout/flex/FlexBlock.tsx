@@ -84,11 +84,11 @@ export const FlexBlock = ({
   // RESOLVED STYLE
   // =====================================
 
-  const resolved =
-    useResolvedStyle(
-      (source.style || {}) as any,
-      device
-    );
+const resolved =
+  useResolvedStyle(
+    (source.style || {}) as any,
+    device
+  ) as Record<string, any>;
 
   // =====================================
   // RUNTIME NODE
@@ -139,9 +139,10 @@ const hasMarginShorthand =
 
   const flexStyle:
   React.CSSProperties = {
+    
 
     display:
-      "flex",
+  resolved.display || "flex",
 
     flexDirection:
       flexDirection,
@@ -235,18 +236,37 @@ marginTop:
 
     boxSizing:
       "border-box",
+position:
+  resolved.position || "relative",
 
-    position:
-      "relative",
+top:
+  resolved.top,
 
-    overflow:
-      "visible",
+left:
+  resolved.left,
 
-    border:
-      isOver
-        ? "2px solid #3b82f6"
-        : undefined
+right:
+  resolved.right,
+
+bottom:
+  resolved.bottom,
+
+zIndex:
+  resolved.zIndex,
+
+overflow:
+  resolved.overflow || "visible",
+
+boxShadow:
+  resolved.boxShadow,
+
+border:
+  isOver
+    ? "2px solid #3b82f6"
+    : resolved.border
+        
   };
+  
 
   console.log(
     "FLEX_RUNTIME_LAYOUT",
