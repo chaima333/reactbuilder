@@ -76,23 +76,29 @@ const sectionBlock = (
 });
 
 export class AiService {
-  private static async predictCategory(prompt: string): Promise<string> {
-    const response = await fetch(`${ML_SERVICE_URL}/predict`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ prompt })
-    });
+ private static async predictCategory(prompt: string): Promise<string> {
+  console.log("ML_SERVICE_URL_USED", ML_SERVICE_URL);
 
-    if (!response.ok) {
-      throw new Error("ML_SERVICE_ERROR");
-    }
+  const response = await fetch(`${ML_SERVICE_URL}/predict`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ prompt })
+  });
 
-    const result = await response.json();
+  console.log("ML_RESPONSE_STATUS", response.status);
 
-    return result.category || "Corporate";
+  if (!response.ok) {
+    throw new Error("ML_SERVICE_ERROR");
   }
+
+  const result = await response.json();
+
+  console.log("ML_RESPONSE_BODY", result);
+
+  return result.category || "Corporate";
+}
 
   static generateFinanceTemplate(prompt: string, title?: string): GeneratedPage {
     const pageTitle = title || "Finance Advisory";
