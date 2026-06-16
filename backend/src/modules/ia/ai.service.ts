@@ -76,30 +76,40 @@ const sectionBlock = (
 });
 
 export class AiService {
- private static async predictCategory(prompt: string): Promise<string> {
-  console.log("ML_SERVICE_URL_USED", ML_SERVICE_URL);
+  // Hedhi tsob l category mel ML model mte3na
+  private static async predictCategory(prompt: string): Promise<string> {
+    console.log("ML_SERVICE_URL_USED", ML_SERVICE_URL);
 
-  const response = await fetch(`${ML_SERVICE_URL}/predict`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ prompt })
-  });
+    try {
+      const response = await fetch(`${ML_SERVICE_URL}/predict`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ prompt })
+      });
 
-  console.log("ML_RESPONSE_STATUS", response.status);
+      console.log("ML_RESPONSE_STATUS", response.status);
 
-  if (!response.ok) {
-    throw new Error("ML_SERVICE_ERROR");
+      if (!response.ok) {
+        console.error("ML service returned error status:", response.status);
+        // Ki yfout service ML, najmou naamlou fallback ala default
+        return "Corporate";
+      }
+
+      const result = await response.json();
+      console.log("ML_RESPONSE_BODY", result);
+
+      // Nta9ou mel result w nsob category
+      return result.category || "Corporate";
+    } catch (error) {
+      console.error("ML service error:", error);
+      // Ki yfout error f connection, nraj3ou Corporate par défaut
+      return "Corporate";
+    }
   }
 
-  const result = await response.json();
-
-  console.log("ML_RESPONSE_BODY", result);
-
-  return result.category || "Corporate";
-}
-
+  // Template mte3 Finance
   static generateFinanceTemplate(prompt: string, title?: string): GeneratedPage {
     const pageTitle = title || "Finance Advisory";
 
@@ -134,14 +144,34 @@ export class AiService {
     };
   }
 
-  static generateCorporateTemplate(prompt: string, title?: string): GeneratedPage {
-    const pageTitle = title || "Corporate Website";
+  // Template mte3 Medical
+  static generateMedicalTemplate(prompt: string, title?: string): GeneratedPage {
+    const pageTitle = title || "Medical Appointment Platform";
 
     const blocks: PageBlock[] = [
+      sectionBlock(
+        [
+          titleBlock("Book Trusted Medical Consultations Online", {
+            fontSize: "54px"
+          }),
+          textBlock(
+            "A modern healthcare platform for clinics, doctors and patients to manage appointments, consultations and care access."
+          ),
+          buttonBlock("Book Appointment")
+        ],
+        {
+          backgroundColor: "#f0f9ff",
+          color: "#0f172a"
+        }
+      ),
       sectionBlock([
-        titleBlock(pageTitle),
-        textBlock(`Generated from prompt: ${prompt}`),
-        buttonBlock("Get Started")
+        titleBlock("Healthcare Services", {
+          fontSize: "38px"
+        }),
+        textBlock(
+          "Online appointments, doctor profiles, patient consultation requests, telemedicine support and clinic communication tools."
+        ),
+        buttonBlock("Explore Services")
       ])
     ];
 
@@ -151,6 +181,287 @@ export class AiService {
     };
   }
 
+  // Template mte3 Restaurant
+  static generateRestaurantTemplate(prompt: string, title?: string): GeneratedPage {
+    const pageTitle = title || "Restaurant Website";
+
+    const blocks: PageBlock[] = [
+      sectionBlock(
+        [
+          titleBlock("Welcome to Our Table", {
+            fontSize: "56px"
+          }),
+          textBlock(
+            "Discover our menu, reserve your table, and experience a culinary journey like no other."
+          ),
+          buttonBlock("View Menu")
+        ],
+        {
+          backgroundColor: "#1a1a2e",
+          color: "#f8f9fa"
+        }
+      ),
+      sectionBlock([
+        titleBlock("Our Specialties", {
+          fontSize: "38px"
+        }),
+        textBlock("From farm to table, every dish is crafted with passion and the finest ingredients."),
+        buttonBlock("Book a Table")
+      ])
+    ];
+
+    return {
+      title: pageTitle,
+      blocks
+    };
+  }
+
+  // Template mte3 Ecommerce
+  static generateEcommerceTemplate(prompt: string, title?: string): GeneratedPage {
+    const pageTitle = title || "Online Store";
+
+    const blocks: PageBlock[] = [
+      sectionBlock(
+        [
+          titleBlock("Shop the Latest Collection", {
+            fontSize: "54px"
+          }),
+          textBlock(
+            "Discover premium products curated just for you. Fast shipping and secure checkout."
+          ),
+          buttonBlock("Shop Now")
+        ],
+        {
+          backgroundColor: "#0f172a",
+          color: "#ffffff"
+        }
+      ),
+      sectionBlock([
+        titleBlock("Featured Products", {
+          fontSize: "38px"
+        }),
+        textBlock("Browse our bestsellers and exclusive deals before they're gone."),
+        buttonBlock("View All Products")
+      ])
+    ];
+
+    return {
+      title: pageTitle,
+      blocks
+    };
+  }
+
+  // Template mte3 Education
+  static generateEducationTemplate(prompt: string, title?: string): GeneratedPage {
+    const pageTitle = title || "Education Platform";
+
+    const blocks: PageBlock[] = [
+      sectionBlock(
+        [
+          titleBlock("Learn, Grow, Succeed", {
+            fontSize: "54px"
+          }),
+          textBlock(
+            "Empowering minds through innovative education. Courses, resources, and expert guidance."
+          ),
+          buttonBlock("Explore Courses")
+        ],
+        {
+          backgroundColor: "#f0fdf4",
+          color: "#064e3b"
+        }
+      ),
+      sectionBlock([
+        titleBlock("Our Programs", {
+          fontSize: "38px"
+        }),
+        textBlock("From coding to creativity, find the perfect course to accelerate your career."),
+        buttonBlock("View Programs")
+      ])
+    ];
+
+    return {
+      title: pageTitle,
+      blocks
+    };
+  }
+
+  // Template mte3 Portfolio
+  static generatePortfolioTemplate(prompt: string, title?: string): GeneratedPage {
+    const pageTitle = title || "Portfolio";
+
+    const blocks: PageBlock[] = [
+      sectionBlock(
+        [
+          titleBlock("Creative Vision, Bold Execution", {
+            fontSize: "56px"
+          }),
+          textBlock(
+            "A curated showcase of projects, designs, and ideas that define excellence."
+          ),
+          buttonBlock("View Portfolio")
+        ],
+        {
+          backgroundColor: "#fefce8",
+          color: "#0f172a"
+        }
+      ),
+      sectionBlock([
+        titleBlock("Featured Work", {
+          fontSize: "38px"
+        }),
+        textBlock("Explore a selection of projects that push boundaries and inspire innovation."),
+        buttonBlock("See All Work")
+      ])
+    ];
+
+    return {
+      title: pageTitle,
+      blocks
+    };
+  }
+
+  // Template mte3 Agency
+  static generateAgencyTemplate(prompt: string, title?: string): GeneratedPage {
+    const pageTitle = title || "Agency Website";
+
+    const blocks: PageBlock[] = [
+      sectionBlock(
+        [
+          titleBlock("We Build Brands That Matter", {
+            fontSize: "56px"
+          }),
+          textBlock(
+            "A full-service creative agency crafting digital experiences, strategies, and campaigns."
+          ),
+          buttonBlock("Start a Project")
+        ],
+        {
+          backgroundColor: "#1e1b4b",
+          color: "#ffffff"
+        }
+      ),
+      sectionBlock([
+        titleBlock("Our Services", {
+          fontSize: "38px"
+        }),
+        textBlock("Branding, web design, marketing, and content creation tailored to your goals."),
+        buttonBlock("Explore Services")
+      ])
+    ];
+
+    return {
+      title: pageTitle,
+      blocks
+    };
+  }
+
+  // Template mte3 Consulting
+  static generateConsultingTemplate(prompt: string, title?: string): GeneratedPage {
+    const pageTitle = title || "Consulting Firm";
+
+    const blocks: PageBlock[] = [
+      sectionBlock(
+        [
+          titleBlock("Strategic Solutions for Complex Challenges", {
+            fontSize: "52px"
+          }),
+          textBlock(
+            "We partner with leaders to drive transformation, optimize operations, and achieve sustainable growth."
+          ),
+          buttonBlock("Get in Touch")
+        ],
+        {
+          backgroundColor: "#0c4a6e",
+          color: "#ffffff"
+        }
+      ),
+      sectionBlock([
+        titleBlock("Our Expertise", {
+          fontSize: "38px"
+        }),
+        textBlock("Strategy, operations, technology, and organizational change delivered with precision."),
+        buttonBlock("Learn More")
+      ])
+    ];
+
+    return {
+      title: pageTitle,
+      blocks
+    };
+  }
+
+  // Template mte3 Technology
+  static generateTechnologyTemplate(prompt: string, title?: string): GeneratedPage {
+    const pageTitle = title || "Technology Company";
+
+    const blocks: PageBlock[] = [
+      sectionBlock(
+        [
+          titleBlock("Innovating the Future", {
+            fontSize: "56px"
+          }),
+          textBlock(
+            "Building next-generation solutions in AI, cloud, and software development."
+          ),
+          buttonBlock("See Our Work")
+        ],
+        {
+          backgroundColor: "#020617",
+          color: "#ffffff"
+        }
+      ),
+      sectionBlock([
+        titleBlock("Tech Solutions", {
+          fontSize: "38px"
+        }),
+        textBlock("From machine learning to scalable infrastructure, we deliver cutting-edge technology."),
+        buttonBlock("Explore Solutions")
+      ])
+    ];
+
+    return {
+      title: pageTitle,
+      blocks
+    };
+  }
+
+  // Template par défaut (Corporate)
+  static generateCorporateTemplate(prompt: string, title?: string): GeneratedPage {
+    const pageTitle = title || "Corporate Website";
+
+    const blocks: PageBlock[] = [
+      sectionBlock(
+        [
+          titleBlock(pageTitle, {
+            fontSize: "48px"
+          }),
+          textBlock(
+            prompt || "A modern corporate platform built for clarity, impact, and growth."
+          ),
+          buttonBlock("Get Started")
+        ],
+        {
+          backgroundColor: "#f8fafc",
+          color: "#0f172a"
+        }
+      ),
+      sectionBlock([
+        titleBlock("Our Commitments", {
+          fontSize: "38px"
+        }),
+        textBlock("Excellence, integrity, and innovation drive everything we do."),
+        buttonBlock("About Us")
+      ])
+    ];
+
+    return {
+      title: pageTitle,
+      blocks
+    };
+  }
+
+  // Sélection du template selon la catégorie
   static generateTemplateByCategory(
     category: string,
     prompt: string,
@@ -159,16 +470,29 @@ export class AiService {
     switch (category) {
       case "Finance":
         return this.generateFinanceTemplate(prompt, title);
-
-      case "Consulting":
-      case "Technology":
+      case "Medical":
+        return this.generateMedicalTemplate(prompt, title);
+      case "Restaurant":
+        return this.generateRestaurantTemplate(prompt, title);
+      case "Ecommerce":
+        return this.generateEcommerceTemplate(prompt, title);
+      case "Education":
+        return this.generateEducationTemplate(prompt, title);
+      case "Portfolio":
+        return this.generatePortfolioTemplate(prompt, title);
       case "Agency":
+        return this.generateAgencyTemplate(prompt, title);
+      case "Consulting":
+        return this.generateConsultingTemplate(prompt, title);
+      case "Technology":
+        return this.generateTechnologyTemplate(prompt, title);
       case "Corporate":
       default:
         return this.generateCorporateTemplate(prompt, title);
     }
   }
 
+  // Fonction principale li tsob category w tgeneri page
   static async generatePage(
     siteId: number,
     userId: number,
@@ -180,6 +504,7 @@ export class AiService {
       throw new Error("PROMPT_REQUIRED");
     }
 
+    // Nsob category mel prompt mte3na
     const category = await this.predictCategory(prompt);
 
     console.log("AI_ML_CATEGORY", {
@@ -187,12 +512,14 @@ export class AiService {
       category
     });
 
+    // Ngeneri page selon category
     const generated = this.generateTemplateByCategory(
       category,
       prompt,
       title
     );
 
+    // Nsave f base
     const result = await PageService.createPage(siteId, userId, {
       title: generated.title,
       blocks: generated.blocks
