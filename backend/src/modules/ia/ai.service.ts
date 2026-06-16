@@ -169,6 +169,7 @@ export class AiService {
     prompt: string,
     title?: string
   ) {
+    console.log("AI_SERVICE_VERSION", "ML_INTEGRATION_V1");
     if (!prompt?.trim()) {
       throw new Error("PROMPT_REQUIRED");
     }
