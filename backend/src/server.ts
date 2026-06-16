@@ -40,6 +40,7 @@ import importRoutes from "./modules/import/import.routes";
 import figmaPluginRoutes from "./modules/figmaPlugin/figmaPlugin.routes";
 import { maintenanceMode } from "./core/middleware/maintenance";
 import notificationRoutes from "./modules/notifications/notification.routes";
+import iaRoutes from "./modules/ia/ai.routes";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 
@@ -83,15 +84,10 @@ const tenantStack = [authenticateJWT, maintenanceMode, tenantResolver];
 app.use("/api/sites/:siteId/dashboard", authenticateJWT, maintenanceMode, dashboardRoutes);
 app.use("/api/sites/:siteId/pages", tenantStack, pageRoutes);
 app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
-app.use(
-  "/api/sites/:siteId/import",
-  tenantStack,
-  importRoutes
-);
+app.use("/api/sites/:siteId/import",tenantStack,importRoutes);
 app.use("/api/figma-plugin", figmaPluginRoutes);
-
-
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/sites/:siteId/ia", tenantStack, iaRoutes);
 /* ========================
    ADMIN / USERS
 ======================== */

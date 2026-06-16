@@ -6,7 +6,12 @@ export const NotificationPlugin: ICmsPlugin = {
   mode: "async",
   priority: 10,
   isCritical: true,
-  events: ["page.updated"],
+  events: [
+  "site.created",
+  "page.created",
+  "page.updated",
+  "page.published",
+],
   enabled: true,
 
   async execute(event: UnifiedEvent) {
