@@ -4,7 +4,10 @@ import joblib
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 
-df = pd.read_csv("data/websites.csv")
+df = pd.read_csv("data/reactbuilder_dataset.csv")
+
+print(df["label"].value_counts())
+print("Rows:", len(df))
 
 X = df["text"]
 y = df["label"]
