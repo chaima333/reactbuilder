@@ -11,6 +11,14 @@ export const generatePage = async (req: AuthRequest, res: Response) => {
       hasPrompt: !!req.body.prompt
     });
 
+    if (!req.siteContext?.siteId || !req.user?.id) {
+  return res.status(401).json({
+    success: false,
+    message: "Missing site or user context",
+    code: "CONTEXT_REQUIRED"
+  });
+}
+
     const siteId = Number(req.siteContext.siteId);
     const userId = Number(req.user.id);
 
@@ -67,8 +75,9 @@ export const generatePage = async (req: AuthRequest, res: Response) => {
       siteId: req.siteContext?.siteId,
       userId: req.user?.id
     });
+    
+    // TODO: replace string-based error matching with AppError classes after demo stabilization.
 
-    // Gestion des erreurs spécifiques
     if (error.message === "PROMPT_REQUIRED") {
       return res.status(400).json({
         success: false,
