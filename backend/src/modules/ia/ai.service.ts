@@ -504,6 +504,7 @@ export class AiService {
     prompt: string,
     title?: string
   ): GeneratedPage {
+    console.log("AI_TEMPLATE_SELECTED", category);
     switch (category) {
       case "Finance":
         return this.generateFinanceTemplate(prompt, title);
