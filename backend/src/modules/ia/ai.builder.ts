@@ -32,6 +32,29 @@ const titleBlock = (text: string, style: Record<string, any> = {}): PageBlock =>
   },
   children: []
 });
+const flexItemBlock = (children: PageBlock[]): PageBlock => ({
+  id: makeId("flex-item"),
+  type: "flexItem",
+  data: { props: {}, style: responsiveStyle({ width: "100%" }) },
+  children
+});
+
+const flexBlock = (children: PageBlock[]): PageBlock => ({
+  id: makeId("flex"),
+  type: "flex",
+  data: {
+    props: {},
+    style: responsiveStyle({
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "16px",
+      width: "100%"
+    })
+  },
+  children
+});
 
 const textBlock = (text: string, style: Record<string, any> = {}): PageBlock => ({
   id: makeId("text"),
@@ -83,7 +106,9 @@ const sectionBlock = (
       ...style
     })
   },
-  children
+  children: [
+    flexBlock(children.map((child) => flexItemBlock([child])))
+  ]
 });
 
 // ============================================
@@ -181,7 +206,7 @@ const buildFeatures = (config: SectionConfig): PageBlock => {
   // N7ot l features f container wahid
   const featuresContainer: PageBlock = {
     id: makeId("features-grid"),
-    type: "section",
+    type: "flex",
     data: {
       props: {},
       style: responsiveStyle({
@@ -240,7 +265,7 @@ const buildServices = (config: SectionConfig): PageBlock => {
 
   const servicesContainer: PageBlock = {
     id: makeId("services-grid"),
-    type: "section",
+    type: "flex",
     data: {
       props: {},
       style: responsiveStyle({
