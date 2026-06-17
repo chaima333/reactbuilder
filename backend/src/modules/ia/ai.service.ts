@@ -531,12 +531,14 @@ export class AiService {
   }
 
   // Fonction principale li tsob category w tgeneri page
+  
   static async generatePage(
     siteId: number,
     userId: number,
     prompt: string,
     title?: string
   ) {
+    console.log("🚨 BACKEND_FILE_VERSION", "AI_SERVICE_LOCAL_2026_06_17");
     console.log("AI_SERVICE_VERSION", "ML_INTEGRATION_V1");
     if (!prompt?.trim()) {
       throw new Error("PROMPT_REQUIRED");
