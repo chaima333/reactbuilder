@@ -141,10 +141,9 @@ export class AiService {
       // Nta9ou mel result w nsob category
       return result.category || "Corporate";
     } catch (error) {
-      console.error("ML service error:", error);
-      // Ki yfout error f connection, nraj3ou Corporate par défaut
-      return "Corporate";
-    }
+  console.error("ML service error:", error);
+  return this.fallbackCategory(prompt);
+}
   }
 private static fallbackCategory(prompt: string): string {
   const text = prompt.toLowerCase();
