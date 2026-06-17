@@ -14,6 +14,8 @@ const responsiveStyle = (desktop: Record<string, any> = {}) => ({
   mobile: {}
 });
 
+
+
 const titleBlock = (text: string, style: Record<string, any> = {}): PageBlock => ({
   id: makeId("title"),
   type: "title",
@@ -128,11 +130,10 @@ export class AiService {
 
       console.log("ML_RESPONSE_STATUS", response.status);
 
-      if (!response.ok) {
-        console.error("ML service returned error status:", response.status);
-        // Ki yfout service ML, najmou naamlou fallback ala default
-        return "Corporate";
-      }
+    if (!response.ok) {
+  console.error("ML service returned error status:", response.status);
+  return this.fallbackCategory(prompt);
+}
 
       const result = await response.json();
       console.log("ML_RESPONSE_BODY", result);
@@ -145,7 +146,52 @@ export class AiService {
       return "Corporate";
     }
   }
+private static fallbackCategory(prompt: string): string {
+  const text = prompt.toLowerCase();
 
+  if (
+    text.includes("doctor") ||
+    text.includes("clinic") ||
+    text.includes("medical") ||
+    text.includes("healthcare") ||
+    text.includes("hospital") ||
+    text.includes("appointment") ||
+    text.includes("telemedicine")
+  ) {
+    return "Medical";
+  }
+
+  if (
+    text.includes("shop") ||
+    text.includes("store") ||
+    text.includes("ecommerce") ||
+    text.includes("product") ||
+    text.includes("cart")
+  ) {
+    return "Ecommerce";
+  }
+
+  if (
+    text.includes("restaurant") ||
+    text.includes("menu") ||
+    text.includes("booking") ||
+    text.includes("reservation")
+  ) {
+    return "Restaurant";
+  }
+
+  if (
+    text.includes("finance") ||
+    text.includes("bank") ||
+    text.includes("investment") ||
+    text.includes("wealth") ||
+    text.includes("trading")
+  ) {
+    return "Finance";
+  }
+
+  return "Corporate";
+}
   // Template mte3 Finance
   static generateFinanceTemplate(prompt: string, title?: string): GeneratedPage {
     const pageTitle = title || "Finance Advisory";
