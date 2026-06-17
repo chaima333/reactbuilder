@@ -57,6 +57,34 @@ const buttonBlock = (label: string): PageBlock => ({
   },
   children: []
 });
+const flexItemBlock = (children: PageBlock[]): PageBlock => ({
+  id: makeId("flex-item"),
+  type: "flexItem",
+  data: {
+    props: {},
+    style: responsiveStyle({
+      width: "100%"
+    })
+  },
+  children
+});
+
+const flexBlock = (children: PageBlock[]): PageBlock => ({
+  id: makeId("flex"),
+  type: "flex",
+  data: {
+    props: {},
+    style: responsiveStyle({
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "16px",
+      width: "100%"
+    })
+  },
+  children
+});
 
 const sectionBlock = (
   children: PageBlock[],
@@ -72,7 +100,13 @@ const sectionBlock = (
       ...style
     })
   },
-  children
+  children: [
+    flexBlock(
+      children.map((child) =>
+        flexItemBlock([child])
+      )
+    )
+  ]
 });
 
 export class AiService {
