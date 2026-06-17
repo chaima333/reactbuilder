@@ -18,7 +18,10 @@ const titleBlock = (text: string, style: Record<string, any> = {}): PageBlock =>
   id: makeId("title"),
   type: "title",
   data: {
-    props: { text },
+    props: {
+  content: text,
+  text
+},
     style: responsiveStyle({
       fontSize: "44px",
       fontWeight: "800",
