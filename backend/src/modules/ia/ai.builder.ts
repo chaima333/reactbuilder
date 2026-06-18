@@ -132,12 +132,16 @@ const featureCard = (text: string): PageBlock => ({
     props: { text },
     style: responsiveStyle({
       padding: "32px",
-      border: "1px solid #e5e7eb",
+      border: "1px solid #0a0a0b",
       borderRadius: "12px",
       backgroundColor: "#ffffff",
       textAlign: "center",
       fontSize: "16px",
       fontWeight: "500",
+      minHeight: "110px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
       boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
     })
   },
@@ -150,7 +154,6 @@ const featureCard = (text: string): PageBlock => ({
 const buildNavbar = (config: SectionConfig): PageBlock => {
   const id = makeId("navbar");
   
-  // Nbadlou l colors bach ykounou darker w more visible
   const color = config.style?.color || "#111827";
   const bgColor = config.style?.backgroundColor || "#ffffff";
 
@@ -177,6 +180,8 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
         overflow: "visible",
         backgroundColor: bgColor,
         color: color,
+        whiteSpace: "nowrap",
+        minWidth: "160px",
         borderBottom: "1px solid rgba(0,0,0,0.08)"
       })
     },
@@ -332,7 +337,7 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
 const buildHero = (config: SectionConfig): PageBlock => {
   const bgColor = config.style?.backgroundColor || "#ffffff";
   const color = config.style?.color || "#0f172a";
-  const titleSize = config.style?.titleSize || "56px";
+  const titleSize = config.style?.titleSize || "48px";
 
   return sectionBlock(
     [
@@ -348,7 +353,7 @@ const buildHero = (config: SectionConfig): PageBlock => {
     {
       backgroundColor: bgColor,
       color,
-      padding: "120px 40px",
+      padding: "80px 40px",
       minHeight: "60vh",
       display: "flex",
       flexDirection: "column",
@@ -550,20 +555,158 @@ const buildCTA = (config: SectionConfig): PageBlock => {
 };
 
 const buildFooter = (config: SectionConfig): PageBlock => {
-  return sectionBlock(
-    [
-      textBlock(config.text, {
-        fontSize: "14px",
-        color: "#94a3b8",
-        textAlign: "center"
-      })
-    ],
+  const bgColor = config.style?.backgroundColor || "#0f172a";
+  const color = config.style?.color || "#ffffff";
+  
+  // Brand name mel config.title wala default
+  const brandName = config.title || "Brand";
+  
+  // Links mte3 footer (items) wala default
+  const footerLinks = config.items || ["About", "Services", "Contact", "Privacy"];
+  
+  // Columns mte3 footer grid
+  const columns = [
     {
-      backgroundColor: config.style?.backgroundColor || "#0f172a",
-      padding: "40px 20px",
-      borderTop: "1px solid #1e293b"
+      title: brandName,
+      items: [
+        config.text || "Building the future, one project at a time."
+      ]
+    },
+    {
+      title: "Company",
+      items: ["About Us", "Our Team", "Careers", "Blog"]
+    },
+    {
+      title: "Resources",
+      items: ["Help Center", "Documentation", "API", "Community"]
+    },
+    {
+      title: "Contact",
+      items: ["contact@example.com", "+216 XX XXX XXX", "Tunis, Tunisia"]
     }
-  );
+  ];
+
+  // Nbadlou items mte3 kol colonne b les liens mte3 config ken mawjoudin
+  if (footerLinks.length > 0) {
+    columns[1].items = footerLinks;
+  }
+
+  // Build grid children
+  const gridChildren: PageBlock[] = columns.map((col) => {
+    const itemBlocks: PageBlock[] = [
+      // Title mte3 colonne
+      {
+        id: makeId("footer-col-title"),
+        type: "text",
+        data: {
+          props: { text: col.title },
+          style: responsiveStyle({
+            fontSize: "16px",
+            fontWeight: "700",
+            color: color,
+            textAlign: "left",
+            marginBottom: "12px"
+          })
+        },
+        children: []
+      },
+      // Items mte3 colonne (links)
+      ...col.items.map((item) => ({
+        id: makeId("footer-col-item"),
+        type: "link",
+        data: {
+          props: { label: item, href: "#" },
+          style: responsiveStyle({
+            fontSize: "14px",
+            color: "#94a3b8",
+            textDecoration: "none",
+            textAlign: "left",
+            display: "block",
+            marginBottom: "8px",
+            transition: "color 0.2s ease"
+          })
+        },
+        children: []
+      }))
+    ];
+
+    return gridItemBlock(itemBlocks);
+  });
+
+  // Grid container
+  const footerGrid: PageBlock = {
+    id: makeId("footer-grid"),
+    type: "grid",
+    data: {
+      props: {},
+      style: responsiveStyle({
+        display: "grid",
+        gridTemplateColumns: "repeat(4, 1fr)",
+        gap: "32px",
+        maxWidth: "1200px",
+        margin: "0 auto",
+        padding: "0 20px",
+        width: "100%"
+      })
+    },
+    children: gridChildren
+  };
+
+  // Copyright
+  const copyrightText = `© ${new Date().getFullYear()} ${brandName}. All rights reserved.`;
+
+  // Footer final
+ return {
+  id: makeId("footer-section"),
+  type: "section",
+  data: {
+    props: {},
+    style: responsiveStyle({
+      backgroundColor: bgColor,
+      borderTop: "1px solid #1e293b",
+      padding: "60px 40px 40px 40px"
+    })
+  },
+  children: [
+    flexBlock([
+      flexItemBlock([footerGrid]),
+      flexItemBlock([
+        {
+          id: makeId("footer-separator"),
+          type: "text",
+          data: {
+            props: { text: "" },
+            style: responsiveStyle({
+              borderTop: "1px solid #334155",
+              margin: "32px 20px 20px 20px",
+              padding: "0",
+              width: "100%"
+            })
+          },
+          children: []
+        }
+      ]),
+      flexItemBlock([
+        {
+          id: makeId("footer-copyright"),
+          type: "text",
+          data: {
+            props: { text: copyrightText },
+            style: responsiveStyle({
+              fontSize: "13px",
+              color: "#64748b",
+              textAlign: "center",
+              maxWidth: "1200px",
+              margin: "0 auto",
+              padding: "0 20px"
+            })
+          },
+          children: []
+        }
+      ])
+    ])
+  ]
+};
 };
 
 // ============================================
