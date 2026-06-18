@@ -51,6 +51,16 @@ export const markNotificationAsRead = async (
     success: true,
   });
 };
+export const deleteNotification = async (req: AuthRequest, res: Response) => {
+  await NotificationService.deleteNotification(
+    Number(req.params.id),
+    req.user.id
+  );
+
+  return res.json({
+    success: true,
+  });
+};
 
 export const markAllNotificationsAsRead = async (
   req: AuthRequest,

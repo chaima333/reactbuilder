@@ -586,7 +586,6 @@ const buildFooter = (config: SectionConfig): PageBlock => {
     }
   ];
 
-  // Nbadlou items mte3 kol colonne b les liens mte3 config ken mawjoudin
   if (footerLinks.length > 0) {
     columns[1].items = footerLinks;
   }
@@ -675,7 +674,7 @@ const buildFooter = (config: SectionConfig): PageBlock => {
           id: makeId("footer-separator"),
           type: "text",
           data: {
-            props: { text: "" },
+            props: { text: " " },
             style: responsiveStyle({
               borderTop: "1px solid #334155",
               margin: "32px 20px 20px 20px",

@@ -80,6 +80,14 @@ export class NotificationService {
       }
     );
   }
+  static async deleteNotification(id: number, userId: number) {
+  await Notification.destroy({
+    where: {
+      id,
+      userId,
+    },
+  });
+}
 
   static async markAllAsRead(userId: number) {
     await Notification.update(
