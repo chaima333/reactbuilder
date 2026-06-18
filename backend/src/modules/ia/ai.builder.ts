@@ -386,16 +386,16 @@ const buildFeatures = (config: SectionConfig): PageBlock => {
   // N7ot l features f container wahid
   const featuresContainer: PageBlock = {
     id: makeId("features-grid"),
-    type: "flex",
+    type: "grid",
     data: {
       props: {},
       style: responsiveStyle({
         display: "grid",
-        gridTemplateColumns: "1fr 1fr",
+        gridTemplateColumns: "repeat(2, minmax(160px, 1fr))",
         gap: "24px",
-        maxWidth: "900px",
+        maxWidth: "420px",
         margin: "0 auto",
-        padding: "20px"
+        justifyContent: "center"
       })
     },
     children: featureBlocks
