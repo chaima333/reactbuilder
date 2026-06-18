@@ -134,6 +134,174 @@ const featureCard = (text: string): PageBlock => ({
   children: []
 });
 
+
+const buildNavbar = (config: SectionConfig): PageBlock => {
+  const id = makeId("navbar");
+  const color = config.style?.color || "#0f172a";
+  const bgColor = config.style?.backgroundColor || "#ffffff";
+
+  const links = config.items || ["Home", "Services", "About", "Contact"];
+
+  return {
+    id,
+    type: "navbar",
+    data: {
+      props: {},
+      style: responsiveStyle({
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "28px",
+        width: "100%",
+        paddingTop: "14px",
+        paddingBottom: "14px",
+        paddingLeft: "28px",
+        paddingRight: "28px",
+        flexWrap: "nowrap",
+        overflow: "visible",
+        backgroundColor: bgColor,
+        color,
+        borderBottom: "1px solid rgba(0,0,0,0.08)"
+      })
+    },
+    children: [
+      {
+        id: makeId("navbar-logo-item"),
+        type: "flexItem",
+        data: {
+          props: {},
+          style: responsiveStyle({
+            display: "flex",
+            alignItems: "center",
+            width: "max-content",
+            flex: "0 0 auto",
+            whiteSpace: "nowrap"
+          })
+        },
+        children: [
+          {
+            id: makeId("navbar-logo-text"),
+            type: "text",
+            data: {
+              props: {
+                content: config.title,
+                text: config.title
+              },
+              style: responsiveStyle({
+                color,
+                fontWeight: "900",
+                fontSize: "18px",
+                letterSpacing: "0.04em",
+                whiteSpace: "nowrap",
+                marginBottom: "0"
+              })
+            },
+            children: []
+          }
+        ]
+      },
+
+      {
+        id: makeId("navbar-links-item"),
+        type: "flexItem",
+        data: {
+          props: {},
+          style: responsiveStyle({
+            flex: "1 1 0",
+            minWidth: 0,
+            display: "flex",
+            justifyContent: "center"
+          })
+        },
+        children: [
+          {
+            id: makeId("navbar-links-flex"),
+            type: "flex",
+            data: {
+              props: {},
+              style: responsiveStyle({
+                display: "flex",
+                flexDirection: "row",
+                flexWrap: "nowrap",
+                columnGap: "22px",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "100%"
+              })
+            },
+            children: links.map((label, index) => ({
+              id: makeId(`navbar-link-item-${index}`),
+              type: "flexItem",
+              data: {
+                props: {},
+                style: responsiveStyle({
+                  flex: "0 0 auto"
+                })
+              },
+              children: [
+                {
+                  id: makeId(`navbar-link-${index}`),
+                  type: "link",
+                  data: {
+                    props: {
+                      label,
+                      href: "#"
+                    },
+                    style: responsiveStyle({
+                      textDecoration: "none",
+                      color,
+                      fontSize: "14px",
+                      fontWeight: "700",
+                      whiteSpace: "nowrap"
+                    })
+                  },
+                  children: []
+                }
+              ]
+            }))
+          }
+        ]
+      },
+
+      ...(config.cta
+        ? [
+            {
+              id: makeId("navbar-cta-item"),
+              type: "flexItem",
+              data: {
+                props: {},
+                style: responsiveStyle({
+                  flex: "0 0 auto"
+                })
+              },
+              children: [
+                {
+                  id: makeId("navbar-cta"),
+                  type: "button",
+                  data: {
+                    props: {
+                      label: config.cta,
+                      href: "#"
+                    },
+                    style: responsiveStyle({
+                      borderRadius: "999px",
+                      padding: "10px 22px",
+                      backgroundColor: "#2563eb",
+                      color: "#ffffff",
+                      border: "none",
+                      fontWeight: "800",
+                      fontSize: "13px"
+                    })
+                  },
+                  children: []
+                }
+              ]
+            }
+          ]
+        : [])
+    ]
+  };
+};
 // ============================================
 // SECTION BUILDERS (KIND B KIND)
 // ============================================
@@ -385,6 +553,8 @@ export function buildSectionFromConfig(
   config: SectionConfig
 ): PageBlock {
   switch (config.kind) {
+    case "navbar":
+  return buildNavbar(config);
     case "hero":
       return buildHero(config);
     case "mission":
@@ -453,6 +623,7 @@ export function generateTemplate(
 // ============================================
 
 export {
+  buildNavbar,
   buildHero,
   buildMission,
   buildFeatures,
