@@ -5,6 +5,8 @@ import { emitDomainEvent, getSemanticDiff } from "../domain/diff";
 import { normalizePage } from "../../../core/plugins/events/contracts/unified.contract";
 import { ActivityService } from "../../dashboard/services/activity.service";
 import { Site } from "../../../models/site";
+import PageVersion from "../../../models/pageVersion";
+import { sequelize } from "../../../core/database/connection";
 
 export const updatePageHandler = async (command: any) => {
   try {
@@ -18,13 +20,6 @@ export const updatePageHandler = async (command: any) => {
     if (!context || !context.userId) {
       return { success: false, error: "invalid context" };
     }
-
-    const page = await Page.findByPk(payload.pageId);
-    if (!page) {
-      return { success: false, error: "page not found" };
-    }
-
-    const oldPage = normalizePage(page);
 
     const allowedFields = ["title", "content", "blocks", "slug", "status"];
     const safePayload: any = {};
@@ -108,41 +103,80 @@ const filteredBlocks =
 }
       }
     }
-    if (navbar) {
+    const updateResult = await sequelize.transaction(async (transaction) => {
+      const page = await Page.findOne({
+        where: {
+          id: payload.pageId,
+          siteId: context.siteId
+        },
+        transaction,
+        lock: transaction.LOCK.UPDATE
+      });
 
-  const site =
-    await Site.findByPk(
-      context.siteId
-    );
-
-  if (site) {
-
-    await site.update({
-
-      globalLayout: {
-
-        ...(site.get(
-          "globalLayout"
-        ) || {}),
-
-        navbar
+      if (!page) {
+        throw new Error("PAGE_NOT_FOUND");
       }
+
+      const oldPage = normalizePage(page);
+      const nextPage = normalizePage({
+        ...page.toJSON(),
+        ...safePayload
+      });
+      const changes = getSemanticDiff(oldPage, nextPage);
+
+      if (navbar) {
+        const site = await Site.findByPk(
+          context.siteId,
+          { transaction }
+        );
+
+        if (site) {
+          await site.update({
+            globalLayout: {
+              ...(site.get("globalLayout") || {}),
+              navbar
+            }
+          }, { transaction });
+        }
+      }
+
+      if (!changes.length) {
+        return {
+          updated: false,
+          data: oldPage,
+          previous: oldPage,
+          changes
+        };
+      }
+
+      await PageVersion.create({
+        pageId: page.id,
+        siteId: context.siteId,
+        title: page.title,
+        content: page.content,
+        blocks: page.blocks,
+        status: page.status,
+        createdBy: context.userId
+      }, { transaction });
+
+      await page.update(
+        safePayload,
+        { transaction }
+      );
+
+      return {
+        updated: true,
+        data: normalizePage(page),
+        previous: oldPage,
+        changes
+      };
     });
-  }
-}
 
-    await page.update(safePayload);
-
-    const updated = await page.reload();
-    const current = normalizePage(updated);
-
-    const changes = getSemanticDiff(oldPage, current);
-
-    if (!changes.length) {
+    if (!updateResult.updated) {
       return {
         success: true,
         updated: false,
-        data: current
+        data: updateResult.data
       };
     }
 
@@ -150,13 +184,13 @@ const filteredBlocks =
     await emitDomainEvent(
       "page.updated",
       {
-        current,
-        previous: oldPage,
-        changes
+        current: updateResult.data,
+        previous: updateResult.previous,
+        changes: updateResult.changes
       },
       {
         userId: context.userId,
-        siteId: current.siteId,
+        siteId: updateResult.data.siteId,
         source: "page.handler",
         depth: 0,
         traceId: context.traceId
@@ -167,15 +201,15 @@ const filteredBlocks =
     
     await ActivityService.log({
      userId: context.userId,
-     siteId: current.siteId,
+     siteId: updateResult.data.siteId,
   action: "page_updated",
   entityType: "page",
-  entityId: current.id
+  entityId: updateResult.data.id
 });
     return {
       success: true,
       updated: true,
-      data: current
+      data: updateResult.data
     };
 
   } catch (error: any) {

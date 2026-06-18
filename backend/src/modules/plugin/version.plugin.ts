@@ -1,7 +1,5 @@
-import { createHash } from "crypto";
 import { PageVersion } from "../../models/pageVersion";
 import { ICmsPlugin } from "../../core/plugins/plugin.types";
-import { validateEvent } from "../../core/plugins/events/contracts/unified.contract";
 
 export const VersionPlugin: ICmsPlugin = {
   name: "version-plugin",
@@ -11,7 +9,6 @@ export const VersionPlugin: ICmsPlugin = {
   events: ["page.updated"],
   enabled: true,
 
-  // 🔥 UI definition للـ dashboard
   meta: {
     dashboard: {
       type: "widget.version.summary",
@@ -21,74 +18,23 @@ export const VersionPlugin: ICmsPlugin = {
   },
 
   async getDashboardData(siteId: number) {
-    const totalVersions =
-  await PageVersion.count({
+    const totalVersions = await PageVersion.count({
+      where: { siteId }
+    });
 
-    where: { siteId }
-  });
+    const lastVersion = await PageVersion.findOne({
+      where: { siteId },
+      order: [["createdAt", "DESC"]]
+    });
 
-const lastVersion =
-  await PageVersion.findOne({
-
-    where: { siteId },
-
-    order: [
-      ["createdAt", "DESC"]
-    ]
-  });
-
-return {
-
-  totalVersions,
-
-  lastBackup:
-    lastVersion?.createdAt
-};
+    return {
+      totalVersions,
+      lastBackup: lastVersion?.createdAt
+    };
   },
 
-  async execute(event: any) {
-
-    // 🔥 HARD VALIDATION (not safeEvent)
-    const check = validateEvent(event);
-    if (!check.isValid) return;
-
-    const { data, context } = event;
-    const { current, previous } = data;
-
-    if (!current?.id || !previous?.id) return;
-
-    const serialize = (p: any) =>
-      JSON.stringify({
-        title: p.title || "",
-        content: p.content || "",
-        slug: p.slug || "",
-        blocks: p.blocks || []
-      });
-
-    const curr = serialize(current);
-    const prev = serialize(previous);
-
-    if (curr === prev) return;
-
-    const versionTag = createHash("sha256")
-      .update(`${current.id}:${curr}`)
-      .digest("hex");
-
-    try {
-      await PageVersion.create({
-        pageId: current.id,
-        siteId: context.siteId,
-        versionTag,
-        title: current.title,
-        content: current.content,
-        blocks: current.blocks,
-        createdBy: context.userId
-      });
-
-      console.log(`📜 VERSION SAVED: ${versionTag.slice(0, 8)}`);
-
-    } catch (err) {
-      console.error("VERSION ERROR:", err);
-    }
+  async execute(_event: any) {
+    // Update snapshots are persisted transactionally by updatePageHandler.
+    // The plugin remains available for dashboard version metadata.
   }
 };

@@ -19,6 +19,9 @@ export class PageVersion extends Model {
   blocks!: any;
 
   @Column(DataType.STRING)
+  status!: string;
+
+  @Column(DataType.STRING)
   versionTag!: string;
 
   @Column(DataType.INTEGER)
