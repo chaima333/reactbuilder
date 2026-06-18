@@ -1,7 +1,9 @@
+import { Seo } from "../../models/Seo";
 import { MediaService } from "../media/media.service";
 import { PageService } from "../pages/services/page.service";
 import { generateTemplate } from "./ai.builder";
 import { CATEGORY_TEMPLATES } from "./ai.templates";
+import { generateSeo } from "./seo.generator";
 
 const ML_SERVICE_URL =
   process.env.ML_SERVICE_URL || "http://localhost:5000";
@@ -241,6 +243,29 @@ export class AiService {
       blocks: generated.blocks
     }
   );
+
+  const seo = generateSeo(
+  category,
+  pageTitle,
+  heroImageUrl
+);
+
+await Seo.create({
+  pageId: result.data.id,
+  siteId,
+
+  metaTitle: seo.metaTitle,
+  metaDescription: seo.metaDescription,
+  metaKeywords: seo.metaKeywords,
+
+  ogTitle: seo.ogTitle,
+  ogDescription: seo.ogDescription,
+  ogImage: seo.ogImage,
+
+  twitterTitle: seo.twitterTitle,
+  twitterDescription: seo.twitterDescription,
+  twitterImage: seo.twitterImage
+});
 
   return result.data;
 }
