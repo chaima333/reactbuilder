@@ -445,7 +445,7 @@ const buildServices = (config: SectionConfig): PageBlock => {
 
   const servicesContainer: PageBlock = {
     id: makeId("services-grid"),
-    type: "flex",
+    type: "grid",
     data: {
       props: {},
       style: responsiveStyle({
