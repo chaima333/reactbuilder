@@ -97,7 +97,11 @@ const imageBlock = (src: string, alt: string = "Hero image"): PageBlock => ({
   id: makeId("image"),
   type: "image",
   data: {
-    props: { src, alt },
+    props: {
+      url: src,
+      src,
+      alt
+    },
     style: responsiveStyle({
       width: "100%",
       maxWidth: "600px",
