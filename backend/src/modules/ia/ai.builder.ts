@@ -60,7 +60,7 @@ const textBlock = (text: string, style: Record<string, any> = {}): PageBlock => 
   id: makeId("text"),
   type: "text",
   data: {
-    props: { text },
+    props: { text, content: text },
     style: responsiveStyle({
       fontSize: "18px",
       textAlign: "center",
@@ -562,13 +562,10 @@ const buildFooter = (config: SectionConfig): PageBlock => {
   const bgColor = config.style?.backgroundColor || "#0f172a";
   const color = config.style?.color || "#ffffff";
   
-  // Brand name mel config.title wala default
   const brandName = config.title || "Brand";
   
-  // Links mte3 footer (items) wala default
   const footerLinks = config.items || ["About", "Services", "Contact", "Privacy"];
   
-  // Columns mte3 footer grid
   const columns = [
     {
       title: brandName,
@@ -678,7 +675,7 @@ const buildFooter = (config: SectionConfig): PageBlock => {
           id: makeId("footer-separator"),
           type: "text",
           data: {
-            props: { text: " " },
+            props: { text: " ", content: " " },
             style: responsiveStyle({
               borderTop: "1px solid #334155",
               margin: "32px 20px 20px 20px",
