@@ -1,5 +1,4 @@
 import Notification from "../../models/Notification";
-import { Op } from "sequelize";
 
 export class NotificationService {
   static async create(data: {
@@ -37,29 +36,31 @@ export class NotificationService {
   }
 
   static async getDashboardData(userId: number, siteId: number) {
-    const where = {
-      userId,
-      [Op.or]: [
-        { siteId },
-        { siteId: null },
-      ],
-    };
-
     const [unreadCount, totalNotifications, latestNotifications] =
       await Promise.all([
         Notification.count({
           where: {
-            ...where,
+            userId,
             isRead: false,
           },
         }),
-        Notification.count({ where }),
+        Notification.count({
+          where: { userId },
+        }),
         Notification.findAll({
-          where,
+          where: { userId },
           limit: 5,
           order: [["createdAt", "DESC"]],
         }),
       ]);
+
+    console.log("NOTIFICATION_DASHBOARD_SUMMARY", {
+      userId,
+      siteId,
+      totalNotifications,
+      unreadCount,
+      latestNotificationsLength: latestNotifications.length,
+    });
 
     return {
       unreadCount,

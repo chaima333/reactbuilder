@@ -131,7 +131,7 @@ const featureCard = (text: string): PageBlock => ({
   data: {
     props: { text },
     style: responsiveStyle({
-      padding: "24px",
+      padding: "32px",
       border: "1px solid #e5e7eb",
       borderRadius: "12px",
       backgroundColor: "#ffffff",
@@ -165,15 +165,15 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        gap: "28px",
         width: "100%",
-        maxWidth: "1200px", // Nzidou max width bach mayetkassech
-        margin: "0 auto", // N7otou centre
+        maxWidth: "1200px", 
+        margin: "0 auto", 
         paddingTop: "14px",
         paddingBottom: "14px",
         paddingLeft: "28px",
         paddingRight: "28px",
-        flexWrap: "nowrap",
+        flexWrap: "wrap",
+        gap: "18px",
         overflow: "visible",
         backgroundColor: bgColor,
         color: color,
@@ -207,7 +207,7 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
               style: responsiveStyle({
                 color: color,
                 fontWeight: "900",
-                fontSize: "24px", // Nkbernah mel 18px l 24px
+                fontSize: "24px", 
                 letterSpacing: "0.04em",
                 whiteSpace: "nowrap",
                 marginBottom: "0"
@@ -225,7 +225,7 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
         data: {
           props: {},
           style: responsiveStyle({
-            flex: "1 1 0",
+            flex: "1 1 auto",
             minWidth: 0,
             display: "flex",
             justifyContent: "center" // N7otou centre
@@ -240,8 +240,9 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
               style: responsiveStyle({
                 display: "flex",
                 flexDirection: "row",
-                flexWrap: "nowrap",
-                columnGap: "22px",
+                flexWrap: "wrap",
+                columnGap: "18px",
+                rowGap: "10px",
                 alignItems: "center",
                 justifyContent: "center",
                 width: "100%"
@@ -435,12 +436,13 @@ const buildServices = (config: SectionConfig): PageBlock => {
       data: {
         props: { text: item },
         style: responsiveStyle({
-          padding: "20px",
+          padding: "32px",
+          minHeight: "120px",
           border: "1px solid #e5e7eb",
           borderRadius: "8px",
           backgroundColor: "#f9fafb",
           textAlign: "center",
-          fontSize: "16px",
+          fontSize: "18px",
           fontWeight: "500",
           transition: "all 0.3s ease"
         })
