@@ -12,8 +12,27 @@ export const NotificationPlugin: ICmsPlugin = {
   "page.created",
   "page.updated",
   "page.published",
-],
+  ],
   enabled: true,
+  meta: {
+    dashboard: {
+      type: "notifications",
+      title: "Notifications",
+      col: 6,
+      order: 3,
+    },
+  },
+
+  async getDashboardData(siteId: number, context?: { userId?: number }) {
+    if (!context?.userId) {
+      return null;
+    }
+
+    return NotificationService.getDashboardData(
+      context.userId,
+      siteId
+    );
+  },
 
   async execute(event: UnifiedEvent) {
   const eventAny = event as any;

@@ -111,6 +111,16 @@ const sectionBlock = (
   ]
 });
 
+
+const gridItemBlock = (children: PageBlock[]): PageBlock => ({
+  id: makeId("grid-item"),
+  type: "gridItem",
+  data: {
+    props: {},
+    style: responsiveStyle({})
+  },
+  children
+});
 // ============================================
 // FEATURE CARD HELPER
 // ============================================
@@ -371,17 +381,11 @@ const buildMission = (config: SectionConfig): PageBlock => {
 const buildFeatures = (config: SectionConfig): PageBlock => {
   const items = config.items || [];
   
-  // Najem naamel grid 2x2 wala 3x1
-  const featureBlocks: PageBlock[] = items.map((item, index) => {
-    const block = featureCard(item);
-    // Nzid style mte3 grid
-    block.data.style = responsiveStyle({
-      ...block.data.style.desktop,
-      gridColumn: index % 2 === 0 ? "1" : "2",
-      marginBottom: "16px"
-    });
-    return block;
-  });
+ const featureBlocks: PageBlock[] = items.map((item) =>
+  gridItemBlock([
+    featureCard(item)
+  ])
+);
 
   // N7ot l features f container wahid
   const featuresContainer: PageBlock = {
@@ -423,25 +427,28 @@ const buildFeatures = (config: SectionConfig): PageBlock => {
 
 const buildServices = (config: SectionConfig): PageBlock => {
   const items = config.items || [];
-  
-  const serviceBlocks: PageBlock[] = items.map((item) => ({
-    id: makeId("service"),
-    type: "text",
-    data: {
-      props: { text: item },
-      style: responsiveStyle({
-        padding: "20px",
-        border: "1px solid #e5e7eb",
-        borderRadius: "8px",
-        backgroundColor: "#f9fafb",
-        textAlign: "center",
-        fontSize: "16px",
-        fontWeight: "500",
-        transition: "all 0.3s ease"
-      })
-    },
-    children: []
-  }));
+ const serviceBlocks: PageBlock[] = items.map((item) =>
+  gridItemBlock([
+    {
+      id: makeId("service"),
+      type: "text",
+      data: {
+        props: { text: item },
+        style: responsiveStyle({
+          padding: "20px",
+          border: "1px solid #e5e7eb",
+          borderRadius: "8px",
+          backgroundColor: "#f9fafb",
+          textAlign: "center",
+          fontSize: "16px",
+          fontWeight: "500",
+          transition: "all 0.3s ease"
+        })
+      },
+      children: []
+    }
+  ])
+);
 
   const servicesContainer: PageBlock = {
     id: makeId("services-grid"),

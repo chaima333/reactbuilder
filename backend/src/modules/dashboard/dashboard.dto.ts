@@ -4,7 +4,8 @@ export type DashboardBlockType =
   | "activity"
   | "widget.version.summary"
   | "widget.seo.score"
-  | "widget.media.summary";
+  | "widget.media.summary"
+  | "notifications";
 /**
  * =====================================================
  * LAYOUT
@@ -81,6 +82,12 @@ export interface DashboardWidget {
   enabled: boolean;
 
   payload: any;
+
+  title?: string;
+
+  col?: number;
+
+  order?: number;
 }
 
 /**

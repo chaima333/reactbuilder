@@ -2,6 +2,7 @@
 import { Response } from "express";
 import { DashboardProjection } from "../projections/dashboard.projection";
 import { rebuildDashboardProjection } from "../projections/dashboard.projection.builder";
+import { DashboardWidgetService } from "../services/dashboard.widgets.service";
 
 export const getDashboardFull = async (req: any, res: Response) => {
   try {
@@ -46,6 +47,33 @@ export const getDashboardFull = async (req: any, res: Response) => {
         }
       };
     }
+
+    const widgets = await DashboardWidgetService.getWidgets(
+      siteId,
+      { userId: req.user.id }
+    );
+
+    const coreBlocks = snapshot.layout.blocks.filter(
+      (block: any) =>
+        ["stats", "chart", "activity"].includes(block.type)
+    );
+
+    snapshot = {
+      ...snapshot,
+      widgets,
+      layout: {
+        ...snapshot.layout,
+        blocks: [
+          ...coreBlocks,
+          ...widgets.map((widget: any, index: number) => ({
+            id: widget.id,
+            type: widget.type,
+            col: widget.col || 6,
+            order: widget.order ?? (100 + index),
+          })),
+        ].sort((a: any, b: any) => a.order - b.order),
+      },
+    };
 
     console.log("✅ Sending Synchronized Data to Frontend");
     return res.json({ success: true, data: snapshot });

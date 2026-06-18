@@ -20,11 +20,15 @@ export interface ICmsPlugin {
   meta?: {
     dashboard?: {
       type: DashboardBlockType;
+      title?: string;
       col: number;
       order?: number;
     };
   };
 
   // 🔥 FIXED: site-level not user-level
-  getDashboardData?(siteId: number): Promise<any>;
+  getDashboardData?(
+    siteId: number,
+    context?: { userId?: number }
+  ): Promise<any>;
 }
