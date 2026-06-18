@@ -345,9 +345,13 @@ const buildHero = (config: SectionConfig): PageBlock => {
         fontSize: titleSize,
         color
       }),
+     ...(config.text?.trim()
+  ? [
       textBlock(config.text, {
         color
-      }),
+      })
+    ]
+  : []),
       ...(config.cta ? [buttonBlock(config.cta)] : [])
     ],
     {
