@@ -1,4 +1,14 @@
 import Notification from "../../models/Notification";
+import { Op } from "sequelize";
+
+const SITE_DASHBOARD_NOTIFICATION_TYPES = [
+  "page.created",
+  "page.updated",
+  "page.published",
+  "page.restored",
+  "media.uploaded",
+  "site.updated",
+];
 
 export class NotificationService {
   static async create(data: {
@@ -36,19 +46,27 @@ export class NotificationService {
   }
 
   static async getDashboardData(userId: number, siteId: number) {
+    const where = {
+      userId,
+      siteId,
+      type: {
+        [Op.in]: SITE_DASHBOARD_NOTIFICATION_TYPES,
+      },
+    };
+
     const [unreadCount, totalNotifications, latestNotifications] =
       await Promise.all([
         Notification.count({
           where: {
-            userId,
+            ...where,
             isRead: false,
           },
         }),
         Notification.count({
-          where: { userId },
+          where,
         }),
         Notification.findAll({
-          where: { userId },
+          where,
           limit: 5,
           order: [["createdAt", "DESC"]],
         }),

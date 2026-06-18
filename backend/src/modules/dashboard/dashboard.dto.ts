@@ -33,7 +33,7 @@ export interface DashboardLayout {
  */
 
 export interface DashboardStats {
-  totalSites: number;
+  siteId: number;
 
   totalPages: number;
 

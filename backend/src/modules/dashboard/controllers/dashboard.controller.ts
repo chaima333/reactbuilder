@@ -7,7 +7,7 @@ import { DashboardWidgetService } from "../services/dashboard.widgets.service";
 export const getDashboardFull = async (req: any, res: Response) => {
   try {
     const siteId = Number(req.params.siteId || req.query.siteId);
-    const CURRENT_SCHEMA_VERSION = 1; // الـ Version الحالية متاعنا
+    const CURRENT_SCHEMA_VERSION = 2;
 
     console.log("-----------------------------------------");
     console.log(`📩 Request received for Site ID: ${siteId}`);
@@ -35,7 +35,7 @@ export const getDashboardFull = async (req: any, res: Response) => {
     if (!snapshot) {
       console.log("❌ Builder returned NULL! Sending Emergency Fallback.");
       snapshot = {
-        stats: { totalSites: 1, totalPages: 1, totalViews: 0, siteName: "Fallback Site" },
+        stats: { siteId, totalPages: 1, totalViews: 0, siteName: "Fallback Site" },
         signals: { totalActivities: 0, chartData: [] },
         widgets: [],
         layout: { blocks: [{ id: "stats-core", type: "stats", col: 12, order: 0 }] },

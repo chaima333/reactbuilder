@@ -8,10 +8,12 @@ export const NotificationPlugin: ICmsPlugin = {
   priority: 10,
   isCritical: true,
   events: [
-  "site.created",
-  "page.created",
-  "page.updated",
-  "page.published",
+    "page.created",
+    "page.updated",
+    "page.published",
+    "page.restored",
+    "media.uploaded",
+    "site.updated",
   ],
   enabled: true,
   meta: {

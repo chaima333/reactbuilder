@@ -7,6 +7,7 @@ export type SectionKind =
   | "features"
   | "services"
   | "testimonial"
+  | "stats"
   | "cta"
   | "footer";
 
@@ -16,6 +17,7 @@ export interface SectionConfig {
   text: string;
   cta?: string;
   items?: string[];
+  image?: string;
   style?: {
     backgroundColor?: string;
     color?: string;
@@ -37,7 +39,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "MediCare",
         text: "",
         cta: "Book Appointment",
-        items: ["Home", "Doctors", "Services", "Contact"],
+        items: ["Home", "Doctors", "Services", "Appointments", "Contact"],
         style: { backgroundColor: "#ffffff", color: "#0f172a" }
       },
       {
@@ -45,6 +47,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Book Trusted Medical Consultations Online",
         text: "A modern healthcare platform for clinics, doctors and patients.",
         cta: "Book Appointment",
+        image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&h=400&fit=crop",
         style: { backgroundColor: "#f0f9ff", color: "#0f172a", titleSize: "54px" }
       },
       {
@@ -62,12 +65,32 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         kind: "services",
         title: "Healthcare Services",
         text: "Digital tools for modern private clinics.",
-        items: ["Appointment booking", "Clinic communication", "Patient management"]
+        items: [
+          "📅 Appointment Booking|Allow patients to schedule visits online.",
+          "💬 Telemedicine|Video consultations from anywhere.",
+          "📁 Patient Records|Secure digital health records."
+        ]
       },
       {
         kind: "testimonial",
-        title: "Trusted by Healthcare Teams",
-        text: "A reliable solution designed for better care coordination."
+        title: "What Our Clients Say",
+        text: "Real feedback from healthcare professionals.",
+        items: [
+          "★★★★★|Excellent platform for managing appointments.|Dr Ahmed",
+          "★★★★★|Reduced our admin workload by 50%.|Clinic Plus",
+          "★★★★★|Easy to use and professional.|Sarah M."
+        ]
+      },
+      {
+        kind: "stats",
+        title: "Our Impact",
+        text: "Numbers that speak for themselves.",
+        items: [
+          "5000+|Appointments",
+          "120+|Doctors",
+          "25+|Clinics",
+          "98%|Satisfaction"
+        ]
       },
       {
         kind: "cta",
@@ -77,9 +100,9 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "FinCapital",
-        text: "© 2026 MediCare. All rights reserved.",
-        items: ["Privacy Policy", "Terms of Service", "Contact"],
+        title: "MediCare",
+        text: "Building the future of healthcare, one appointment at a time.",
+        items: ["About Us|Our Team|Careers|Blog", "LinkedIn|Facebook|Instagram|Twitter"],
         style: { backgroundColor: "#0f172a" }
       }
     ]
@@ -101,20 +124,50 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Finance the Visionary. Build the Future.",
         text: "A strategic finance and technology advisory platform helping institutions, investors and governments structure ambitious projects.",
         cta: "Request Advisory",
+        image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&h=400&fit=crop",
         style: { backgroundColor: "#020b18", color: "#ffffff", titleSize: "56px" }
       },
       {
         kind: "mission",
         title: "Strategic Services",
-        text: "Project financing, digital finance, AI transformation and advisory services designed for ambitious organizations.",
-        cta: "Explore Services",
-        style: { titleSize: "38px" }
+        text: "Project financing, digital finance, AI transformation and advisory services designed for ambitious organizations."
       },
       {
         kind: "features",
         title: "Key Capabilities",
         text: "We deliver financial solutions that drive growth.",
         items: ["Project financing", "Digital finance", "AI transformation", "Advisory services"]
+      },
+      {
+        kind: "services",
+        title: "Financial Solutions",
+        text: "Expert services tailored to your business needs.",
+        items: [
+          "💰 Investment Banking|Strategic capital raising and M&A advisory.",
+          "📊 Risk Management|Comprehensive risk assessment and mitigation.",
+          "📈 Portfolio Optimization|Data-driven investment strategies."
+        ]
+      },
+      {
+        kind: "testimonial",
+        title: "What Our Clients Say",
+        text: "Trusted by leading organizations worldwide.",
+        items: [
+          "★★★★★|FinCapital transformed our investment strategy.|CEO, TechCorp",
+          "★★★★★|Exceptional financial advisory services.|CFO, GlobalFund",
+          "★★★★★|Their expertise is unmatched in the industry.|Partner, VentureX"
+        ]
+      },
+      {
+        kind: "stats",
+        title: "Our Numbers",
+        text: "Delivering results that matter.",
+        items: [
+          "$50B+|Assets Under Advisory",
+          "500+|Clients Served",
+          "40+|Countries",
+          "99%|Client Satisfaction"
+        ]
       },
       {
         kind: "cta",
@@ -125,8 +178,8 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       {
         kind: "footer",
         title: "FinCapital",
-        text: "© 2026 FinCapital. All rights reserved.",
-        items: ["Privacy Policy", "Terms", "Contact"],
+        text: "Building financial futures with integrity and vision.",
+        items: ["About|Team|Careers|Blog", "LinkedIn|Twitter|YouTube|Instagram"],
         style: { backgroundColor: "#020b18" }
       }
     ]
@@ -140,7 +193,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Gourmet",
         text: "",
         cta: "Book a Table",
-        items: ["Home", "Menu", "About", "Contact"],
+        items: ["Home", "Menu", "Reservations", "Gallery", "Contact"],
         style: { backgroundColor: "#1a1a2e", color: "#f8f9fa" }
       },
       {
@@ -148,24 +201,50 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Welcome to Our Table",
         text: "Discover our menu, reserve your table, and experience a culinary journey like no other.",
         cta: "View Menu",
+        image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&h=400&fit=crop",
         style: { backgroundColor: "#1a1a2e", color: "#f8f9fa", titleSize: "56px" }
+      },
+      {
+        kind: "mission",
+        title: "Our Philosophy",
+        text: "From farm to table, every dish is crafted with passion and the finest ingredients."
       },
       {
         kind: "features",
         title: "Our Specialties",
-        text: "From farm to table, every dish is crafted with passion and the finest ingredients.",
+        text: "What makes us unique.",
         items: ["Fresh ingredients", "Seasonal menu", "Chef's specials", "Wine pairings"]
       },
       {
         kind: "services",
         title: "Dining Experiences",
         text: "Whether it's a romantic dinner or a family gathering, we have the perfect setting.",
-        items: ["Private dining", "Catering", "Outdoor seating", "Takeaway"]
+        items: [
+          "🍽️ Private Dining|Exclusive dining rooms for special occasions.",
+          "🥂 Catering|Full-service catering for events of any size.",
+          "🌿 Outdoor Seating|Enjoy your meal in our beautiful garden."
+        ]
       },
       {
         kind: "testimonial",
         title: "What Our Guests Say",
-        text: "We take pride in delivering unforgettable dining experiences."
+        text: "We take pride in delivering unforgettable dining experiences.",
+        items: [
+          "★★★★★|Best dining experience in town.|Sarah T.",
+          "★★★★★|Incredible food and amazing atmosphere.|John D.",
+          "★★★★★|The service was impeccable.|Maria R."
+        ]
+      },
+      {
+        kind: "stats",
+        title: "Our Story in Numbers",
+        text: "Serving excellence every day.",
+        items: [
+          "20+|Years of Excellence",
+          "500+|Happy Guests Daily",
+          "50+|Award-Winning Dishes",
+          "100%|Guest Satisfaction"
+        ]
       },
       {
         kind: "cta",
@@ -175,9 +254,9 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "FinCapital",
-        text: "© 2026 Gourmet Restaurant.",
-        items: ["Privacy", "Terms", "Contact"],
+        title: "Gourmet",
+        text: "Creating memorable dining experiences since 2006.",
+        items: ["About|Menu|Reservations|Contact", "Instagram|Facebook|Twitter|YouTube"],
         style: { backgroundColor: "#1a1a2e" }
       }
     ]
@@ -191,7 +270,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "ShopVerse",
         text: "",
         cta: "Shop Now",
-        items: ["Home", "Products", "Deals", "Contact"],
+        items: ["Home", "Products", "Deals", "About", "Contact"],
         style: { backgroundColor: "#0f172a", color: "#ffffff" }
       },
       {
@@ -199,6 +278,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Shop the Latest Collection",
         text: "Discover premium products curated just for you. Fast shipping and secure checkout.",
         cta: "Shop Now",
+        image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=400&fit=crop",
         style: { backgroundColor: "#0f172a", color: "#ffffff", titleSize: "54px" }
       },
       {
@@ -211,12 +291,33 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         kind: "services",
         title: "Why Shop With Us",
         text: "We make online shopping easy, secure, and enjoyable.",
-        items: ["Fast shipping", "Secure checkout", "Easy returns", "24/7 support"]
+        items: [
+          "🚚 Fast Shipping|Free delivery on all orders over $50.",
+          "🔒 Secure Checkout|Your data is safe with us.",
+          "🔄 Easy Returns|Hassle-free returns within 30 days.",
+          "💬 24/7 Support|We're here to help anytime."
+        ]
       },
       {
         kind: "testimonial",
         title: "What Our Customers Say",
-        text: "Join thousands of satisfied customers who love our products."
+        text: "Join thousands of satisfied customers who love our products.",
+        items: [
+          "★★★★★|Amazing quality and fast shipping.|Alex K.",
+          "★★★★★|My go-to online store for everything.|Jamie L.",
+          "★★★★★|Excellent customer service.|Taylor M."
+        ]
+      },
+      {
+        kind: "stats",
+        title: "ShopVerse by the Numbers",
+        text: "Trusted by customers worldwide.",
+        items: [
+          "100K+|Happy Customers",
+          "50K+|Products Sold",
+          "30+|Countries",
+          "4.9★|Average Rating"
+        ]
       },
       {
         kind: "cta",
@@ -226,9 +327,9 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "FinCapital",
-        text: "© 2026 ShopVerse. All rights reserved.",
-        items: ["Privacy", "Terms", "Contact"],
+        title: "ShopVerse",
+        text: "Your one-stop shop for everything premium.",
+        items: ["About|Products|Deals|Contact", "Instagram|Facebook|Twitter|YouTube"],
         style: { backgroundColor: "#0f172a" }
       }
     ]
@@ -242,7 +343,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "EduFuture",
         text: "",
         cta: "Get Started",
-        items: ["Home", "Courses", "About", "Contact"],
+        items: ["Home", "Courses", "About", "Blog", "Contact"],
         style: { backgroundColor: "#ffffff", color: "#064e3b" }
       },
       {
@@ -250,6 +351,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Learn, Grow, Succeed",
         text: "Empowering minds through innovative education. Courses, resources, and expert guidance.",
         cta: "Explore Courses",
+        image: "https://images.unsplash.com/photo-1523050854058-8df90110c7f1?w=600&h=400&fit=crop",
         style: { backgroundColor: "#f0fdf4", color: "#064e3b", titleSize: "54px" }
       },
       {
@@ -267,7 +369,33 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         kind: "services",
         title: "Learning Resources",
         text: "We provide everything you need to succeed in your learning journey.",
-        items: ["Video tutorials", "Interactive exercises", "Expert mentors", "Community forums"]
+        items: [
+          "🎥 Video Tutorials|Learn at your own pace with expert-led videos.",
+          "📝 Interactive Exercises|Practice what you learn with hands-on exercises.",
+          "👨‍🏫 Expert Mentors|Get guidance from industry professionals.",
+          "💬 Community Forums|Connect with fellow learners worldwide."
+        ]
+      },
+      {
+        kind: "testimonial",
+        title: "What Our Students Say",
+        text: "Real stories from real learners.",
+        items: [
+          "★★★★★|EduFuture changed my career trajectory.|Maria G.",
+          "★★★★★|The best online learning platform.|James W.",
+          "★★★★★|Incredible instructors and community.|Priya S."
+        ]
+      },
+      {
+        kind: "stats",
+        title: "Our Impact",
+        text: "Transforming lives through education.",
+        items: [
+          "10K+|Students Enrolled",
+          "500+|Courses Available",
+          "150+|Expert Instructors",
+          "95%|Course Completion Rate"
+        ]
       },
       {
         kind: "cta",
@@ -277,9 +405,9 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "FinCapital",
-        text: "© 2026 EduFuture. All rights reserved.",
-        items: ["Privacy", "Terms", "Contact"],
+        title: "EduFuture",
+        text: "Empowering minds, transforming futures.",
+        items: ["About|Courses|Blog|Contact", "LinkedIn|Facebook|Twitter|YouTube"],
         style: { backgroundColor: "#064e3b" }
       }
     ]
@@ -293,7 +421,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Creative Studio",
         text: "",
         cta: "Get in Touch",
-        items: ["Home", "Work", "About", "Contact"],
+        items: ["Home", "Projects", "Skills", "About", "Contact"],
         style: { backgroundColor: "#ffffff", color: "#0f172a" }
       },
       {
@@ -301,6 +429,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Creative Vision, Bold Execution",
         text: "A curated showcase of projects, designs, and ideas that define excellence.",
         cta: "View Portfolio",
+        image: "https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=600&h=400&fit=crop",
         style: { backgroundColor: "#fefce8", color: "#0f172a", titleSize: "56px" }
       },
       {
@@ -318,12 +447,33 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         kind: "services",
         title: "What I Do",
         text: "I create visual experiences that connect brands with their audience.",
-        items: ["UI/UX design", "Graphic design", "Creative direction", "Digital art"]
+        items: [
+          "🎨 UI/UX Design|User-centered design for web and mobile.",
+          "🖌️ Graphic Design|Bold visuals that tell your story.",
+          "📸 Photography|Professional photography for brands.",
+          "✏️ Digital Art|Creative illustrations and digital artwork."
+        ]
       },
       {
         kind: "testimonial",
         title: "What Clients Say",
-        text: "Working with clients who trust my vision is what drives me forward."
+        text: "Working with clients who trust my vision is what drives me forward.",
+        items: [
+          "★★★★★|An exceptional creative partner.|Client A.",
+          "★★★★★|Brought our brand vision to life.|Client B.",
+          "★★★★★|Incredible attention to detail.|Client C."
+        ]
+      },
+      {
+        kind: "stats",
+        title: "My Journey",
+        text: "Creating impact through design.",
+        items: [
+          "100+|Projects Delivered",
+          "50+|Happy Clients",
+          "10+|Awards Won",
+          "8+|Years of Experience"
+        ]
       },
       {
         kind: "cta",
@@ -333,9 +483,9 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "FinCapital",
-        text: "© 2026 Creative Studio.",
-        items: ["Privacy", "Terms", "Contact"],
+        title: "Creative Studio",
+        text: "Designing the future, one project at a time.",
+        items: ["About|Projects|Contact|Blog", "Instagram|Dribbble|Behance|LinkedIn"],
         style: { backgroundColor: "#0f172a" }
       }
     ]
@@ -349,7 +499,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "AgencyX",
         text: "",
         cta: "Start a Project",
-        items: ["Home", "Services", "Work", "Contact"],
+        items: ["Home", "Services", "Work", "About", "Contact"],
         style: { backgroundColor: "#1e1b4b", color: "#ffffff" }
       },
       {
@@ -357,6 +507,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "We Build Brands That Matter",
         text: "A full-service creative agency crafting digital experiences, strategies, and campaigns.",
         cta: "Start a Project",
+        image: "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&h=400&fit=crop",
         style: { backgroundColor: "#1e1b4b", color: "#ffffff", titleSize: "56px" }
       },
       {
@@ -374,12 +525,33 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         kind: "services",
         title: "How We Work",
         text: "We combine creativity with strategy to deliver results that matter.",
-        items: ["Discovery", "Strategy", "Design", "Launch"]
+        items: [
+          "🔍 Discovery|Understanding your goals and audience.",
+          "📐 Strategy|Data-driven planning for success.",
+          "🎨 Design|Creative solutions that stand out.",
+          "🚀 Launch|Execution and ongoing optimization."
+        ]
       },
       {
         kind: "testimonial",
         title: "Client Success Stories",
-        text: "We've helped hundreds of brands achieve their goals and grow their business."
+        text: "We've helped hundreds of brands achieve their goals and grow their business.",
+        items: [
+          "★★★★★|AgencyX transformed our brand.|CEO, TechStart",
+          "★★★★★|Incredible results and creative thinking.|CMO, RetailCo",
+          "★★★★★|The best agency we've ever worked with.|Founder, HealthPlus"
+        ]
+      },
+      {
+        kind: "stats",
+        title: "Our Impact",
+        text: "Delivering results that speak for themselves.",
+        items: [
+          "200+|Clients Served",
+          "500+|Projects Completed",
+          "30+|Countries",
+          "98%|Client Retention Rate"
+        ]
       },
       {
         kind: "cta",
@@ -389,9 +561,9 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "FinCapital",
-        text: "© 2026 AgencyX. All rights reserved.",
-        items: ["Privacy", "Terms", "Contact"],
+        title: "AgencyX",
+        text: "Building brands that matter, together.",
+        items: ["About|Services|Work|Contact", "LinkedIn|Instagram|Twitter|YouTube"],
         style: { backgroundColor: "#1e1b4b" }
       }
     ]
@@ -405,7 +577,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "ConsultPro",
         text: "",
         cta: "Get in Touch",
-        items: ["Home", "Expertise", "About", "Contact"],
+        items: ["Home", "Expertise", "About", "Insights", "Contact"],
         style: { backgroundColor: "#0c4a6e", color: "#ffffff" }
       },
       {
@@ -413,6 +585,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Strategic Solutions for Complex Challenges",
         text: "We partner with leaders to drive transformation, optimize operations, and achieve sustainable growth.",
         cta: "Get in Touch",
+        image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=400&fit=crop",
         style: { backgroundColor: "#0c4a6e", color: "#ffffff", titleSize: "52px" }
       },
       {
@@ -430,12 +603,33 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         kind: "services",
         title: "How We Help",
         text: "From assessment to execution, we guide you every step of the way.",
-        items: ["Assessment", "Strategy", "Implementation", "Optimization"]
+        items: [
+          "📊 Assessment|Deep analysis of your current state.",
+          "🎯 Strategy|Clear, actionable roadmaps for success.",
+          "⚙️ Implementation|Expert execution and change management.",
+          "📈 Optimization|Continuous improvement and scaling."
+        ]
       },
       {
         kind: "testimonial",
         title: "What Our Clients Say",
-        text: "We're proud to partner with organizations that are shaping the future."
+        text: "We're proud to partner with organizations that are shaping the future.",
+        items: [
+          "★★★★★|ConsultPro delivered exceptional value.|CEO, GlobalCorp",
+          "★★★★★|Transformed our operations completely.|COO, TechLeader",
+          "★★★★★|Incredible expertise and professionalism.|Director, HealthOrg"
+        ]
+      },
+      {
+        kind: "stats",
+        title: "Our Track Record",
+        text: "Measurable impact, lasting results.",
+        items: [
+          "300+|Clients Served",
+          "1000+|Projects Delivered",
+          "40+|Industries",
+          "95%|Client Satisfaction"
+        ]
       },
       {
         kind: "cta",
@@ -445,9 +639,9 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "FinCapital",
-        text: "© 2026 ConsultPro. All rights reserved.",
-        items: ["Privacy", "Terms", "Contact"],
+        title: "ConsultPro",
+        text: "Strategic solutions for a complex world.",
+        items: ["About|Expertise|Insights|Contact", "LinkedIn|Twitter|YouTube|Instagram"],
         style: { backgroundColor: "#0c4a6e" }
       }
     ]
@@ -461,7 +655,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "TechNova",
         text: "",
         cta: "Contact Us",
-        items: ["Home", "Solutions", "About", "Contact"],
+        items: ["Home", "Solutions", "About", "Resources", "Contact"],
         style: { backgroundColor: "#020617", color: "#ffffff" }
       },
       {
@@ -469,6 +663,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Innovating the Future",
         text: "Building next-generation solutions in AI, cloud, and software development.",
         cta: "See Our Work",
+        image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&h=400&fit=crop",
         style: { backgroundColor: "#020617", color: "#ffffff", titleSize: "56px" }
       },
       {
@@ -486,12 +681,33 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         kind: "services",
         title: "What We Build",
         text: "We create solutions that are scalable, secure, and built for the future.",
-        items: ["AI platforms", "Cloud services", "Custom software", "DevOps tools"]
+        items: [
+          "🤖 AI Platforms|Intelligent solutions for complex problems.",
+          "☁️ Cloud Services|Scalable infrastructure and cloud migration.",
+          "📱 Custom Software|Tailored solutions for your business needs.",
+          "🔧 DevOps Tools|Streamlined development and deployment."
+        ]
       },
       {
         kind: "testimonial",
         title: "Trusted by Innovators",
-        text: "We work with companies that are pushing the boundaries of what's possible."
+        text: "We work with companies that are pushing the boundaries of what's possible.",
+        items: [
+          "★★★★★|TechNova is a true innovation partner.|CTO, AIStart",
+          "★★★★★|Their solutions are game-changing.|VP, CloudCo",
+          "★★★★★|A team of brilliant engineers.|Founder, DataInsight"
+        ]
+      },
+      {
+        kind: "stats",
+        title: "Our Impact",
+        text: "Technology that makes a difference.",
+        items: [
+          "1000+|Projects Deployed",
+          "500+|Enterprise Clients",
+          "40+|Countries",
+          "99.9%|Uptime Guaranteed"
+        ]
       },
       {
         kind: "cta",
@@ -501,9 +717,9 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "FinCapital",
-        text: "© 2026 TechNova. All rights reserved.",
-        items: ["Privacy", "Terms", "Contact"],
+        title: "TechNova",
+        text: "Building the future, one solution at a time.",
+        items: ["About|Solutions|Resources|Contact", "LinkedIn|Twitter|GitHub|YouTube"],
         style: { backgroundColor: "#020617" }
       }
     ]
@@ -517,14 +733,15 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "CorpGlobal",
         text: "",
         cta: "About Us",
-        items: ["Home", "About", "Services", "Contact"],
+        items: ["Home", "About", "Services", "Sustainability", "Contact"],
         style: { backgroundColor: "#ffffff", color: "#0f172a" }
       },
       {
         kind: "hero",
-        title: "FinCapital",
-        text: "",
+        title: "Corporate Website",
+        text: "A modern corporate platform built for clarity, impact, and growth.",
         cta: "Get Started",
+        image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop",
         style: { backgroundColor: "#f8fafc", color: "#0f172a", titleSize: "48px" }
       },
       {
@@ -539,6 +756,17 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         items: ["Excellence", "Integrity", "Innovation", "Sustainability"]
       },
       {
+        kind: "stats",
+        title: "Our Impact",
+        text: "Making a difference where it matters.",
+        items: [
+          "20+|Years of Excellence",
+          "100+|Global Partners",
+          "50+|Industry Awards",
+          "100%|Commitment to Quality"
+        ]
+      },
+      {
         kind: "cta",
         title: "Partner With Us",
         text: "Let's work together to build something meaningful.",
@@ -546,9 +774,9 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "FinCapital",
-        text: "© 2026 CorpGlobal. All rights reserved.",
-        items: ["Privacy", "Terms", "Contact"],
+        title: "CorpGlobal",
+        text: "Building a better tomorrow, today.",
+        items: ["About|Services|Sustainability|Contact", "LinkedIn|Twitter|YouTube|Instagram"],
         style: { backgroundColor: "#0f172a" }
       }
     ]

@@ -32,6 +32,7 @@ const titleBlock = (text: string, style: Record<string, any> = {}): PageBlock =>
   },
   children: []
 });
+
 const flexItemBlock = (children: PageBlock[]): PageBlock => ({
   id: makeId("flex-item"),
   type: "flexItem",
@@ -92,6 +93,22 @@ const buttonBlock = (label: string): PageBlock => ({
   children: []
 });
 
+const imageBlock = (src: string, alt: string = "Hero image"): PageBlock => ({
+  id: makeId("image"),
+  type: "image",
+  data: {
+    props: { src, alt },
+    style: responsiveStyle({
+      width: "100%",
+      maxWidth: "600px",
+      height: "auto",
+      borderRadius: "12px",
+      boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
+    })
+  },
+  children: []
+});
+
 const sectionBlock = (
   children: PageBlock[],
   style: Record<string, any> = {}
@@ -111,7 +128,6 @@ const sectionBlock = (
   ]
 });
 
-
 const gridItemBlock = (children: PageBlock[]): PageBlock => ({
   id: makeId("grid-item"),
   type: "gridItem",
@@ -121,6 +137,7 @@ const gridItemBlock = (children: PageBlock[]): PageBlock => ({
   },
   children
 });
+
 // ============================================
 // FEATURE CARD HELPER
 // ============================================
@@ -148,8 +165,9 @@ const featureCard = (text: string): PageBlock => ({
   children: []
 });
 
-
-// ai.builder.ts - buildNavbar amélioré
+// ============================================
+// NAVBAR BUILDER
+// ============================================
 
 const buildNavbar = (config: SectionConfig): PageBlock => {
   const id = makeId("navbar");
@@ -186,7 +204,6 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
       })
     },
     children: [
-      // ===== LOGO (plus grand w plus visible) =====
       {
         id: makeId("navbar-logo-item"),
         type: "flexItem",
@@ -222,8 +239,6 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
           }
         ]
       },
-
-      // ===== LINKS (centre w plus visibles) =====
       {
         id: makeId("navbar-links-item"),
         type: "flexItem",
@@ -233,7 +248,7 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
             flex: "1 1 auto",
             minWidth: 0,
             display: "flex",
-            justifyContent: "center" // N7otou centre
+            justifyContent: "center"
           })
         },
         children: [
@@ -274,8 +289,8 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
                     style: responsiveStyle({
                       textDecoration: "none",
                       color: color,
-                      fontSize: "15px", // Nkbernah mel 14px l 15px
-                      fontWeight: "700", // Nzidou bold
+                      fontSize: "15px",
+                      fontWeight: "700",
                       whiteSpace: "nowrap",
                       transition: "color 0.2s ease"
                     })
@@ -287,8 +302,6 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
           }
         ]
       },
-
-      // ===== CTA BUTTON =====
       ...(config.cta
         ? [
             {
@@ -330,42 +343,148 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
     ]
   };
 };
+
 // ============================================
-// SECTION BUILDERS (KIND B KIND)
+// HERO BUILDER (b Image Block + Flex)
 // ============================================
 
 const buildHero = (config: SectionConfig): PageBlock => {
-  const bgColor = config.style?.backgroundColor || "#ffffff";
+  const bgColor = config.style?.backgroundColor || "#f8fafc";
   const color = config.style?.color || "#0f172a";
   const titleSize = config.style?.titleSize || "48px";
+  
+  const imageUrl = config.image || "https://via.placeholder.com/600x400/2563eb/ffffff?text=Hero+Image";
 
-  return sectionBlock(
-    [
-      titleBlock(config.title, {
-        fontSize: titleSize,
-        color
-      }),
-     ...(config.text?.trim()
-  ? [
-      textBlock(config.text, {
-        color
+  // Left: Content, Right: Image
+  const heroRow: PageBlock = {
+    id: makeId("hero-row"),
+    type: "flex",
+    data: {
+      props: {},
+      style: responsiveStyle({
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "48px",
+        maxWidth: "1200px",
+        width: "100%",
+        margin: "0 auto",
+        flexWrap: "wrap"
       })
+    },
+    children: [
+      // Left side - Content
+      {
+        id: makeId("hero-content"),
+        type: "flexItem",
+        data: {
+          props: {},
+          style: responsiveStyle({
+            flex: "1 1 45%",
+            minWidth: "300px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            gap: "16px"
+          })
+        },
+        children: [
+          {
+            id: makeId("hero-title"),
+            type: "title",
+            data: {
+              props: { content: config.title, text: config.title },
+              style: responsiveStyle({
+                fontSize: titleSize,
+                fontWeight: "800",
+                color: color,
+                textAlign: "left",
+                marginBottom: "0"
+              })
+            },
+            children: []
+          },
+          ...(config.text?.trim() ? [
+            {
+              id: makeId("hero-text"),
+              type: "text",
+              data: {
+                props: { text: config.text },
+                style: responsiveStyle({
+                  fontSize: "20px",
+                  color: "#64748b",
+                  textAlign: "left",
+                  marginBottom: "0"
+                })
+              },
+              children: []
+            }
+          ] : []),
+          ...(config.cta ? [
+            {
+              id: makeId("hero-button"),
+              type: "button",
+              data: {
+                props: { label: config.cta },
+                style: responsiveStyle({
+                  display: "inline-block",
+                  margin: "0",
+                  padding: "12px 32px",
+                  backgroundColor: "#2563eb",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  cursor: "pointer"
+                })
+              },
+              children: []
+            }
+          ] : [])
+        ]
+      },
+      // Right side - Image
+      {
+        id: makeId("hero-image-item"),
+        type: "flexItem",
+        data: {
+          props: {},
+          style: responsiveStyle({
+            flex: "1 1 45%",
+            minWidth: "300px"
+          })
+        },
+        children: [
+          imageBlock(imageUrl, "Hero image")
+        ]
+      }
     ]
-  : []),
-      ...(config.cta ? [buttonBlock(config.cta)] : [])
-    ],
-    {
-      backgroundColor: bgColor,
-      color,
-      padding: "80px 40px",
-      minHeight: "60vh",
-      display: "flex",
-      flexDirection: "column",
-      justifyContent: "center",
-      alignItems: "center"
-    }
-  );
+  };
+
+  return {
+    id: makeId("hero-section"),
+    type: "section",
+    data: {
+      props: {},
+      style: responsiveStyle({
+        backgroundColor: bgColor,
+        padding: "80px 40px",
+        minHeight: "60vh",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center"
+      })
+    },
+    children: [heroRow]
+  };
 };
+
+// ============================================
+// MISSION BUILDER
+// ============================================
 
 const buildMission = (config: SectionConfig): PageBlock => {
   return sectionBlock(
@@ -388,16 +507,19 @@ const buildMission = (config: SectionConfig): PageBlock => {
   );
 };
 
+// ============================================
+// FEATURES BUILDER
+// ============================================
+
 const buildFeatures = (config: SectionConfig): PageBlock => {
   const items = config.items || [];
   
- const featureBlocks: PageBlock[] = items.map((item) =>
-  gridItemBlock([
-    featureCard(item)
-  ])
-);
+  const featureBlocks: PageBlock[] = items.map((item) =>
+    gridItemBlock([
+      featureCard(item)
+    ])
+  );
 
-  // N7ot l features f container wahid
   const featuresContainer: PageBlock = {
     id: makeId("features-grid"),
     type: "grid",
@@ -435,31 +557,70 @@ const buildFeatures = (config: SectionConfig): PageBlock => {
   );
 };
 
+// ============================================
+// SERVICES BUILDER (FIXED - Canonical Tree)
+// ============================================
+
 const buildServices = (config: SectionConfig): PageBlock => {
   const items = config.items || [];
- const serviceBlocks: PageBlock[] = items.map((item) =>
-  gridItemBlock([
-    {
-      id: makeId("service"),
-      type: "text",
-      data: {
-        props: { text: item },
-        style: responsiveStyle({
-          padding: "32px",
-          minHeight: "120px",
-          border: "1px solid #e5e7eb",
-          borderRadius: "8px",
-          backgroundColor: "#f9fafb",
-          textAlign: "center",
-          fontSize: "18px",
-          fontWeight: "500",
-          transition: "all 0.3s ease"
-        })
+  
+  const serviceBlocks: PageBlock[] = items.map((item) => {
+    const parts = item.split('|');
+    const iconTitle = parts[0] || item;
+    const description = parts[1] || '';
+    
+    const iconMatch = iconTitle.match(/^([\u{1F000}-\u{1FFFF}]|[\u2600-\u27BF]|[\u{2700}-\u{27BF}])\s*(.+)/u);
+    const icon = iconMatch ? iconMatch[1] : '📌';
+    const title = iconMatch ? iconMatch[2] : iconTitle;
+    
+    // Service Card Content
+    const cardContent: PageBlock = flexBlock([
+      {
+        id: makeId("service-icon"),
+        type: "text",
+        data: {
+          props: { text: icon },
+          style: responsiveStyle({
+            fontSize: "40px",
+            textAlign: "center",
+            marginBottom: "8px"
+          })
+        },
+        children: []
       },
-      children: []
-    }
-  ])
-);
+      {
+        id: makeId("service-title"),
+        type: "text",
+        data: {
+          props: { text: title },
+          style: responsiveStyle({
+            fontSize: "18px",
+            fontWeight: "700",
+            textAlign: "center",
+            marginBottom: "8px",
+            color: "#0f172a"
+          })
+        },
+        children: []
+      },
+      {
+        id: makeId("service-desc"),
+        type: "text",
+        data: {
+          props: { text: description },
+          style: responsiveStyle({
+            fontSize: "14px",
+            textAlign: "center",
+            color: "#64748b",
+            lineHeight: "1.5"
+          })
+        },
+        children: []
+      }
+    ]);
+    
+    return gridItemBlock([cardContent]);
+  });
 
   const servicesContainer: PageBlock = {
     id: makeId("services-grid"),
@@ -468,8 +629,8 @@ const buildServices = (config: SectionConfig): PageBlock => {
       props: {},
       style: responsiveStyle({
         display: "grid",
-        gridTemplateColumns: "1fr 1fr 1fr",
-        gap: "20px",
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gap: "24px",
         maxWidth: "1000px",
         margin: "0 auto",
         padding: "20px"
@@ -498,7 +659,107 @@ const buildServices = (config: SectionConfig): PageBlock => {
   );
 };
 
+// ============================================
+// TESTIMONIAL BUILDER (FIXED - Canonical Tree)
+// ============================================
+
 const buildTestimonial = (config: SectionConfig): PageBlock => {
+  const items = config.items || [];
+  
+  if (items.length > 0) {
+    const testimonialBlocks: PageBlock[] = items.map((item) => {
+      const parts = item.split('|');
+      const stars = parts[0] || '★★★★★';
+      const quote = parts[1] || item;
+      const author = parts[2] || 'Client';
+      
+      const cardContent = flexBlock([
+        {
+          id: makeId("testimonial-stars"),
+          type: "text",
+          data: {
+            props: { text: stars },
+            style: responsiveStyle({
+              fontSize: "24px",
+              textAlign: "center",
+              color: "#f59e0b",
+              marginBottom: "8px"
+            })
+          },
+          children: []
+        },
+        {
+          id: makeId("testimonial-quote"),
+          type: "text",
+          data: {
+            props: { text: `"${quote}"` },
+            style: responsiveStyle({
+              fontSize: "16px",
+              textAlign: "center",
+              color: "#0f172a",
+              fontStyle: "italic",
+              marginBottom: "8px",
+              lineHeight: "1.6"
+            })
+          },
+          children: []
+        },
+        {
+          id: makeId("testimonial-author"),
+          type: "text",
+          data: {
+            props: { text: `— ${author}` },
+            style: responsiveStyle({
+              fontSize: "14px",
+              textAlign: "center",
+              fontWeight: "600",
+              color: "#64748b"
+            })
+          },
+          children: []
+        }
+      ]);
+      
+      return gridItemBlock([cardContent]);
+    });
+    
+    const testimonialContainer: PageBlock = {
+      id: makeId("testimonial-grid"),
+      type: "grid",
+      data: {
+        props: {},
+        style: responsiveStyle({
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: "24px",
+          maxWidth: "1000px",
+          margin: "0 auto",
+          padding: "20px"
+        })
+      },
+      children: testimonialBlocks
+    };
+    
+    return sectionBlock(
+      [
+        titleBlock(config.title, {
+          fontSize: "38px",
+          marginBottom: "16px"
+        }),
+        textBlock(config.text, {
+          fontSize: "18px",
+          marginBottom: "40px"
+        }),
+        testimonialContainer
+      ],
+      {
+        backgroundColor: config.style?.backgroundColor || "#f0f9ff",
+        padding: "80px 40px",
+        textAlign: "center"
+      }
+    );
+  }
+  
   return sectionBlock(
     [
       titleBlock(config.title, {
@@ -525,6 +786,94 @@ const buildTestimonial = (config: SectionConfig): PageBlock => {
     }
   );
 };
+
+// ============================================
+// STATS BUILDER (FIXED - Canonical Tree)
+// ============================================
+
+const buildStats = (config: SectionConfig): PageBlock => {
+  const items = config.items || [];
+  
+  const statBlocks: PageBlock[] = items.map((item) => {
+    const parts = item.split('|');
+    const number = parts[0] || item;
+    const label = parts[1] || '';
+    
+    const cardContent = flexBlock([
+      {
+        id: makeId("stat-number"),
+        type: "text",
+        data: {
+          props: { text: number },
+          style: responsiveStyle({
+            fontSize: "42px",
+            fontWeight: "800",
+            textAlign: "center",
+            color: "#2563eb",
+            marginBottom: "4px"
+          })
+        },
+        children: []
+      },
+      {
+        id: makeId("stat-label"),
+        type: "text",
+        data: {
+          props: { text: label },
+          style: responsiveStyle({
+            fontSize: "16px",
+            textAlign: "center",
+            color: "#64748b",
+            fontWeight: "500"
+          })
+        },
+        children: []
+      }
+    ]);
+    
+    return gridItemBlock([cardContent]);
+  });
+  
+  const statsContainer: PageBlock = {
+    id: makeId("stats-grid"),
+    type: "grid",
+    data: {
+      props: {},
+      style: responsiveStyle({
+        display: "grid",
+        gridTemplateColumns: "repeat(4, 1fr)",
+        gap: "32px",
+        maxWidth: "900px",
+        margin: "0 auto",
+        padding: "20px"
+      })
+    },
+    children: statBlocks
+  };
+  
+  return sectionBlock(
+    [
+      titleBlock(config.title, {
+        fontSize: "38px",
+        marginBottom: "16px"
+      }),
+      textBlock(config.text, {
+        fontSize: "18px",
+        marginBottom: "40px"
+      }),
+      statsContainer
+    ],
+    {
+      backgroundColor: config.style?.backgroundColor || "#ffffff",
+      padding: "80px 40px",
+      textAlign: "center"
+    }
+  );
+};
+
+// ============================================
+// CTA BUILDER
+// ============================================
 
 const buildCTA = (config: SectionConfig): PageBlock => {
   const bgColor = config.style?.backgroundColor || "#0f172a";
@@ -558,13 +907,23 @@ const buildCTA = (config: SectionConfig): PageBlock => {
   );
 };
 
+// ============================================
+// FOOTER BUILDER (5 Colonnes - b Social)
+// ============================================
+
 const buildFooter = (config: SectionConfig): PageBlock => {
   const bgColor = config.style?.backgroundColor || "#0f172a";
   const color = config.style?.color || "#ffffff";
   
   const brandName = config.title || "Brand";
   
-  const footerLinks = config.items || ["About", "Services", "Contact", "Privacy"];
+  // Parse items: first part = links, second part = social
+  const items = config.items || [];
+  const linksStr = items[0] || "About|Services|Contact|Privacy";
+  const socialStr = items[1] || "LinkedIn|Facebook|Instagram|Twitter";
+  
+  const footerLinks = linksStr.split('|');
+  const socialLinks = socialStr.split('|');
   
   const columns = [
     {
@@ -575,7 +934,7 @@ const buildFooter = (config: SectionConfig): PageBlock => {
     },
     {
       title: "Company",
-      items: ["About Us", "Our Team", "Careers", "Blog"]
+      items: footerLinks
     },
     {
       title: "Resources",
@@ -584,17 +943,15 @@ const buildFooter = (config: SectionConfig): PageBlock => {
     {
       title: "Contact",
       items: ["contact@example.com", "+216 XX XXX XXX", "Tunis, Tunisia"]
+    },
+    {
+      title: "Follow Us",
+      items: socialLinks.map(s => `🔗 ${s}`)
     }
   ];
 
-  if (footerLinks.length > 0) {
-    columns[1].items = footerLinks;
-  }
-
-  // Build grid children
   const gridChildren: PageBlock[] = columns.map((col) => {
     const itemBlocks: PageBlock[] = [
-      // Title mte3 colonne
       {
         id: makeId("footer-col-title"),
         type: "text",
@@ -610,7 +967,6 @@ const buildFooter = (config: SectionConfig): PageBlock => {
         },
         children: []
       },
-      // Items mte3 colonne (links)
       ...col.items.map((item) => ({
         id: makeId("footer-col-item"),
         type: "link",
@@ -633,7 +989,6 @@ const buildFooter = (config: SectionConfig): PageBlock => {
     return gridItemBlock(itemBlocks);
   });
 
-  // Grid container
   const footerGrid: PageBlock = {
     id: makeId("footer-grid"),
     type: "grid",
@@ -641,7 +996,7 @@ const buildFooter = (config: SectionConfig): PageBlock => {
       props: {},
       style: responsiveStyle({
         display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
+        gridTemplateColumns: "repeat(5, 1fr)",
         gap: "32px",
         maxWidth: "1200px",
         margin: "0 auto",
@@ -652,45 +1007,43 @@ const buildFooter = (config: SectionConfig): PageBlock => {
     children: gridChildren
   };
 
-  // Copyright
   const copyrightText = `© ${new Date().getFullYear()} ${brandName}. All rights reserved.`;
 
-  // Footer final
- return {
-  id: makeId("footer-section"),
-  type: "section",
-  data: {
-    props: {},
-    style: responsiveStyle({
-      backgroundColor: bgColor,
-      borderTop: "1px solid #1e293b",
-      padding: "60px 40px 40px 40px"
-    })
-  },
-  children: [
-    flexBlock([
-      flexItemBlock([footerGrid]),
-      flexItemBlock([
-        {
-          id: makeId("footer-copyright"),
-          type: "text",
-          data: {
-            props: { text: copyrightText },
-            style: responsiveStyle({
-              fontSize: "13px",
-              color: "#64748b",
-              textAlign: "center",
-              maxWidth: "1200px",
-              margin: "0 auto",
-              padding: "0 20px"
-            })
-          },
-          children: []
-        }
+  return {
+    id: makeId("footer-section"),
+    type: "section",
+    data: {
+      props: {},
+      style: responsiveStyle({
+        backgroundColor: bgColor,
+        borderTop: "1px solid #1e293b",
+        padding: "60px 40px 40px 40px"
+      })
+    },
+    children: [
+      flexBlock([
+        flexItemBlock([footerGrid]),
+        flexItemBlock([
+          {
+            id: makeId("footer-copyright"),
+            type: "text",
+            data: {
+              props: { text: copyrightText },
+              style: responsiveStyle({
+                fontSize: "13px",
+                color: "#64748b",
+                textAlign: "center",
+                maxWidth: "1200px",
+                margin: "0 auto",
+                padding: "0 20px"
+              })
+            },
+            children: []
+          }
+        ])
       ])
-    ])
-  ]
-};
+    ]
+  };
 };
 
 // ============================================
@@ -702,7 +1055,7 @@ export function buildSectionFromConfig(
 ): PageBlock {
   switch (config.kind) {
     case "navbar":
-  return buildNavbar(config);
+      return buildNavbar(config);
     case "hero":
       return buildHero(config);
     case "mission":
@@ -713,6 +1066,8 @@ export function buildSectionFromConfig(
       return buildServices(config);
     case "testimonial":
       return buildTestimonial(config);
+    case "stats":
+      return buildStats(config);
     case "cta":
       return buildCTA(config);
     case "footer":
@@ -733,9 +1088,7 @@ export function buildPageFromTemplate(
 ): PageBlock[] {
   const pageTitle = title || template.defaultTitle;
   
-  // Nbadloulha title mte3 hero section ken mafihach
-  const sections = template.sections.map((section, index) => {
-    // Ki tkoun hero w title fargh, n7otou pageTitle
+  const sections = template.sections.map((section) => {
     if (section.kind === "hero" && !section.title) {
       return {
         ...section,
@@ -749,6 +1102,9 @@ export function buildPageFromTemplate(
   return sections.map((section) => buildSectionFromConfig(section));
 }
 
+// ============================================
+// GENERATE TEMPLATE
+// ============================================
 
 export function generateTemplate(
   category: string,
@@ -777,6 +1133,7 @@ export {
   buildFeatures,
   buildServices,
   buildTestimonial,
+  buildStats,
   buildCTA,
   buildFooter,
   featureCard

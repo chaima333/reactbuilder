@@ -26,7 +26,10 @@ export const fetchStats = async (
 
   if (cached) {
 
-    return JSON.parse(cached);
+    return {
+      ...JSON.parse(cached),
+      siteId,
+    };
   }
 
   /**
@@ -107,6 +110,8 @@ export const fetchStats = async (
    */
 
   const result = {
+
+    siteId,
 
     siteName:
       site?.name || "Unknown",

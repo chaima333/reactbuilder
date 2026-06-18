@@ -42,7 +42,7 @@ export const rebuildDashboardProjection = async (siteId: number) => {
       meta: {
     siteId: siteId,
     generatedAt: Date.now(),
-    schemaVersion: 1, // حاسمة جداً للـ Migrations مستقبلاً
+    schemaVersion: 2,
     cacheTTL: 3600,    // ساعة (سجلناها كمعلومة باش الـ Frontend يعرف وقتاش الداتا تموت)
     provider: "redis-stable" 
   }
