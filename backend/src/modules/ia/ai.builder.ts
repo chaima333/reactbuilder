@@ -357,7 +357,10 @@ const buildHero = (config: SectionConfig): PageBlock => {
   const color = config.style?.color || "#0f172a";
   const titleSize = config.style?.titleSize || "48px";
   
-  const imageUrl = config.image || "https://via.placeholder.com/600x400/2563eb/ffffff?text=Hero+Image";
+  const imageUrl =
+  config.resolvedImage ||
+  config.image ||
+  "https://via.placeholder.com/600x400/2563eb/ffffff?text=Hero+Image";
 
   // Left: Content, Right: Image
   const heroRow: PageBlock = {
@@ -1088,18 +1091,21 @@ export function buildSectionFromConfig(
 export function buildPageFromTemplate(
   template: TemplateConfig,
   prompt: string,
-  title?: string
+  title?: string,
+  heroImageUrl?: string
 ): PageBlock[] {
   const pageTitle = title || template.defaultTitle;
-  
+
   const sections = template.sections.map((section) => {
-    if (section.kind === "hero" && !section.title) {
+    if (section.kind === "hero") {
       return {
         ...section,
-        title: pageTitle,
-        text: section.text || prompt
+        title: section.title || pageTitle,
+        text: section.text || prompt,
+        resolvedImage: heroImageUrl || section.image
       };
     }
+
     return section;
   });
 
@@ -1113,12 +1119,13 @@ export function buildPageFromTemplate(
 export function generateTemplate(
   category: string,
   prompt: string,
-  title?: string
+  title?: string,
+  heroImageUrl?: string
 ): GeneratedPage {
   const template =
     CATEGORY_TEMPLATES[category] ?? CATEGORY_TEMPLATES["Corporate"];
 
-  const blocks = buildPageFromTemplate(template, prompt, title);
+const blocks = buildPageFromTemplate(template, prompt, title, heroImageUrl);
 
   return {
     title: title ?? template.defaultTitle,

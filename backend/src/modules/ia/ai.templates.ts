@@ -18,6 +18,7 @@ export interface SectionConfig {
   cta?: string;
   items?: string[];
   image?: string;
+  resolvedImage?: string;
   style?: {
     backgroundColor?: string;
     color?: string;

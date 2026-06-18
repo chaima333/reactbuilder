@@ -1,6 +1,7 @@
 import { MediaService } from "../media/media.service";
 import { PageService } from "../pages/services/page.service";
 import { generateTemplate } from "./ai.builder";
+import { CATEGORY_TEMPLATES } from "./ai.templates";
 
 const ML_SERVICE_URL =
   process.env.ML_SERVICE_URL || "http://localhost:5000";
@@ -169,72 +170,78 @@ export class AiService {
     }
   }
 
-  static async generatePage(
-    siteId: number,
-    userId: number,
-    prompt: string,
-    title?: string
-  ) {
-    console.log("AI_SERVICE_VERSION", "CONFIG_BUILDER_V1");
+ static async generatePage(
+  siteId: number,
+  userId: number,
+  prompt: string,
+  title?: string
+) {
+  console.log("AI_SERVICE_VERSION", "CONFIG_BUILDER_V1");
 
-    if (!prompt?.trim()) {
-      throw new Error("PROMPT_REQUIRED");
+  if (!prompt?.trim()) {
+    throw new Error("PROMPT_REQUIRED");
+  }
+
+  const category = await this.predictCategory(prompt);
+
+  console.log("AI_CATEGORY_USED", category);
+
+  const template =
+    CATEGORY_TEMPLATES[category] ??
+    CATEGORY_TEMPLATES["Corporate"];
+
+  const heroSection =
+    template.sections.find(
+      (section) => section.kind === "hero"
+    );
+
+  let heroImageUrl: string | undefined;
+
+  if (heroSection?.image) {
+    try {
+      const media =
+        await MediaService.uploadImageFromUrl(
+          heroSection.image,
+          String(siteId),
+          String(userId),
+          `${category} hero image`
+        );
+
+      heroImageUrl = media.url;
+
+      console.log("AI_HERO_IMAGE_UPLOADED", heroImageUrl);
+    } catch (error) {
+      console.error("AI_IMAGE_UPLOAD_FAILED", error);
     }
+  }
 
-    const category = await this.predictCategory(prompt);
-    let heroImageUrl: string | undefined;
-
-try {
-  const tempGenerated = generateTemplate(category, prompt, title);
-  const heroBlock: any = tempGenerated.blocks.find(
-    (block: any) => block.type === "section"
+  const generated = generateTemplate(
+    category,
+    prompt,
+    title,
+    heroImageUrl
   );
 
-  const templateImage =
-    JSON.stringify(heroBlock).match(/https:\/\/images\.unsplash\.com[^"]+/)?.[0];
+  console.log("AI_GENERATED_TITLE", generated.title);
+  console.log(
+    "AI_GENERATED_BLOCKS_COUNT",
+    generated.blocks?.length || 0
+  );
 
-  if (templateImage) {
-    const media = await MediaService.uploadImageFromUrl(
-      templateImage,
-      String(siteId),
-      String(userId),
-      `${category} hero image`
-    );
+  const pageTitle =
+    title?.trim() ||
+    generated.title ||
+    `${category} Website`;
 
-    heroImageUrl = media.url;
-  }
-} catch (error) {
-  console.error("AI_IMAGE_UPLOAD_FAILED", error);
+  const result = await PageService.createPage(
+    siteId,
+    userId,
+    {
+      title: pageTitle,
+      blocks: generated.blocks
+    }
+  );
+
+  return result.data;
 }
-
-    console.log("AI_CATEGORY_USED", category);
-
-    const generated = generateTemplate(
-      category,
-      prompt,
-      title
-    );
-
-    console.log("AI_GENERATED_TITLE", generated.title);
-    console.log(
-      "AI_GENERATED_BLOCKS_COUNT",
-      generated.blocks?.length || 0
-    );
-
-   const pageTitle =
-  title?.trim() ||
-  generated.title ||
-  `${category} Website`;
-
-const result = await PageService.createPage(
-  siteId,
-  userId,
-  {
-    title: pageTitle,
-    blocks: generated.blocks
-  }
-);
-
-    return result.data;
-  }
 }
