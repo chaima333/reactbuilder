@@ -196,14 +196,19 @@ export class AiService {
       generated.blocks?.length || 0
     );
 
-    const result = await PageService.createPage(
-      siteId,
-      userId,
-      {
-        title: generated.title,
-        blocks: generated.blocks
-      }
-    );
+   const pageTitle =
+  title?.trim() ||
+  generated.title ||
+  `${category} Website`;
+
+const result = await PageService.createPage(
+  siteId,
+  userId,
+  {
+    title: pageTitle,
+    blocks: generated.blocks
+  }
+);
 
     return result.data;
   }

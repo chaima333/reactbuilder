@@ -33,8 +33,13 @@ export const generatePage = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Ki ykoun title mafihch, najem nkharjouh mel prompt (awel 50 caractère)
-    const generatedTitle = title || prompt.slice(0, 50).trim();
+const generatedTitle =
+  title?.trim() ||
+  prompt
+    .trim()
+    .split(/\s+/)
+    .slice(0, 6)
+    .join(" ");
 
     console.log("📝 GENERATING_PAGE", {
       siteId,
