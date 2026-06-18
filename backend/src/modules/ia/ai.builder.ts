@@ -672,22 +672,6 @@ const buildFooter = (config: SectionConfig): PageBlock => {
       flexItemBlock([footerGrid]),
       flexItemBlock([
         {
-          id: makeId("footer-separator"),
-          type: "text",
-          data: {
-            props: { text: " ", content: " " },
-            style: responsiveStyle({
-              borderTop: "1px solid #334155",
-              margin: "32px 20px 20px 20px",
-              padding: "0",
-              width: "100%"
-            })
-          },
-          children: []
-        }
-      ]),
-      flexItemBlock([
-        {
           id: makeId("footer-copyright"),
           type: "text",
           data: {
