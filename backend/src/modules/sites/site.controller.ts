@@ -3,6 +3,7 @@ import { Site, Page, SiteMember } from '../../models';
 import { AuthRequest } from '../../shared/auth.util';
 import { SiteService } from '../sites/site.service';
 import { Op } from "sequelize";
+import { EventDispatcher } from "../../core/plugins/event.dispatcher";
 
 // =========================
 // CREATE SITE
@@ -27,6 +28,18 @@ export const createSite = async (req: AuthRequest, res: Response) => {
   },
   req.user.role
 );
+
+    await EventDispatcher.dispatch(
+      "site.created",
+      {
+        data: site,
+        context: {
+          userId,
+          siteId: site.id
+        }
+      },
+      "site"
+    );
 
     return res.status(201).json({ success: true, data: site });
   } catch (error: any) {

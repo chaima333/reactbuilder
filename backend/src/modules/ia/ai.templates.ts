@@ -1,4 +1,7 @@
+// ai.templates.ts
+
 export type SectionKind =
+  | "navbar"
   | "hero"
   | "mission"
   | "features"
@@ -29,6 +32,14 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
   Medical: {
     defaultTitle: "Medical Appointment Platform",
     sections: [
+      {
+        kind: "navbar",
+        title: "MediCare",
+        text: "",
+        cta: "Book Appointment",
+        items: ["Home", "Doctors", "Services", "Contact"],
+        style: { backgroundColor: "#ffffff", color: "#0f172a" }
+      },
       {
         kind: "hero",
         title: "Book Trusted Medical Consultations Online",
@@ -63,6 +74,13 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Ready to modernize your clinic?",
         text: "Launch your digital appointment experience today.",
         cta: "Get Started"
+      },
+      {
+        kind: "footer",
+        title: "",
+        text: "© 2026 MediCare. All rights reserved.",
+        items: ["Privacy Policy", "Terms of Service", "Contact"],
+        style: { backgroundColor: "#0f172a" }
       }
     ]
   },
@@ -70,6 +88,14 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
   Finance: {
     defaultTitle: "Finance Advisory",
     sections: [
+      {
+        kind: "navbar",
+        title: "FinCapital",
+        text: "",
+        cta: "Request Advisory",
+        items: ["Home", "Services", "About", "Contact"],
+        style: { backgroundColor: "#020b18", color: "#ffffff" }
+      },
       {
         kind: "hero",
         title: "Finance the Visionary. Build the Future.",
@@ -95,6 +121,13 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Ready to transform your financial strategy?",
         text: "Let's build the future together.",
         cta: "Contact Us"
+      },
+      {
+        kind: "footer",
+        title: "",
+        text: "© 2026 FinCapital. All rights reserved.",
+        items: ["Privacy Policy", "Terms", "Contact"],
+        style: { backgroundColor: "#020b18" }
       }
     ]
   },
@@ -102,6 +135,14 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
   Restaurant: {
     defaultTitle: "Restaurant Website",
     sections: [
+      {
+        kind: "navbar",
+        title: "Gourmet",
+        text: "",
+        cta: "Book a Table",
+        items: ["Home", "Menu", "About", "Contact"],
+        style: { backgroundColor: "#1a1a2e", color: "#f8f9fa" }
+      },
       {
         kind: "hero",
         title: "Welcome to Our Table",
@@ -131,6 +172,13 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Reserve Your Table",
         text: "Book your dining experience with us today.",
         cta: "Book a Table"
+      },
+      {
+        kind: "footer",
+        title: "",
+        text: "© 2026 Gourmet Restaurant.",
+        items: ["Privacy", "Terms", "Contact"],
+        style: { backgroundColor: "#1a1a2e" }
       }
     ]
   },
@@ -138,6 +186,14 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
   Ecommerce: {
     defaultTitle: "Online Store",
     sections: [
+      {
+        kind: "navbar",
+        title: "ShopVerse",
+        text: "",
+        cta: "Shop Now",
+        items: ["Home", "Products", "Deals", "Contact"],
+        style: { backgroundColor: "#0f172a", color: "#ffffff" }
+      },
       {
         kind: "hero",
         title: "Shop the Latest Collection",
@@ -167,6 +223,13 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Ready to Upgrade Your Style?",
         text: "Explore our collection and find your perfect match.",
         cta: "View All Products"
+      },
+      {
+        kind: "footer",
+        title: "",
+        text: "© 2026 ShopVerse. All rights reserved.",
+        items: ["Privacy", "Terms", "Contact"],
+        style: { backgroundColor: "#0f172a" }
       }
     ]
   },
@@ -174,6 +237,14 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
   Education: {
     defaultTitle: "Education Platform",
     sections: [
+      {
+        kind: "navbar",
+        title: "EduFuture",
+        text: "",
+        cta: "Get Started",
+        items: ["Home", "Courses", "About", "Contact"],
+        style: { backgroundColor: "#ffffff", color: "#064e3b" }
+      },
       {
         kind: "hero",
         title: "Learn, Grow, Succeed",
@@ -203,6 +274,13 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Start Your Learning Journey",
         text: "Join thousands of students who are changing their lives through education.",
         cta: "Get Started"
+      },
+      {
+        kind: "footer",
+        title: "",
+        text: "© 2026 EduFuture. All rights reserved.",
+        items: ["Privacy", "Terms", "Contact"],
+        style: { backgroundColor: "#064e3b" }
       }
     ]
   },
@@ -210,6 +288,14 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
   Portfolio: {
     defaultTitle: "Portfolio",
     sections: [
+      {
+        kind: "navbar",
+        title: "Creative Studio",
+        text: "",
+        cta: "Get in Touch",
+        items: ["Home", "Work", "About", "Contact"],
+        style: { backgroundColor: "#ffffff", color: "#0f172a" }
+      },
       {
         kind: "hero",
         title: "Creative Vision, Bold Execution",
@@ -244,6 +330,13 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Let's Create Something Amazing",
         text: "Have a project in mind? Let's bring it to life together.",
         cta: "Get in Touch"
+      },
+      {
+        kind: "footer",
+        title: "",
+        text: "© 2026 Creative Studio.",
+        items: ["Privacy", "Terms", "Contact"],
+        style: { backgroundColor: "#0f172a" }
       }
     ]
   },
@@ -251,6 +344,14 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
   Agency: {
     defaultTitle: "Agency Website",
     sections: [
+      {
+        kind: "navbar",
+        title: "AgencyX",
+        text: "",
+        cta: "Start a Project",
+        items: ["Home", "Services", "Work", "Contact"],
+        style: { backgroundColor: "#1e1b4b", color: "#ffffff" }
+      },
       {
         kind: "hero",
         title: "We Build Brands That Matter",
@@ -285,6 +386,13 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Ready to Build Your Brand?",
         text: "Let's collaborate and create something extraordinary.",
         cta: "Contact Us"
+      },
+      {
+        kind: "footer",
+        title: "",
+        text: "© 2026 AgencyX. All rights reserved.",
+        items: ["Privacy", "Terms", "Contact"],
+        style: { backgroundColor: "#1e1b4b" }
       }
     ]
   },
@@ -292,6 +400,14 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
   Consulting: {
     defaultTitle: "Consulting Firm",
     sections: [
+      {
+        kind: "navbar",
+        title: "ConsultPro",
+        text: "",
+        cta: "Get in Touch",
+        items: ["Home", "Expertise", "About", "Contact"],
+        style: { backgroundColor: "#0c4a6e", color: "#ffffff" }
+      },
       {
         kind: "hero",
         title: "Strategic Solutions for Complex Challenges",
@@ -326,6 +442,13 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Ready to Transform Your Organization?",
         text: "Let's discuss how we can help you achieve your goals.",
         cta: "Schedule a Consultation"
+      },
+      {
+        kind: "footer",
+        title: "",
+        text: "© 2026 ConsultPro. All rights reserved.",
+        items: ["Privacy", "Terms", "Contact"],
+        style: { backgroundColor: "#0c4a6e" }
       }
     ]
   },
@@ -333,6 +456,14 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
   Technology: {
     defaultTitle: "Technology Company",
     sections: [
+      {
+        kind: "navbar",
+        title: "TechNova",
+        text: "",
+        cta: "Contact Us",
+        items: ["Home", "Solutions", "About", "Contact"],
+        style: { backgroundColor: "#020617", color: "#ffffff" }
+      },
       {
         kind: "hero",
         title: "Innovating the Future",
@@ -367,6 +498,13 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Ready to Innovate?",
         text: "Let's build the future together.",
         cta: "Contact Our Team"
+      },
+      {
+        kind: "footer",
+        title: "",
+        text: "© 2026 TechNova. All rights reserved.",
+        items: ["Privacy", "Terms", "Contact"],
+        style: { backgroundColor: "#020617" }
       }
     ]
   },
@@ -374,6 +512,14 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
   Corporate: {
     defaultTitle: "Corporate Website",
     sections: [
+      {
+        kind: "navbar",
+        title: "CorpGlobal",
+        text: "",
+        cta: "About Us",
+        items: ["Home", "About", "Services", "Contact"],
+        style: { backgroundColor: "#ffffff", color: "#0f172a" }
+      },
       {
         kind: "hero",
         title: "",
@@ -397,6 +543,13 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Partner With Us",
         text: "Let's work together to build something meaningful.",
         cta: "About Us"
+      },
+      {
+        kind: "footer",
+        title: "",
+        text: "© 2026 CorpGlobal. All rights reserved.",
+        items: ["Privacy", "Terms", "Contact"],
+        style: { backgroundColor: "#0f172a" }
       }
     ]
   }

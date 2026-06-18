@@ -8,12 +8,20 @@ static async dispatch(event: string, payload: any, source: string = 'system') {
     console.log(`🚀 [Step 1] Dispatcher started for: ${event}`);
 
     try {
-        const job = await addToQueue("plugin-tasks", { 
-            type: event, 
+        const context = {
+            ...(payload.context || {}),
+            source,
+            depth: payload.context?.depth ?? 0
+        };
+
+        const job = await addToQueue("plugin-tasks", {
+            id: payload.id || crypto.randomUUID(),
+            traceId: payload.traceId || crypto.randomUUID(),
+            type: event,
             data: payload.data || payload,
-            context: payload.context,
-            meta: payload.meta,
-            source 
+            context,
+            meta: payload.meta || {},
+            source
         });
 
         // سيختفي خطأ الـ void الآن لأننا أضفنا return في ملف الـ Queue
