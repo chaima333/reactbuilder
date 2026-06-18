@@ -77,7 +77,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "",
+        title: "FinCapital",
         text: "© 2026 MediCare. All rights reserved.",
         items: ["Privacy Policy", "Terms of Service", "Contact"],
         style: { backgroundColor: "#0f172a" }
@@ -124,7 +124,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "",
+        title: "FinCapital",
         text: "© 2026 FinCapital. All rights reserved.",
         items: ["Privacy Policy", "Terms", "Contact"],
         style: { backgroundColor: "#020b18" }
@@ -175,7 +175,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "",
+        title: "FinCapital",
         text: "© 2026 Gourmet Restaurant.",
         items: ["Privacy", "Terms", "Contact"],
         style: { backgroundColor: "#1a1a2e" }
@@ -226,7 +226,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "",
+        title: "FinCapital",
         text: "© 2026 ShopVerse. All rights reserved.",
         items: ["Privacy", "Terms", "Contact"],
         style: { backgroundColor: "#0f172a" }
@@ -277,7 +277,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "",
+        title: "FinCapital",
         text: "© 2026 EduFuture. All rights reserved.",
         items: ["Privacy", "Terms", "Contact"],
         style: { backgroundColor: "#064e3b" }
@@ -333,7 +333,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "",
+        title: "FinCapital",
         text: "© 2026 Creative Studio.",
         items: ["Privacy", "Terms", "Contact"],
         style: { backgroundColor: "#0f172a" }
@@ -389,7 +389,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "",
+        title: "FinCapital",
         text: "© 2026 AgencyX. All rights reserved.",
         items: ["Privacy", "Terms", "Contact"],
         style: { backgroundColor: "#1e1b4b" }
@@ -445,7 +445,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "",
+        title: "FinCapital",
         text: "© 2026 ConsultPro. All rights reserved.",
         items: ["Privacy", "Terms", "Contact"],
         style: { backgroundColor: "#0c4a6e" }
@@ -501,7 +501,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "",
+        title: "FinCapital",
         text: "© 2026 TechNova. All rights reserved.",
         items: ["Privacy", "Terms", "Contact"],
         style: { backgroundColor: "#020617" }
@@ -522,7 +522,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "hero",
-        title: "",
+        title: "FinCapital",
         text: "",
         cta: "Get Started",
         style: { backgroundColor: "#f8fafc", color: "#0f172a", titleSize: "48px" }
@@ -546,7 +546,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
       {
         kind: "footer",
-        title: "",
+        title: "FinCapital",
         text: "© 2026 CorpGlobal. All rights reserved.",
         items: ["Privacy", "Terms", "Contact"],
         style: { backgroundColor: "#0f172a" }
