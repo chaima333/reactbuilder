@@ -135,9 +135,13 @@ const featureCard = (text: string): PageBlock => ({
 });
 
 
+// ai.builder.ts - buildNavbar amélioré
+
 const buildNavbar = (config: SectionConfig): PageBlock => {
   const id = makeId("navbar");
-  const color = config.style?.color || "#0f172a";
+  
+  // Nbadlou l colors bach ykounou darker w more visible
+  const color = config.style?.color || "#111827";
   const bgColor = config.style?.backgroundColor || "#ffffff";
 
   const links = config.items || ["Home", "Services", "About", "Contact"];
@@ -153,6 +157,8 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
         justifyContent: "space-between",
         gap: "28px",
         width: "100%",
+        maxWidth: "1200px", // Nzidou max width bach mayetkassech
+        margin: "0 auto", // N7otou centre
         paddingTop: "14px",
         paddingBottom: "14px",
         paddingLeft: "28px",
@@ -160,11 +166,12 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
         flexWrap: "nowrap",
         overflow: "visible",
         backgroundColor: bgColor,
-        color,
+        color: color,
         borderBottom: "1px solid rgba(0,0,0,0.08)"
       })
     },
     children: [
+      // ===== LOGO (plus grand w plus visible) =====
       {
         id: makeId("navbar-logo-item"),
         type: "flexItem",
@@ -188,9 +195,9 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
                 text: config.title
               },
               style: responsiveStyle({
-                color,
+                color: color,
                 fontWeight: "900",
-                fontSize: "18px",
+                fontSize: "24px", // Nkbernah mel 18px l 24px
                 letterSpacing: "0.04em",
                 whiteSpace: "nowrap",
                 marginBottom: "0"
@@ -201,6 +208,7 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
         ]
       },
 
+      // ===== LINKS (centre w plus visibles) =====
       {
         id: makeId("navbar-links-item"),
         type: "flexItem",
@@ -210,7 +218,7 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
             flex: "1 1 0",
             minWidth: 0,
             display: "flex",
-            justifyContent: "center"
+            justifyContent: "center" // N7otou centre
           })
         },
         children: [
@@ -249,10 +257,11 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
                     },
                     style: responsiveStyle({
                       textDecoration: "none",
-                      color,
-                      fontSize: "14px",
-                      fontWeight: "700",
-                      whiteSpace: "nowrap"
+                      color: color,
+                      fontSize: "15px", // Nkbernah mel 14px l 15px
+                      fontWeight: "700", // Nzidou bold
+                      whiteSpace: "nowrap",
+                      transition: "color 0.2s ease"
                     })
                   },
                   children: []
@@ -263,6 +272,7 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
         ]
       },
 
+      // ===== CTA BUTTON =====
       ...(config.cta
         ? [
             {
@@ -285,12 +295,14 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
                     },
                     style: responsiveStyle({
                       borderRadius: "999px",
-                      padding: "10px 22px",
+                      padding: "10px 24px",
                       backgroundColor: "#2563eb",
                       color: "#ffffff",
                       border: "none",
-                      fontWeight: "800",
-                      fontSize: "13px"
+                      fontWeight: "700",
+                      fontSize: "14px",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease"
                     })
                   },
                   children: []
