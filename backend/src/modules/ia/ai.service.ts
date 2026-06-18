@@ -1,3 +1,4 @@
+import { MediaService } from "../media/media.service";
 import { PageService } from "../pages/services/page.service";
 import { generateTemplate } from "./ai.builder";
 
@@ -181,6 +182,30 @@ export class AiService {
     }
 
     const category = await this.predictCategory(prompt);
+    let heroImageUrl: string | undefined;
+
+try {
+  const tempGenerated = generateTemplate(category, prompt, title);
+  const heroBlock: any = tempGenerated.blocks.find(
+    (block: any) => block.type === "section"
+  );
+
+  const templateImage =
+    JSON.stringify(heroBlock).match(/https:\/\/images\.unsplash\.com[^"]+/)?.[0];
+
+  if (templateImage) {
+    const media = await MediaService.uploadImageFromUrl(
+      templateImage,
+      String(siteId),
+      String(userId),
+      `${category} hero image`
+    );
+
+    heroImageUrl = media.url;
+  }
+} catch (error) {
+  console.error("AI_IMAGE_UPLOAD_FAILED", error);
+}
 
     console.log("AI_CATEGORY_USED", category);
 

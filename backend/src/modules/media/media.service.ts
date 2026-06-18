@@ -50,6 +50,51 @@ static async processUpload(file: any, siteId: string, userId: string, alt?: stri
 
   return media;
 }
+static async uploadImageFromUrl(
+  imageUrl: string,
+  siteId: string,
+  userId: string,
+  alt = "AI generated image"
+) {
+  const response = await fetch(imageUrl);
+const contentType = response.headers.get("content-type") || "";
+
+if (!contentType.startsWith("image/")) {
+  throw new Error("INVALID_IMAGE_URL");
+}
+  if (!response.ok) {
+    throw new Error("IMAGE_DOWNLOAD_FAILED");
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  const cloudResult = await uploadStream(
+    buffer,
+    `sites/${siteId}/media`
+  );
+
+  const media = await Media.create({
+    originalName: alt,
+    filename: cloudResult.public_id,
+    url: cloudResult.secure_url,
+    type: "image",
+    size: buffer.length,
+    alt,
+    userId,
+    siteId
+  });
+
+  await ActivityLog.create({
+    userId,
+    siteId,
+    action: "media_ai_uploaded",
+    entityType: "media",
+    entityId: media.id
+  });
+
+  return media;
+}
   static async removeMedia(id: string, userId: string) {
     const media = await Media.findOne({ where: { id, userId } });
     if (!media) throw new Error("Media asset not found or unauthorized");
