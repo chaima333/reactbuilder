@@ -6,6 +6,7 @@ import { generateTemplate } from "./ai.builder";
 import { CATEGORY_TEMPLATES } from "./ai.templates";
 import { generateAiContent } from "./content.generator";
 import { generateSeo } from "./seo.generator";
+import { generateSitePlan } from "./site.plan";
 
 const ML_SERVICE_URL =
   process.env.ML_SERVICE_URL || "http://localhost:5000";
@@ -187,7 +188,14 @@ export class AiService {
   }
 
   const category = await this.predictCategory(prompt);
+  
+  const sitePlan =
+  generateSitePlan(category);
 
+console.log(
+  "AI_SITE_PLAN",
+  sitePlan.map(p => p.slug)
+);
   
   const aiContent = generateAiContent(
   category,

@@ -142,10 +142,19 @@ export class AdminAnalyticsService {
       }
     });
 
-    const dailyGenerations = Object.entries(dailyMap).map(([date, count]) => ({
-      date,
-      count,
-    }));
+   const today = new Date();
+
+const dailyGenerations = Array.from({ length: 7 }).map((_, index) => {
+  const date = new Date(today);
+  date.setDate(today.getDate() - (6 - index));
+
+  const key = date.toISOString().slice(0, 10);
+
+  return {
+    date: key,
+    count: dailyMap[key] || 0,
+  };
+});
 
     const topCategories = Object.entries(categoryMap)
       .map(([category, count]) => ({
