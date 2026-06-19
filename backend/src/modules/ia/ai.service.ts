@@ -241,10 +241,9 @@ const generated = generateTemplate(
     generated.blocks?.length || 0
   );
 
-  const pageTitle =
-    title?.trim() ||
-    generated.title ||
-    `${category} Website`;
+ const pageTitle =
+  title?.trim() ||
+  `${generated.title || category} ${Date.now()}`;
 
   const result = await PageService.createPage(
     siteId,
