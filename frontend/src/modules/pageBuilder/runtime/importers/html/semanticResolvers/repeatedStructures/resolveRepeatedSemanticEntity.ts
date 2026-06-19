@@ -208,15 +208,33 @@ export const resolveRepeatedSemanticEntity = (
   }
 
   // CTA group
-  if (actions.length >= 2) {
-    return {
-      type: "CTA_GROUP",
-      confidence: 0.86,
-      reason: [...reason, "multiple-actions"],
-      actions,
-      claimedNode: node,
-    };
-  }
+ const className =
+  String(node.element.className || "").toLowerCase();
+
+const hasCtaIdentity =
+  className.includes("cta") ||
+  className.includes("call-to-action") ||
+  className.includes("final");
+
+const childrenLookLikeCards =
+  children.every(child =>
+    !!child.querySelector("h2,h3,h4") &&
+    !!child.querySelector("p")
+  );
+
+if (
+  actions.length >= 2 &&
+  hasCtaIdentity &&
+  !childrenLookLikeCards
+) {
+  return {
+    type: "CTA_GROUP",
+    confidence: 0.86,
+    reason: [...reason, "multiple-actions"],
+    actions,
+    claimedNode: node,
+  };
+}
 
   console.log("🚨 CONTACT CHECK", {
     className: node.element.className,

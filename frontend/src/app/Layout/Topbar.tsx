@@ -15,6 +15,7 @@ import {
   ListItemText,
   Divider,
   Button,
+  ListItemButton,
 } from "@mui/material";
 
 import {
@@ -34,7 +35,7 @@ import { useLanguage } from "../providers/LanguageProvider";
 
 import {
   useGetNotificationsQuery,
-  useGetUnreadCountQuery,
+  useGetUnreadNotificationsCountQuery,
   useMarkAllNotificationsAsReadMutation,
   useMarkNotificationAsReadMutation,
 } from "../../redux/services/notification.api";
@@ -59,8 +60,7 @@ export const Topbar: React.FC<TopbarProps> = ({
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
-
-  const { data: unread } = useGetUnreadCountQuery();
+  const { data: unread } = useGetUnreadNotificationsCountQuery(undefined, {pollingInterval: 5000, });
   const { data: notifications = [] } = useGetNotificationsQuery();
 
   const [markAsRead] = useMarkNotificationAsReadMutation();
@@ -125,57 +125,122 @@ export const Topbar: React.FC<TopbarProps> = ({
         </IconButton>
 
         <Popover
-          open={Boolean(notifAnchor)}
-          anchorEl={notifAnchor}
-          onClose={handleNotificationsClose}
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-          transformOrigin={{ vertical: "top", horizontal: "right" }}
-        >
-          <Box sx={{ width: 360, maxHeight: 420 }}>
-            <Box
+  open={Boolean(notifAnchor)}
+  anchorEl={notifAnchor}
+  onClose={handleNotificationsClose}
+  anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+  transformOrigin={{ vertical: "top", horizontal: "right" }}
+>
+  <Box sx={{ width: 380, maxHeight: 480 }}>
+    <Box
+      sx={{
+        p: 2,
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+      }}
+    >
+      <Typography variant="h6" fontWeight={900}>
+        Notifications
+      </Typography>
+
+      <Button size="small" onClick={() => markAllAsRead()}>
+        Mark all as read
+      </Button>
+    </Box>
+
+    <Divider />
+
+    {notifications.length === 0 ? (
+      <Box p={3} textAlign="center">
+        <Typography fontWeight={700}>
+          No notifications yet
+        </Typography>
+        <Typography color="text.secondary" fontSize={14}>
+          New updates will appear here.
+        </Typography>
+      </Box>
+    ) : (
+      <List sx={{ p: 0 }}>
+        {notifications.slice(0, 10).map((notif: any) => (
+          <ListItem
+            key={notif.id}
+            disablePadding
+          >
+            <ListItemButton
+              onClick={() => markAsRead(notif.id)}
               sx={{
-                p: 2,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                alignItems: "flex-start",
+                px: 2,
+                py: 1.5,
+                bgcolor: notif.isRead
+                  ? "background.paper"
+                  : "rgba(0,196,154,0.10)",
+                "&:hover": {
+                  bgcolor: notif.isRead
+                    ? "action.hover"
+                    : "rgba(0,196,154,0.16)",
+                },
               }}
             >
-              <Typography fontWeight={800}>Notifications</Typography>
+              <Avatar
+                sx={{
+                  width: 38,
+                  height: 38,
+                  mr: 1.5,
+                  bgcolor: notif.isRead
+                    ? "grey.300"
+                    : "primary.main",
+                  fontSize: 18,
+                }}
+              >
+                🔔
+              </Avatar>
 
-              <Button size="small" onClick={() => markAllAsRead()}>
-                Mark all read
-              </Button>
-            </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography
+                  fontWeight={notif.isRead ? 600 : 900}
+                  fontSize={14}
+                >
+                  {notif.title}
+                </Typography>
 
-            <Divider />
+                <Typography
+                  color="text.secondary"
+                  fontSize={13}
+                  sx={{ mt: 0.3 }}
+                >
+                  {notif.message || notif.type}
+                </Typography>
 
-            {notifications.length === 0 ? (
-              <Box p={2}>
-                <Typography color="text.secondary">
-                  No notifications yet.
+                <Typography
+                  color="primary.main"
+                  fontSize={12}
+                  fontWeight={700}
+                  sx={{ mt: 0.6 }}
+                >
+                  {new Date(notif.createdAt).toLocaleString()}
                 </Typography>
               </Box>
-            ) : (
-              <List dense>
-                {notifications.slice(0, 8).map((notif: any) => (
-                  <ListItem
-                    key={notif.id}
-                    button
-                    onClick={() => markAsRead(notif.id)}
-                    sx={{
-                      bgcolor: notif.isRead ? "transparent" : "action.hover",
-                    }}
-                  >
-                    <ListItemText
-                      primary={notif.title}
-                      secondary={notif.message || notif.type}
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            )}
-          </Box>
-        </Popover>
+
+              {!notif.isRead && (
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    bgcolor: "primary.main",
+                    mt: 1,
+                  }}
+                />
+              )}
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+    )}
+  </Box>
+</Popover>
 
         <IconButton onClick={handleMenuOpen} sx={{ ml: 1 }}>
           <Avatar sx={{ bgcolor: "secondary.main", width: 32, height: 32 }}>

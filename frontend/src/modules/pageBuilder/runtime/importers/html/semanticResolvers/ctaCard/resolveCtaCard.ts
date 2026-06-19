@@ -14,7 +14,19 @@ export const resolveCtaCard = (
 ) => {
   const element =
     node.element;
+const parent =
+  element.parentElement as HTMLElement | null;
 
+const parentClass =
+  parent?.className?.toString().toLowerCase() || "";
+
+if (
+  parentClass.includes("tiers") ||
+  parentClass.includes("pricing") ||
+  parentClass.includes("grid")
+) {
+  return null;
+}
   const titleElement =
     element.querySelector(
       ":scope > h2, :scope > h3"

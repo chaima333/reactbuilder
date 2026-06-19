@@ -310,6 +310,784 @@ const normalizeDiagnosticText = (
     .replace(/\s+/g, " ")
     .trim();
 
+const normalizeTextForCoverage = (
+  value = ""
+) =>
+  normalizeDiagnosticText(
+    value
+  ).toLowerCase();
+
+const isMeaningfulImportedText = (
+  value = ""
+) => {
+  const text =
+    normalizeDiagnosticText(
+      value
+    );
+
+  return (
+    text.length >= 2 &&
+    !/^[\s|/\\\-–—•·.,:;()[\]{}]+$/.test(
+      text
+    )
+  );
+};
+
+const shouldSkipTextCoverageElement = (
+  element: Element | null
+) =>
+  !!element &&
+  (
+    shouldSkipImportedElement(
+      element
+    ) ||
+    !!element.closest(
+      "script,style,noscript,svg"
+    )
+  );
+
+type ImportTextNodeDiagnostic = {
+  text: string;
+  tag: string;
+  className: string;
+  path: string;
+  parentText: string;
+};
+
+const getElementDomPath = (
+  element: Element | null
+) => {
+  const parts: string[] = [];
+  let current:
+    Element | null =
+      element;
+
+  while (
+    current &&
+    current.tagName &&
+    current.tagName.toLowerCase() !==
+      "html"
+  ) {
+    const parent =
+      current.parentElement;
+    const index =
+      parent
+        ? Array.from(
+            parent.children
+          ).indexOf(
+            current
+          )
+        : 0;
+
+    parts.unshift(
+      `${current.tagName.toLowerCase()}[${index}]`
+    );
+
+    current = parent;
+  }
+
+  return parts.join(
+    ">"
+  );
+};
+
+const collectDomTextNodes = (
+  root: HTMLElement
+): ImportTextNodeDiagnostic[] => {
+  const walker =
+    root.ownerDocument.createTreeWalker(
+      root,
+      NodeFilter.SHOW_TEXT
+    );
+
+  const texts:
+    ImportTextNodeDiagnostic[] = [];
+
+  let node =
+    walker.nextNode();
+
+  while (node) {
+    const parent =
+      node.parentElement;
+    const text =
+      normalizeDiagnosticText(
+        node.textContent || ""
+      );
+
+    if (
+      parent &&
+      isMeaningfulImportedText(
+        text
+      ) &&
+      !shouldSkipTextCoverageElement(
+        parent
+      )
+    ) {
+      texts.push({
+        text,
+        tag:
+          parent.tagName,
+        className:
+          getElementClassName(
+            parent
+          ),
+        path:
+          getElementDomPath(
+            parent
+          ),
+        parentText:
+          normalizeDiagnosticText(
+            parent.textContent || ""
+          ).slice(
+            0,
+            240
+          )
+      });
+    }
+
+    node =
+      walker.nextNode();
+  }
+
+  return texts;
+};
+
+const collectTextProps = (
+  blocks: any[] = []
+) => {
+  const props: Array<{
+    blockId: string;
+    blockType: string;
+    propPath: string;
+    text: string;
+  }> = [];
+
+  const walkValue = (
+    value: any,
+    propPath: string,
+    block: any
+  ) => {
+    if (
+      typeof value === "string" &&
+      isMeaningfulImportedText(
+        value
+      )
+    ) {
+      props.push({
+        blockId:
+          block?.id || "",
+        blockType:
+          block?.type || "",
+        propPath,
+        text:
+          normalizeDiagnosticText(
+            value
+          )
+      });
+      return;
+    }
+
+    if (
+      Array.isArray(
+        value
+      )
+    ) {
+      value.forEach(
+        (item, index) =>
+          walkValue(
+            item,
+            `${propPath}[${index}]`,
+            block
+          )
+      );
+      return;
+    }
+
+    if (
+      value &&
+      typeof value === "object"
+    ) {
+      Object.entries(
+        value
+      ).forEach(
+        ([key, nested]) =>
+          walkValue(
+            nested,
+            propPath
+              ? `${propPath}.${key}`
+              : key,
+            block
+          )
+      );
+    }
+  };
+
+  const walkBlock = (
+    block: any
+  ) => {
+    if (!block) {
+      return;
+    }
+
+    walkValue(
+      block.data?.props || {},
+      "data.props",
+      block
+    );
+
+    (block.children || []).forEach(
+      walkBlock
+    );
+  };
+
+  blocks.forEach(
+    walkBlock
+  );
+
+  return props;
+};
+
+const textIsRepresented = (
+  text: string,
+  textProps: Array<{ text: string }>
+) => {
+  const normalized =
+    normalizeTextForCoverage(
+      text
+    );
+
+  if (!normalized) {
+    return true;
+  }
+
+  return textProps.some(
+    prop => {
+      const propText =
+        normalizeTextForCoverage(
+          prop.text
+        );
+
+      return (
+        propText.includes(
+          normalized
+        ) ||
+        normalized.includes(
+          propText
+        )
+      );
+    }
+  );
+};
+
+const collectDroppedDomTextNodes = (
+  root: HTMLElement,
+  blocks: any[] = []
+) => {
+  const textProps =
+    collectTextProps(
+      blocks
+    );
+
+  return collectDomTextNodes(
+    root
+  ).filter(
+    textNode =>
+      !textIsRepresented(
+        textNode.text,
+        textProps
+      )
+  );
+};
+
+const logSemanticDroppedText = (
+  element: HTMLElement,
+  emittedBlock: SerializedBlock
+) => {
+  const droppedTextNodes =
+    collectDroppedDomTextNodes(
+      element,
+      [emittedBlock]
+    );
+
+  if (
+    droppedTextNodes.length
+  ) {
+    console.warn(
+      "SEMANTIC_DROPPED_DOM_TEXT",
+      {
+        semantic:
+          emittedBlock.meta?.semanticType,
+        resolver:
+          emittedBlock.meta?.resolverName,
+        tag:
+          element.tagName,
+        className:
+          getElementClassName(
+            element
+          ),
+        originalTextNodeCount:
+          collectDomTextNodes(
+            element
+          ).length,
+        emittedTextPropCount:
+          collectTextProps(
+            [emittedBlock]
+          ).length,
+        droppedTextNodes
+      }
+    );
+  }
+
+  return droppedTextNodes;
+};
+
+const textMatchesAcademyTraining = (
+  value = ""
+) =>
+  /\b(academy|training|formation|formations|certification|certifie|certifi|duration|dur[eé]e|mode|cours|atelier|programme)\b/i.test(
+    value
+  );
+
+const parseCssNumericValue = (
+  value: unknown
+) => {
+  if (
+    typeof value === "number"
+  ) {
+    return value;
+  }
+
+  if (
+    typeof value !== "string"
+  ) {
+    return 0;
+  }
+
+  const matches =
+    value.match(
+      /-?\d+(?:\.\d+)?/g
+    );
+
+  if (!matches) {
+    return 0;
+  }
+
+  return Math.max(
+    ...matches.map(Number)
+  );
+};
+
+const collectLargeLayoutBlocks = (
+  blocks: any[] = []
+) => {
+  const largeBlocks: any[] = [];
+
+  const walk = (
+    block: any,
+    path = "blocks"
+  ) => {
+    if (!block) {
+      return;
+    }
+
+    const desktop =
+      block.data?.style?.desktop ||
+      block.style?.desktop ||
+      {};
+
+    const measured = {
+      height:
+        desktop.height,
+      minHeight:
+        desktop.minHeight,
+      padding:
+        desktop.padding,
+      paddingTop:
+        desktop.paddingTop,
+      paddingBottom:
+        desktop.paddingBottom,
+      margin:
+        desktop.margin,
+      marginTop:
+        desktop.marginTop,
+      marginBottom:
+        desktop.marginBottom
+    };
+
+    const maxSpacing =
+      Math.max(
+        parseCssNumericValue(
+          measured.height
+        ),
+        parseCssNumericValue(
+          measured.minHeight
+        ),
+        parseCssNumericValue(
+          measured.padding
+        ),
+        parseCssNumericValue(
+          measured.paddingTop
+        ),
+        parseCssNumericValue(
+          measured.paddingBottom
+        ),
+        parseCssNumericValue(
+          measured.margin
+        ),
+        parseCssNumericValue(
+          measured.marginTop
+        ),
+        parseCssNumericValue(
+          measured.marginBottom
+        )
+      );
+
+    if (
+      maxSpacing >= 240
+    ) {
+      largeBlocks.push({
+        id:
+          block.id,
+        type:
+          block.type,
+        semantic:
+          block.meta?.semanticType ||
+          block.data?.props?.semantic
+            ?.semanticIntent ||
+          null,
+        path,
+        maxSpacing,
+        style:
+          measured
+      });
+    }
+
+    (block.children || []).forEach(
+      (child: any, index: number) =>
+        walk(
+          child,
+          `${path}[${index}].children`
+        )
+    );
+  };
+
+  blocks.forEach(
+    (block, index) =>
+      walk(
+        block,
+        `blocks[${index}]`
+      )
+  );
+
+  return largeBlocks;
+};
+
+const logLargeLayoutBlocks = (
+  stage: string,
+  blocks: any[] = []
+) => {
+  const largeBlocks =
+    collectLargeLayoutBlocks(
+      blocks
+    );
+
+  if (
+    largeBlocks.length
+  ) {
+    console.warn(
+      "IMPORT_LARGE_LAYOUT_BLOCKS",
+      {
+        stage,
+        count:
+          largeBlocks.length,
+        largeBlocks
+      }
+    );
+  }
+};
+
+type StyleSanitizerIssue = {
+  path: string;
+  reason: string;
+  valueType: string;
+  preview?: string;
+};
+
+const MAX_SERIALIZED_STYLE_STRING_LENGTH =
+  2000;
+
+const isPlainSerializableObject = (
+  value: unknown
+) =>
+  !!value &&
+  typeof value === "object" &&
+  (
+    Object.getPrototypeOf(value) ===
+      Object.prototype ||
+    Object.getPrototypeOf(value) ===
+      null
+  );
+
+const previewSanitizedValue = (
+  value: unknown
+) => {
+  try {
+    return String(value).slice(
+      0,
+      160
+    );
+  } catch {
+    return "[unprintable]";
+  }
+};
+
+const sanitizeSerializableStyle = (
+  value: unknown,
+  path: string,
+  issues: StyleSanitizerIssue[]
+): any => {
+  if (
+    value === undefined
+  ) {
+    issues.push({
+      path,
+      reason:
+        "removed undefined style value",
+      valueType:
+        "undefined"
+    });
+    return undefined;
+  }
+
+  if (
+    value === null ||
+    typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (
+    typeof value === "string"
+  ) {
+    if (
+      value.length >
+      MAX_SERIALIZED_STYLE_STRING_LENGTH
+    ) {
+      issues.push({
+        path,
+        reason:
+          "truncated long style string",
+        valueType:
+          "string",
+        preview:
+          value.slice(
+            0,
+            160
+          )
+      });
+
+      return value.slice(
+        0,
+        MAX_SERIALIZED_STYLE_STRING_LENGTH
+      );
+    }
+
+    return value;
+  }
+
+  if (
+    typeof value === "number"
+  ) {
+    if (
+      Number.isFinite(
+        value
+      )
+    ) {
+      return value;
+    }
+
+    issues.push({
+      path,
+      reason:
+        "removed non-finite number",
+      valueType:
+        "number",
+      preview:
+        previewSanitizedValue(
+          value
+        )
+    });
+    return undefined;
+  }
+
+  if (
+    typeof value === "function" ||
+    typeof value === "symbol" ||
+    typeof value === "bigint"
+  ) {
+    issues.push({
+      path,
+      reason:
+        "removed non-serializable style value",
+      valueType:
+        typeof value,
+      preview:
+        previewSanitizedValue(
+          value
+        )
+    });
+    return undefined;
+  }
+
+  if (
+    Array.isArray(
+      value
+    )
+  ) {
+    issues.push({
+      path,
+      reason:
+        "removed array from style object",
+      valueType:
+        "array"
+    });
+    return undefined;
+  }
+
+  if (
+    !isPlainSerializableObject(
+      value
+    )
+  ) {
+    issues.push({
+      path,
+      reason:
+        "removed non-plain object from style object",
+      valueType:
+        value?.constructor?.name ||
+        typeof value,
+      preview:
+        previewSanitizedValue(
+          value
+        )
+    });
+    return undefined;
+  }
+
+  const sanitized:
+    Record<string, any> = {};
+
+  Object.entries(
+    value as Record<string, unknown>
+  ).forEach(
+    ([key, nested]) => {
+      const next =
+        sanitizeSerializableStyle(
+          nested,
+          `${path}.${key}`,
+          issues
+        );
+
+      if (
+        next !== undefined
+      ) {
+        sanitized[key] =
+          next;
+      }
+    }
+  );
+
+  return sanitized;
+};
+
+const sanitizeBlockTreeStyles = (
+  blocks: any[] = [],
+  context = "html-import"
+) => {
+  const issues:
+    StyleSanitizerIssue[] = [];
+
+  const walk = (
+    block: any,
+    path: string
+  ): any => {
+    if (
+      !block ||
+      typeof block !== "object"
+    ) {
+      return block;
+    }
+
+    const next = {
+      ...block,
+      data: {
+        ...(block.data || {})
+      },
+      children:
+        Array.isArray(
+          block.children
+        )
+          ? block.children.map(
+              (child: any, index: number) =>
+                walk(
+                  child,
+                  `${path}.children[${index}]`
+                )
+            )
+          : []
+    };
+
+    if (
+      block.data?.style
+    ) {
+      next.data.style =
+        sanitizeSerializableStyle(
+          block.data.style,
+          `${path}.data.style`,
+          issues
+        ) || {};
+    }
+
+    if (
+      block.style
+    ) {
+      next.style =
+        sanitizeSerializableStyle(
+          block.style,
+          `${path}.style`,
+          issues
+        ) || {};
+    }
+
+    return next;
+  };
+
+  const sanitized =
+    blocks.map(
+      (block, index) =>
+        walk(
+          block,
+          `blocks[${index}]`
+        )
+    );
+
+  if (
+    issues.length
+  ) {
+    console.warn(
+      "IMPORT_STYLE_SERIALIZATION_SANITIZER",
+      {
+        context,
+        issueCount:
+          issues.length,
+        issues
+      }
+    );
+  }
+
+  return sanitized;
+};
+
 const findTrustLikeSections = (
   body: HTMLElement
 ) =>
@@ -653,16 +1431,40 @@ const parseDomToItemChildren = (
   ownership: OwnershipBuckets,
   warnings: ImportWarning[],
   matcherHits: ImportMatcherHit[]
-): SerializedBlock[] =>
-  flattenSectionBoundaryBlocks(
+): SerializedBlock[] => {
+  console.log(
+    "JOB_CHILD_PARSE_IN",
+    {
+      tag: element.tagName,
+      className: getElementClassName(element),
+      text: element.textContent?.trim()?.slice(0, 120)
+    }
+  );
+
+  const parsed =
     parseDomToBlocks(
       element,
       path,
       ownership,
       warnings,
       matcherHits
-    )
+    );
+
+  const flattened =
+    flattenSectionBoundaryBlocks(parsed);
+
+  console.log(
+    "JOB_CHILD_PARSE_OUT",
+    {
+      className: getElementClassName(element),
+      parsedCount: parsed.length,
+      flattenedCount: flattened.length,
+      types: flattened.map(block => block.type)
+    }
   );
+
+  return flattened;
+};
 
 const wrapSectionChildBlocks = (
   child: HTMLElement,
@@ -796,6 +1598,537 @@ const getSafeChildren = (
     0,
     MAX_IMPORT_CHILDREN
   );
+};
+
+const createFallbackTextBlock = (
+  element: HTMLElement,
+  path: (string | number)[],
+  content: string
+): SerializedBlock => ({
+  id:
+    generateNodeId(
+      COMPILER_BLOCK_TYPES.TEXT,
+      path
+    ),
+  type:
+    COMPILER_BLOCK_TYPES.TEXT,
+  data: {
+    props: {
+      content
+    },
+    style:
+      extractTypographyStyles(
+        element
+      )
+  },
+  children: []
+});
+
+const getMeaningfulDirectTextNodes = (
+  element: HTMLElement
+) =>
+  Array.from(
+    element.childNodes
+  ).filter(
+    node =>
+      node.nodeType === 3 &&
+      isMeaningfulImportedText(
+        node.textContent || ""
+      )
+  );
+
+const hasMeaningfulElementContent = (
+  element: HTMLElement
+) =>
+  isMeaningfulImportedText(
+    element.textContent || ""
+  ) ||
+  !!element.querySelector(
+    "img,svg,video,audio,input,button,a"
+  );
+
+const splitGridTrackList = (
+  value: string
+) => {
+  const tracks: string[] = [];
+  let current = "";
+  let depth = 0;
+
+  for (const character of value) {
+    if (
+      character === "("
+    ) {
+      depth++;
+    } else if (
+      character === ")"
+    ) {
+      depth =
+        Math.max(
+          0,
+          depth - 1
+        );
+    }
+
+    if (
+      /\s/.test(
+        character
+      ) &&
+      depth === 0
+    ) {
+      if (current.trim()) {
+        tracks.push(
+          current.trim()
+        );
+        current = "";
+      }
+      continue;
+    }
+
+    current += character;
+  }
+
+  if (current.trim()) {
+    tracks.push(
+      current.trim()
+    );
+  }
+
+  return tracks;
+};
+
+const makeGridTracksShrinkSafe = (
+  value: string
+) => {
+  const tracks =
+    splitGridTrackList(
+      value
+    );
+
+  if (!tracks.length) {
+    return "";
+  }
+
+  return tracks
+    .map(
+      track => {
+        if (
+          /^(minmax|repeat|fit-content|subgrid)\(/i.test(
+            track
+          ) ||
+          track === "auto"
+        ) {
+          return track;
+        }
+
+        return `minmax(0, ${track})`;
+      }
+    )
+    .join(" ");
+};
+
+const getPreservedWrapperDesktopStyle = (
+  computed: ReturnType<
+    typeof extractComputedStyles
+  >,
+  layoutDesktop:
+    Record<string, any> = {}
+) => ({
+  ...layoutDesktop,
+  background:
+    computed.background ||
+    layoutDesktop.background,
+  backgroundColor:
+    computed.backgroundColor ||
+    layoutDesktop.backgroundColor,
+  border:
+    computed.border ||
+    layoutDesktop.border,
+  borderRadius:
+    computed.borderRadius ||
+    layoutDesktop.borderRadius,
+  color:
+    computed.color ||
+    layoutDesktop.color,
+  padding:
+    computed.padding ||
+    layoutDesktop.padding,
+  gap:
+    computed.gap ||
+    layoutDesktop.gap,
+  alignItems:
+    computed.alignItems ||
+    layoutDesktop.alignItems,
+  boxShadow:
+    computed.boxShadow ||
+    layoutDesktop.boxShadow,
+  width:
+    computed.width ||
+    layoutDesktop.width,
+  maxWidth:
+    computed.maxWidth &&
+    computed.maxWidth !== "none"
+      ? computed.maxWidth
+      : layoutDesktop.maxWidth
+});
+
+const compileDirectChildNodes = (
+  element: HTMLElement,
+  path: (string | number)[],
+  ownership: OwnershipBuckets,
+  warnings: ImportWarning[],
+  matcherHits: ImportMatcherHit[]
+): SerializedBlock[] =>
+  Array.from(
+    element.childNodes
+  ).flatMap(
+    (node, index) => {
+      const nodePath = [
+        ...path,
+        "content",
+        index
+      ];
+
+      if (
+        node.nodeType === 3
+      ) {
+        const content =
+          normalizeDiagnosticText(
+            node.textContent || ""
+          );
+
+        return isMeaningfulImportedText(
+          content
+        )
+          ? [
+              createFallbackTextBlock(
+                element,
+                nodePath,
+                content
+              )
+            ]
+          : [];
+      }
+
+      if (
+        !isHtmlElementLike(
+          node as Element
+        ) ||
+        shouldSkipImportedElement(
+          node as Element
+        )
+      ) {
+        return [];
+      }
+
+      return parseDomToBlocks(
+        node as HTMLElement,
+        nodePath,
+        ownership,
+        warnings,
+        matcherHits
+      );
+    }
+  );
+
+const emitFallbackStructuredContainer = (
+  element: HTMLElement,
+  path: (string | number)[],
+  ownership: OwnershipBuckets,
+  warnings: ImportWarning[],
+  matcherHits: ImportMatcherHit[]
+): SerializedBlock[] => {
+  const computed =
+    extractComputedStyles(
+      element
+    );
+
+  const layoutStyle =
+    extractLayoutStyles(
+      element
+    );
+
+  const sourceGridColumns =
+    computed.gridTemplateColumns &&
+    computed.gridTemplateColumns !== "none"
+      ? makeGridTracksShrinkSafe(
+          computed.gridTemplateColumns
+        )
+      : "";
+
+  const sourceMaxWidth =
+    computed.maxWidth &&
+    computed.maxWidth !== "none"
+      ? computed.maxWidth
+      : "100%";
+
+  const preservedWrapperStyle =
+    getPreservedWrapperDesktopStyle(
+      computed,
+      layoutStyle.desktop || {}
+    );
+
+  if (
+    computed.display === "grid" &&
+    sourceGridColumns
+  ) {
+    const gridChildren =
+      getSafeChildren(
+        element
+      )
+        .filter(
+          hasMeaningfulElementContent
+        )
+        .map(
+          (child, index) => ({
+            id:
+              generateNodeId(
+                COMPILER_BLOCK_TYPES.GRID_ITEM,
+                [...path, index]
+              ),
+            type:
+              COMPILER_BLOCK_TYPES.GRID_ITEM,
+            data: {
+              props: {},
+              style:
+                withDesktopFallback(
+                  extractLayoutStyles(
+                    child
+                  ),
+                  {
+                    width: "100%",
+                    maxWidth: "100%",
+                    minWidth: "0",
+                    overflow: "visible"
+                  }
+                )
+            },
+            children:
+              parseDomToBlocks(
+                child,
+                [...path, index],
+                ownership,
+                warnings,
+                matcherHits
+              )
+          })
+        )
+        .filter(
+          item =>
+            item.children.length > 0
+        );
+
+    if (
+      gridChildren.length >= 2
+    ) {
+      const containerDesktopStyle = {
+        ...preservedWrapperStyle,
+        display: "grid",
+        gridTemplateColumns:
+          sourceGridColumns,
+        gap:
+          computed.gap ||
+          layoutStyle.desktop?.gap ||
+          "0px",
+        padding:
+          computed.padding ||
+          layoutStyle.desktop?.padding,
+        border:
+          computed.border ||
+          layoutStyle.desktop?.border,
+        borderRadius:
+          computed.borderRadius ||
+          layoutStyle.desktop?.borderRadius,
+        background:
+          computed.background ||
+          layoutStyle.desktop?.background,
+        backgroundColor:
+          computed.backgroundColor ||
+          layoutStyle.desktop?.backgroundColor,
+        color:
+          computed.color ||
+          layoutStyle.desktop?.color,
+        alignItems:
+          computed.alignItems ||
+          layoutStyle.desktop?.alignItems ||
+          "stretch",
+        boxShadow:
+          computed.boxShadow ||
+          layoutStyle.desktop?.boxShadow,
+        width: "100%",
+        maxWidth:
+          sourceMaxWidth,
+        minWidth: "0",
+        boxSizing:
+          "border-box",
+        overflow: "visible"
+      };
+
+      console.log(
+        "FALLBACK_PRESERVED_CONTAINER_STYLE",
+        {
+          tag:
+            element.tagName,
+          className:
+            getElementClassName(
+              element
+            ),
+          containerType:
+            COMPILER_BLOCK_TYPES.GRID,
+          sourceComputed:
+            computed,
+          containerDesktopStyle,
+          itemDesktopStyles:
+            gridChildren.map(
+              item =>
+                item.data?.style?.desktop
+            )
+        }
+      );
+
+      return [
+        {
+          id:
+            generateNodeId(
+              COMPILER_BLOCK_TYPES.GRID,
+              path
+            ),
+          type:
+            COMPILER_BLOCK_TYPES.GRID,
+          data: {
+            props: {},
+            style: {
+              ...layoutStyle,
+              desktop:
+                containerDesktopStyle,
+              tablet: {
+                ...(layoutStyle.tablet || {}),
+                width: "100%",
+                maxWidth: "100%",
+                minWidth: "0"
+              },
+              mobile: {
+                ...(layoutStyle.mobile || {}),
+                display: "grid",
+                gridTemplateColumns:
+                  "minmax(0, 1fr)",
+                width: "100%",
+                maxWidth: "100%",
+                minWidth: "0"
+              }
+            }
+          },
+          children:
+            gridChildren
+        }
+      ];
+    }
+  }
+
+  const {
+    gridTemplateColumns: _gridTemplateColumns,
+    gridTemplateRows: _gridTemplateRows,
+    gridAutoRows: _gridAutoRows,
+    ...desktopStyle
+  } = layoutStyle.desktop || {};
+
+  const children =
+    getSafeChildren(
+      element
+    )
+      .filter(
+        hasMeaningfulElementContent
+      )
+      .map(
+        (child, index) => ({
+          id:
+            generateNodeId(
+              COMPILER_BLOCK_TYPES.FLEX_ITEM,
+              [...path, index]
+            ),
+          type:
+            COMPILER_BLOCK_TYPES.FLEX_ITEM,
+          data: {
+            props: {},
+            style:
+              withDesktopFallback(
+                extractLayoutStyles(
+                  child
+                ),
+                {
+                  minWidth: "0"
+                }
+              )
+          },
+          children:
+            parseDomToBlocks(
+              child,
+              [...path, index],
+              ownership,
+              warnings,
+              matcherHits
+            )
+        })
+      )
+      .filter(
+        item =>
+          item.children.length > 0
+      );
+
+  if (
+    children.length < 2
+  ) {
+    return [];
+  }
+
+  return [
+    {
+      id:
+        generateNodeId(
+          COMPILER_BLOCK_TYPES.FLEX,
+          path
+        ),
+      type:
+        COMPILER_BLOCK_TYPES.FLEX,
+      data: {
+        props: {},
+        style: {
+          ...layoutStyle,
+          desktop: {
+            ...desktopStyle,
+            display: "flex",
+            flexDirection:
+              computed.display === "grid"
+                ? "row"
+                : computed.display === "flex"
+                  ? (
+                      computed.flexDirection === "column"
+                        ? "column"
+                        : "row"
+                    )
+                  : "column",
+            flexWrap:
+              computed.flexWrap === "wrap"
+                ? "wrap"
+                : "nowrap",
+            alignItems:
+              computed.alignItems ||
+              "center",
+            gap:
+              computed.gap ||
+              "12px"
+          },
+          tablet: {
+            ...(layoutStyle.tablet || {})
+          },
+          mobile: {
+            ...(layoutStyle.mobile || {}),
+            flexWrap: "wrap"
+          }
+        }
+      },
+      children
+    }
+  ];
 };
 
 // =====================================================
@@ -1091,10 +2424,14 @@ if (
     tagName
   ) &&
 
-  (
-    tagName === "p" ||
-    tagName === "span" ||
-    tagName === "div"
+  ![
+    "img",
+    "input",
+    "textarea",
+    "select",
+    "option"
+  ].includes(
+    tagName
   )
 
 ) 
@@ -1254,6 +2591,64 @@ if (tagName === "button") {
       children: []
     }
   ];
+}
+
+const safeChildren =
+  getSafeChildren(
+    element
+  );
+
+const meaningfulDirectChildren =
+  safeChildren.filter(
+    hasMeaningfulElementContent
+  );
+
+if (
+  meaningfulDirectChildren.length >= 2
+) {
+  const structured =
+    emitFallbackStructuredContainer(
+      element,
+      path,
+      ownership,
+      warnings,
+      matcherHits
+    );
+
+  if (structured.length) {
+    return structured;
+  }
+}
+
+const directTextNodes =
+  getMeaningfulDirectTextNodes(
+    element
+  );
+
+if (
+  directTextNodes.length > 0 &&
+  safeChildren.length > 0
+) {
+  const mixedChildren =
+    compileDirectChildNodes(
+      element,
+      path,
+      ownership,
+      warnings,
+      matcherHits
+    );
+
+  if (mixedChildren.length) {
+    return [
+      createFallbackFlexWrapper(
+        [...path, "mixed"],
+        mixedChildren,
+        extractLayoutStyles(
+          element
+        )
+      )
+    ];
+  }
 }
 
 warnings.push({
@@ -1566,14 +2961,189 @@ const isNavbarLinksChild =
 
               matcherHits
             )
-            
+
         }];
-        
+
       }
     )
     }
   ];
 }
+
+function emitContainer(
+  element: HTMLElement,
+  path: (string | number)[],
+  ownership: OwnershipBuckets,
+  warnings: ImportWarning[],
+  matcherHits: ImportMatcherHit[],
+  centered: boolean
+): SerializedBlock[] {
+  const computed =
+    extractComputedStyles(
+      element
+    );
+
+  const extracted =
+    extractLayoutStyles(
+      element
+    );
+
+  const {
+    margin: _margin,
+    ...desktopStyle
+  } = extracted.desktop || {};
+
+  const children =
+    getSafeChildren(
+      element
+    ).flatMap(
+      (child, index) =>
+        parseDomToBlocks(
+          child,
+          [...path, index],
+          ownership,
+          warnings,
+          matcherHits
+        )
+    );
+
+  if (!children.length) {
+    return [];
+  }
+
+  const constrainedMaxWidth =
+    computed.maxWidth &&
+    computed.maxWidth !== "none"
+      ? computed.maxWidth
+      : desktopStyle.maxWidth;
+
+  const containerStyle = {
+    ...extracted,
+    desktop: {
+      ...desktopStyle,
+      display: "flex",
+      flexDirection: "column",
+      width:
+        centered
+          ? "100%"
+          : computed.width ||
+            desktopStyle.width ||
+            "100%",
+      maxWidth:
+        constrainedMaxWidth ||
+        "100%",
+      marginLeft:
+        centered
+          ? "auto"
+          : computed.marginLeft ||
+            desktopStyle.marginLeft,
+      marginRight:
+        centered
+          ? "auto"
+          : computed.marginRight ||
+            desktopStyle.marginRight,
+      paddingLeft:
+        computed.paddingLeft ||
+        desktopStyle.paddingLeft,
+      paddingRight:
+        computed.paddingRight ||
+        desktopStyle.paddingRight,
+      boxSizing:
+        computed.boxSizing ||
+        desktopStyle.boxSizing ||
+        "border-box",
+      minWidth: "0"
+    },
+    tablet: {
+      ...(extracted.tablet || {}),
+      width: "100%",
+      maxWidth: "100%",
+      marginLeft: "auto",
+      marginRight: "auto",
+      boxSizing: "border-box",
+      minWidth: "0"
+    },
+    mobile: {
+      ...(extracted.mobile || {}),
+      width: "100%",
+      maxWidth: "100%",
+      marginLeft: "auto",
+      marginRight: "auto",
+      boxSizing: "border-box",
+      minWidth: "0"
+    }
+  };
+
+  console.log(
+    "PRESERVED_LAYOUT_CONTAINER",
+    {
+      tag:
+        element.tagName,
+      className:
+        getElementClassName(
+          element
+        ),
+      centered,
+      computed,
+      emittedDesktop:
+        containerStyle.desktop
+    }
+  );
+
+  return [
+    {
+      id:
+        generateNodeId(
+          COMPILER_BLOCK_TYPES.FLEX,
+          [...path, "container"]
+        ),
+      type:
+        COMPILER_BLOCK_TYPES.FLEX,
+      data: {
+        props: {},
+        style:
+          containerStyle
+      },
+      children: [
+        {
+          id:
+            generateNodeId(
+              COMPILER_BLOCK_TYPES.FLEX_ITEM,
+              [
+                ...path,
+                "container",
+                "item"
+              ]
+            ),
+          type:
+            COMPILER_BLOCK_TYPES.FLEX_ITEM,
+          data: {
+            props: {},
+            style: {
+              desktop: {
+                width: "100%",
+                maxWidth: "100%",
+                minWidth: "0"
+              },
+              tablet: {
+                width: "100%",
+                maxWidth: "100%",
+                minWidth: "0"
+              },
+              mobile: {
+                width: "100%",
+                maxWidth: "100%",
+                minWidth: "0"
+              }
+            }
+          },
+          children
+        }
+      ]
+    }
+  ];
+}
+
 function emitGridContainer(
   element: HTMLElement,
   path: (string | number)[],
@@ -1655,12 +3225,9 @@ const semanticColumnCount =
     ?.columnCount;
 
 const finalColumnCount =
-
-  semanticColumnCount ||
-
-  columnCount ||
-
-  2;
+  computedColumnCount > 0
+    ? computedColumnCount
+    : semanticColumnCount || 2;
 
 const normalizedColumns =
 
@@ -1774,12 +3341,7 @@ const normalizedColumns =
         "12px"
     }
   };
-
-
-  return [
-
-    {
-
+  return [ {
       id:
         generateNodeId(
           COMPILER_BLOCK_TYPES.GRID,
@@ -1808,73 +3370,66 @@ const normalizedColumns =
       children:
 
         getSafeChildren(element)
+.map((child, index) => {
+  const childLayoutStyle =
+    extractLayoutStyles(child);
 
-          .map(
-            (
-              child,
-              index
-            ) => {
+  const parsedChildren =
+    parseDomToItemChildren(
+      child,
+      [...path, index],
+      ownership,
+      warnings,
+      matcherHits
+    );
 
-              const childLayoutStyle =
-                extractLayoutStyles(
-                  child
-                );
+  const fallbackChildren =
+    parsedChildren.length > 0
+      ? parsedChildren
+      : fallbackCompileElement(
+          child,
+          [...path, index],
+          ownership,
+          warnings,
+          matcherHits
+        );
+         console.log(
+  "GRID_COLUMN_DEBUG",
+  {
+    className: getElementClassName(element),
+    semanticColumnCount,
+    computedColumnCount,
+    finalColumnCount,
+    childCount: getSafeChildren(element).length,
+    rawColumns
+  }
+);
 
-              return {
+  return {
+    id: generateNodeId(
+      COMPILER_BLOCK_TYPES.GRID_ITEM,
+      [...path, index]
+    ),
 
-              id:
-                generateNodeId(
-                  COMPILER_BLOCK_TYPES.GRID_ITEM,
-                  [
-                    ...path,
-                    index
-                  ]
-                ),
+    type: COMPILER_BLOCK_TYPES.GRID_ITEM,
 
-              type:
-                COMPILER_BLOCK_TYPES.GRID_ITEM,
+    data: {
+      props: {},
+      style: {
+        desktop: {
+          ...(childLayoutStyle.desktop ||
+            childLayoutStyle ||
+            {}),
+          width: "100%"
+        },
+        tablet: {},
+        mobile: {}
+      }
+    },
 
-              data: {
-
-                props: {},
-
-                style: {
-
-                  desktop: {
-
-                    ...(childLayoutStyle.desktop ||
-                      childLayoutStyle ||
-                      {}),
-
-                    width: "100%"
-                  },
-
-                  tablet: {},
-
-                  mobile: {}
-                }
-              },
-
-              children:
-
-                parseDomToItemChildren(
-
-                  child,
-
-                  [
-                    ...path,
-                    index
-                  ],
-
-                  ownership,
-
-                  warnings,
-
-                  matcherHits
-                )
-            };
-            }
-          )
+    children: fallbackChildren
+  };
+})
     }
   ];
 }
@@ -1890,97 +3445,54 @@ function parseDomToBlocks(
     activeSemanticReplacementMap.get(
       element
     );
+if (semanticReplacement) {
+  const hasChildren =
+    Array.isArray(semanticReplacement.children) &&
+    semanticReplacement.children.length > 0;
 
-  if (semanticReplacement) {
+  const propsText =
+    JSON.stringify(semanticReplacement.data?.props || {});
+
+  const hasUsefulProps =
+    propsText.replace(/\s+/g, "").length > 2;
+
+  if (!hasChildren && !hasUsefulProps) {
+    console.warn(
+      "🚨 EMPTY_SEMANTIC_REPLACEMENT_SKIPPED",
+      {
+        semantic:
+          semanticReplacement.meta?.semanticType,
+        type:
+          semanticReplacement.type,
+        tag:
+          element.tagName,
+        className:
+          getElementClassName(element)
+      }
+    );
+  } else {
     const returnedBlocks =
-      [
-        semanticReplacement
-      ];
+      [semanticReplacement];
+
+    logSemanticDroppedText(
+      element,
+      semanticReplacement
+    );
 
     console.log(
       "SEMANTIC SUBTREE REPLACED",
       {
         path,
-        tag:
-          element.tagName,
-        className:
-          getElementClassName(
-            element
-          ),
-        semantic:
-          semanticReplacement.meta
-            ?.semanticType,
-        emittedType:
-          semanticReplacement.type
+        tag: element.tagName,
+        className: getElementClassName(element),
+        semantic: semanticReplacement.meta?.semanticType,
+        emittedType: semanticReplacement.type
       }
     );
-
-    console.log(
-      "SEMANTIC REPLACEMENT AFTER REPLACE",
-      {
-        activeSemanticReplacementMapSize:
-          activeSemanticReplacementDiagnostics.length,
-        replacementPaths:
-          activeSemanticReplacementDiagnostics.map(
-            entry => ({
-              semantic:
-                entry.semantic,
-              tag:
-                entry.tag,
-              id:
-                entry.id,
-              className:
-                entry.className,
-              structuralPath:
-                entry.structuralPath,
-              bodyDirectIndex:
-                entry.bodyDirectIndex,
-              emittedBlockType:
-                entry.emittedBlockType,
-              emittedChildTypes:
-                entry.emittedChildTypes
-            })
-          )
-      }
-    );
-
-    if (
-      getElementClassName(
-        element
-      )
-        .split(/\s+/)
-        .includes("pillars")
-    ) {
-      console.log(
-        "PARSE RETURN FOR DIV.pillars",
-        {
-          visitPath:
-            path,
-          returned:
-            returnedBlocks.map(block => ({
-              id:
-                block.id,
-              type:
-                block.type,
-              semantic:
-                block.meta?.semanticType,
-              childTypes:
-                (block.children || []).map(
-                  (child: any) => child.type
-                ),
-              flexItemCount:
-                collectDescendantsByTypeForBlock(
-                  block,
-                  "flexItem"
-                ).length
-            }))
-        }
-      );
-    }
 
     return returnedBlocks;
   }
-
+}
   if (
     shouldSkipImportedElement(
       element
@@ -2335,17 +3847,87 @@ const isLayoutContainer =
 
   isFlex || isGrid;
 
+const className =
+  getElementClassName(element).toLowerCase();
+
+const hasContainerRole =
+  /container|wrapper|wrap|inner|content|shell/.test(
+    className
+  );
+
+const hasLayoutConstraint =
+  (
+    computed.maxWidth &&
+    computed.maxWidth !== "none"
+  ) ||
+  computed.marginLeft === "auto" ||
+  computed.marginRight === "auto" ||
+  parseFloat(computed.paddingLeft || "0") > 0 ||
+  parseFloat(computed.paddingRight || "0") > 0;
+
+const viewportWidth =
+  getElementWindow(
+    element
+  ).innerWidth;
+
+const numericMaxWidth =
+  parseFloat(
+    computed.maxWidth || ""
+  );
+
+const hasConstrainedMaxWidth =
+  Number.isFinite(
+    numericMaxWidth
+  ) &&
+  numericMaxWidth > 0 &&
+  viewportWidth > 0 &&
+  numericMaxWidth < viewportWidth;
+
+const hasAutoSideMargins =
+  computed.marginLeft === "auto" ||
+  computed.marginRight === "auto";
+
+const hasCenteredLayoutConstraint =
+  hasAutoSideMargins ||
+  hasConstrainedMaxWidth;
+
+if (
+  !alreadyOwned &&
+  (
+    hasContainerRole ||
+    hasCenteredLayoutConstraint
+  )
+) {
+  const preservedContainer =
+    emitContainer(
+      element,
+      path,
+      ownership,
+      warnings,
+      matcherHits,
+      hasCenteredLayoutConstraint ||
+      (
+        hasContainerRole &&
+        !!computed.maxWidth &&
+        computed.maxWidth !== "none"
+      )
+    );
+
+  if (
+    preservedContainer.length
+  ) {
+    return preservedContainer;
+  }
+}
+
 const isTransparentContainer =
-
   element.tagName === "DIV" &&
-
   !hasSemanticContent &&
-
   !isLayoutContainer &&
-
   !ownedGrid &&
-
-  !ownedFlexGroup;
+  !ownedFlexGroup &&
+  !hasContainerRole &&
+  !hasLayoutConstraint;
   
 
 if (
@@ -3282,15 +4864,33 @@ return css;
     );
     const body = sandbox;
 
+    const originalDomTextNodes =
+      collectDomTextNodes(
+        body
+      );
+
+    console.log(
+      "IMPORT_TEXT_COVERAGE_ORIGINAL_DOM",
+      {
+        textNodeCount:
+          originalDomTextNodes.length,
+        textNodes:
+          originalDomTextNodes
+      }
+    );
+
     const designTokens = extractDesignTokens(body);
     console.log("🎨 EXTRACTED DESIGN TOKENS", designTokens);
 
     const { ownership, semanticBlocks } = runSemanticPipeline(body, getElementId);
- console.log(
+console.log(
   "SEMANTIC CLAIMED",
   semanticBlocks.map((b:any) => ({
     semantic:
       b.emitted?.meta?.semanticType,
+    resolver:
+      b.resolverName ||
+      b.emitted?.meta?.resolverName,
 
     tag:
       b.claimedNode?.element?.tagName,
@@ -3300,6 +4900,45 @@ return css;
         b.claimedNode?.element
       )
   }))
+);
+
+console.log(
+  "ACADEMY_TRAINING_SEMANTIC_CLAIMS",
+  semanticBlocks
+    .filter((entry: any) =>
+      textMatchesAcademyTraining(
+        entry.claimedNode?.element?.textContent || ""
+      ) ||
+      textMatchesAcademyTraining(
+        getElementClassName(
+          entry.claimedNode?.element
+        )
+      )
+    )
+    .map((entry: any) => ({
+      semantic:
+        entry.emitted?.meta?.semanticType,
+      resolver:
+        entry.resolverName ||
+        entry.emitted?.meta?.resolverName,
+      tag:
+        entry.claimedNode?.element?.tagName,
+      className:
+        getElementClassName(
+          entry.claimedNode?.element
+        ),
+      text:
+        normalizeDiagnosticText(
+          entry.claimedNode?.element?.textContent || ""
+        ).slice(
+          0,
+          500
+        ),
+      emittedTextProps:
+        collectTextProps(
+          [entry.emitted]
+        )
+    }))
 );
 
 logTrustSectionAnalysis(
@@ -3472,6 +5111,11 @@ console.log(
   finalBlocks.push(
     matchedSemantic.emitted
   );
+
+  logSemanticDroppedText(
+    child,
+    matchedSemantic.emitted
+  );
 } else {
   const nestedSemanticMatches =
     semanticBlocks.filter((entry: any) => {
@@ -3491,6 +5135,15 @@ console.log(
         finalBlocks.push(
           entry.emitted
         );
+
+        if (
+          entry.claimedNode?.element
+        ) {
+          logSemanticDroppedText(
+            entry.claimedNode.element,
+            entry.emitted
+          );
+        }
       }
     });
 
@@ -3529,6 +5182,11 @@ const semanticMergedBlocks =
   purgeEmptyBlocks(
     finalBlocks as any
   );
+
+logLargeLayoutBlocks(
+  "semanticMergedBlocks",
+  semanticMergedBlocks
+);
 
 logFeaturePillarsStageTransition(
   "purgeEmptyBlocks.semanticMergedBlocks",
@@ -3674,6 +5332,11 @@ const cleanedBlocks =
     semanticMergedBlocks as any
   );
 
+logLargeLayoutBlocks(
+  "cleanedBlocks",
+  cleanedBlocks
+);
+
 const heroBlockAfterPurge =
   cleanedBlocks[0];
 const kpiSectionAfterPurge =
@@ -3790,6 +5453,11 @@ const normalized =
       cleanedBlocks
     ) as any
   );
+
+logLargeLayoutBlocks(
+  "normalizedBlocks",
+  normalized
+);
 
 
 logFeaturePillarsStageTransition(
@@ -3933,6 +5601,11 @@ const visualBlocks =
   reconstructVisualRuntime(
     sectionProfiled as any
   );
+
+logLargeLayoutBlocks(
+  "visualBlocks",
+  visualBlocks as any
+);
 
 console.log(
   "GLOBAL_SCALE_REPORT_REACHED"
@@ -4124,18 +5797,6 @@ console.log(
 );
 
 console.log(
-  "INSIGHTS_SECTION_TREE",
-  JSON.stringify(
-    collectSectionsContainingText(
-      visualBlocks as any,
-      "L'intelligence VIFCO"
-    ),
-    null,
-    2
-  )
-);
-
-console.log(
   "CTA_SECTION_TREE",
   JSON.stringify(
     {
@@ -4186,6 +5847,35 @@ logFeatureFlexItemStyles(
   visualBlocks
 );
 
+const finalTextProps =
+  collectTextProps(
+    visualBlocks as any
+  );
+
+const finalDroppedDomTextNodes =
+  originalDomTextNodes.filter(
+    textNode =>
+      !textIsRepresented(
+        textNode.text,
+        finalTextProps
+      )
+  );
+
+console.log(
+  "IMPORT_TEXT_COVERAGE_FINAL_BLOCKS",
+  {
+    originalDomTextNodeCount:
+      originalDomTextNodes.length,
+    finalTextPropCount:
+      finalTextProps.length,
+    finalTextProps,
+    droppedDomTextNodeCount:
+      finalDroppedDomTextNodes.length,
+    droppedDomTextNodes:
+      finalDroppedDomTextNodes
+  }
+);
+
 if (
   sandboxFrame?.parentNode
 ) {
@@ -4203,9 +5893,15 @@ assertTreeInvariants(
   visualBlocks as any
 );
 
+const serializableVisualBlocks =
+  sanitizeBlockTreeStyles(
+    visualBlocks as any,
+    "importHtmlDocument.finalBlocks"
+  );
+
 return {
   blocks:
-    visualBlocks as any,
+    serializableVisualBlocks as any,
 
   warnings,
 
@@ -4390,6 +6086,9 @@ function createSemanticReplacementMap(
         return {
           semantic:
             emitted.meta?.semanticType,
+          resolver:
+            entry.resolverName ||
+            emitted.meta?.resolverName,
           emittedType:
             emitted.type,
           emittedBlockType:

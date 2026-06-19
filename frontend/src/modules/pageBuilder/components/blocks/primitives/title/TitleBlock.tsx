@@ -1,4 +1,5 @@
 import {
+  CSSProperties,
   useEffect,
   useRef
 } from "react";
@@ -52,14 +53,16 @@ export const TitleBlock = ({
     !!resolvedStyle.marginLeft ||
     !!resolvedStyle.marginRight;
 
-  const finalStyle = {
+  const finalStyle: CSSProperties  = {
     ...resolvedStyle,
 
     width:
-      resolvedStyle.width || "100%",
+      resolvedStyle.width || "auto",
 
     maxWidth:
       resolvedStyle.maxWidth || "100%",
+      display:
+  resolvedStyle.display || "block",
 
     minWidth:
       0,

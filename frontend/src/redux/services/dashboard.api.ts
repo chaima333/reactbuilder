@@ -3,15 +3,16 @@ import { DashboardFullResponse } from "../../modules/dashboard/types/dashboard.t
 
 export const dashboardApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    getDashboardFull: builder.query<DashboardFullResponse, number>({
-      // 1. تأكد من الـ URL (جرب هذا)
-query: (siteId) => `/sites/${siteId}/dashboard/full`,      
-      // 2. فك التغليف مع Debugging
-      transformResponse: (res: any) => {
-        console.log("📡 SERVER RAW RESPONSE:", res); // شوف الكونسول باش تعرف شنوة بعث السيرفر
-        return res.data; 
-      },
-    }),
+   getDashboardFull: builder.query<DashboardFullResponse, number>({
+  query: (siteId) => `/sites/${siteId}/dashboard/full`,
+
+  transformResponse: (res: any) => {
+    console.log("📡 SERVER RAW RESPONSE:", res);
+    return res.data;
+  },
+
+  providesTags: ["Dashboard"],
+}),
   }),
 });
 export const { useGetDashboardFullQuery } = dashboardApi;

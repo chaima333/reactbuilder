@@ -18,6 +18,7 @@ export const generateValuesGridPreset = (payload: any) => {
   "VALUES_GRID_ITEM_STYLE",
   item.cardStyle
 );
+
       if (!item.title) return null;
 
       return {
@@ -76,6 +77,127 @@ export const generateValuesGridPreset = (payload: any) => {
       };
     })
     .filter((item: any) => item !== null);
+ console.log(
+  "HEADER_STYLE",
+  payload.headerStyle
+);
+  const headerBlock =
+    payload.title
+      ? {
+          id: `values-grid-header-${uid}`,
+          type: "flex",
+          data: {
+            props: {},
+            style: payload.headerStyle || {
+               desktop: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    textAlign: "left",
+    gap: "12px",
+    marginBottom: "64px"
+  }
+            }
+          },
+         children: [
+  ...(payload.eyebrow
+    ? [
+        {
+          id: `values-grid-eyebrow-${uid}`,
+          type: "text",
+          data: {
+            props: { content: payload.eyebrow },
+            style: { desktop: payload.eyebrowStyle || {} }
+          },
+          children: []
+        }
+      ]
+    : []),
+  {
+    id: `values-grid-title-${uid}`,
+    type: "title",
+    data: {
+      props: { content: payload.title },
+      style: { desktop: payload.titleStyle || {} }
+    },
+    children: []
+  },
+  ...(payload.description
+    ? [
+        {
+          id: `values-grid-description-${uid}`,
+          type: "text",
+          data: {
+            props: { content: payload.description },
+           style: {
+           desktop: payload.descriptionStyle || {}}
+          },
+          children: []
+        }
+      ]
+    : [])
+]
+        }
+      : null;
+
+  const gridBlock = {
+    id: `values-grid-${uid}`,
+    type: "grid",
+    data: {
+      props: {},
+      style: {
+        ...payload.gridStyle,
+       desktop: {
+  ...payload.gridStyle?.desktop,
+  display: "grid",
+  width: "100%",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))"
+},
+        tablet: {
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(0,1fr))",
+          ...payload.gridStyle?.tablet
+        },
+        mobile: {
+          display: "grid",
+          gridTemplateColumns: "repeat(1, minmax(0,1fr))",
+          ...payload.gridStyle?.mobile
+        }
+      }
+    },
+    children: items
+  };
+console.log(
+  "VALUES_GRID_GRID_STYLE",
+  gridBlock.data.style
+);
+  const containerStyle = {
+    ...(payload.containerStyle || {}),
+   desktop: {
+  display: "flex",
+  flexDirection: "column",
+  width: "100%",
+  marginLeft: "auto",
+  marginRight: "auto",
+  ...(payload.containerStyle?.desktop || {}),
+  maxWidth:
+    payload.containerStyle?.desktop?.maxWidth === "none"
+      ? "1480px"
+      : payload.containerStyle?.desktop?.maxWidth || "1480px"
+},
+    tablet: {
+      ...(payload.containerStyle?.tablet || {})
+    },
+    mobile: {
+      ...(payload.containerStyle?.mobile || {})
+    }
+  };
+console.log("VALUES_GRID_FINAL_STYLES", {
+  sectionStyle: payload.sectionStyle,
+  containerStyle,
+  gridStyle: gridBlock.data.style,
+  firstItem: payload.items?.[0]
+});
   return {
     id: `values-grid-section-${uid}`,
     
@@ -90,73 +212,17 @@ export const generateValuesGridPreset = (payload: any) => {
       }
     },
     children: [
-      ...(payload.title
-        ? [
-            {
-              id: `values-grid-header-${uid}`,
-              type: "flex",
-              data: {
-                props: {},
-                style: payload.headerStyle || {
-                  desktop: {
-                    flexDirection: "column",
-                    gap: "12px",
-                    marginBottom: "32px"
-                  }
-                }
-              },
-              children: [
-                ...(payload.eyebrow
-                  ? [
-                      {
-                        id: `values-grid-eyebrow-${uid}`,
-                        type: "text",
-                        data: {
-                          props: { content: payload.eyebrow },
-                          style: { desktop: payload.eyebrowStyle || {} }
-                        },
-                        children: []
-                      }
-                    ]
-                  : []),
-                {
-                  id: `values-grid-title-${uid}`,
-                  type: "title",
-                  data: {
-                    props: { content: payload.title },
-                    style: { desktop: payload.titleStyle || {} }
-                  },
-                  children: []
-                }
-              ]
-            }
-          ]
-        : []),
       {
-        id: `values-grid-${uid}`,
-        type: "grid",
+        id: `values-grid-container-${uid}`,
+        type: "flex",
         data: {
           props: {},
-          style: {
-            ...payload.gridStyle,
-            desktop: {
-              display: "grid",
-              gridTemplateColumns: `repeat(${payload.columnCount || 5}, minmax(0,1fr))`,
-              ...payload.gridStyle?.desktop
-            },
-            tablet: {
-              display: "grid",
-              gridTemplateColumns: "repeat(2, minmax(0,1fr))",
-              ...payload.gridStyle?.tablet
-            },
-            mobile: {
-              display: "grid",
-              gridTemplateColumns: "repeat(1, minmax(0,1fr))",
-              ...payload.gridStyle?.mobile
-            }
-          }
+          style: containerStyle
         },
-        children: items
+        children: [
+          headerBlock,
+          gridBlock
+        ].filter(Boolean)
       }
     ]
   };

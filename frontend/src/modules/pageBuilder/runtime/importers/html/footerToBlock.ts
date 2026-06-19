@@ -80,6 +80,28 @@ const makeLinkBlock = (
   children: []
 });
 
+const makeImageBlock = (
+  src: string,
+  alt: string = "",
+  style: ResponsiveFooterStyle = {}
+): Block => ({
+  id: createId("footer-image"),
+  type: "image",
+  data: {
+    props: {
+      url: src,
+      src,
+      alt
+    },
+    style: {
+      desktop: style.desktop || {},
+      tablet: style.tablet || {},
+      mobile: style.mobile || {}
+    }
+  },
+  children: []
+});
+
 const makeFlexItem = (
   children: Block[],
   style: ResponsiveFooterStyle = {}
@@ -142,37 +164,51 @@ export const footerHtmlToBlock = (
     return null;
   }
 
-  const logoWord =
-    normalizeText(
-      root.querySelector(".logo .word")?.textContent ||
-      root.querySelector(".logo")?.textContent ||
-      "VIFCO"
-    );
+  const logoImg = (
+    root.querySelector(".logo img") ||
+    root.querySelector("[class*='logo'] img")
+  ) as HTMLImageElement | null;
+
+  const logoWord = normalizeText(
+    root.querySelector(".logo .word")?.textContent ||
+    root.querySelector("[class*='logo'] .word")?.textContent ||
+    root.querySelector(".logo")?.textContent ||
+    root.querySelector("[class*='logo']")?.textContent ||
+    ""
+  );
 
   const description =
     normalizeText(
       root.querySelector(".footer-desc")?.textContent
     );
 
-  const socials =
-    Array.from(
-      root.querySelectorAll(
-        ".socials a, .social-links a, [class*='social'] a"
-      )
+  const socials = Array.from(
+    root.querySelectorAll(
+      ".socials a, .social-links a, [class*='social'] a"
     )
-      .map(link => ({
-        label:
-          normalizeText(
-            link.textContent
-          ) ||
-          normalizeText(
-            link.getAttribute("aria-label")
-          ) ||
-          "Social",
-        href:
-          link.getAttribute("href") || "#"
-      }))
-      .filter(link => link.label);
+  ).map(link => {
+    const img = link.querySelector("img");
+    const svg = link.querySelector("svg");
+   const svgDataUri = svg
+  ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+      svg.outerHTML
+        .replace(/fill="currentColor"/g, 'fill="#ffffff"')
+        .replace(
+          "<svg",
+          '<svg xmlns="http://www.w3.org/2000/svg"'
+        )
+    )}`
+  : null;
+    return {
+      image: img?.getAttribute("src") || null,
+      svgDataUri,
+      label: normalizeText(link.textContent) ||
+              normalizeText(link.getAttribute("aria-label")) ||
+              "Social",
+      href: link.getAttribute("href") || "#",
+      alt: img?.getAttribute("alt") || ""
+    };
+  }).filter(s => s.image || s.svgDataUri || s.label);
 
   const columns =
     Array.from(
@@ -235,21 +271,110 @@ export const footerHtmlToBlock = (
     );
 
   const brandChildren = [
-    makeTitleBlock(
-      logoWord,
-      {
-        desktop: {
-          color: "#ffffff",
-          fontSize: "26px",
-          fontWeight: 900,
-          letterSpacing: "0.12em",
-          lineHeight: "1.1",
-          textTransform: "uppercase"
-        },
-        mobile: {
-          fontSize: "22px"
-        }
-      }
+    ...(logoImg && logoWord
+      ? [
+          makeFlex(
+            [
+              makeFlexItem(
+                [
+                  makeImageBlock(
+                    logoImg.getAttribute("src") || "",
+                    logoImg.getAttribute("alt") || "Logo",
+                    {
+                      desktop: {
+                        width: "auto",
+                        height: "40px",
+                        objectFit: "contain",
+                        flex: "0 0 auto"
+                      },
+                      mobile: {
+                        height: "32px"
+                      }
+
+                    }
+                  )
+                ],
+                {
+                  desktop: {
+                    flex: "0 0 auto"
+                  }
+                }
+              ),
+              makeFlexItem(
+                [
+                  makeTitleBlock(
+                    logoWord,
+                    {
+                      desktop: {
+                        color: "#ffffff",
+                        fontSize: "26px",
+                        fontWeight: 900,
+                        letterSpacing: "0.12em",
+                        lineHeight: "1.1",
+                        textTransform: "uppercase"
+                      },
+                      mobile: {
+                        fontSize: "22px"
+                      }
+                    }
+                  )
+                ],
+                {
+                  desktop: {
+                    flex: "1 1 auto"
+                  }
+                }
+              )
+            ],
+            {
+              desktop: {
+                flexDirection: "row",
+                gap: "12px",
+                alignItems: "center"
+              },
+              mobile: {
+                gap: "8px"
+              }
+            }
+          )
+        ]
+      : logoImg
+        ? [
+            makeImageBlock(
+              logoImg.getAttribute("src") || "",
+              logoImg.getAttribute("alt") || "Logo",
+              {
+                desktop: {
+                  width: "auto",
+                  height: "40px",
+                  objectFit: "contain"
+                },
+                mobile: {
+                  height: "32px"
+                }
+              }
+            )
+          ]
+        : logoWord
+          ? [
+              makeTitleBlock(
+                logoWord,
+                {
+                  desktop: {
+                    color: "#ffffff",
+                    fontSize: "26px",
+                    fontWeight: 900,
+                    letterSpacing: "0.12em",
+                    lineHeight: "1.1",
+                    textTransform: "uppercase"
+                  },
+                  mobile: {
+                    fontSize: "22px"
+                  }
+                }
+              )
+            ]
+          : []
     ),
     ...(description
       ? [
@@ -274,24 +399,61 @@ export const footerHtmlToBlock = (
           makeFlex(
             socials.map(social =>
               makeFlexItem(
-                [
-                  makeLinkBlock(
-                    social.label,
-                    social.href,
-                    {
-                      desktop: {
-                        color: "rgba(255,255,255,0.72)",
-                        fontSize: "13px",
-                        fontWeight: 700,
-                        textDecoration: "none"
-                      }
-                    }
-                  )
-                ],
+                social.image
+                  ? [
+                      makeImageBlock(
+                        social.image,
+                        social.alt || social.label,
+                        {
+                          desktop: {
+                            width: "16px",
+                            height: "16px",
+                            objectFit: "contain"
+                          }
+                        }
+                      )
+                    ]
+                  : social.svgDataUri
+                    ? [
+                        makeImageBlock(
+                          social.svgDataUri,
+                          social.label,
+                          {
+                            desktop: {
+                              width: "24px",
+                              height: "24px",
+                              objectFit: "contain"
+                            }
+                          }
+                        )
+                      ]
+                    : [
+                        makeLinkBlock(
+                          social.label,
+                          social.href,
+                          {
+                            desktop: {
+                              color: "rgba(255,255,255,0.72)",
+                              fontSize: "13px",
+                              fontWeight: 700,
+                              textDecoration: "none"
+                            }
+                          }
+                        )
+                      ],
                 {
-                  desktop: {
-                    flex: "0 0 auto"
-                  }
+                  
+  desktop: {
+    flex: "0 0 auto",
+    width: "44px",
+    height: "44px",
+    border: "1px solid rgba(122,158,192,0.22)",
+    borderRadius: "10px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  }
+
                 }
               )
             ),

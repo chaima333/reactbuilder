@@ -56,7 +56,16 @@ const makeTextBlock = (
     size >= contextMaxFontSize * 0.9 &&
     words <= 6 &&
     lines <= 2;
-
+console.log(
+  "TEXT BLOCK",
+  {
+    content: content.slice(0, 40),
+    fontSize: size,
+    width: getWidth(node),
+    height: getHeight(node),
+    isTitle
+  }
+);
   return {
     id: node.id,
     type: isTitle ? "title" : "text",
@@ -117,7 +126,14 @@ const imageUrl =
       children: []
     };
   }
-
+console.log(
+  "IMAGE BLOCK",
+  {
+    width: getWidth(node),
+    height: getHeight(node),
+    image: !!imageUrl
+  }
+);
   return {
     id: node.id,
     type: "flex",
@@ -219,8 +235,13 @@ const buildNode = (
           flexDirection: "column",
           gap: "12px",
           padding: "20px",
-          backgroundColor: "#d9d9d9",
-          width: "100%"
+          backgroundColor:
+  node.source.fills?.[0]?.type === "SOLID" &&
+  node.source.fills[0].color
+    ? figmaColorToHex(node.source.fills[0].color)
+    : "#d9d9d9",
+          width: "100%",
+maxWidth: `${Math.max(getWidth(node), 80)}px`,
         })
       },
       children
@@ -384,7 +405,18 @@ console.log(
       ]
     };
   }
-
+console.log(
+  "BUILD SECTION",
+  {
+    name: node.name,
+    children: node.children.map(child => ({
+      name: child.name,
+      type: child.type,
+      width: child.source.absoluteBoundingBox?.width,
+      height: child.source.absoluteBoundingBox?.height
+    }))
+  }
+);
   return null;
 };
 

@@ -39,8 +39,20 @@ export const extractComputedStyles = (
     padding:
       computed.padding,
 
+    paddingLeft:
+      computed.paddingLeft,
+
+    paddingRight:
+      computed.paddingRight,
+
     margin:
       computed.margin,
+
+    marginLeft:
+      computed.marginLeft,
+
+    marginRight:
+      computed.marginRight,
 
     width:
       computed.width,
@@ -53,6 +65,9 @@ export const extractComputedStyles = (
 
     position:
       computed.position,
+
+    boxSizing:
+      computed.boxSizing,
 
     // =====================
     // VISUAL

@@ -30,22 +30,26 @@ export const detectValuesGrid = (
     children.filter(
       child => {
 
-        const hasTitle =
+       const hasTitle =
+  !!child.querySelector(
+    "h1,h2,h3,h4,h5,h6"
+  );
 
-          !!child.querySelector(
-            "h1,h2,h3,h4,h5,h6,.letter"
-          );
+const hasText =
+  !!child.querySelector(
+    "p"
+  );
 
-        const hasText =
+const hasLetter =
+  !!child.querySelector(
+    ".letter, [class*='letter']"
+  );
 
-          !!child.querySelector(
-            "p"
-          );
-
-        return (
-          hasTitle &&
-          hasText
-        );
+return (
+  hasTitle &&
+  hasText &&
+  hasLetter
+);
       }
     ).length;
 
@@ -77,6 +81,16 @@ export const detectValuesGrid = (
         candidate.metadata?.layoutMode ===
           "GRID"
     );
+const className =
+  element.getAttribute("class") || "";
+
+const isExplicitValuesGrid =
+  element.classList.contains("values-grid") ||
+  className.includes("values-grid");
+
+if (!isExplicitValuesGrid) {
+  return false;
+}
 
   return (
     isGrid ||

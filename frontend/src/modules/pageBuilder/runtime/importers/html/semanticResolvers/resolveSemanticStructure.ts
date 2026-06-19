@@ -116,6 +116,31 @@ console.log(
   // =====================================
   // CURRENT NODE
   // =====================================
+
+  const parent =
+  node.element.parentElement as HTMLElement | null;
+
+const parentClassName =
+  parent
+    ? getElementClassName(parent)
+    : "";
+
+const isCardLikeChild =
+  parentClassName.includes("jobs") ||
+  parentClassName.includes("tiers") ||
+  parentClassName.includes("profiles-grid") ||
+  parentClassName.includes("founder") ||
+  parentClassName.includes("podcast") ||
+  parentClassName.includes("other-svc") ||
+  className.includes("job") ||
+  className.includes("tier") ||
+  className.includes("profile") ||
+  className.includes("info") ||
+  className.includes("founder-body");
+
+if (isCardLikeChild) {
+  return [];
+}
 for (const resolver of semanticResolverRegistry) {
  console.log(
     "🧪 TRY RESOLVER",
@@ -126,6 +151,8 @@ for (const resolver of semanticResolverRegistry) {
   const result = resolver(node);
 
   if (result) {
+    result.resolverName =
+      resolver.name || "anonymousResolver";
 
     console.log(
       "🧠 MATCHED BY",

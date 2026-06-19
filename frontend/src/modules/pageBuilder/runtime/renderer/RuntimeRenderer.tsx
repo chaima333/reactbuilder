@@ -59,19 +59,33 @@ const config =
         children?: React.ReactNode;
       }
     >;
-console.log(
-  "RUNTIME_RENDERER_BLOCK",
-  {
+const blockText =
+  block?.data?.props?.text ||
+  block?.data?.props?.content ||
+  block?.data?.props?.label;
+
+if (
+  blockText === "Healthcare Services" ||
+  blockText === "Our Impact" ||
+  block?.id?.includes("services") ||
+  block?.id?.includes("impact")
+) {
+  console.log("TARGET_BLOCK_TRACE", {
     id: block?.id,
     type: block?.type,
-    semantic:
-      block?.meta?.semanticType,
-    childTypes:
-      block?.children?.map(
-        (child: any) => child.type
-      )
-  }
-);
+    text: blockText,
+    style: block?.data?.style,
+    children: block?.children?.map((child: any) => ({
+      id: child.id,
+      type: child.type,
+      text:
+        child?.data?.props?.text ||
+        child?.data?.props?.content ||
+        child?.data?.props?.label,
+      style: child?.data?.style
+    }))
+  });
+}
   return (
 
     <Component

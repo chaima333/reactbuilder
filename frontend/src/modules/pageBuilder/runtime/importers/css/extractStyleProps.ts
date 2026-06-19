@@ -51,6 +51,7 @@ const VISUAL_STYLE_KEYS = [
   "textTransform",
   "cursor", 
   "backgroundImage",
+  "boxSizing",
 ];
 
 function rgbToHex(rgbStr: string): string {
@@ -172,6 +173,7 @@ export const extractStyleProps = (
     textAlign: computed.textAlign,
     textTransform: computed.textTransform,
     cursor: computed.cursor,
+    boxSizing: computed.boxSizing,
 
   };
 

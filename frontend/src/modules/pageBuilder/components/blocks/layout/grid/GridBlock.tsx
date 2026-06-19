@@ -104,7 +104,7 @@ export const GridBlock = ({
     useResolvedStyle(
       (source?.style || {}) as any,
       device
-    );
+    ) as any;
 
 
 const templateColumns =
@@ -244,24 +244,35 @@ const templateColumns =
       "auto",
 
     overflow:
-      "visible",
+      resolved.overflow || "visible",
 
    gridTemplateColumns:
   templateColumns,
+ gridAutoRows:"auto",
+alignItems:
+  resolved.alignItems || "center",
 
-  
+justifyItems:
+  resolved.justifyItems || "center",
 
-      gridAutoRows:
-  "auto",
+justifyContent:
+  resolved.justifyContent || "center",
 
-    alignItems:
-      "start",
+gap:
+  resolved.gap || "24px",
 
-    gap:
-      resolved.gap || "24px",
+width:
+  "100%",
+   
 
-    width:
-      "100%",
+    maxWidth:
+  resolved.maxWidth &&
+  resolved.maxWidth !== "none"
+    ? resolved.maxWidth
+    : "1200px",
+
+margin:
+  resolved.margin || "0 auto",
 
     minWidth:
       0,
@@ -293,32 +304,52 @@ const templateColumns =
       "relative",
 
     borderRadius:
-      "14px",
+      resolved.borderRadius || "0px",
 
     border:
       isOver
 
         ? "2px solid #3b82f6"
 
-        : "none",
+        : resolved.border || "none",
 
     background:
       isOver
 
         ? "#eff6ff"
 
-        : "transparent",
+        : (
+            resolved.background ||
+            resolved.backgroundColor ||
+            "transparent"
+          ),
+
+    color:
+      resolved.color,
 
     boxShadow:
       isOver
 
         ? "0 0 0 4px rgba(59,130,246,0.08)"
 
-        : "none",
+        : resolved.boxShadow || "none",
 
     transition:
       "all 0.15s ease-in-out"
   };
+
+  console.log(
+    "GRID_CONTAINER_STYLE",
+    {
+      id:
+        block?.id,
+      rawDesktop:
+        source?.style?.desktop,
+      resolved,
+      finalStyle:
+        gridStyle
+    }
+  );
 
   if (
     device === "mobile"

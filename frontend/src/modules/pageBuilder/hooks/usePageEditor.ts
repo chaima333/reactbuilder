@@ -54,7 +54,7 @@ export const usePageEditor = (mode: "create" | "edit") => {
   const [registry, setRegistry] = useState(staticRegistry);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [tokens, setTokens] = useState(defaultTokens);
-  const hasLoadedRef = useRef(false);
+  const loadedPageKeyRef = useRef<string | null>(null);
 
   const {
     state: blocks,
@@ -519,7 +519,13 @@ const errors = useMemo(() => {
   }, []);
 
   useEffect(() => {
-    if (isEdit && pageData && !hasLoadedRef.current) {
+    const pageKey = `${sId}:${pId}`;
+
+    if (
+      isEdit &&
+      pageData &&
+      loadedPageKeyRef.current !== pageKey
+    ) {
       const data = (pageData as any)?.data || pageData;
       if (data) {
         setPageTitle(data.title || "Untitled Page");
@@ -549,10 +555,10 @@ const errors = useMemo(() => {
         const canonicalBlocks = hydrateTree(cleanedBlocks);
         setBlocks(canonicalBlocks);
         resetHistory(canonicalBlocks);
-        hasLoadedRef.current = true;
+        loadedPageKeyRef.current = pageKey;
       }
     }
-  }, [pageData, isEdit, resetHistory]);
+  }, [pageData, isEdit, sId, pId, resetHistory]);
   return {
     blocks,
     pageTitle,

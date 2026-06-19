@@ -16,6 +16,9 @@ from "../components/widgets/VersionWidget";
 import { MediaWidget }
 from "../components/widgets/MediaWidget";
 
+import { NotificationsWidget }
+from "../components/widgets/NotificationsWidget";
+
 export const pluginRegistry:
 Record<string, any> = {
 
@@ -35,6 +38,9 @@ Record<string, any> = {
     VersionWidget,
 
  "widget.media.summary":
-  MediaWidget
+  MediaWidget,
+
+ notifications:
+  NotificationsWidget
 
 };

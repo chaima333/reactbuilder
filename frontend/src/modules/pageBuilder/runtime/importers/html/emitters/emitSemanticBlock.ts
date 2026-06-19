@@ -447,9 +447,13 @@ const getFeatureCardElements = (
   const matches =
     element
       ? Array.from(
-          element.querySelectorAll(
-            "article.pillar, .pillar, .pillar-card, .feature-card, [class*='pillar'], [class*='feature']"
+          element.matches(
+            ".feat-grid, .profiles-grid, [class*='feat-grid'], [class*='profiles-grid']"
           )
+            ? element.children
+            : element.querySelectorAll(
+                "article.pillar, .pillar, .pillar-card, .feature-card, .value-card, .profile-card, .s-card, [class*='pillar'], [class*='feature'], [class*='value'], [class*='profile']"
+              )
         )
       : [];
 
@@ -500,6 +504,20 @@ const collectFlexItems = (
           : []),
         ...(block.children || []).flatMap(
           collectFlexItems
+        )
+      ];
+
+const collectGridItems = (
+  block: any
+): any[] =>
+  !block
+    ? []
+    : [
+        ...(block.type === "gridItem"
+          ? [block]
+          : []),
+        ...(block.children || []).flatMap(
+          collectGridItems
         )
       ];
 
@@ -723,6 +741,35 @@ export const emitSemanticBlock = (
       }
     );
   }
+  if (
+  semanticResult.type === "CTA_SECTION" ||
+  semanticResult.type === "CTA_GROUP" ||
+  semanticResult.type === "CTA_CARD"
+) {
+  const payload =
+    semanticResult as any;
+
+  const hasContent =
+    !!payload.title ||
+    !!payload.text ||
+    !!payload.description;
+
+  if (!hasContent) {
+    console.log(
+      "CTA_EMIT_REJECTED_EMPTY_PAYLOAD",
+      {
+        type:
+          semanticResult.type,
+        actionsLength:
+          payload.actions?.length || 0,
+        keys:
+          Object.keys(payload)
+      }
+    );
+
+    return null;
+  }
+}
 
   const emitted =
     emitter(
@@ -792,6 +839,7 @@ export const emitSemanticBlock = (
   if (
     [
       "FEATURE_PILLARS",
+      "VALUES_GRID",
       "TRUST_LOGO_SECTION",
       "INSIGHTS_SECTION",
       "CTA_SECTION"
@@ -824,6 +872,7 @@ export const emitSemanticBlock = (
     [
       "HERO_SECTION",
       "FEATURE_PILLARS",
+      "VALUES_GRID",
       "INSIGHTS_SECTION",
       "TRUST_LOGO_SECTION",
       "CTA_SECTION"
@@ -840,16 +889,27 @@ export const emitSemanticBlock = (
         ? emitted[0]
         : emitted;
     const featureCards =
-      semanticResult.type === "FEATURE_PILLARS"
+      semanticResult.type === "FEATURE_PILLARS" ||
+      semanticResult.type === "VALUES_GRID"
         ? getFeatureCardElements(
             claimedElement
           )
         : [];
     const emittedCardBlocks =
-      semanticResult.type === "FEATURE_PILLARS"
-        ? collectFlexItems(
-            emittedBlock
-          )
+      semanticResult.type === "FEATURE_PILLARS" ||
+      semanticResult.type === "VALUES_GRID"
+        ? (() => {
+            const flexItems =
+              collectFlexItems(
+                emittedBlock
+              );
+
+            return flexItems.length
+              ? flexItems
+              : collectGridItems(
+                  emittedBlock
+                );
+          })()
         : [];
 
     console.log(

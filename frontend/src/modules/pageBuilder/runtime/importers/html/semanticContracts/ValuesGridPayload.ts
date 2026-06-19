@@ -21,10 +21,17 @@ export interface ValuesGridPayload
   eyebrow?: string;
 
   title?: string;
+  description?: string;
 
   columnCount?: number;
 
   sectionStyle?: any;
+
+descriptionStyle?: any;
+
+  containerStyle?: any;
+  eyebrowStyle?: any;
+titleStyle?: any;
 
   sourceElement?: HTMLElement;
 

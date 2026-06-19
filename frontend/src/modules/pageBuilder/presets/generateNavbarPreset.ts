@@ -264,18 +264,17 @@ flexShrink: 0,
             data: {
               props: {},
               style: {
-                desktop: {
-                  display: "flex",
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  rowGap: "10px",
-                  columnGap: "22px",
-                  width: "100%",
-                  maxWidth: "100%",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  overflow: "visible"
-                },
+               desktop: {
+  display: "flex",
+  flexDirection: "row",
+  flexWrap: "nowrap",
+  columnGap: "18px",
+  width: "100%",
+  maxWidth: "100%",
+  alignItems: "center",
+  justifyContent: "center",
+  overflow: "visible"
+},
                 tablet: {
                   columnGap: "16px",
                   rowGap: "10px"
@@ -296,7 +295,12 @@ flexShrink: 0,
                 id: `navbar-link-item-${id}-${index}`,
                 type: "flexItem",
                 data: {
-                  props: {},
+                 props: {
+  semanticRole:
+    Array.isArray(link.children) && link.children.length
+      ? "dropdown-parent"
+      : undefined
+},
                   style: {
                     desktop: {
                       flex: "0 0 auto",
@@ -353,23 +357,25 @@ flexShrink: 0,
                           id: `navbar-submenu-${id}-${index}`,
                           type: "flex",
                           data: {
-                            props: {},
+                            props: {
+  semanticRole: "dropdown"
+},
                             style: {
                               desktop: {
   display: "flex",
   position: "absolute",
-  top: "100%",
   left: "0",
   zIndex: 50,
   flexDirection: "column",
   gap: "8px",
-  minWidth: "220px",
-  paddingTop: "10px",
-  paddingBottom: "10px",
+  minWidth: "350px",
+  paddingTop: "14px",
+  paddingBottom: "14px",
   paddingLeft: "12px",
   paddingRight: "12px",
-  marginTop: "8px",
-  backgroundColor: submenuBg,
+  marginTop: "0px",
+top: "calc(100% - 1px)",
+  backgroundColor: "red",
   border: rawStyle.borderBottom || "1px solid rgba(0,0,0,0.12)",
   borderRadius: "12px",
   boxShadow: rawStyle.boxShadow || "0 16px 34px rgba(0,0,0,0.18)"

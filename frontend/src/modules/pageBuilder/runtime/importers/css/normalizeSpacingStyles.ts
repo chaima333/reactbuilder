@@ -26,8 +26,18 @@ export const normalizeSpacingStyles = (
 
     delete normalized.marginTop;
     delete normalized.marginBottom;
-    delete normalized.marginLeft;
-    delete normalized.marginRight;
+
+    if (
+      normalized.marginLeft !== "auto"
+    ) {
+      delete normalized.marginLeft;
+    }
+
+    if (
+      normalized.marginRight !== "auto"
+    ) {
+      delete normalized.marginRight;
+    }
   }
 
   return normalized;

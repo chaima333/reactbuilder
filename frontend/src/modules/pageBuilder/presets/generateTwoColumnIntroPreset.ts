@@ -22,29 +22,50 @@ const getDesktopStyle = (element?: HTMLElement | null) => {
     lineHeight: computed.lineHeight,
     letterSpacing: computed.letterSpacing,
     textAlign: computed.textAlign
-    // تم حذف color و background لمنع مشاكل التضارب مع الـ Theme
   };
 };
 
-export const generateTwoColumnIntroPreset = (semanticResult: any): Block => {
-  const payload = semanticResult?.payload || semanticResult;
-  const sourceElement = semanticResult?.claimedNode?.element as HTMLElement | undefined;
-  const columns = Array.isArray(payload.columns) ? payload.columns : [];
-  
-  const sourceStyle = getDesktopStyle(sourceElement);
-  const sourceColumns = sourceElement ? Array.from(sourceElement.children) as HTMLElement[] : [];
-  const id = crypto.randomUUID();
+export const generateTwoColumnIntroPreset = (
+  semanticResult: any
+): Block => {
+  const payload =
+    semanticResult?.payload || semanticResult;
+
+  const sourceElement =
+    semanticResult?.claimedNode?.element as HTMLElement | undefined;
+
+  const columns =
+    Array.isArray(payload.columns)
+      ? payload.columns
+      : [];
+
+  const sourceStyle =
+    getDesktopStyle(sourceElement);
+
+  const sourceColumns =
+    sourceElement
+      ? (Array.from(sourceElement.children) as HTMLElement[])
+      : [];
+
+  const id =
+    crypto.randomUUID();
 
   return {
     id: `two-column-intro-${id}`,
     type: "section",
-    meta: { semanticType: "TWO_COLUMN_INTRO" },
+    meta: {
+      semanticType: "TWO_COLUMN_INTRO"
+    },
     data: {
       props: {},
       style: {
         desktop: {
-          padding: "40px 24px"
-          // تم حذف backgroundColor: "transparent"
+          padding:
+            sourceStyle.padding &&
+            sourceStyle.padding !== "0px"
+              ? sourceStyle.padding
+              : "0px",
+          width: "100%"
         },
         tablet: {},
         mobile: {}
@@ -52,50 +73,80 @@ export const generateTwoColumnIntroPreset = (semanticResult: any): Block => {
     },
     children: [
       {
-        id: `two-column-flex-${id}`,
-        type: "flex",
+        id: `two-column-grid-${id}`,
+        type: "grid",
         data: {
           props: {},
           style: {
             desktop: {
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              gap: sourceStyle.gap || sourceStyle.columnGap || "48px",
+              display: "grid",
+              gridTemplateColumns:
+                sourceStyle.gridTemplateColumns &&
+                sourceStyle.gridTemplateColumns !== "none"
+                  ? sourceStyle.gridTemplateColumns
+                  : "repeat(2, minmax(0, 1fr))",
+              gap:
+                sourceStyle.gap ||
+                sourceStyle.columnGap ||
+                "48px",
               width: "100%",
-              maxWidth: sourceStyle.width && sourceStyle.width !== "auto" ? sourceStyle.width : "1180px",
+              maxWidth:
+                sourceStyle.width &&
+                sourceStyle.width !== "auto"
+                  ? sourceStyle.width
+                  : "1180px",
               marginLeft: "auto",
               marginRight: "auto"
             },
-            tablet: { flexDirection: "column" },
-            mobile: { flexDirection: "column" }
+            tablet: {
+              display: "grid",
+              gridTemplateColumns: "1fr"
+            },
+            mobile: {
+              display: "grid",
+              gridTemplateColumns: "1fr"
+            }
           }
         },
         children: columns.map((column: any, index: number) => {
-          const sourceColumn = sourceColumns[index];
-          const titleElement = sourceColumn?.querySelector("h1,h2,h3") as HTMLElement | null;
-          const textElement = sourceColumn?.querySelector("p") as HTMLElement | null;
+          const sourceColumn =
+            sourceColumns[index];
 
-          const titleStyle = getDesktopStyle(titleElement);
-          const textStyle = getDesktopStyle(textElement);
+          const titleElement =
+            sourceColumn?.querySelector(
+              "h1,h2,h3"
+            ) as HTMLElement | null;
+
+          const textElement =
+            sourceColumn?.querySelector(
+              "p"
+            ) as HTMLElement | null;
+
+          const titleStyle =
+            getDesktopStyle(titleElement);
+
+          const textStyle =
+            getDesktopStyle(textElement);
 
           return {
             id: `two-column-item-${id}-${index}`,
-            type: "flexItem",
+            type: "gridItem",
             data: {
               props: {},
               style: {
                 desktop: {
-                  flexGrow: 1,
-                  flexBasis: "0",
+                  width: "100%",
                   minWidth: "0",
                   display: "flex",
                   flexDirection: "column",
                   gap: "18px"
                 },
-                tablet: { width: "100%" },
-                mobile: { width: "100%" }
+                tablet: {
+                  width: "100%"
+                },
+                mobile: {
+                  width: "100%"
+                }
               }
             },
             children: [
@@ -103,13 +154,22 @@ export const generateTwoColumnIntroPreset = (semanticResult: any): Block => {
                 id: `two-column-title-${id}-${index}`,
                 type: "title",
                 data: {
-                  props: { content: column.title || "" },
+                  props: {
+                    content:
+                      column.title || ""
+                  },
                   style: {
                     desktop: {
-                      fontSize: titleStyle.fontSize || "42px",
-                      fontWeight: titleStyle.fontWeight || "700",
-                      lineHeight: titleStyle.lineHeight || "1.1",
-                      letterSpacing: titleStyle.letterSpacing || "-0.025em"
+                      fontSize:
+                        titleStyle.fontSize || "42px",
+                      fontWeight:
+                        titleStyle.fontWeight || "700",
+                      lineHeight:
+                        titleStyle.lineHeight || "1.1",
+                      letterSpacing:
+                        titleStyle.letterSpacing || "-0.025em",
+                      textAlign:
+                        titleStyle.textAlign
                     },
                     tablet: {},
                     mobile: {}
@@ -121,13 +181,25 @@ export const generateTwoColumnIntroPreset = (semanticResult: any): Block => {
                 id: `two-column-text-${id}-${index}`,
                 type: "text",
                 data: {
-                  props: { content: column.text || "" },
+                  props: {
+                    content:
+                      column.text || ""
+                  },
                   style: {
                     desktop: {
-                      fontSize: textStyle.fontSize || "16px",
-                      fontWeight: textStyle.fontWeight,
-                      lineHeight: textStyle.lineHeight || "1.75",
-                      maxWidth: textStyle.maxWidth || "560px"
+                      fontSize:
+                        textStyle.fontSize || "16px",
+                      fontWeight:
+                        textStyle.fontWeight,
+                      lineHeight:
+                        textStyle.lineHeight || "1.75",
+                      maxWidth:
+                        textStyle.maxWidth &&
+                        textStyle.maxWidth !== "none"
+                          ? textStyle.maxWidth
+                          : "560px",
+                      textAlign:
+                        textStyle.textAlign
                     },
                     tablet: {},
                     mobile: {}

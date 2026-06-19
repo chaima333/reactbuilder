@@ -74,14 +74,14 @@ export const GridItemBlock = ({
     minWidth:
       0,
 
-      alignSelf:
-  "start",
+  alignSelf: resolved.alignSelf || "stretch",
+justifySelf: resolved.justifySelf || "stretch",
 
     minHeight:
       0,
 
     overflow:
-      "hidden",
+      resolved.overflow || "visible",
 
     boxSizing:
       "border-box",
@@ -112,12 +112,9 @@ boxShadow:
   resolved.backgroundColor,
 
 borderRadius:
-  resolved.borderRadius || "16px",
+  resolved.borderRadius,
 
-border:
-  isOver
-    ? "2px solid #3b82f6"
-    : resolved.border,
+border: resolved.border,
 
 color:
   resolved.color,
@@ -133,48 +130,56 @@ color:
   // INNER STYLE
   // =====================================
 
-const innerStyle:
-React.CSSProperties = {
+const isImportedLayout =
+  resolved.display === "grid" ||
+  resolved.display === "flex" ||
+  !!resolved.gridTemplateColumns;
 
-  minWidth:
-    0,
-
-  boxSizing:
-    "border-box",
+const innerStyle: React.CSSProperties = {
+  minWidth: 0,
+  boxSizing: "border-box",
 
   display:
-    "flex",
+    isImportedLayout
+      ? resolved.display || "grid"
+      : "flex",
 
   flexDirection:
-    "column",
+    isImportedLayout
+      ? resolved.flexDirection
+      : "column",
 
-    width: "100%",
-maxWidth: "100%",
-overflow: "visible",
-
-  alignItems:
-    "stretch",
-
-  justifyContent:
-    "flex-start",
+  gridTemplateColumns:
+    resolved.gridTemplateColumns,
 
   gap:
     resolved.gap || "16px",
+
+  width: "100%",
+  maxWidth: "100%",
+  overflow: "visible",
+
+  alignItems:
+    resolved.alignItems ||
+    (isImportedLayout ? "center" : "stretch"),
+
+justifyContent:
+  resolved.justifyContent || "center",
 
   padding:
     resolved.padding,
 
   paddingTop:
-    resolved.paddingTop || "20px",
+    resolved.paddingTop || (isImportedLayout ? undefined : "20px"),
 
   paddingRight:
-    resolved.paddingRight || "20px",
+    resolved.paddingRight || (isImportedLayout ? undefined : "20px"),
 
   paddingBottom:
-    resolved.paddingBottom || "20px",
+    resolved.paddingBottom || (isImportedLayout ? undefined : "20px"),
 
   paddingLeft:
-    resolved.paddingLeft || "20px"
+    resolved.paddingLeft || (isImportedLayout ? undefined : "20px")
 };
   // =====================================
   // RENDER

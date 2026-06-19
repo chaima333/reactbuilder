@@ -59,12 +59,6 @@ export const adminApi = api.injectEndpoints({
   transformResponse: (res: any) => res.data,
   providesTags: ["AdminSettings"],
 }),
-getPlatformSettings: builder.query<any, void>({
-  query: () => "/platform/settings",
-  transformResponse: (res: any) => res.data,
-  providesTags: ["PlatformSettings"],
-}),
-
 updateAdminSettings: builder.mutation<any, any>({
   query: (body) => ({
     url: "/admin/settings",
@@ -88,5 +82,4 @@ export const {
   useGetAdminActivityLogsQuery,
   useGetAdminSettingsQuery,
 useUpdateAdminSettingsMutation,
-useGetPlatformSettingsQuery,
 } = adminApi;

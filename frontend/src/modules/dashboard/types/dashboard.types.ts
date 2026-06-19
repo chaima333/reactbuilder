@@ -16,7 +16,7 @@ export interface MonthlyStat {
 
 export interface DashboardStats {
 
-  totalSites: number;
+  siteId: number;
 
   totalPages: number;
 
@@ -91,6 +91,12 @@ export interface DashboardWidget {
   enabled: boolean;
 
   payload: any;
+
+  title?: string;
+
+  col?: number;
+
+  order?: number;
 
 }
 

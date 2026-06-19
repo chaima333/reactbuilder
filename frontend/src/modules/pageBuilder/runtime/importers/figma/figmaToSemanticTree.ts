@@ -53,7 +53,8 @@ const toLeaf = (node: FigmaNode): FigmaSemanticNode => ({
 
 const overlaps = (
   container: FigmaNode,
-  child: FigmaNode
+  child: FigmaNode,
+  tolerance = 8
 ) => {
   const a = box(container);
   const b = box(child);
@@ -61,10 +62,10 @@ const overlaps = (
   if (!a || !b) return false;
 
   return (
-    b.x >= a.x &&
-    b.y >= a.y &&
-    b.x + b.width <= a.x + a.width &&
-    b.y + b.height <= a.y + a.height
+    b.x >= a.x - tolerance &&
+    b.y >= a.y - tolerance &&
+    b.x + b.width <= a.x + a.width + tolerance &&
+    b.y + b.height <= a.y + a.height + tolerance
   );
 };
 
@@ -89,7 +90,22 @@ const isBackgroundShape = (
     contained.some(other =>
       isImageLike(other)
     );
-
+console.log(
+  "BACKGROUND CHECK",
+  {
+    name: node.name,
+    type: node.type,
+    box: box(node),
+    contained: contained.map(other => ({
+      name: other.name,
+      type: other.type,
+      box: box(other)
+    })),
+    hasText,
+    hasImage,
+    cardDetected: hasText && !hasImage
+  }
+);
   return hasText && !hasImage;
 };
 
@@ -208,10 +224,10 @@ export const figmaToSemanticTree = (
     return toLeaf(node);
   }
 const cardGrouped =
-  sortByPosition(rawChildren).map(child =>
-    figmaToSemanticTree(child)
+  groupCards(
+    rawChildren,
+    node.layoutMode
   );
-  
 
   const columnGrouped =
   node.layoutMode === "HORIZONTAL" ||
@@ -238,6 +254,18 @@ console.log(
     name: node.name,
     layoutMode: node.layoutMode,
     children: columnGrouped.length
+  }
+);
+console.log(
+  "SEMANTIC NODE",
+  {
+    name: node.name,
+    type: node.type,
+    semanticRole: detectFigmaSemanticRole(node),
+    children: columnGrouped.map(c => ({
+      name: c.name,
+      type: c.type
+    }))
   }
 );
 return {

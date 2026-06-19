@@ -98,12 +98,8 @@ const responsiveStyle =
 
 const sectionShellStyle = {
   ...responsiveStyle,
-
-  minHeight:
-    "200px",
-
-  transition:
-    "all 0.15s ease-in-out"
+  minHeight: responsiveStyle.minHeight || "200px",
+  transition: "all 0.15s ease-in-out"
 };
 
 console.log(
@@ -150,7 +146,7 @@ if (
         width: "100%",
         position: "relative",
         pointerEvents: "auto",
-        marginBottom: "24px"
+        marginBottom: 0
       }}
     >
 

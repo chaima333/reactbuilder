@@ -1,3 +1,4 @@
+import { StructuralNode } from "../structure/buildStructuralGraph";
 import {
   BaseSemanticPayload
 } from "./BaseSemanticPayload";
@@ -15,6 +16,15 @@ export interface CtaSectionPayload
   confidence: number;
   reason: string[];
   title: string;
+  titleSegments?: Array<{
+    text: string;
+    variant: "default" | "accent";
+    sourceClass?: string;
+  }>;
   text?: string;
   actions: CtaSectionAction[];
+  claimedNode?: StructuralNode;
+  sectionElement?: HTMLElement;
+  containerElement?: HTMLElement;
+  panelElement?: HTMLElement;
 }

@@ -12,7 +12,7 @@ const getStyle = (
       ?.getComputedStyle(element) ||
     window.getComputedStyle(element);
 
-    const isEmptyVisual = (value?: string) =>
+  const isEmptyVisual = (value?: string) =>
   !value ||
   value === "0px" ||
   value === "none" ||
@@ -20,12 +20,94 @@ const getStyle = (
   value === "rgba(0, 0, 0, 0)" ||
   value.startsWith("0px none");
 
+  const isTransparentBackground = (
+    value?: string
+  ) =>
+    !value ||
+    value === "transparent" ||
+    value === "rgba(0, 0, 0, 0)" ||
+    value === "rgba(0,0,0,0)" ||
+    value === "none";
+
+  const keep = (
+    value?: string
+  ) =>
+    isEmptyVisual(
+      value
+    )
+      ? undefined
+      : value;
+
   return {
-   padding: isEmptyVisual(computed.padding) ? undefined : computed.padding,
-border: isEmptyVisual(computed.border) ? undefined : computed.border,
-borderRadius: isEmptyVisual(computed.borderRadius) ? undefined : computed.borderRadius,
-background: computed.background.includes("rgba(0, 0, 0, 0)") ? undefined : computed.background,
-backgroundColor: isEmptyVisual(computed.backgroundColor) ? undefined : computed.backgroundColor,
+display:
+  keep(computed.display),
+
+flexDirection:
+  computed.display === "flex"
+    ? keep(computed.flexDirection)
+    : undefined,
+
+alignItems:
+  computed.display === "flex"
+    ? keep(computed.alignItems)
+    : undefined,
+
+justifyContent:
+  computed.display === "flex"
+    ? keep(computed.justifyContent)
+    : undefined,
+
+gap:
+  keep(computed.gap),
+
+rowGap:
+  keep(computed.rowGap),
+
+columnGap:
+  keep(computed.columnGap),
+
+padding:
+  keep(computed.padding),
+
+minHeight:
+  keep(computed.minHeight),
+
+width:
+  keep(computed.width),
+
+maxWidth:
+  keep(computed.maxWidth),
+
+border:
+  keep(computed.border),
+
+borderRadius:
+  keep(computed.borderRadius),
+
+boxShadow:
+  keep(computed.boxShadow),
+
+background:
+  isTransparentBackground(
+    computed.background
+  )
+    ? undefined
+    : computed.background,
+
+backgroundImage:
+  isTransparentBackground(
+    computed.backgroundImage
+  )
+    ? undefined
+    : computed.backgroundImage,
+
+backgroundColor:
+  isTransparentBackground(
+    computed.backgroundColor
+  )
+    ? undefined
+    : computed.backgroundColor,
+
 color: computed.color === "rgb(0, 0, 238)" ? undefined : computed.color,
   fontSize:
   isEmptyVisual(computed.fontSize)
@@ -67,13 +149,43 @@ marginTop:
 export const extractValuesGrid = (
   node: StructuralNode
 ) => {
-  const children =
-    Array.from(node.element.children);
+ const children =
+  Array.from(node.element.children).filter((child) => {
+    const hasTitle =
+      !!child.querySelector("h1,h2,h3,h4,h5,h6");
+
+    const hasText =
+      !!child.querySelector("p");
+
+    const hasLetter =
+      !!child.querySelector(".letter, [class*='letter']");
+
+    return hasTitle && hasText && hasLetter;
+  });
 
   return children
     .map((child, index) => {
-      const eyebrowElement =
-        child.querySelector(".s-num");
+  const eyebrowCandidates =
+  Array.from(
+    child.querySelectorAll(
+      ".s-num, .letter, [class*='letter'], [class*='icon']"
+    )
+  );
+
+const eyebrowElement =
+  eyebrowCandidates.find((el) => {
+    const text =
+      el.textContent?.replace(/\s+/g, " ").trim() || "";
+
+    const style =
+      getStyle(el);
+
+    return (
+      text.length > 0 &&
+      text.length <= 3 &&
+      Object.keys(style).length > 0
+    );
+  }) || eyebrowCandidates[0] || null;
 
       const titleElement =
         child.querySelector("h1,h2,h3,h4,h5,h6");
@@ -89,15 +201,6 @@ export const extractValuesGrid = (
 
       if (!title) return null;
 
-      console.log(
-  "VALUES_GRID_CARD",
-  {
-    className:
-      (child as HTMLElement).className,
-    cardStyle:
-      getStyle(child)
-  }
-);
 
       return {
         id: `value-item-${index}`,

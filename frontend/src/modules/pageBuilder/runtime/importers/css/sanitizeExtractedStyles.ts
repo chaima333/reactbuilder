@@ -102,6 +102,7 @@ export function sanitizeExtractedStyles(
     "fontWeight",
     "lineHeight",
     "letterSpacing",
+    "color",
     "textAlign",
     "textTransform",
 
@@ -112,6 +113,7 @@ export function sanitizeExtractedStyles(
     "border",
     "borderRadius",
     "boxShadow",
+    "boxSizing",
 
     // POSITION
 
@@ -362,8 +364,18 @@ export function sanitizeExtractedStyles(
 
     delete sanitized.marginTop;
     delete sanitized.marginBottom;
-    delete sanitized.marginLeft;
-    delete sanitized.marginRight;
+
+    if (
+      sanitized.marginLeft !== "auto"
+    ) {
+      delete sanitized.marginLeft;
+    }
+
+    if (
+      sanitized.marginRight !== "auto"
+    ) {
+      delete sanitized.marginRight;
+    }
   }
 
   return normalizeSpacingStyles(

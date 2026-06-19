@@ -5,6 +5,7 @@ export type PlatformSettings = {
   mediaPlugin: boolean;
   seoPlugin: boolean;
   versionPlugin: boolean;
+  figmaPlugin: boolean;
   aiEnabled: boolean;
   maintenanceMode: boolean;
 };
@@ -17,6 +18,7 @@ export const platformApi = api.injectEndpoints({
       providesTags: ["PlatformSettings"],
     }),
   }),
+  overrideExisting: false,
 });
 
 export const { useGetPlatformSettingsQuery } = platformApi;

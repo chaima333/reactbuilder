@@ -6,8 +6,20 @@ type StatsCardsProps = {
 };
 
 export const StatsCards: React.FC<StatsCardsProps> = ({ stats }) => {
-  const items = [
-    { label: "Total Sites", value: stats?.totalSites ?? 0, color: "#3b82f6", icon: "🌐" },
+  const items: Array<{
+    label: string;
+    value: string | number;
+    detail?: string;
+    color: string;
+    icon: string;
+  }> = [
+    {
+      label: "Current Site",
+      value: stats?.siteName || "Unknown",
+      detail: `Site ID: ${stats?.siteId ?? "—"}`,
+      color: "#3b82f6",
+      icon: "🌐"
+    },
     { label: "Total Pages", value: stats?.totalPages ?? 0, color: "#10b981", icon: "📄" },
     { label: "Total Views", value: stats?.totalViews ?? 0, color: "#8b5cf6", icon: "👁️" },
   ];
@@ -53,6 +65,11 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats }) => {
             <h3 style={{ margin: "5px 0 0 0", fontSize: "24px", fontWeight: "bold", color: "#1e293b" }}>
               {item.value.toLocaleString()}
             </h3>
+            {item.detail && (
+              <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#94a3b8" }}>
+                {item.detail}
+              </p>
+            )}
           </div>
         </div>
       ))}

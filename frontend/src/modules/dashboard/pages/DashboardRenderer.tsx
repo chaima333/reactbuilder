@@ -23,7 +23,20 @@ export default function DashboardRenderer({ layout, context }: Props) {
   }
 
   // 2. إصلاح مشكلة Read-only: نصنع نسخة جديدة قبل الترتيب
-  const sortedBlocks = [...layout.blocks].sort(
+  const widgetBlocks: DashboardBlock[] = (context.widgets || [])
+    .filter((widget) => widget.enabled !== false)
+    .filter(
+      (widget) =>
+        !layout.blocks.some((block) => block.id === widget.id)
+    )
+    .map((widget, index) => ({
+      id: widget.id,
+      type: widget.type,
+      col: widget.col || 6,
+      order: widget.order ?? (100 + index),
+    }));
+
+  const sortedBlocks = [...layout.blocks, ...widgetBlocks].sort(
     (a, b) => (a.order || 0) - (b.order || 0)
   );
 

@@ -22,7 +22,7 @@ import {
 const defaultSettings = {
   platformName: "ReactBuilder",
   publicRegistration: true,
-  autoApproveUsers: true,        // Active (حسب الصورة)
+  autoApproveUsers: true,        
   defaultRole: "VIEWER",
   maxSitesPerUser: 5,
   maintenanceMode: false,        // Inactive
@@ -33,11 +33,13 @@ const defaultSettings = {
   versionPlugin: true,           // Active
   allowGoogleLogin: true,        // Active
   allowEmailLogin: true,         // Active
-  forceStrongPasswords: true,    // Active (حسب الصورة)
+  forceStrongPasswords: true,    
   sessionTimeoutHours: 24,
   maxPagesPerSite: 50,
   maxMediaStorageMb: 500,
   maxTeamMembersPerSite: 10,
+  notificationPlugin: true,
+figmaPlugin: true,
 };
 
 export default function AdminSettings() {
@@ -201,6 +203,29 @@ export default function AdminSettings() {
               }
               label="Version Plugin"
             />
+            <FormControlLabel
+  control={
+    <Switch
+      checked={settings.notificationPlugin}
+      onChange={(e) =>
+        update("notificationPlugin", e.target.checked)
+      }
+    />
+  }
+  label="Notification Plugin"
+/>
+
+<FormControlLabel
+  control={
+    <Switch
+      checked={settings.figmaPlugin}
+      onChange={(e) =>
+        update("figmaPlugin", e.target.checked)
+      }
+    />
+  }
+  label="Figma Plugin"
+/>
           </Paper>
         </Grid>
 

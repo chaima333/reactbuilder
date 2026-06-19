@@ -30,14 +30,15 @@ import { blockRegistry } from "../core/blockRegistry";
 import { ThemeContext } from "../core/theme/themeContext";
 import { StructurePanel } from "../components/sidebar/StructurePanel";
 import { SettingsPanel } from "../components/inspector/SettingsPanel";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { customCollisionStrategy, useDragAndDrop } from "../hooks/editor/useDragAndDrop"; // 👑 جلب الخوارزمية الذكية متعك
 import { RuntimeProvider } from "../runtime/context/RuntimeProvider";
 import { downloadJsonFile, readJsonFile } from "../services/importExport";
 import { findBlockById } from "../core/tree/findBlockById";
 import { importHtmlDocument } from "../runtime/importers/html/importHtmlDocument";
 import { footerHtmlToBlock } from "../runtime/importers/html/footerToBlock";
-import { useCreatePageMutation, useImportFigmaMutation, usePublishPageMutation, useUploadHtmlZipMutation, useUpdateGlobalLayoutMutation, useGenerateFigmaPluginTokenMutation } from "../../../redux/services/pages.api";
+import { useCreatePageMutation, useImportFigmaMutation, usePublishPageMutation, useUploadHtmlZipMutation, useUpdateGlobalLayoutMutation, useGenerateFigmaPluginTokenMutation, useGenerateAiPageMutation } from "../../../redux/services/pages.api";
+import { useGetPlatformSettingsQuery } from "../../../redux/services/platform.api";
 import { figmaToSemanticTree } from "../runtime/importers/figma/figmaToSemanticTree";
 import { semanticTreeToBlocks } from "../runtime/importers/figma/semanticTreeToBlocks";
 
@@ -151,12 +152,37 @@ const [updateGlobalLayout] = useUpdateGlobalLayoutMutation();
 
 const [figmaDialogOpen, setFigmaDialogOpen] = useState(false);
 const [figmaToken, setFigmaToken] = useState("");
-const [generateFigmaPluginToken] =
-  useGenerateFigmaPluginTokenMutation();
-  
+const [generateFigmaPluginToken] = useGenerateFigmaPluginTokenMutation();
+const {
+  data: platformSettings,
+  isLoading: isPlatformSettingsLoading
+} = useGetPlatformSettingsQuery(undefined, {
+  refetchOnMountOrArgChange: true,
+  refetchOnFocus: true
+});
+const isFigmaPluginEnabled = platformSettings?.figmaPlugin !== false;
+
+useEffect(() => {
+  if (!isPlatformSettingsLoading && !isFigmaPluginEnabled) {
+    setFigmaDialogOpen(false);
+  }
+}, [isPlatformSettingsLoading, isFigmaPluginEnabled]);
+
+ // IA 
+ 
+ const [aiPrompt, setAiPrompt] = useState("");
+const [aiLoading, setAiLoading] = useState(false);
+const [generateAiPage] = useGenerateAiPageMutation();
+const navigate = useNavigate();
+
 useEffect(() => {
 
-  if (!figmaImportId || !siteId) {
+  if (
+    !figmaImportId ||
+    !siteId ||
+    isPlatformSettingsLoading ||
+    !isFigmaPluginEnabled
+  ) {
     return;
   }
 
@@ -237,7 +263,9 @@ useEffect(() => {
 
 }, [
   figmaImportId,
-  siteId
+  siteId,
+  isPlatformSettingsLoading,
+  isFigmaPluginEnabled
 ]);
 
 const selectedBlock = useMemo(() => {
@@ -574,7 +602,7 @@ rightSidebar={
     >
       {!rightPanelOpen ? (
         <Stack sx={{ p: 1.5, pt: 3 }} spacing={1}>
-          {["Settings", "Style", "Theme", "History"].map(
+          {["Settings", "Style", "Theme", "History", "AI ✨"].map(
             (label, index) => (
               <Button
                 key={label}
@@ -629,7 +657,13 @@ rightSidebar={
                 }
               }}
               onImportHtml={() => setIsModalOpen(true)}
-              onImportFigma={() => setFigmaDialogOpen(true)}
+              onImportFigma={() => {
+                if (isFigmaPluginEnabled) {
+                  setFigmaDialogOpen(true);
+                }
+              }}
+              figmaPluginEnabled={isFigmaPluginEnabled}
+              figmaPluginLoading={isPlatformSettingsLoading}
             />
           )}
 
@@ -652,6 +686,84 @@ rightSidebar={
               onRestore={(id) => actions.restoreVersion?.(id)}
             />
           )}
+{activeTab === 4 && (
+  <Box>
+    <Typography
+      variant="h6"
+      fontWeight="bold"
+      mb={2}
+    >
+      AI Assistant
+    </Typography>
+
+    <TextField
+      fullWidth
+      multiline
+      rows={6}
+      placeholder="Create a modern restaurant homepage"
+      value={aiPrompt}
+      onChange={(e) =>
+        setAiPrompt(e.target.value)
+      }
+    />
+
+    <Button
+      fullWidth
+      sx={{ mt: 2 }}
+      variant="contained"
+      disabled={
+        aiLoading ||
+        !aiPrompt.trim()
+      }
+      onClick={async () => {
+  try {
+    setAiLoading(true);
+
+   const result = await generateAiPage({
+  siteId: Number(siteId),
+  prompt: aiPrompt
+}).unwrap();
+
+    console.log("AI GENERATED PAGE", result);
+
+    const generatedPage = result;
+
+    if (!generatedPage.id) {
+      throw new Error("AI generation returned a page without an id");
+    }
+
+    const hydrated = hydrateBlocks(generatedPage.blocks || []);
+
+    actions.setBlocks(hydrated as any);
+setPageTitle(generatedPage.title || "Generated Page");
+
+setSelectedBlockId(hydrated[0]?.id || null);
+
+navigate(`/sites/${siteId}/pages/${generatedPage.id}/edit`, {
+  replace: true
+});
+
+alert("Page generated successfully");
+
+console.log("GENERATED PAGE", generatedPage);
+  } catch (error) {
+    console.error("AI GENERATION FAILED", error);
+    alert("Generation failed");
+  } finally {
+    setAiLoading(false);
+  }
+}
+}
+    >
+      {
+        aiLoading
+          ? "Generating..."
+          : "Generate Page"
+      }
+    </Button>
+  </Box>
+)}
+
         </Box>
       )}
     </Paper>
@@ -773,7 +885,7 @@ rightSidebar={
           </Modal>
 
           <Modal
-  open={figmaDialogOpen}
+  open={figmaDialogOpen && isFigmaPluginEnabled}
   onClose={() => setFigmaDialogOpen(false)}
   sx={{
     display: "flex",
@@ -821,11 +933,16 @@ rightSidebar={
         Copy
       </Button>
 
-      <Button
-        variant="contained"
-        onClick={async () => {
-          const result =
-            await generateFigmaPluginToken().unwrap();
+       <Button
+         variant="contained"
+         disabled={!isFigmaPluginEnabled}
+         onClick={async () => {
+           if (!isFigmaPluginEnabled) {
+             return;
+           }
+
+           const result =
+             await generateFigmaPluginToken().unwrap();
 
           setFigmaToken(result.data.token);
         }}

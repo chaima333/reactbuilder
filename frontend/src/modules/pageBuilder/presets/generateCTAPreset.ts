@@ -8,8 +8,6 @@ import {
   extractTypographyStyles
 } from "../runtime/importers/css/extractStyleProps";
 import {
-  filterCardStyle,
-  filterSectionStyle,
   filterTextStyle,
   mergePresetDesktopStyle
 } from "./styleFilters";
@@ -21,6 +19,12 @@ import {
 interface CTAPresetPayload {
 
   title?: string;
+
+  titleSegments?: Array<{
+    text: string;
+    variant: "default" | "accent";
+    sourceClass?: string;
+  }>;
 
   text?: string;
 
@@ -34,6 +38,12 @@ interface CTAPresetPayload {
   claimedNode?: {
     element?: HTMLElement;
   };
+
+  sectionElement?: HTMLElement;
+
+  containerElement?: HTMLElement;
+
+  panelElement?: HTMLElement;
 }
 
 const desktopOf = (
@@ -89,6 +99,506 @@ const filterActionRowStyle = (
       )
   );
 
+const filterCtaPanelStyle = (
+  style: Record<string, any>
+) => {
+  const result =
+    Object.fromEntries(
+    [
+      "background",
+      "backgroundColor",
+      "backgroundImage",
+      "color",
+      "padding",
+      "paddingTop",
+      "paddingBottom",
+      "paddingLeft",
+      "paddingRight",
+      "margin",
+      "marginTop",
+      "marginBottom",
+      "marginLeft",
+      "marginRight",
+      "border",
+      "borderRadius",
+      "boxShadow",
+      "width",
+      "maxWidth",
+      "display",
+      "flexDirection",
+      "flexWrap",
+      "gap",
+      "rowGap",
+      "columnGap",
+      "alignItems",
+      "justifyContent"
+    ]
+      .filter(
+        key =>
+          style[key] !== undefined &&
+          style[key] !== "" &&
+          style[key] !== "transparent" &&
+          style[key] !== "none" &&
+          style[key] !== "normal" &&
+          style[key] !== "rgba(0, 0, 0, 0)" &&
+          style[key] !== "rgba(0,0,0,0)"
+      )
+      .map(
+        key => [
+          key,
+          style[key]
+        ]
+      )
+  );
+
+  if (result.marginLeft === "0px") {
+    delete result.marginLeft;
+  }
+
+  if (result.marginRight === "0px") {
+    delete result.marginRight;
+  }
+
+  if (result.display === "block") {
+    delete result.display;
+  }
+
+  if (result.alignItems === "normal") {
+    delete result.alignItems;
+  }
+
+  if (result.justifyContent === "normal") {
+    delete result.justifyContent;
+  }
+
+  return result;
+};
+
+const filterCtaSectionStyle = (
+  style: Record<string, any>
+) =>
+  Object.fromEntries(
+    [
+      "background",
+      "backgroundColor",
+      "backgroundImage",
+      "color",
+      "padding",
+      "paddingTop",
+      "paddingBottom",
+      "paddingLeft",
+      "paddingRight",
+      "display",
+      "alignItems",
+      "justifyContent"
+    ]
+      .filter(
+        key =>
+          style[key] !== undefined &&
+          style[key] !== "" &&
+          style[key] !== "transparent" &&
+          style[key] !== "none" &&
+          style[key] !== "normal" &&
+          style[key] !== "rgba(0, 0, 0, 0)" &&
+          style[key] !== "rgba(0,0,0,0)"
+      )
+      .map(
+        key => [
+          key,
+          style[key]
+        ]
+      )
+  );
+
+const filterCtaContainerStyle = (
+  style: Record<string, any>
+) => {
+  const result =
+    Object.fromEntries(
+    [
+      "width",
+      "maxWidth",
+      "margin",
+      "marginLeft",
+      "marginRight",
+      "padding",
+      "paddingTop",
+      "paddingBottom",
+      "paddingLeft",
+      "paddingRight",
+      "display",
+      "flexDirection",
+      "alignItems",
+      "justifyContent"
+    ]
+      .filter(
+        key =>
+          style[key] !== undefined &&
+          style[key] !== "" &&
+          style[key] !== "none" &&
+          style[key] !== "normal"
+      )
+      .map(
+        key => [
+          key,
+          style[key]
+        ]
+      )
+  );
+
+  if (result.marginLeft === "0px") {
+    delete result.marginLeft;
+  }
+
+  if (result.marginRight === "0px") {
+    delete result.marginRight;
+  }
+
+  if (result.margin === "0px") {
+    delete result.margin;
+  }
+
+  if (result.display === "block") {
+    delete result.display;
+  }
+
+  return result;
+};
+
+const filterCtaButtonStyle = (
+  style: Record<string, any>
+) =>
+  Object.fromEntries(
+    [
+      "background",
+      "backgroundColor",
+      "backgroundImage",
+      "color",
+      "border",
+      "borderRadius",
+      "boxShadow",
+      "padding",
+      "paddingTop",
+      "paddingBottom",
+      "paddingLeft",
+      "paddingRight",
+      "fontSize",
+      "fontWeight",
+      "lineHeight",
+      "textAlign",
+      "minWidth",
+      "width",
+      "maxWidth"
+    ]
+      .filter(
+        key =>
+          style[key] !== undefined &&
+          style[key] !== "" &&
+          style[key] !== "transparent" &&
+          style[key] !== "none" &&
+          style[key] !== "normal" &&
+          style[key] !== "rgba(0, 0, 0, 0)" &&
+          style[key] !== "rgba(0,0,0,0)"
+      )
+      .map(
+        key => [
+          key,
+          style[key]
+        ]
+      )
+  );
+
+const getComputedCtaPanelStyle = (
+  element: HTMLElement
+) => {
+  const computed =
+    (
+      element.ownerDocument.defaultView ||
+      window
+    ).getComputedStyle(
+      element
+    );
+
+  return {
+    desktop: {
+      background:
+        computed.background,
+      backgroundColor:
+        computed.backgroundColor,
+      backgroundImage:
+        computed.backgroundImage,
+      color:
+        computed.color,
+      padding:
+        computed.padding,
+      paddingTop:
+        computed.paddingTop,
+      paddingBottom:
+        computed.paddingBottom,
+      paddingLeft:
+        computed.paddingLeft,
+      paddingRight:
+        computed.paddingRight,
+      margin:
+        computed.margin,
+      marginTop:
+        computed.marginTop,
+      marginBottom:
+        computed.marginBottom,
+      marginLeft:
+        computed.marginLeft,
+      marginRight:
+        computed.marginRight,
+      border:
+        computed.border,
+      borderRadius:
+        computed.borderRadius,
+      boxShadow:
+        computed.boxShadow,
+      width:
+        computed.width,
+      maxWidth:
+        computed.maxWidth,
+      display:
+        computed.display,
+      flexDirection:
+        computed.flexDirection,
+      flexWrap:
+        computed.flexWrap,
+      gap:
+        computed.gap,
+      rowGap:
+        computed.rowGap,
+      columnGap:
+        computed.columnGap,
+      alignItems:
+        computed.alignItems,
+      justifyContent:
+        computed.justifyContent
+    }
+  };
+};
+
+const normalizeVisualValue = (
+  value: unknown
+) =>
+  String(value || "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
+
+const forbiddenCtaRootTags =
+  new Set([
+    "BODY",
+    "HTML"
+  ]);
+
+const isTransparentVisualValue = (
+  value: unknown
+) =>
+  [
+    "",
+    "none",
+    "normal",
+    "transparent",
+    "rgba(0,0,0,0)",
+    "rgb(0,0,0,0)",
+    "initial",
+    "inherit",
+    "unset"
+  ].includes(
+    normalizeVisualValue(
+      value
+    )
+  );
+
+const hasVisualShellStyle = (
+  element: HTMLElement
+) => {
+  const computed =
+    (
+      element.ownerDocument.defaultView ||
+      window
+    ).getComputedStyle(
+      element
+    );
+
+  return (
+    !isTransparentVisualValue(
+      computed.backgroundColor
+    ) ||
+    !isTransparentVisualValue(
+      computed.backgroundImage
+    ) ||
+    !normalizeVisualValue(
+      computed.border
+    ).startsWith(
+      "0pxnone"
+    ) ||
+    (
+      normalizeVisualValue(
+        computed.borderRadius
+      ) !== "0px" &&
+      normalizeVisualValue(
+        computed.borderRadius
+      ) !== "0px0px0px0px"
+    ) ||
+    !isTransparentVisualValue(
+      computed.boxShadow
+    )
+  );
+};
+
+const findCtaVisualShell = (
+  element?: HTMLElement | null
+) => {
+  if (!element) {
+    return null;
+  }
+
+  if (
+    forbiddenCtaRootTags.has(
+      element.tagName
+    )
+  ) {
+    return null;
+  }
+
+  const boundary =
+    element.closest(
+      "section, main, article"
+    ) as HTMLElement | null;
+
+  const buttons =
+    Array.from(
+      element.querySelectorAll(
+        "a,button"
+      )
+    ).filter(
+      (node): node is HTMLElement =>
+        node.nodeType === 1 &&
+        !!node.textContent?.trim()
+    );
+
+  for (const button of buttons) {
+    let current =
+      button.parentElement;
+
+    while (current) {
+      if (
+        forbiddenCtaRootTags.has(
+          current.tagName
+        )
+      ) {
+        break;
+      }
+
+      if (
+        current !== button &&
+        hasVisualShellStyle(
+          current
+        )
+      ) {
+        return current;
+      }
+
+      if (
+        current === element ||
+        current === boundary
+      ) {
+        break;
+      }
+
+      current =
+        current.parentElement;
+    }
+  }
+
+  let current: HTMLElement | null =
+    element;
+
+  while (current) {
+    if (
+      forbiddenCtaRootTags.has(
+        current.tagName
+      )
+    ) {
+      break;
+    }
+
+    if (
+      hasVisualShellStyle(
+        current
+      )
+    ) {
+      return current;
+    }
+
+    if (current === boundary) {
+      break;
+    }
+
+    current =
+      current.parentElement;
+  }
+
+  return element;
+};
+
+const getComputedCtaButtonStyle = (
+  element: HTMLElement
+) => {
+  const computed =
+    (
+      element.ownerDocument.defaultView ||
+      window
+    ).getComputedStyle(
+      element
+    );
+
+  return {
+    desktop: {
+      background:
+        computed.background,
+      backgroundColor:
+        computed.backgroundColor,
+      backgroundImage:
+        computed.backgroundImage,
+      color:
+        computed.color,
+      border:
+        computed.border,
+      borderRadius:
+        computed.borderRadius,
+      boxShadow:
+        computed.boxShadow,
+      padding:
+        computed.padding,
+      paddingTop:
+        computed.paddingTop,
+      paddingBottom:
+        computed.paddingBottom,
+      paddingLeft:
+        computed.paddingLeft,
+      paddingRight:
+        computed.paddingRight,
+      fontSize:
+        computed.fontSize,
+      fontWeight:
+        computed.fontWeight,
+      lineHeight:
+        computed.lineHeight,
+      textAlign:
+        computed.textAlign,
+      minWidth:
+        computed.minWidth,
+      width:
+        computed.width,
+      maxWidth:
+        computed.maxWidth
+    }
+  };
+};
+
 // =====================================
 // CTA PRESET
 // =====================================
@@ -115,24 +625,71 @@ export const generateCTAPreset = (
   const claimedElement =
     payload?.claimedNode?.element;
 
-  const ctaElement =
-    (
-      claimedElement?.matches(
-        "[class*='cta' i], [id*='cta' i], [class*='final' i], [id*='final' i]"
-      )
-        ? claimedElement
-        : claimedElement?.querySelector(
-            "[class*='cta' i], [id*='cta' i], [class*='final' i], [id*='final' i]"
-          )
-    ) as HTMLElement | null;
+  const panelElement =
+    payload?.panelElement ||
+    claimedElement ||
+    null;
 
   const styleRoot =
-    ctaElement || claimedElement || null;
+    findCtaVisualShell(
+      panelElement
+    ) || panelElement || null;
 
-  const titleElement =
-    styleRoot?.querySelector(
-      "h1,h2"
-    ) as HTMLElement | null;
+  const sectionElement =
+    payload?.sectionElement ||
+    (
+      styleRoot?.closest(
+        "section"
+      ) as HTMLElement | null
+    ) ||
+    null;
+
+  const containerElement =
+    payload?.containerElement ||
+    null;
+
+  console.log(
+    "CTA_STYLE_ROOT_SELECTED",
+    {
+      claimed:
+        claimedElement
+          ? {
+              tag:
+                claimedElement.tagName,
+              className:
+                claimedElement.getAttribute(
+                  "class"
+                ) || "",
+              id:
+                claimedElement.id || ""
+            }
+          : null,
+      styleRoot:
+        styleRoot
+          ? {
+              tag:
+                styleRoot.tagName,
+              className:
+                styleRoot.getAttribute(
+                  "class"
+                ) || "",
+              id:
+                styleRoot.id || ""
+            }
+          : null,
+      style:
+        styleRoot
+          ? desktopOf(
+              getComputedCtaPanelStyle(
+                styleRoot
+              )
+            )
+          : null
+    }
+  );
+
+const titleElement =
+  styleRoot?.querySelector("h1,h2,h3,h4") as HTMLElement | null;
 
   const textElement =
     styleRoot?.querySelector(
@@ -195,9 +752,23 @@ export const generateCTAPreset = (
         !!action.label?.trim()
     );
 
-  const sectionStyle =
+  const rawSectionStyle =
+    sectionElement
+      ? getComputedCtaPanelStyle(
+          sectionElement
+        )
+      : undefined;
+
+  const containerStyle =
+    containerElement
+      ? getComputedCtaPanelStyle(
+          containerElement
+        )
+      : undefined;
+
+  const panelStyle =
     styleRoot
-      ? extractLayoutStyles(
+      ? getComputedCtaPanelStyle(
           styleRoot
         )
       : undefined;
@@ -240,37 +811,121 @@ export const generateCTAPreset = (
 
   const buttonStyle =
     buttonElement
-      ? {
-          desktop: {
-            ...desktopOf(
-              extractLayoutStyles(
-                buttonElement
-              )
-            ),
-            ...desktopOf(
-              extractTypographyStyles(
-                buttonElement
-              )
-            )
-          }
-        }
+      ? getComputedCtaButtonStyle(
+          buttonElement
+        )
       : undefined;
 
   const mergedSectionStyle =
     mergePresetDesktopStyle(
       {
-        paddingTop: "100px",
-        paddingBottom: "100px",
-        paddingLeft: "24px",
-        paddingRight: "24px",
-        backgroundColor: "#111827"
+        paddingTop: "0px",
+        paddingBottom: "0px",
+        paddingLeft: "0px",
+        paddingRight: "0px",
+        backgroundColor: "#111827",
+        width: "100%"
       },
-      sectionStyle,
-      filterSectionStyle
+      rawSectionStyle,
+      filterCtaSectionStyle
     );
 
+    console.log(
+  "CTA_MERGED_SECTION_STYLE",
+  mergedSectionStyle
+);
+
+console.log(
+  "CTA_RAW_SECTION_STYLE",
+  rawSectionStyle
+);
+
+  const mergedContainerStyle =
+    mergePresetDesktopStyle(
+      {
+        width: "100%",
+        maxWidth: "1280px",
+        marginLeft: "auto",
+        marginRight: "auto",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center"
+      },
+      containerStyle,
+      filterCtaContainerStyle
+    );
+
+  const mergedPanelStyle =
+    mergePresetDesktopStyle(
+      {
+        width: "100%",
+        marginLeft: "auto",
+        marginRight: "auto",
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "32px"
+      },
+      panelStyle,
+      filterCtaPanelStyle
+    );
+    console.log(
+  "CTA_PANEL_PADDING_COMPARE",
+  {
+    panelRaw:
+      panelStyle?.desktop?.padding,
+    panelMerged:
+      mergedPanelStyle.desktop?.padding,
+    sectionMerged:
+      mergedSectionStyle.desktop?.padding ||
+      `${mergedSectionStyle.desktop?.paddingTop} ${mergedSectionStyle.desktop?.paddingRight} ${mergedSectionStyle.desktop?.paddingBottom} ${mergedSectionStyle.desktop?.paddingLeft}`
+  }
+);
+
+  const sourcePanelDesktop =
+    desktopOf(
+      panelStyle
+    );
+
+  console.log(
+    "CTA_SELECTED_PANEL_STYLE",
+    desktopOf(
+      panelStyle
+    )
+  );
+
+  console.log(
+    "CTA_SECTION_STYLE",
+    desktopOf(
+      rawSectionStyle
+    )
+  );
+
+  console.log(
+    "CTA_CONTAINER_STYLE",
+    desktopOf(
+      containerStyle
+    )
+  );
+
+  console.log(
+    "CTA_SOURCE_LAYOUT",
+    {
+      display:
+        sourcePanelDesktop.display,
+      flexDirection:
+        sourcePanelDesktop.flexDirection,
+      justifyContent:
+        sourcePanelDesktop.justifyContent,
+      alignItems:
+        sourcePanelDesktop.alignItems,
+      gap:
+        sourcePanelDesktop.gap
+    }
+  );
+
   const titleFallbackStyle = {
-    textAlign: "center",
     fontSize: "48px",
     fontWeight: "800",
     maxWidth: "820px",
@@ -382,7 +1037,7 @@ export const generateCTAPreset = (
       titleMaxWidthAfter:
         ctaTitleStyle.desktop?.maxWidth,
       cardPadding:
-        mergedSectionStyle.desktop?.padding ||
+        mergedPanelStyle.desktop?.padding ||
         [
           mergedSectionStyle.desktop?.paddingTop,
           mergedSectionStyle.desktop?.paddingRight,
@@ -400,29 +1055,122 @@ export const generateCTAPreset = (
     }
   );
 
-  console.log(
-    "CTA_CONTAINER_REPORT",
-    {
-      titleMaxWidth:
-        ctaTitleStyle.desktop?.maxWidth,
-      titleFontSize:
-        ctaTitleStyle.desktop?.fontSize,
-      titleLineHeight:
-        ctaTitleStyle.desktop?.lineHeight,
-      textMaxWidth:
-        mergedTextStyle.desktop?.maxWidth,
-      cardWidth:
-        mergedSectionStyle.desktop?.width,
-      cardMaxWidth:
-        mergedSectionStyle.desktop?.maxWidth,
-      flexItemWidth:
-        "100%",
-      flexItemMaxWidth:
-        undefined
+  const leftTitleStyle = {
+    ...ctaTitleStyle,
+    desktop: {
+      ...(ctaTitleStyle.desktop || {}),
+      textAlign: "left"
     }
+  };
+
+  const leftTextStyle = {
+    ...mergedTextStyle,
+    desktop: {
+      ...(mergedTextStyle.desktop || {}),
+      textAlign: "left",
+      marginLeft: "0",
+      marginRight: "0"
+    }
+  };
+
+  console.log(
+    "CTA_TITLE_STYLE",
+    leftTitleStyle
   );
 
-  return {
+  const actionItems =
+    actions.map(
+      (
+        action,
+        index
+      ) => {
+        const actionElement =
+          buttonElements[index] ||
+          buttonElement;
+
+        const actionStyle =
+          actionElement
+            ? getComputedCtaButtonStyle(
+                actionElement
+              )
+            : buttonStyle;
+
+        return {
+          id: uuidv4(),
+
+          type: "flexItem" as const,
+
+          data: {
+
+            props: {},
+
+            style: {
+
+              desktop: {
+
+                flex: "0 0 auto",
+
+                width: "auto",
+
+                maxWidth: "none"
+              },
+
+              tablet: {},
+
+              mobile: {}
+            }
+          },
+
+          children: [
+            {
+              id: uuidv4(),
+
+              type: "button" as const,
+
+              data: {
+
+                props: {
+
+                  label:
+                    action.label,
+
+                  href:
+                    action.href || ""
+                },
+
+                style: {
+
+                  ...mergePresetDesktopStyle(
+                    {
+                      backgroundColor:
+                        "#10b981",
+                      color:
+                        "#ffffff",
+                      borderRadius:
+                        "14px",
+                      paddingTop:
+                        "14px",
+                      paddingBottom:
+                        "14px",
+                      paddingLeft:
+                        "24px",
+                      paddingRight:
+                        "24px"
+                    },
+                    actionStyle,
+                    filterCtaButtonStyle
+                  )
+                }
+              },
+
+              children: []
+            }
+          ]
+        };
+      }
+    );
+
+  const finalBlock: Block = {
 
     id: uuidv4(),
 
@@ -450,29 +1198,51 @@ export const generateCTAPreset = (
 
           style: {
 
-            desktop: {
-
-              flexDirection: "column",
-
-              alignItems: "center",
-
-              justifyContent: "center",
-
-              gap: "20px"
-            },
-
-            tablet: {},
-
-            mobile: {}
+            ...mergedContainerStyle
           }
         },
 
         children: [
+          {
+            id: uuidv4(),
 
-          // =====================
-          // TITLE ITEM
-          // =====================
+            type: "flex" as const,
 
+            data: {
+
+              props: {},
+
+              style: {
+
+                ...mergedPanelStyle,
+                desktop: {
+                  ...(mergedPanelStyle.desktop || {}),
+                  flexDirection:
+                    sourcePanelDesktop.flexDirection ||
+                    mergedPanelStyle.desktop?.flexDirection ||
+                    "row",
+                  alignItems:
+                    sourcePanelDesktop.alignItems ||
+                    mergedPanelStyle.desktop?.alignItems ||
+                    "center",
+                  justifyContent:
+                    sourcePanelDesktop.justifyContent ||
+                    mergedPanelStyle.desktop?.justifyContent ||
+                    "space-between",
+                  flexWrap:
+                    sourcePanelDesktop.flexWrap ||
+                    mergedPanelStyle.desktop?.flexWrap ||
+                    "nowrap",
+                  gap:
+                    sourcePanelDesktop.gap ||
+                    sourcePanelDesktop.rowGap ||
+                    mergedPanelStyle.desktop?.gap ||
+                    "32px"
+                }
+              }
+            },
+
+            children: [
           {
             id: uuidv4(),
 
@@ -486,11 +1256,13 @@ export const generateCTAPreset = (
 
                 desktop: {
 
-                  width: "100%",
-
+                  flex: "1 1 520px",
+                  minWidth: "0",
                   display: "flex",
-
-                  justifyContent: "center"
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  justifyContent: "center",
+                  gap: "12px"
                 },
 
                 tablet: {},
@@ -510,27 +1282,48 @@ export const generateCTAPreset = (
                   props: {
 
                     content:
-
                       payload?.title ||
+                      "Ready to get started?",
 
-                      "Ready to get started?"
+                    segments:
+                      payload?.titleSegments || []
                   },
 
                   style: {
 
-                    ...ctaTitleStyle
+                    ...leftTitleStyle
                   }
                 },
 
                 children: []
-              }
+              },
+              ...(payload?.text
+                ? [
+                    {
+                      id: uuidv4(),
+
+                      type: "text" as const,
+
+                      data: {
+
+                        props: {
+
+                          content:
+                            payload.text
+                        },
+
+                        style: {
+
+                          ...leftTextStyle
+                        }
+                      },
+
+                      children: []
+                    }
+                  ]
+                : [])
             ]
           },
-
-          // =====================
-          // TEXT ITEM
-          // =====================
-
           {
             id: uuidv4(),
 
@@ -544,11 +1337,12 @@ export const generateCTAPreset = (
 
                 desktop: {
 
-                  width: "100%",
-
+                  flex: "0 0 auto",
+                  width: "auto",
+                  alignSelf: "center",
                   display: "flex",
-
-                  justifyContent: "center"
+                  justifyContent: "center",
+                  alignItems: "center"
                 },
 
                 tablet: {},
@@ -561,156 +1355,55 @@ export const generateCTAPreset = (
               {
                 id: uuidv4(),
 
-                type: "text" as const,
+                type: "flex" as const,
 
                 data: {
 
                   props: {
-
-                    content:
-
-                      payload?.text ||
-
-                      "Start building your next experience today."
+                    direction: "row"
                   },
 
                   style: {
 
-                    ...mergedTextStyle
+                    ...mergedActionRowStyle.desktop,
+                    alignItems: "center",
+                    justifyContent: "center"
                   }
                 },
 
-                children: []
+                children:
+                  actionItems
               }
             ]
-          },
-
-          // =====================
-          // ACTIONS ROW
-          // =====================
-
-          {
-            id: uuidv4(),
-
-            type: "flex" as const,
-
-            data: {
-
-              props: {
-                direction: "row"
-              },
-
-              style: {
-
-                ...mergedActionRowStyle
-              }
-            },
-
-            children:
-              actions.map(
-                (
-                  action,
-                  index
-                ) => {
-                  const actionElement =
-                    buttonElements[index] ||
-                    buttonElement;
-
-                  const actionStyle =
-                    actionElement
-                      ? {
-                          desktop: {
-                            ...desktopOf(
-                              extractLayoutStyles(
-                                actionElement
-                              )
-                            ),
-                            ...desktopOf(
-                              extractTypographyStyles(
-                                actionElement
-                              )
-                            )
-                          }
-                        }
-                      : buttonStyle;
-
-                  return {
-                    id: uuidv4(),
-
-                    type: "flexItem" as const,
-
-                    data: {
-
-                      props: {},
-
-                      style: {
-
-                        desktop: {
-
-                          flex: "0 0 auto",
-
-                          width: "auto",
-
-                          maxWidth: "none"
-                        },
-
-                        tablet: {},
-
-                        mobile: {}
-                      }
-                    },
-
-                    children: [
-                      {
-                id: uuidv4(),
-
-                type: "button" as const,
-
-                data: {
-
-                  props: {
-
-                    label:
-                      action.label,
-
-                    href:
-                      action.href || ""
-                  },
-
-                  style: {
-
-                    ...mergePresetDesktopStyle(
-                      {
-                        backgroundColor:
-                          "#10b981",
-                        color:
-                          "#ffffff",
-                        borderRadius:
-                          "14px",
-                        paddingTop:
-                          "14px",
-                        paddingBottom:
-                          "14px",
-                        paddingLeft:
-                          "24px",
-                          paddingRight:
-                          "24px"
-                      },
-                      actionStyle,
-                      filterCardStyle
-                    )
-                  }
-                },
-
-                children: []
-              }
-                    ]
-                  };
-                }
-              )
+          }
+            ]
           }
         ]
       }
     ]
   };
+
+  console.log(
+    "CTA_FINAL_TREE",
+    {
+      type:
+        finalBlock.type,
+      sectionStyle:
+        finalBlock.data?.style,
+      containerType:
+        finalBlock.children?.[0]?.type,
+      containerStyle:
+        finalBlock.children?.[0]?.data?.style,
+      panelType:
+        finalBlock.children?.[0]?.children?.[0]?.type,
+      panelStyle:
+        finalBlock.children?.[0]?.children?.[0]?.data?.style,
+      panelChildren:
+        finalBlock.children?.[0]?.children?.[0]?.children?.map(
+          child => child.type
+        )
+    }
+  );
+
+  return finalBlock;
 };

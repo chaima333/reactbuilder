@@ -2,24 +2,20 @@ import { Block, ResponsiveStyle } from "../types/page.types";
 import { blockRegistry } from "../core/blockRegistry";
 export { canDrop } from "../core/validation/canDrop";
 
-/**
- * الـ APIBlock يمثل الداتا الخام اللي جاية من السيرفر
- */
+
 export type LegacyBlockInput = {
   id?: string;
   type: string;
   data?: {
     props?: Record<string, any>;
-    style?: any; // نجم يكون Object عادي أو ResponsiveStyle
+    style?: any; 
   };
   props?: Record<string, any>;
   style?: any;
   children?: LegacyBlockInput[];
 };
 
-/**
- * Helper function باش نضمنوا إن الـ Style ديما يرجع ResponsiveStyle
- */
+
 const ensureResponsiveStyle = (style: any): ResponsiveStyle => {
   if (style?.desktop) {
     return style as ResponsiveStyle;

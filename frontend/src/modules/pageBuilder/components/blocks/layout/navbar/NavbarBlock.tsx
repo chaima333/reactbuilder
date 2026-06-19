@@ -170,7 +170,8 @@ export const NavbarBlock = ({
 
     overflow:
       "visible",
-
+      
+    zIndex:9999,
     whiteSpace:
       resolvedCss.whiteSpace ||
       "nowrap",
@@ -192,16 +193,38 @@ export const NavbarBlock = ({
   {...rootProps}
   style={navbarStyle}
 >
- <style>
+<style>
+
   {`
-    .navbar-dropdown-parent .navbar-submenu {
-      display: none !important;
+    .navbar-dropdown-parent {
+      position: relative !important;
+      overflow: visible !important;
+      z-index: 99999 !important;
     }
 
-    .navbar-dropdown-parent:hover .navbar-submenu {
+    .navbar-dropdown-parent::after {
+      content: "" !important;
+      position: absolute !important;
+      top: 100% !important;
+      left: 0 !important;
+      right: 0 !important;
+      height: 16px !important;
+      pointer-events: auto !important;
+      z-index: 999998 !important;
+    }
+
+    .navbar-dropdown-parent .navbar-submenu {
+      display: none !important;
+      z-index: 999999 !important;
+    }
+
+    .navbar-dropdown-parent:hover .navbar-submenu,
+    .navbar-dropdown-parent:focus-within .navbar-submenu,
+    .navbar-dropdown-parent .navbar-submenu:hover {
       display: flex !important;
     }
   `}
+
 </style>
 
   {children}

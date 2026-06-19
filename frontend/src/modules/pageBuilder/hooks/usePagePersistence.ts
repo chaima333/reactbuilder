@@ -79,7 +79,6 @@ export const usePagePersistence = ({
   // ========================
 
   const save = async () => {
-
     try {
 
       // 🔥 DEBUG
@@ -114,7 +113,6 @@ export const usePagePersistence = ({
       // ====================
       // UPDATE EXISTING PAGE
       // ====================
-
       if (pId) {
 
         await updatePage({
@@ -173,17 +171,15 @@ export const usePagePersistence = ({
 
           }).unwrap();
 
-        console.log(
-          "🔥 CREATED PAGE FULL",
-          createdPage
-        );
+       
 
-        navigate(
-          `/sites/${sId}/pages/${
-            (createdPage as any)
-              ?.data?.id
-          }/edit`
-        );
+       const created =
+  (createdPage as any).data ||
+  createdPage;
+
+navigate(
+  `/sites/${sId}/pages/${created.id}/edit`
+);
       }
 
     } catch (err) {

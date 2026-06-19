@@ -213,6 +213,36 @@ const semanticRootLike =
   computedLooksGrid;
 
 
+  const isSmallInnerGrid =
+  computedLooksGrid &&
+  templateLooksGrid &&
+  children.length <= 4 &&
+  !classLooksGrid &&
+  children.every(
+    child =>
+      isHTMLElementLike(child) &&
+      child.children.length <= 2
+  );
+
+if (isSmallInnerGrid) {
+  console.log(
+    "🛑 SMALL INNER GRID REJECTED",
+    {
+      className,
+      display:
+        computed.display,
+      gridTemplateColumns:
+        computed.gridTemplateColumns,
+      childCount:
+        children.length,
+      childTags:
+        children.map(child => child.tagName)
+    }
+  );
+
+  return [];
+}
+
  const isGrid =
 
   !tagPenalty &&

@@ -24,10 +24,7 @@ const generateCTAGroupPreset = (
     hasActions
       ? {
           ...payload,
-          title:
-            payload?.title ||
-            payload?.actions?.[0]?.label ||
-            "Ready to get started?",
+          title:payload?.title || "",
           text:
             payload?.text ||
             payload?.description ||

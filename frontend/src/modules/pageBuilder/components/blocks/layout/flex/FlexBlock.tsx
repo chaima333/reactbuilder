@@ -385,13 +385,27 @@ border:
 
   // =====================================
   // RENDER
-  // =====================================
 const isNavbarSubmenu =
-  String(block?.id || "").includes("navbar-submenu");
+  block?.data?.props?.semanticRole === "dropdown" ||
+  block?.props?.semanticRole === "dropdown" ||
+  String(block?.id || "").startsWith("navbar-submenu-");
+
 if (isNavbarSubmenu) {
   console.log(
     "SUBMENU_BLOCK_FOUND",
     block.id
+  );
+}
+
+if (isNavbarSubmenu) {
+  console.log(
+    "SUBMENU_CHILDREN",
+    block.children?.map(
+      (c:any) => ({
+        id: c.id,
+        type: c.type
+      })
+    )
   );
 }
   return (

@@ -772,13 +772,31 @@ const semanticBlocks =
           : [emitted];
 
       return emittedBlocks.map(
-        block => ({
-          claimedNode:
-            result.claimedNode,
+        block => {
+          const emittedBlock = {
+            ...block,
+            meta: {
+              ...(block as any).meta,
+              resolverName:
+                result.resolverName ||
+                (block as any).meta?.resolverName
+            }
+          };
 
-          emitted:
-            block
-        })
+          return {
+            claimedNode:
+              result.claimedNode,
+
+            resolverName:
+              result.resolverName,
+
+            semanticResult:
+              result,
+
+            emitted:
+              emittedBlock
+          };
+        }
       );
     }
   );

@@ -16,6 +16,8 @@ type Props = {
   onImport?: (file: File) => void;
   onImportHtml?: () => void;
   onImportFigma?: () => void;
+  figmaPluginEnabled?: boolean;
+  figmaPluginLoading?: boolean;
 };
 
 export const SettingsPanel = ({
@@ -26,7 +28,9 @@ export const SettingsPanel = ({
   onExport,
   onImport,
   onImportHtml,
-  onImportFigma
+  onImportFigma,
+  figmaPluginEnabled = false,
+  figmaPluginLoading = false
 }: Props) => {
   return (
     <Box p={2}>
@@ -108,23 +112,28 @@ export const SettingsPanel = ({
           </Button>
         )}
 
-        {onImportFigma && (
-          <Button
-            variant="contained"
-            fullWidth
-            onClick={onImportFigma}
-            sx={{
-              bgcolor: "#7c3aed",
-              color: "#fff",
-              fontWeight: "bold",
-              textTransform: "none",
-              "&:hover": {
-                bgcolor: "#5b21b6"
-              }
-            }}
-          >
-             CONNECT FIGMA PLUGIN
-          </Button>
+        <Button
+          variant="contained"
+          fullWidth
+          disabled={figmaPluginLoading || !figmaPluginEnabled}
+          onClick={onImportFigma}
+          sx={{
+            bgcolor: "#7c3aed",
+            color: "#fff",
+            fontWeight: "bold",
+            textTransform: "none",
+            "&:hover": {
+              bgcolor: "#5b21b6"
+            }
+          }}
+        >
+           CONNECT FIGMA PLUGIN
+        </Button>
+
+        {!figmaPluginLoading && !figmaPluginEnabled && (
+          <Typography variant="body2" color="text.secondary">
+            Figma Plugin is disabled by administrator
+          </Typography>
         )}
       </Stack>
     </Box>
