@@ -91,3 +91,23 @@ export const getAdminActivityLogs = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export const getAIStats = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const aiStats =
+      await AdminService.AdminAnalyticsService.getAiStats();
+
+    res.json({
+      success: true,
+      data: aiStats,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

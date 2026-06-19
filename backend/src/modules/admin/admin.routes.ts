@@ -9,6 +9,7 @@ import {
   getAdminSites,
   getAdminPlugins,
   getAdminActivityLogs,
+  getAIStats,
 } from "./admin.controller";
 import { authorizeRoles } from "../../core/middleware/role.middleware";
 import { getAdminSettings, updateAdminSettings } from "./adminSettings.controller";
@@ -37,5 +38,5 @@ router.put(
   "/settings",
   updateAdminSettings
 );
-
+router.get("/ai-stats", getAIStats);
 export default router;
