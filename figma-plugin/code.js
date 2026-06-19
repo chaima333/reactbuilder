@@ -206,8 +206,8 @@ if (msg.type === "SEND_TO_REACTBUILDER") {
     ) {
       figma.notify("Sent successfully");
 
- figma.openExternal(
-  "https://frontend-git-feature-auth-persistence-chaima333s-projects.vercel.app/sites/" +
+figma.openExternal(
+  "http://localhost:5173/sites/" +
   result.data.siteId +
   "/pages/new?figmaImportId=" +
   result.data.importId
