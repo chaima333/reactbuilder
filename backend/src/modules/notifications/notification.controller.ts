@@ -26,12 +26,6 @@ export const getUnreadCount = async (
       req.user.id
     );
 
-  console.log("NOTIFICATION_TOPBAR_UNREAD_COUNT", {
-    userId: req.user.id,
-    siteId: null,
-    unreadCount: count,
-  });
-
   return res.json({
     success: true,
     data: { count },
