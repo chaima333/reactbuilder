@@ -296,7 +296,10 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
                       fontSize: "15px",
                       fontWeight: "700",
                       whiteSpace: "nowrap",
-                      transition: "color 0.2s ease"
+                      transition: "color 0.2s ease",
+                      display: "inline-block",
+                      marginRight: "24px"
+
                     })
                   },
                   children: []

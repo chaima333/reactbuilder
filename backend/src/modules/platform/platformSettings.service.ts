@@ -5,6 +5,7 @@ export type PublicPlatformSettings = {
   mediaPlugin: boolean;
   seoPlugin: boolean;
   versionPlugin: boolean;
+  figmaPlugin: boolean;
   aiEnabled: boolean;
   maintenanceMode: boolean;
 };
@@ -14,6 +15,7 @@ const defaultPublicSettings: PublicPlatformSettings = {
   mediaPlugin: true,
   seoPlugin: true,
   versionPlugin: true,
+  figmaPlugin: true,
   aiEnabled: true,
   maintenanceMode: false,
 };
@@ -31,6 +33,7 @@ export class PlatformSettingsService {
       mediaPlugin: value.mediaPlugin ?? defaultPublicSettings.mediaPlugin,
       seoPlugin: value.seoPlugin ?? defaultPublicSettings.seoPlugin,
       versionPlugin: value.versionPlugin ?? defaultPublicSettings.versionPlugin,
+      figmaPlugin: value.figmaPlugin ?? defaultPublicSettings.figmaPlugin,
       aiEnabled: value.aiEnabled ?? defaultPublicSettings.aiEnabled,
       maintenanceMode: value.maintenanceMode ?? defaultPublicSettings.maintenanceMode,
     };

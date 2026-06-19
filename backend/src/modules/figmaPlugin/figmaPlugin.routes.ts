@@ -6,22 +6,26 @@ import {
   getFigmaPluginSites,
   importFigmaRawFromPlugin
 } from "./figmaPlugin.controller";
+import { requireFigmaPluginEnabled } from "./figmaPluginEnabled.middleware";
 
 const router = Router();
 
 router.post(
   "/token",
   authenticateJWT,
+  requireFigmaPluginEnabled,
   generateFigmaPluginToken
 );
 
 router.get(
   "/sites",
+  requireFigmaPluginEnabled,
   getFigmaPluginSites
 );
 
 router.post(
   "/import/raw",
+  requireFigmaPluginEnabled,
   importFigmaRawFromPlugin
 );
 
