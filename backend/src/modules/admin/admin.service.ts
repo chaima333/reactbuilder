@@ -111,28 +111,60 @@ export const fetchAdminActivityLogs = async () => {
 export class AdminAnalyticsService {
   static async getAiStats() {
     const generatedPages = await ActivityLog.count({
-      where: {
-        action: "ai_page_generated",
-      },
+      where: { action: "ai_page_generated" },
     });
 
     const generatedImages = await ActivityLog.count({
-      where: {
-        action: "media_ai_uploaded",
-      },
+      where: { action: "media_ai_uploaded" },
     });
 
     const lastGeneration = await ActivityLog.findOne({
-      where: {
-        action: "ai_page_generated",
-      },
+      where: { action: "ai_page_generated" },
       order: [["createdAt", "DESC"]],
     });
+
+    const logs = await ActivityLog.findAll({
+      where: { action: "ai_page_generated" },
+      order: [["createdAt", "ASC"]],
+    });
+
+    const dailyMap: Record<string, number> = {};
+    const categoryMap: Record<string, number> = {};
+
+    logs.forEach((log: any) => {
+      const date = new Date(log.createdAt)
+        .toISOString()
+        .slice(0, 10);
+
+      dailyMap[date] = (dailyMap[date] || 0) + 1;
+
+      const category =
+        log.details?.category || "Unknown";
+
+      categoryMap[category] =
+        (categoryMap[category] || 0) + 1;
+    });
+
+    const dailyGenerations = Object.entries(dailyMap).map(
+      ([date, count]) => ({
+        date,
+        count,
+      })
+    );
+
+    const topCategories = Object.entries(categoryMap)
+      .map(([category, count]) => ({
+        category,
+        count,
+      }))
+      .sort((a, b) => b.count - a.count);
 
     return {
       generatedPages,
       generatedImages,
       lastGenerationAt: lastGeneration?.createdAt || null,
+      dailyGenerations,
+      topCategories,
     };
   }
 }
