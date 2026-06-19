@@ -262,53 +262,78 @@ const generated = generateTemplate(
     generated.blocks?.length || 0
   );
 
- const pageTitle =
-  title?.trim() ||
-  `${generated.title || category} ${Date.now()}`;
+
+const selectedPages =
+  sitePlan.slice(0, 4);
+
+console.log(
+  "AI_WILL_CREATE_PAGES",
+  selectedPages.map((page) => ({
+    title: page.title,
+    slug: page.slug,
+    type: page.type
+  }))
+);
+
+const createdPages: any[] = [];
+
+for (const planPage of selectedPages) {
+  const pageTitle =
+    planPage.type === "home"
+      ? `${generated.title || category} Home ${Date.now()}`
+      : `${generated.title || category} ${planPage.title} ${Date.now()}`;
 
   const result = await PageService.createPage(
     siteId,
     userId,
     {
       title: pageTitle,
-      blocks: generated.blocks
+      slug: planPage.slug,
+      blocks: generated.blocks,
+      isHomepage: planPage.type === "home"
     }
   );
-await ActivityLog.create({
-  userId,
-  siteId,
-  action: "ai_page_generated",
-  entityType: "page",
-  entityId: result.data.id,
-  details: {
-    category,
-    prompt,
-    pageTitle,
-  },
-});
+
+  createdPages.push(result.data);
+
+  await ActivityLog.create({
+    userId,
+    siteId,
+    action: "ai_page_generated",
+    entityType: "page",
+    entityId: result.data.id,
+    details: {
+      category,
+      prompt,
+      pageTitle,
+      pageType: planPage.type,
+      slug: planPage.slug
+    }
+  });
+
   const seo = generateSeo(
-  category,
-  pageTitle,
-  heroImageUrl
-);
+    category,
+    pageTitle,
+    heroImageUrl
+  );
 
-await Seo.create({
-  pageId: result.data.id,
-  siteId,
+  await Seo.create({
+    pageId: result.data.id,
+    siteId,
 
-  metaTitle: seo.metaTitle,
-  metaDescription: seo.metaDescription,
-  metaKeywords: seo.metaKeywords,
+    metaTitle: seo.metaTitle,
+    metaDescription: seo.metaDescription,
+    metaKeywords: seo.metaKeywords,
 
-  ogTitle: seo.ogTitle,
-  ogDescription: seo.ogDescription,
-  ogImage: seo.ogImage,
+    ogTitle: seo.ogTitle,
+    ogDescription: seo.ogDescription,
+    ogImage: seo.ogImage,
 
-  twitterTitle: seo.twitterTitle,
-  twitterDescription: seo.twitterDescription,
-  twitterImage: seo.twitterImage
-});
-
-  return result.data;
+    twitterTitle: seo.twitterTitle,
+    twitterDescription: seo.twitterDescription,
+    twitterImage: seo.twitterImage
+  });
 }
-}
+
+return createdPages[0];
+}};
