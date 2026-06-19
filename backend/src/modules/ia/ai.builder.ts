@@ -1116,7 +1116,23 @@ export function buildPageFromTemplate(
         resolvedImage: heroImageUrl || section.image
       };
     }
+if (section.kind === "services" && aiContent?.services?.length) {
+  return {
+    ...section,
+    items: aiContent.services.map(
+      (service: string) => `📌 ${service}|Professional ${service.toLowerCase()} services.`
+    )
+  };
+}
 
+if (section.kind === "stats" && aiContent?.stats?.length) {
+  return {
+    ...section,
+    items: aiContent.stats.map(
+      (stat: any) => `${stat.value}|${stat.label}`
+    )
+  };
+}
     return section;
   });
 

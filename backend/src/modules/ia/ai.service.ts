@@ -258,7 +258,10 @@ await ActivityLog.create({
   siteId,
   action: "ai_page_generated",
   entityType: "page",
-  entityId: result.data.id
+  entityId: result.data.id,
+  details: {
+    category,
+  },
 });
   const seo = generateSeo(
   category,
