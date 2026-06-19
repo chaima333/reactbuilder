@@ -188,19 +188,22 @@ export class AiService {
   }
 
   const category = await this.predictCategory(prompt);
-  
+console.log("FINAL_CATEGORY", category);
+console.log("FINAL_PROMPT", prompt);
+
   const sitePlan =
   generateSitePlan(category);
-
 console.log(
-  "AI_SITE_PLAN",
-  sitePlan.map(p => p.slug)
+  "SITE_PLAN_CATEGORY",
+  category,
+  sitePlan.map((p) => p.slug)
 );
   
   const aiContent = generateAiContent(
   category,
   prompt
 );
+console.log("AI_CONTENT_TITLE", aiContent.title);
 
   const template =
     CATEGORY_TEMPLATES[category] ??
