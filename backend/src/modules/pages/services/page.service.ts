@@ -113,7 +113,7 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
     context: { 
       userId, 
       siteId, 
-      source: "page.handler", // ✅ أضف هذا السطر لكي يعرف الـ Plugin أن المصدر موثوق
+      source: "page.handler", 
       action: "update" 
     }
   });
@@ -149,7 +149,7 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
       if (!page) throw new Error("PAGE_NOT_FOUND");
       if (!canPublish(userRole)) throw new Error("FORBIDDEN");
 
-      // 🔥 idempotent publish
+      //  idempotent publish
       if (page.status === PAGE_STATUS.PUBLISHED) {
         return {
           data: page,
@@ -157,8 +157,14 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
             type: PAGE_EVENTS.PUBLISHED,
             shouldEmit: false,
             payload: {
-              page: page.toJSON(),
-              alreadyPublished: true
+              payload: {
+  page: page.toJSON(),
+  current: page.toJSON(),
+  siteId,
+  userId,
+  alreadyPublished: true
+}
+             
             }
           }
         };
@@ -181,19 +187,20 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
         publishedAt: new Date()
       }, { transaction: t });
 
-      return {
-        data: updated,
-        event: {
-          type: PAGE_EVENTS.PUBLISHED,
-          shouldEmit: true,
-          payload: {
-            page: updated.toJSON(),
-            oldPage: old,
-            siteId,
-            userId
-          }
-        }
-      };
+        return {
+  data: updated,
+  event: {
+    type: PAGE_EVENTS.PUBLISHED,
+    shouldEmit: true,
+    payload: {
+      page: updated.toJSON(),
+      current: updated.toJSON(),
+      previous: old,
+      siteId,
+      userId
+    }
+  }
+};
     });
   }
 
@@ -201,14 +208,12 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
   // ================= RESTORE =================
 static async restoreVersion(siteId: number, pageId: number, versionId: number, userId: number) {
   return await sequelize.transaction(async (t) => {
-    // 1. جلب البيانات
     const version = await PageVersion.findOne({ where: { id: versionId, pageId }, transaction: t });
     if (!version) throw new Error("VERSION_NOT_FOUND");
 
     const page = await Page.findByPk(pageId, { transaction: t });
     const oldPage = page.toJSON();
 
-    // 2. عملية الـ Restore الفعلية
     await page.update({ 
       content: version.content, 
       title: version.title,
@@ -217,7 +222,6 @@ static async restoreVersion(siteId: number, pageId: number, versionId: number, u
 
     const updatedPage = page.toJSON();
 
-    // 3. الميثاق الجديد (The New Event Contract) 🛡️
     return {
       data: page,
       event: {
@@ -225,17 +229,17 @@ static async restoreVersion(siteId: number, pageId: number, versionId: number, u
         shouldEmit: true,
         payload: {
           context: {
-            eventId: crypto.randomUUID(), // الطابع البريدي الرسمي
+            eventId: crypto.randomUUID(), 
             timestamp: Date.now(),
             action: "restore",
             userId: userId,
             siteId: siteId
           },
           source:"restore",
-          current: updatedPage,  // الصفحة بعد ما رجعت (كانت اسمها newPage)
-          previous: oldPage,    // الصفحة قبل ما تتبدل (كانت اسمها oldPage)
-          changes: ["title", "content", "blocks"], // في الـ restore نعتبروا كل شيء تبدل
-          versionId: versionId // معلومة إضافية تنفعنا
+          current: updatedPage,  
+          previous: oldPage,    
+          changes: ["title", "content", "blocks"], 
+          versionId: versionId 
         }
       }
     };
@@ -243,9 +247,7 @@ static async restoreVersion(siteId: number, pageId: number, versionId: number, u
 }
 
 
-// داخل class PageService
 static async getPageById(pageId: number, siteId: number) {
-  // نلوجوا على الصفحة بالـ ID والـ SiteId لضمان الأمان (Tenant Isolation)
   const page = await Page.findOne({
     where: { 
       id: pageId, 

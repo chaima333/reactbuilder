@@ -149,7 +149,23 @@ export const publishPageController = async (req: AuthRequest, res: Response) => 
       req.siteContext.role,
       req.user.id
     );
+
+    console.log("[PAGE_PUBLISH_EVENT] before dispatch", {
+      type: result?.event?.type,
+      shouldEmit: result?.event?.shouldEmit,
+      userId: result?.event?.context?.userId,
+      siteId: result?.event?.context?.siteId,
+      pageId: result?.data?.id
+    });
+
     await handleEventDispatch(result, "PageController.publishPage");
+
+    console.log("[PAGE_PUBLISH_EVENT] dispatch completed", {
+      type: result?.event?.type,
+      dispatched: result?.event?.shouldEmit === true,
+      pageId: result?.data?.id
+    });
+
     return res.json({ success: true, data: PageMapper.toDTO(result.data) });
   } catch (err: any) {
     const status = err.message === "FORBIDDEN" ? 403 : err.message === "INVALID_TRANSITION" ? 400 : 500;

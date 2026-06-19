@@ -1,5 +1,6 @@
 import { uploadStream, deleteFromCloudinary } from '../../core/config/cloudinary';
 import { Media, ActivityLog } from '../../models';
+import { EventDispatcher } from '../../core/plugins/event.dispatcher';
 
 export class MediaService {
 static async processUpload(file: any, siteId: string, userId: string, alt?: string) {
@@ -47,6 +48,18 @@ static async processUpload(file: any, siteId: string, userId: string, alt?: stri
     entityType: 'media',
     entityId: media.id,
   });
+
+  await EventDispatcher.dispatch(
+    "media.uploaded",
+    {
+      data: { media },
+      context: {
+        userId: Number(userId),
+        siteId: Number(siteId)
+      }
+    },
+    "media"
+  );
 
   return media;
 }
