@@ -74,10 +74,13 @@ return {
   title: brandName,
 
   heroTitle:
-    cleanPrompt.length > 60
-      ? cleanPrompt.slice(0, 60)
-      : cleanPrompt,
-
+  category === "Finance"
+    ? "Smart Financial Advisory For Growing Businesses"
+    : category === "Medical"
+      ? "Modern Healthcare Made Simple"
+      : category === "Technology"
+        ? "Build Smarter Digital Products"
+        : `Modern ${category} Solutions`,
   heroText:
     `A modern ${category.toLowerCase()} solution designed for professional digital experiences.`,
 

@@ -1,3 +1,4 @@
+import { ActivityLog } from "../../models/activityLog";
 import { Seo } from "../../models/Seo";
 import { MediaService } from "../media/media.service";
 import { PageService } from "../pages/services/page.service";
@@ -253,7 +254,13 @@ const generated = generateTemplate(
       blocks: generated.blocks
     }
   );
-
+await ActivityLog.create({
+  userId,
+  siteId,
+  action: "ai_page_generated",
+  entityType: "page",
+  entityId: result.data.id
+});
   const seo = generateSeo(
   category,
   pageTitle,

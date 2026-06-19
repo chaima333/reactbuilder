@@ -4,6 +4,7 @@ import {
   Site,
   Page,
   Plugin,
+  Media,
 } from "../../models";
 
 import { Op } from "sequelize";
@@ -54,6 +55,7 @@ export const getPlatformStats = async () => {
     totalActivities,
     publishedPages,
     activeSites,
+    aiStats,
   ] = await Promise.all([
     User.count(),
     User.count({ where: { isApproved: false } }),
@@ -63,6 +65,7 @@ export const getPlatformStats = async () => {
     ActivityLog.count(),
     Page.count({ where: { status: "published" } }),
     Site.count({ where: { status: "active" } }),
+    AdminAnalyticsService.getAiStats(),
   ]);
 
  return {
@@ -74,6 +77,7 @@ export const getPlatformStats = async () => {
   totalActivityLogs: totalActivities,
   publishedPages,
   activeSites,
+  aiStats,
 };
 };
 
@@ -101,4 +105,34 @@ export const fetchAdminActivityLogs = async () => {
     limit: 50,
     order: [["createdAt", "DESC"]],
   });
+
 };
+
+export class AdminAnalyticsService {
+  static async getAiStats() {
+    const generatedPages = await ActivityLog.count({
+      where: {
+        action: "ai_page_generated",
+      },
+    });
+
+    const generatedImages = await ActivityLog.count({
+      where: {
+        action: "media_ai_uploaded",
+      },
+    });
+
+    const lastGeneration = await ActivityLog.findOne({
+      where: {
+        action: "ai_page_generated",
+      },
+      order: [["createdAt", "DESC"]],
+    });
+
+    return {
+      generatedPages,
+      generatedImages,
+      lastGenerationAt: lastGeneration?.createdAt || null,
+    };
+  }
+}
