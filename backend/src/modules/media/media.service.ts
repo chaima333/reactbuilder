@@ -106,8 +106,22 @@ if (!contentType.startsWith("image/")) {
     entityId: media.id
   });
 
+  await EventDispatcher.dispatch(
+  "media.uploaded",
+  {
+    data: { media },
+    context: {
+      userId: Number(userId),
+      siteId: Number(siteId),
+    },
+  },
+  "media"
+);
+
   return media;
 }
+
+
   static async removeMedia(id: string, userId: string) {
     const media = await Media.findOne({ where: { id, userId } });
     if (!media) throw new Error("Media asset not found or unauthorized");

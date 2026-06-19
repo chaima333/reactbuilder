@@ -3,6 +3,7 @@ import { MediaService } from "../media/media.service";
 import { PageService } from "../pages/services/page.service";
 import { generateTemplate } from "./ai.builder";
 import { CATEGORY_TEMPLATES } from "./ai.templates";
+import { generateAiContent } from "./content.generator";
 import { generateSeo } from "./seo.generator";
 
 const ML_SERVICE_URL =
@@ -186,7 +187,11 @@ export class AiService {
 
   const category = await this.predictCategory(prompt);
 
-  console.log("AI_CATEGORY_USED", category);
+  
+  const aiContent = generateAiContent(
+  category,
+  prompt
+);
 
   const template =
     CATEGORY_TEMPLATES[category] ??
@@ -210,19 +215,24 @@ export class AiService {
         );
 
       heroImageUrl = media.url;
-
+console.log("MEDIA_AI_NOTIFICATION_DISPATCHED", {
+  mediaId: media.id,
+  siteId,
+  userId,
+  originalName: media.originalName
+});
       console.log("AI_HERO_IMAGE_UPLOADED", heroImageUrl);
     } catch (error) {
       console.error("AI_IMAGE_UPLOAD_FAILED", error);
     }
   }
 
-  const generated = generateTemplate(
-    category,
-    prompt,
-    title,
-    heroImageUrl
-  );
+ const generated = generateTemplate(
+  category,
+  prompt,
+  title?.trim() || aiContent.title,
+  heroImageUrl
+);
 
   console.log("AI_GENERATED_TITLE", generated.title);
   console.log(
