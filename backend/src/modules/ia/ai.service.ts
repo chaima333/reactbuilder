@@ -227,10 +227,10 @@ console.log("MEDIA_AI_NOTIFICATION_DISPATCHED", {
     }
   }
 
- const generated = generateTemplate(
+const generated = generateTemplate(
   category,
   prompt,
-  title?.trim() || aiContent.title,
+  aiContent,
   heroImageUrl
 );
 
