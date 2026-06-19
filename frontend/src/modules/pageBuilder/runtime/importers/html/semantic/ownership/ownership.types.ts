@@ -3,6 +3,7 @@ import { StructuralCandidate } from "../../analysis/StructuralCandidate.types";
 export type SemanticOwnerType =
   | "HERO"
   | "NAVBAR"
+  | "FOOTER"
   | "GRID"
   | "CARD"
   | "FORM"

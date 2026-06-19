@@ -27,9 +27,11 @@ import { InfoBannerPayload } from "../semanticResolvers/semanticContracts/InfoBa
 import { TwoColumnIntroPayload } from "../semanticResolvers/semanticContracts/TwoColumnIntroPayload";
 import { CtaCardPayload } from "../semanticResolvers/semanticContracts/CtaCardPayload";
 import { NavbarPayload } from "../semanticContracts/NavbarPayload";
+import { FooterPayload } from "../semanticContracts/FooterPayload";
 
 export type SemanticPayload =
   | NavbarPayload
+  | FooterPayload
   | HeroPayload
   | OfficeTablePayload
   | ValuesGridPayload

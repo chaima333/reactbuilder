@@ -567,7 +567,10 @@ export const runSemanticPipeline = (
   body: HTMLElement,
   getElementId: (
     element: HTMLElement
-  ) => string
+  ) => string,
+  context: {
+    layout?: "page" | "navbar" | "footer";
+  } = {}
 ) => {
 
   // =====================================
@@ -725,7 +728,8 @@ console.log(
   const semanticResults =
 
     resolveSemanticStructure(
-      structuralGraph
+      structuralGraph,
+      context
     );
 
   console.log(
@@ -758,9 +762,34 @@ const semanticBlocks =
     result => {
 
       const emitted =
-        emitSemanticBlock(
-          result
-        );
+        result.type === "FOOTER" &&
+        result.preserveGenericSubtree
+          ? {
+              id:
+                `semantic-footer-${
+                  result.claimedNode?.path
+                    ?.join("-") || "root"
+                }`,
+              type: "section",
+              meta: {
+                semanticType:
+                  "FOOTER",
+                preserveGenericSubtree:
+                  true
+              },
+              data: {
+                props: {},
+                style: {
+                  desktop: {},
+                  tablet: {},
+                  mobile: {}
+                }
+              },
+              children: []
+            }
+          : emitSemanticBlock(
+              result
+            );
 
       if (!emitted) {
         return [];

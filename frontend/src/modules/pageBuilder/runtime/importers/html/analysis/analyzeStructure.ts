@@ -21,6 +21,9 @@ import {
   getTagNameLower,
   shouldSkipImportedElement
 } from "../domGuards";
+import {
+  detectFooterLayout
+} from "./detectFooterLayout";
 
 // =====================================
 // SKIP TAGS
@@ -210,6 +213,17 @@ if (
 
   candidates.push(
     ...navbarCandidates
+  );
+
+  const footerCandidates =
+    detectFooterLayout(
+      element,
+      path,
+      getElementId
+    );
+
+  candidates.push(
+    ...footerCandidates
   );
 
   // =====================================

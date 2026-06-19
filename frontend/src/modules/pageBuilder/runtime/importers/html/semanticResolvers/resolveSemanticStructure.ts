@@ -17,7 +17,10 @@ import {
 
 
 export const resolveSemanticStructure = (
-  node: StructuralNode
+  node: StructuralNode,
+  context: {
+    layout?: "page" | "navbar" | "footer";
+  } = {}
 ): any[] => {
 
   if (
@@ -151,6 +154,33 @@ for (const resolver of semanticResolverRegistry) {
   const result = resolver(node);
 
   if (result) {
+    if (
+      context.layout === "footer" &&
+      (
+        result.type === "CTA_SECTION" ||
+        result.type === "CTA_GROUP" ||
+        result.type === "CTA_CARD"
+      )
+    ) {
+      console.log(
+        "FOOTER_CONTEXT_SEMANTIC_REJECTED",
+        {
+          resolver:
+            resolver.name,
+          type:
+            result.type,
+          tag:
+            node.element.tagName,
+          className:
+            getElementClassName(
+              node.element
+            )
+        }
+      );
+
+      continue;
+    }
+
     result.resolverName =
       resolver.name || "anonymousResolver";
 
@@ -200,7 +230,8 @@ for (const resolver of semanticResolverRegistry) {
     const childResults =
 
       resolveSemanticStructure(
-        child
+        child,
+        context
       );
 
     semanticResults.push(

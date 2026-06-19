@@ -73,6 +73,10 @@ export type ImportHtmlResult = {
   layoutDensity?: LayoutDensityAnalysis;
 };
 
+export type ImportHtmlContext = {
+  layout?: "page" | "navbar" | "footer";
+};
+
 // =====================================================
 // IMPORT LIMITS
 // =====================================================
@@ -3446,6 +3450,69 @@ function parseDomToBlocks(
       element
     );
 if (semanticReplacement) {
+  if (
+    semanticReplacement.meta
+      ?.semanticType === "FOOTER" &&
+    semanticReplacement.meta
+      ?.preserveGenericSubtree
+  ) {
+    activeSemanticReplacementMap.delete(
+      element
+    );
+
+    const preservedBlocks =
+      parseDomToBlocks(
+        element,
+        path,
+        ownership,
+        warnings,
+        matcherHits
+      ).map(
+        block => ({
+          ...block,
+          meta: {
+            ...(block.meta || {}),
+            semanticType:
+              "FOOTER",
+            resolverName:
+              semanticReplacement.meta
+                ?.resolverName ||
+              "resolveFooter"
+          }
+        })
+      );
+
+    activeSemanticReplacementMap.set(
+      element,
+      semanticReplacement
+    );
+
+    console.log(
+      "FOOTER_GENERIC_SUBTREE_PRESERVED",
+      {
+        tag:
+          element.tagName,
+        className:
+          getElementClassName(
+            element
+          ),
+        emitted:
+          preservedBlocks.map(
+            block => ({
+              type:
+                block.type,
+              semanticType:
+                block.meta?.semanticType,
+              desktopStyle:
+                block.data?.style?.desktop
+            })
+          )
+      }
+    );
+
+    return preservedBlocks;
+  }
+
   const hasChildren =
     Array.isArray(semanticReplacement.children) &&
     semanticReplacement.children.length > 0;
@@ -4089,7 +4156,10 @@ console.log(
 const stylesheetCache = new Map<string, string>();
 const IMPORT_SANDBOX_CLASS = "__html_import_sandbox";
 
-export async function importHtmlDocument(htmlString: string): Promise<ImportHtmlResult> {
+export async function importHtmlDocument(
+  htmlString: string,
+  context: ImportHtmlContext = {}
+): Promise<ImportHtmlResult> {
   totalImportedNodes = 0;
   elementIds = new WeakMap();
   const warnings: ImportWarning[] = [];
@@ -4882,7 +4952,14 @@ return css;
     const designTokens = extractDesignTokens(body);
     console.log("🎨 EXTRACTED DESIGN TOKENS", designTokens);
 
-    const { ownership, semanticBlocks } = runSemanticPipeline(body, getElementId);
+    const {
+      ownership,
+      semanticBlocks
+    } = runSemanticPipeline(
+      body,
+      getElementId,
+      context
+    );
 console.log(
   "SEMANTIC CLAIMED",
   semanticBlocks.map((b:any) => ({

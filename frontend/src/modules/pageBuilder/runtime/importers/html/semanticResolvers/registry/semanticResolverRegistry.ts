@@ -30,9 +30,12 @@ import { resolveInfoBanner } from "../infoBanner/resolveInfoBanner";
 import { resolveTwoColumnIntro } from "../twoColumnIntro/resolveTwoColumnIntro";
 import { resolveCtaCard } from "../ctaCard/resolveCtaCard";
 import { resolveNavbar } from "../navbar/resolveNavbar";
+import { resolveFooter } from "../footer/resolveFooter";
 
 export const semanticResolverRegistry = [
 resolveNavbar,
+
+  resolveFooter,
   
   resolveHero,
 

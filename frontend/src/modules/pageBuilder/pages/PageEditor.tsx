@@ -354,7 +354,10 @@ const handleZipImportExecute = async () => {
     }
 
     const importGlobalLayoutBlock = async (
-      html?: string
+      html?: string,
+      layout:
+        "navbar" | "footer" =
+          "navbar"
     ) => {
       console.log(
         "ZIP_GLOBAL_LAYOUT_TRANSFORMER_CALLED",
@@ -376,8 +379,56 @@ const handleZipImportExecute = async () => {
 
       const imported =
         await importHtmlDocument(
-          html
+          html,
+          {
+            layout
+          }
         );
+
+      const containsCtaSemantic = (
+        block: any
+      ): boolean => {
+        const semanticType =
+          block?.meta?.semanticType ||
+          block?.data?.meta?.semanticType;
+
+        if (
+          semanticType === "CTA_SECTION" ||
+          semanticType === "CTA_GROUP" ||
+          semanticType === "CTA_CARD"
+        ) {
+          return true;
+        }
+
+        return (
+          block?.children || []
+        ).some(
+          containsCtaSemantic
+        );
+      };
+
+      if (
+        layout === "footer" &&
+        imported.blocks.some(
+          containsCtaSemantic
+        )
+      ) {
+        console.warn(
+          "ZIP_FOOTER_GENERIC_IMPORT_REJECTED",
+          {
+            reason:
+              "CTA semantic block emitted in footer context",
+            blockTypes:
+              imported.blocks.map(
+                (block: any) =>
+                  block?.meta?.semanticType ||
+                  block?.type
+              )
+          }
+        );
+
+        return null;
+      }
 
       console.log(
         "ZIP_GLOBAL_LAYOUT_IMPORT_HTML_DOCUMENT_OUT",
@@ -426,13 +477,45 @@ const handleZipImportExecute = async () => {
 
     const navbarBlock =
       await importGlobalLayoutBlock(
-        result.globalLayout?.navHtml
+        result.globalLayout?.navHtml,
+        "navbar"
       );
 
+    const footerHtml =
+      result.globalLayout?.footerHtml || "";
+
     const footerBlock =
+      (
+        await importGlobalLayoutBlock(
+          footerHtml,
+          "footer"
+        )
+      ) ||
       footerHtmlToBlock(
-        result.globalLayout?.footerHtml || ""
+        footerHtml
       );
+
+    console.log(
+      "ZIP_FOOTER_IMPORT_TRACE",
+      {
+        usedGenericImporter:
+          !!footerBlock &&
+          !String(
+            footerBlock.id || ""
+          ).startsWith(
+            "footer-section-"
+          ),
+        footerType:
+          footerBlock?.type,
+        footerMeta:
+          footerBlock?.meta,
+        footerDesktopStyle:
+          footerBlock?.data?.style?.desktop,
+        firstChildDesktopStyle:
+          footerBlock?.children?.[0]
+            ?.data?.style?.desktop
+      }
+    );
 
     console.log(
       "ZIP_NAVBAR_IMPORT_TRACE",

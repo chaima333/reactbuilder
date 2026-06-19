@@ -2,6 +2,7 @@ export type CandidateType =
   | "GRID"
   | "CARD"
   | "NAVBAR"
+  | "FOOTER"
   | "FLEX_GROUP"
   | "REPEATED_PATTERN";
 
