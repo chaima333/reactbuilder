@@ -68,20 +68,45 @@ export class AiService {
       return "Finance";
     }
 
-    if (
-      [
-        "school",
-        "university",
-        "course",
-        "courses",
-        "academy",
-        "training",
-        "student",
-        "learning"
-      ].some((keyword) => text.includes(keyword))
-    ) {
-      return "Education";
-    }
+   if (
+  [
+    "software",
+    "technology",
+    "tech",
+    "ai",
+    "cloud",
+    "saas",
+    "application",
+    "platform",
+    "automation",
+    "machine learning",
+    "api",
+    "apis",
+    "devops",
+    "infrastructure",
+    "workflow",
+    "workflows"
+  ].some((keyword) => text.includes(keyword))
+) {
+  return "Technology";
+}
+
+if (
+  [
+    "school",
+    "university",
+    "course",
+    "courses",
+    "academy",
+    "training",
+    "student",
+    "education",
+    "teacher",
+    "teachers"
+  ].some((keyword) => text.includes(keyword))
+) {
+  return "Education";
+}
 
     if (
       [
@@ -118,21 +143,6 @@ export class AiService {
       ].some((keyword) => text.includes(keyword))
     ) {
       return "Consulting";
-    }
-
-    if (
-      [
-        "software",
-        "technology",
-        "tech",
-        "ai",
-        "cloud",
-        "saas",
-        "application",
-        "platform"
-      ].some((keyword) => text.includes(keyword))
-    ) {
-      return "Technology";
     }
 
     return "Corporate";
@@ -272,6 +282,8 @@ await ActivityLog.create({
   entityId: result.data.id,
   details: {
     category,
+    prompt,
+    pageTitle,
   },
 });
   const seo = generateSeo(

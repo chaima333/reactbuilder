@@ -127,14 +127,17 @@ export class AdminAnalyticsService {
       where: { action: "ai_page_generated" },
       order: [["createdAt", "ASC"]],
     });
-
-    const dailyMap: Record<string, number> = {};
-    const categoryMap: Record<string, number> = {};
+const dailyMap: Record<string, number> = {};
+const categoryMap: Record<string, number> = {};
+const siteMap: Record<string, number> = {};
 
     logs.forEach((log: any) => {
       const date = new Date(log.createdAt).toISOString().slice(0, 10);
       dailyMap[date] = (dailyMap[date] || 0) + 1;
+const currentSiteId = String(log.siteId);
 
+siteMap[currentSiteId] =
+  (siteMap[currentSiteId] || 0) + 1;
       const category = log.details?.category;
 
       if (category) {
@@ -162,13 +165,20 @@ const dailyGenerations = Array.from({ length: 7 }).map((_, index) => {
         count,
       }))
       .sort((a, b) => b.count - a.count);
-
+const topSites = Object.entries(siteMap)
+  .map(([siteId, count]) => ({
+    siteId,
+    count,
+  }))
+  .sort((a, b) => b.count - a.count)
+  .slice(0, 5);
     return {
       generatedPages,
       generatedImages,
       lastGenerationAt: lastGeneration?.createdAt || null,
       dailyGenerations,
       topCategories,
+      topSites,
     };
   }
 }
