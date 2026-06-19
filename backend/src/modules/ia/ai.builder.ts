@@ -1094,17 +1094,25 @@ export function buildSectionFromConfig(
 export function buildPageFromTemplate(
   template: TemplateConfig,
   prompt: string,
-  title?: string,
+  aiContent: any,
   heroImageUrl?: string
 ): PageBlock[] {
-  const pageTitle = title || template.defaultTitle;
+  const pageTitle =
+    aiContent?.title || template.defaultTitle;
 
   const sections = template.sections.map((section) => {
+    if (section.kind === "navbar" || section.kind === "footer") {
+      return {
+        ...section,
+        title: pageTitle
+      };
+    }
+
     if (section.kind === "hero") {
       return {
         ...section,
-        title: section.title || pageTitle,
-        text: section.text || prompt,
+        title: aiContent?.heroTitle || section.title || pageTitle,
+        text: aiContent?.heroText || section.text || prompt,
         resolvedImage: heroImageUrl || section.image
       };
     }
@@ -1122,16 +1130,25 @@ export function buildPageFromTemplate(
 export function generateTemplate(
   category: string,
   prompt: string,
-  title?: string,
+  aiContent: any,
   heroImageUrl?: string
 ): GeneratedPage {
   const template =
-    CATEGORY_TEMPLATES[category] ?? CATEGORY_TEMPLATES["Corporate"];
+    CATEGORY_TEMPLATES[category] ??
+    CATEGORY_TEMPLATES["Corporate"];
 
-const blocks = buildPageFromTemplate(template, prompt, title, heroImageUrl);
+  const blocks =
+    buildPageFromTemplate(
+      template,
+      prompt,
+      aiContent,
+      heroImageUrl
+    );
 
   return {
-    title: title ?? template.defaultTitle,
+    title:
+      aiContent?.title ||
+      template.defaultTitle,
     blocks
   };
 }
