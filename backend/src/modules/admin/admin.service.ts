@@ -132,25 +132,20 @@ export class AdminAnalyticsService {
     const categoryMap: Record<string, number> = {};
 
     logs.forEach((log: any) => {
-      const date = new Date(log.createdAt)
-        .toISOString()
-        .slice(0, 10);
-
+      const date = new Date(log.createdAt).toISOString().slice(0, 10);
       dailyMap[date] = (dailyMap[date] || 0) + 1;
 
-      const category =
-        log.details?.category || "Unknown";
+      const category = log.details?.category;
 
-      categoryMap[category] =
-        (categoryMap[category] || 0) + 1;
+      if (category) {
+        categoryMap[category] = (categoryMap[category] || 0) + 1;
+      }
     });
 
-    const dailyGenerations = Object.entries(dailyMap).map(
-      ([date, count]) => ({
-        date,
-        count,
-      })
-    );
+    const dailyGenerations = Object.entries(dailyMap).map(([date, count]) => ({
+      date,
+      count,
+    }));
 
     const topCategories = Object.entries(categoryMap)
       .map(([category, count]) => ({

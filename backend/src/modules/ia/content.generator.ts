@@ -90,6 +90,37 @@ return {
 
   stats:
     STATS_BY_CATEGORY[category] ||
-    STATS_BY_CATEGORY.Corporate
+    STATS_BY_CATEGORY.Corporate,
+
+    testimonials:
+  category === "Finance"
+    ? [
+        "Helped us structure funding faster|Startup Founder",
+        "Clear financial strategy and strong execution|Investment Director",
+        "Reliable advisory for long-term growth|CEO"
+      ]
+    : category === "Medical"
+      ? [
+          "Reduced appointment workload significantly|Clinic Manager",
+          "Patients can book consultations easily|Dr Ahmed",
+          "Simple platform for daily clinic operations|Healthcare Admin"
+        ]
+      : [
+          "Professional service and strong results|Client"
+        ],
+
+ctaTitle:
+  category === "Finance"
+    ? "Ready to Grow Your Financial Strategy?"
+    : category === "Medical"
+      ? "Ready to Modernize Your Clinic?"
+      : `Ready to Build Your ${category} Platform?`,
+
+ctaText:
+  category === "Finance"
+    ? "Start planning smarter funding and investment decisions today."
+    : category === "Medical"
+      ? "Launch your digital healthcare experience today."
+      : "Create a modern digital presence with AI."
 };
 };

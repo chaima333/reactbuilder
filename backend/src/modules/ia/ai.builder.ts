@@ -1133,6 +1133,26 @@ if (section.kind === "stats" && aiContent?.stats?.length) {
     )
   };
 }
+
+if (section.kind === "testimonial" && aiContent?.testimonials?.length) {
+  return {
+    ...section,
+    items: aiContent.testimonials.map(
+      (item: string) => {
+        const [quote, author] = item.split("|");
+        return `★★★★★|${quote}|${author || "Client"}`;
+      }
+    )
+  };
+}
+
+if (section.kind === "cta") {
+  return {
+    ...section,
+    title: aiContent?.ctaTitle || section.title,
+    text: aiContent?.ctaText || section.text
+  };
+}
     return section;
   });
 
