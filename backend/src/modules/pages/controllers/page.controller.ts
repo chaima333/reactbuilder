@@ -6,25 +6,57 @@ import { PageMapper } from "../mappers/page.mapper";
 import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
 
 
-export const handleEventDispatch = async (result: any, source: string) => {
+export const handleEventDispatch = async (
+  result: any,
+  source: string
+) => {
   const eventPayload = result?.event;
 
-  if (!eventPayload?.shouldEmit) return;
+  if (!eventPayload?.shouldEmit) {
+    return;
+  }
+
+  const rawData =
+    eventPayload.data ||
+    eventPayload.payload ||
+    {};
+
+  const rawContext =
+    eventPayload.context ||
+    rawData.context ||
+    {};
 
   const envelope = {
     type: eventPayload.type,
-    data: eventPayload.data || eventPayload.payload,
-    context: eventPayload.context || {},
+
+    data: rawData,
+
+    context: {
+      ...rawContext,
+
+      userId:
+        rawContext.userId ??
+        rawData.userId ??
+        rawData.payload?.userId,
+
+      siteId:
+        rawContext.siteId ??
+        rawData.siteId ??
+        rawData.payload?.siteId,
+    },
+
     meta: eventPayload.meta || {
       eventId: crypto.randomUUID(),
-      timestamp: Date.now()
-    }
+      timestamp: Date.now(),
+    },
   };
-await EventDispatcher.dispatch(
-  envelope.type, 
-  envelope,     
-  source         
-);
+
+  await EventDispatcher.dispatch(
+    envelope.type,
+    envelope,
+    source
+  );
+
 };
 
 // ========================
@@ -150,13 +182,21 @@ export const publishPageController = async (req: AuthRequest, res: Response) => 
       req.user.id
     );
 
-    console.log("[PAGE_PUBLISH_EVENT] before dispatch", {
-      type: result?.event?.type,
-      shouldEmit: result?.event?.shouldEmit,
-      userId: result?.event?.context?.userId,
-      siteId: result?.event?.context?.siteId,
-      pageId: result?.data?.id
-    });
+  const publishEvent: any = result?.event;
+
+console.log("[PAGE_PUBLISH_EVENT] before dispatch", {
+  type: publishEvent?.type,
+  shouldEmit: publishEvent?.shouldEmit,
+  userId:
+    publishEvent?.context?.userId ??
+    publishEvent?.payload?.userId ??
+    publishEvent?.payload?.context?.userId,
+  siteId:
+    publishEvent?.context?.siteId ??
+    publishEvent?.payload?.siteId ??
+    publishEvent?.payload?.context?.siteId,
+  pageId: result?.data?.id,
+});
 
     await handleEventDispatch(result, "PageController.publishPage");
 
