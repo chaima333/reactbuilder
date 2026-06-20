@@ -2,7 +2,7 @@ import { ActivityLog } from "../../models/activityLog";
 import { Seo } from "../../models/Seo";
 import { MediaService } from "../media/media.service";
 import { PageService } from "../pages/services/page.service";
-import { generateTemplate } from "./ai.builder";
+import { generateAboutBlocks, generateContactBlocks, generateServicesBlocks, generateTemplate } from "./ai.builder";
 import { CATEGORY_TEMPLATES } from "./ai.templates";
 import { generateAiContent } from "./content.generator";
 import { generateSeo } from "./seo.generator";
@@ -285,14 +285,30 @@ for (const planPage of selectedPages) {
 
   const pageSlug =
     `${planPage.slug}-${Date.now()}`;
+let pageBlocks = generated.blocks;
 
+if (planPage.type === "home") {
+  pageBlocks = generated.blocks;
+}
+
+if (planPage.type === "about") {
+  pageBlocks = generateAboutBlocks(category, aiContent, heroImageUrl);
+}
+
+if (planPage.type === "services") {
+  pageBlocks = generateServicesBlocks(category, aiContent, heroImageUrl);
+}
+
+if (planPage.type === "contact") {
+  pageBlocks = generateContactBlocks(category, aiContent, heroImageUrl);
+}
   const result = await PageService.createPage(
     siteId,
     userId,
     {
       title: pageTitle,
       slug: pageSlug,
-      blocks: generated.blocks,
+      blocks: pageBlocks,
       isHomepage: planPage.type === "home"
     }
   );
@@ -342,3 +358,4 @@ await PageService.publishPage(
 
 return createdPages[0];
 }};
+

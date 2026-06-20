@@ -114,7 +114,7 @@ export const fetchAdminActivityLogs = async () => {
 };
 
 export class AdminAnalyticsService {
-  static async getAiStats() {
+  static async getAiStats(days = 7) {
     const generatedPages = await ActivityLog.count({
       where: { action: "ai_page_generated" },
     });
@@ -149,11 +149,20 @@ const generatedThisWeek = await ActivityLog.count({
       where: { action: "ai_page_generated" },
       order: [["createdAt", "DESC"]],
     });
+const startDate = new Date();
 
+startDate.setDate(
+  startDate.getDate() - days
+);
     const logs = await ActivityLog.findAll({
-      where: { action: "ai_page_generated" },
-      order: [["createdAt", "ASC"]],
-    });
+  where: {
+    action: "ai_page_generated",
+    createdAt: {
+      [Op.gte]: startDate,
+    },
+  },
+  order: [["createdAt", "ASC"]],
+});
     const recentGenerations = logs
   .slice(0, 10)
   .map((log: any) => ({

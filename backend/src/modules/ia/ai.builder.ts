@@ -1223,3 +1223,43 @@ export {
   buildFooter,
   featureCard
 };
+
+
+export const generateAboutBlocks = (
+  category: string,
+  aiContent: any,
+  heroImageUrl?: string
+) => {
+  return generateTemplate(
+    category,
+    "about",
+    aiContent,
+    heroImageUrl
+  ).blocks;
+};
+
+export const generateServicesBlocks = (
+  category: string,
+  aiContent: any,
+  heroImageUrl?: string
+) => {
+  return generateTemplate(
+    category,
+    "services",
+    aiContent,
+    heroImageUrl
+  ).blocks;
+};
+
+export const generateContactBlocks = (
+  category: string,
+  aiContent: any,
+  heroImageUrl?: string
+) => {
+  return generateTemplate(
+    category,
+    "contact",
+    aiContent,
+    heroImageUrl
+  ).blocks;
+};
