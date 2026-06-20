@@ -1,6 +1,5 @@
-export const generateSitePlan = (category: string) => {
+export const generateSitePlan = (category: string, prompt?: string) => {
   // ===== NORMALIZATION MAP =====
-  // الـ AI classifier يرجّع categories بصيغة معينة، نحولوها للصيغة اللي نستعملوها
   const normalizedCategoryMap: Record<string, string> = {
     Medical: "health",
     Finance: "business",
@@ -12,7 +11,6 @@ export const generateSitePlan = (category: string) => {
     Ecommerce: "ecommerce",
     Corporate: "business",
     Consulting: "business",
-    // Fallback: إذا دخلت أي كلمة أخرى
     Health: "health",
     Business: "business",
     ECommerce: "ecommerce",
@@ -21,6 +19,8 @@ export const generateSitePlan = (category: string) => {
   // Normalisation
   const normalizedCategory =
     normalizedCategoryMap[category] || category.toLowerCase();
+
+  const promptText = (prompt || "").toLowerCase();
 
   // ===== BASE PAGES (toujours présentes) =====
   const basePages = [
@@ -315,7 +315,6 @@ export const generateSitePlan = (category: string) => {
         type: "patient-info",
         icon: "📋",
       },
-      // ✅ Contact mnéhi (déjà dans basePages)
     ],
 
     // === REAL ESTATE ===
@@ -464,7 +463,6 @@ export const generateSitePlan = (category: string) => {
         type: "testimonials",
         icon: "⭐",
       },
-      // ✅ Contact mnéhi (déjà dans basePages)
     ],
 
     // === TRAVEL / TOURISM ===
@@ -524,11 +522,378 @@ export const generateSitePlan = (category: string) => {
     ],
   };
 
-  // ===== SELECTION PAGES =====
+  // ===== DYNAMIC RULES BASED ON PROMPT =====
+
+  // 1. AI / Automation
+  if (
+    promptText.includes("ai") ||
+    promptText.includes("automation") ||
+    promptText.includes("machine learning") ||
+    promptText.includes("artificial intelligence")
+  ) {
+    return [
+      ...basePages,
+      {
+        title: "Solutions",
+        slug: "solutions",
+        type: "solutions",
+        icon: "🤖",
+      },
+      {
+        title: "Integrations",
+        slug: "integrations",
+        type: "integrations",
+        icon: "🔗",
+      },
+      {
+        title: "Pricing",
+        slug: "pricing",
+        type: "pricing",
+        icon: "💰",
+      },
+    ];
+  }
+
+  // 2. Finance / Investment
+  if (
+    promptText.includes("finance") ||
+    promptText.includes("investment") ||
+    promptText.includes("banking") ||
+    promptText.includes("wealth") ||
+    promptText.includes("asset")
+  ) {
+    return [
+      ...basePages,
+      {
+        title: "Markets",
+        slug: "markets",
+        type: "markets",
+        icon: "📈",
+      },
+      {
+        title: "Advisory",
+        slug: "advisory",
+        type: "advisory",
+        icon: "💼",
+      },
+      {
+        title: "Case Studies",
+        slug: "case-studies",
+        type: "case-studies",
+        icon: "📊",
+      },
+    ];
+  }
+
+  // 3. Healthcare / Medical
+  if (
+    promptText.includes("health") ||
+    promptText.includes("medical") ||
+    promptText.includes("clinic") ||
+    promptText.includes("hospital") ||
+    promptText.includes("patient") ||
+    promptText.includes("doctor")
+  ) {
+    return [
+      ...basePages,
+      {
+        title: "Services",
+        slug: "services",
+        type: "services",
+        icon: "🏥",
+      },
+      {
+        title: "Appointments",
+        slug: "appointments",
+        type: "appointments",
+        icon: "📅",
+      },
+      {
+        title: "Doctors",
+        slug: "doctors",
+        type: "doctors",
+        icon: "👨‍⚕️",
+      },
+      {
+        title: "Testimonials",
+        slug: "testimonials",
+        type: "testimonials",
+        icon: "⭐",
+      },
+    ];
+  }
+
+  // 4. Ecommerce / Shop
+  if (
+    promptText.includes("shop") ||
+    promptText.includes("store") ||
+    promptText.includes("product") ||
+    promptText.includes("ecommerce") ||
+    promptText.includes("order") ||
+    promptText.includes("cart")
+  ) {
+    return [
+      ...basePages,
+      {
+        title: "Shop",
+        slug: "shop",
+        type: "shop",
+        icon: "🛍️",
+      },
+      {
+        title: "Products",
+        slug: "products",
+        type: "products",
+        icon: "📦",
+      },
+      {
+        title: "Cart",
+        slug: "cart",
+        type: "cart",
+        icon: "🛒",
+      },
+      {
+        title: "Wishlist",
+        slug: "wishlist",
+        type: "wishlist",
+        icon: "❤️",
+      },
+    ];
+  }
+
+  // 5. Education / Learning
+  if (
+    promptText.includes("education") ||
+    promptText.includes("learn") ||
+    promptText.includes("course") ||
+    promptText.includes("student") ||
+    promptText.includes("school") ||
+    promptText.includes("university") ||
+    promptText.includes("training")
+  ) {
+    return [
+      ...basePages,
+      {
+        title: "Courses",
+        slug: "courses",
+        type: "courses",
+        icon: "📚",
+      },
+      {
+        title: "Teachers",
+        slug: "teachers",
+        type: "teachers",
+        icon: "👨‍🏫",
+      },
+      {
+        title: "Admissions",
+        slug: "admissions",
+        type: "admissions",
+        icon: "🎓",
+      },
+      {
+        title: "Testimonials",
+        slug: "testimonials",
+        type: "testimonials",
+        icon: "⭐",
+      },
+    ];
+  }
+
+  // 6. Restaurant / Food
+  if (
+    promptText.includes("restaurant") ||
+    promptText.includes("food") ||
+    promptText.includes("menu") ||
+    promptText.includes("reservation") ||
+    promptText.includes("dining") ||
+    promptText.includes("chef")
+  ) {
+    return [
+      ...basePages,
+      {
+        title: "Menu",
+        slug: "menu",
+        type: "menu",
+        icon: "🍽️",
+      },
+      {
+        title: "Reservations",
+        slug: "reservations",
+        type: "reservations",
+        icon: "📅",
+      },
+      {
+        title: "Reviews",
+        slug: "reviews",
+        type: "reviews",
+        icon: "⭐",
+      },
+      {
+        title: "Gallery",
+        slug: "gallery",
+        type: "gallery",
+        icon: "🖼️",
+      },
+    ];
+  }
+
+  // 7. Agency / Creative
+  if (
+    promptText.includes("agency") ||
+    promptText.includes("creative") ||
+    promptText.includes("brand") ||
+    promptText.includes("marketing") ||
+    promptText.includes("design") ||
+    promptText.includes("studio")
+  ) {
+    return [
+      ...basePages,
+      {
+        title: "Services",
+        slug: "services",
+        type: "services",
+        icon: "💼",
+      },
+      {
+        title: "Portfolio",
+        slug: "portfolio",
+        type: "portfolio",
+        icon: "📁",
+      },
+      {
+        title: "Work",
+        slug: "work",
+        type: "work",
+        icon: "🎨",
+      },
+      {
+        title: "Testimonials",
+        slug: "testimonials",
+        type: "testimonials",
+        icon: "⭐",
+      },
+    ];
+  }
+
+  // 8. Real Estate / Property
+  if (
+    promptText.includes("real estate") ||
+    promptText.includes("property") ||
+    promptText.includes("house") ||
+    promptText.includes("home") ||
+    promptText.includes("rent") ||
+    promptText.includes("buy")
+  ) {
+    return [
+      ...basePages,
+      {
+        title: "Properties",
+        slug: "properties",
+        type: "properties",
+        icon: "🏘️",
+      },
+      {
+        title: "Buy",
+        slug: "buy",
+        type: "buy",
+        icon: "💰",
+      },
+      {
+        title: "Rent",
+        slug: "rent",
+        type: "rent",
+        icon: "🔑",
+      },
+      {
+        title: "Agents",
+        slug: "agents",
+        type: "agents",
+        icon: "🤝",
+      },
+    ];
+  }
+
+  // 9. Technology / Software
+  if (
+    promptText.includes("tech") ||
+    promptText.includes("software") ||
+    promptText.includes("app") ||
+    promptText.includes("developer") ||
+    promptText.includes("cloud") ||
+    promptText.includes("devops") ||
+    promptText.includes("platform")
+  ) {
+    return [
+      ...basePages,
+      {
+        title: "Solutions",
+        slug: "solutions",
+        type: "solutions",
+        icon: "💻",
+      },
+      {
+        title: "Pricing",
+        slug: "pricing",
+        type: "pricing",
+        icon: "💰",
+      },
+      {
+        title: "Integrations",
+        slug: "integrations",
+        type: "integrations",
+        icon: "🔗",
+      },
+      {
+        title: "Blog",
+        slug: "blog",
+        type: "blog",
+        icon: "📝",
+      },
+    ];
+  }
+
+  // 10. Consulting / Strategy
+  if (
+    promptText.includes("consulting") ||
+    promptText.includes("strategy") ||
+    promptText.includes("advisory") ||
+    promptText.includes("expert") ||
+    promptText.includes("coach")
+  ) {
+    return [
+      ...basePages,
+      {
+        title: "Services",
+        slug: "services",
+        type: "services",
+        icon: "💼",
+      },
+      {
+        title: "Case Studies",
+        slug: "case-studies",
+        type: "case-studies",
+        icon: "📊",
+      },
+      {
+        title: "Testimonials",
+        slug: "testimonials",
+        type: "testimonials",
+        icon: "⭐",
+      },
+      {
+        title: "Insights",
+        slug: "insights",
+        type: "insights",
+        icon: "💡",
+      },
+    ];
+  }
+
+  // ===== FALLBACK: CATEGORY BASED =====
   const pages = categoryPages[normalizedCategory] || categoryPages.default;
 
   // ===== COMBINER BASE + CATEGORY PAGES =====
-  // نمنعو الـ duplicates: نحتفظوا بالـ basePages ونزيدو الـ category pages اللي موش موجودة
   const baseSlugs = new Set(basePages.map((p) => p.slug));
   const uniqueCategoryPages = pages.filter((p) => !baseSlugs.has(p.slug));
 
@@ -594,6 +959,25 @@ export const getPageTypes = () => {
     { value: "pricing", label: "Pricing Page", icon: "💰" },
     { value: "privacy", label: "Privacy Policy", icon: "🔒" },
     { value: "terms", label: "Terms of Service", icon: "📜" },
+    { value: "solutions", label: "Solutions Page", icon: "🤖" },
+    { value: "integrations", label: "Integrations", icon: "🔗" },
+    { value: "markets", label: "Markets", icon: "📈" },
+    { value: "advisory", label: "Advisory", icon: "💼" },
+    { value: "case-studies", label: "Case Studies", icon: "📊" },
+    { value: "appointments", label: "Appointments", icon: "📅" },
+    { value: "doctors", label: "Doctors", icon: "👨‍⚕️" },
+    { value: "courses", label: "Courses", icon: "📚" },
+    { value: "teachers", label: "Teachers", icon: "👨‍🏫" },
+    { value: "admissions", label: "Admissions", icon: "🎓" },
+    { value: "menu", label: "Menu", icon: "🍽️" },
+    { value: "reservations", label: "Reservations", icon: "📅" },
+    { value: "reviews", label: "Reviews", icon: "⭐" },
+    { value: "work", label: "Work", icon: "🎨" },
+    { value: "properties", label: "Properties", icon: "🏘️" },
+    { value: "buy", label: "Buy", icon: "💰" },
+    { value: "rent", label: "Rent", icon: "🔑" },
+    { value: "agents", label: "Agents", icon: "🤝" },
+    { value: "insights", label: "Insights", icon: "💡" },
   ];
 };
 

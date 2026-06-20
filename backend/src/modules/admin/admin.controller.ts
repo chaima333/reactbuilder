@@ -37,25 +37,7 @@ export const rejectUser = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getAdminStats = async (
-  req: AuthRequest,
-  res: Response
-) => {
-  try {
-    const stats =
-      await AdminService.getPlatformStats();
 
-    res.json({
-      success: true,
-      data: stats,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
 export const getAdminUsers = async (req: AuthRequest, res: Response) => {
   try {
     const users = await AdminService.fetchAdminUsers();
@@ -92,13 +74,36 @@ export const getAdminActivityLogs = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getAdminStats = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const days = Number(req.query.days || 7);
+
+    const stats =
+      await AdminService.getPlatformStats(days);
+
+    res.json({
+      success: true,
+      data: stats,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 export const getAIStats = async (
   req: AuthRequest,
   res: Response
 ) => {
   try {
+    const days = Number(req.query.days || 7);
+
     const aiStats =
-      await AdminService.AdminAnalyticsService.getAiStats();
+      await AdminService.AdminAnalyticsService.getAiStats(days);
 
     res.json({
       success: true,

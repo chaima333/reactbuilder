@@ -202,7 +202,7 @@ console.log("FINAL_CATEGORY", category);
 console.log("FINAL_PROMPT", prompt);
 
   const sitePlan =
-  generateSitePlan(category);
+  generateSitePlan(category, prompt);
 console.log(
   "SITE_PLAN_CATEGORY",
   category,
