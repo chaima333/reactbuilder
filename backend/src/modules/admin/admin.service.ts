@@ -68,17 +68,23 @@ export const getPlatformStats = async () => {
     AdminAnalyticsService.getAiStats(),
   ]);
 
- return {
-  totalUsers,
-  pendingUsers,
-  totalSites,
-  totalPages,
-  totalPlugins,
-  totalActivityLogs: totalActivities,
-  publishedPages,
-  activeSites,
-  aiStats,
-};
+  const aiAdoptionRate =
+    totalPages > 0
+      ? Number(((aiStats.generatedPages / totalPages) * 100).toFixed(1))
+      : 0;
+
+  return {
+    totalUsers,
+    pendingUsers,
+    totalSites,
+    totalPages,
+    totalPlugins,
+    totalActivityLogs: totalActivities,
+    publishedPages,
+    activeSites,
+    aiStats,
+    aiAdoptionRate,
+  };
 };
 
 export const fetchAdminUsers = async () => {

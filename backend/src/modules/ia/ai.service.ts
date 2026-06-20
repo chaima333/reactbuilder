@@ -274,21 +274,24 @@ console.log(
     type: page.type
   }))
 );
-
 const createdPages: any[] = [];
 
 for (const planPage of selectedPages) {
+
   const pageTitle =
     planPage.type === "home"
       ? `${generated.title || category} Home ${Date.now()}`
       : `${generated.title || category} ${planPage.title} ${Date.now()}`;
+
+  const pageSlug =
+    `${planPage.slug}-${Date.now()}`;
 
   const result = await PageService.createPage(
     siteId,
     userId,
     {
       title: pageTitle,
-      slug: planPage.slug,
+      slug: pageSlug,
       blocks: generated.blocks,
       isHomepage: planPage.type === "home"
     }
@@ -307,7 +310,7 @@ for (const planPage of selectedPages) {
       prompt,
       pageTitle,
       pageType: planPage.type,
-      slug: planPage.slug
+      slug: pageSlug
     }
   });
 
@@ -320,15 +323,12 @@ for (const planPage of selectedPages) {
   await Seo.create({
     pageId: result.data.id,
     siteId,
-
     metaTitle: seo.metaTitle,
     metaDescription: seo.metaDescription,
     metaKeywords: seo.metaKeywords,
-
     ogTitle: seo.ogTitle,
     ogDescription: seo.ogDescription,
     ogImage: seo.ogImage,
-
     twitterTitle: seo.twitterTitle,
     twitterDescription: seo.twitterDescription,
     twitterImage: seo.twitterImage
