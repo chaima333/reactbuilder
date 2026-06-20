@@ -154,6 +154,14 @@ const generatedThisWeek = await ActivityLog.count({
       where: { action: "ai_page_generated" },
       order: [["createdAt", "ASC"]],
     });
+    const recentGenerations = logs
+  .slice(0, 10)
+  .map((log: any) => ({
+    id: log.id,
+    siteId: log.siteId,
+    category: log.details?.category || "Unknown",
+    createdAt: log.createdAt,
+  }));
 const dailyMap: Record<string, number> = {};
 const categoryMap: Record<string, number> = {};
 const siteMap: Record<string, number> = {};
@@ -216,6 +224,7 @@ const dailyGenerations = Array.from({ length: 7 }).map((_, index) => {
       dailyGenerations,
       topCategories,
       topSites,
+      recentGenerations,
     };
   }
 }

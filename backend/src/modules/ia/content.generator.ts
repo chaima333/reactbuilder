@@ -88,7 +88,7 @@ const generateFeaturesFromKeywords = (keywords: string[], maxCount: number = 4):
   return featureKeywords.map(keyword => {
     // Ajouter des suffixes pour les features
     const suffixes = [' System', ' Platform', ' Solution', ' Service', ' Tool', ' Suite'];
-   const suffix =suffixes[ keyword.length % suffixes.length];    
+    const suffix = suffixes[keyword.length % suffixes.length];    
     return keyword
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -129,6 +129,90 @@ const generateStatsFromKeywords = (keywords: string[]): { value: string; label: 
   stats.push({ value: "24/7", label: "Support" });
 
   return stats;
+};
+
+/**
+ * Génère des statistiques spécifiques à la catégorie (category-aware)
+ */
+const generateCategoryStats = (category: string): { value: string; label: string }[] => {
+  const statsMap: Record<string, { value: string; label: string }[]> = {
+    Education: [
+      { value: "5000+", label: "Students" },
+      { value: "120+", label: "Courses" },
+      { value: "95%", label: "Success Rate" }
+    ],
+    Technology: [
+      { value: "1000+", label: "Projects" },
+      { value: "98%", label: "Uptime" },
+      { value: "200+", label: "Experts" }
+    ],
+    Medical: [
+      { value: "10000+", label: "Patients" },
+      { value: "95%", label: "Recovery Rate" },
+      { value: "24/7", label: "Support" }
+    ],
+    Finance: [
+      { value: "500M+", label: "Managed" },
+      { value: "98%", label: "Satisfaction" },
+      { value: "200+", label: "Experts" }
+    ],
+    Ecommerce: [
+      { value: "10K+", label: "Products" },
+      { value: "50K+", label: "Customers" },
+      { value: "4.8★", label: "Rating" }
+    ],
+    Agency: [
+      { value: "500+", label: "Projects" },
+      { value: "150+", label: "Clients" },
+      { value: "98%", label: "Retention" }
+    ],
+    Portfolio: [
+      { value: "200+", label: "Projects" },
+      { value: "50+", label: "Awards" },
+      { value: "100+", label: "Clients" }
+    ],
+    Restaurant: [
+      { value: "10K+", label: "Meals Served" },
+      { value: "4.9★", label: "Rating" },
+      { value: "95%", label: "Satisfaction" }
+    ],
+    Consulting: [
+      { value: "500+", label: "Clients" },
+      { value: "98%", label: "Success Rate" },
+      { value: "200+", label: "Experts" }
+    ],
+    RealEstate: [
+      { value: "1000+", label: "Properties" },
+      { value: "500+", label: "Happy Clients" },
+      { value: "98%", label: "Satisfaction" }
+    ],
+    Event: [
+      { value: "500+", label: "Events" },
+      { value: "50K+", label: "Attendees" },
+      { value: "4.9★", label: "Rating" }
+    ],
+    Construction: [
+      { value: "200+", label: "Projects" },
+      { value: "98%", label: "On Time" },
+      { value: "95%", label: "Satisfaction" }
+    ],
+    Travel: [
+      { value: "10K+", label: "Travelers" },
+      { value: "100+", label: "Destinations" },
+      { value: "4.9★", label: "Rating" }
+    ],
+    Blog: [
+      { value: "500+", label: "Articles" },
+      { value: "50K+", label: "Readers" },
+      { value: "4.8★", label: "Rating" }
+    ]
+  };
+
+  return statsMap[category] || [
+    { value: "100+", label: "Projects" },
+    { value: "50+", label: "Clients" },
+    { value: "95%", label: "Satisfaction" }
+  ];
 };
 
 /**
@@ -173,6 +257,34 @@ const generateHeroTitle = (keywords: string[], category: string): string => {
   ];
 
   return templates[Math.floor(Math.random() * templates.length)];
+};
+
+/**
+ * Génère le titre de la mission en fonction de la catégorie
+ */
+const generateMissionTitle = (category: string): string => {
+  // Version simplifiée comme demandé
+  if (category === "Education") {
+    return "Our Learning Mission";
+  } else if (category === "Technology") {
+    return "Our Technology Vision";
+  } else {
+    return "Our Mission";
+  }
+};
+
+/**
+ * Génère le texte de la mission à partir des mots-clés et de la catégorie
+ */
+const generateMissionText = (keywords: string[], category: string, dynamicServices: string[]): string => {
+  if (keywords.length > 0) {
+    return `We help people and organizations succeed through ${dynamicServices
+      .slice(0, 3)
+      .join(", ")
+      .toLowerCase()}.`;
+  }
+  
+  return `We deliver modern ${category.toLowerCase()} solutions with quality and impact.`;
 };
 
 // ==================== MAIN FUNCTION ====================
@@ -350,20 +462,31 @@ export const generateAiContent = (
     ]
   };
 
+  // 8. Générer Mission Title & Text
+  const missionTitle = generateMissionTitle(category);
+  const missionText = generateMissionText(keywords, category, dynamicServices);
+
+  // 9. Générer les stats category-aware
+  const categoryStats = generateCategoryStats(category);
+
   // ===== RETOUR =====
   return {
     title: brandName,
     heroTitle: heroTitle,
     heroText: cleanPrompt,
     
-    // Services dynamiques (plus de SERVICES_BY_CATEGORY)
+    // Mission / Vision (NOUVEAU)
+    missionTitle: missionTitle,
+    missionText: missionText,
+    
+    // Services dynamiques
     services: dynamicServices,
     
-    // Features dynamiques (NOUVEAU)
+    // Features dynamiques
     features: dynamicFeatures,
     
-    // Stats dynamiques (plus de STATS_BY_CATEGORY)
-    stats: dynamicStats,
+    // Stats category-aware (REMPLACÉ)
+    stats: categoryStats,
     
     // Testimonials (fallback par catégorie)
     testimonials: testimonialsByCategory[category] || [
@@ -371,13 +494,11 @@ export const generateAiContent = (
     ],
     
     // CTA (fallback par catégorie)
-    ctaTitle:
-  keywords.length > 0
-    ? `Ready to Launch Your ${dynamicServices[0]} Platform?`
-    : ctaTitleByCategory[category] || `Ready to Build Your ${category} Platform?`,
-    ctaText:
-  keywords.length > 0
-    ? `Turn your ${dynamicServices[0].toLowerCase()} vision into a scalable digital experience.`
-    : ctaTextByCategory[category] || "Create a modern digital presence with AI.",
+    ctaTitle: keywords.length > 0
+      ? `Ready to Launch Your ${dynamicServices[0]} Platform?`
+      : ctaTitleByCategory[category] || `Ready to Build Your ${category} Platform?`,
+    ctaText: keywords.length > 0
+      ? `Turn your ${dynamicServices[0].toLowerCase()} vision into a scalable digital experience.`
+      : ctaTextByCategory[category] || "Create a modern digital presence with AI.",
   };
 };

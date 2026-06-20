@@ -1116,49 +1116,61 @@ export function buildPageFromTemplate(
         resolvedImage: heroImageUrl || section.image
       };
     }
+
+    // ✅ AJOUT : MISSION avec missionTitle et missionText
+    if (section.kind === "mission") {
+      return {
+        ...section,
+        title: aiContent?.missionTitle || section.title,
+        text: aiContent?.missionText || section.text
+      };
+    }
+
     if (section.kind === "features" && aiContent?.features?.length) {
-  return {
-    ...section,
-    items: aiContent.features
-  };
-}
-if (section.kind === "services" && aiContent?.services?.length) {
-  return {
-    ...section,
-    items: aiContent.services.map(
-      (service: string) => `📌 ${service}|Professional ${service.toLowerCase()} services.`
-    )
-  };
-}
+      return {
+        ...section,
+        items: aiContent.features
+      };
+    }
 
-if (section.kind === "stats" && aiContent?.stats?.length) {
-  return {
-    ...section,
-    items: aiContent.stats.map(
-      (stat: any) => `${stat.value}|${stat.label}`
-    )
-  };
-}
+    if (section.kind === "services" && aiContent?.services?.length) {
+      return {
+        ...section,
+        items: aiContent.services.map(
+          (service: string) => `📌 ${service}|Professional ${service.toLowerCase()} services.`
+        )
+      };
+    }
 
-if (section.kind === "testimonial" && aiContent?.testimonials?.length) {
-  return {
-    ...section,
-    items: aiContent.testimonials.map(
-      (item: string) => {
-        const [quote, author] = item.split("|");
-        return `★★★★★|${quote}|${author || "Client"}`;
-      }
-    )
-  };
-}
+    if (section.kind === "stats" && aiContent?.stats?.length) {
+      return {
+        ...section,
+        items: aiContent.stats.map(
+          (stat: any) => `${stat.value}|${stat.label}`
+        )
+      };
+    }
 
-if (section.kind === "cta") {
-  return {
-    ...section,
-    title: aiContent?.ctaTitle || section.title,
-    text: aiContent?.ctaText || section.text
-  };
-}
+    if (section.kind === "testimonial" && aiContent?.testimonials?.length) {
+      return {
+        ...section,
+        items: aiContent.testimonials.map(
+          (item: string) => {
+            const [quote, author] = item.split("|");
+            return `★★★★★|${quote}|${author || "Client"}`;
+          }
+        )
+      };
+    }
+
+    if (section.kind === "cta") {
+      return {
+        ...section,
+        title: aiContent?.ctaTitle || section.title,
+        text: aiContent?.ctaText || section.text
+      };
+    }
+
     return section;
   });
 
