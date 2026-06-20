@@ -473,7 +473,13 @@ export const generateAiContent = (
   return {
     title: brandName,
     heroTitle: heroTitle,
-    heroText: cleanPrompt,
+    heroText:
+  keywords.length > 0
+    ? `Helping organizations succeed through ${dynamicServices
+        .slice(0, 3)
+        .join(", ")
+        .toLowerCase()}.`
+    : `A modern ${category.toLowerCase()} solution designed for professional digital experiences.`,
     
     // Mission / Vision (NOUVEAU)
     missionTitle: missionTitle,
