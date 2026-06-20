@@ -641,7 +641,15 @@ export const footerHtmlToBlock = (
         }
       }
     );
-
+console.log(
+  "FOOTER_HTML_TO_BLOCK",
+  {
+    columns: columns.length,
+    socials: socials.length,
+    hasLogo: !!logoImg || !!logoWord,
+    childCount: 2
+  }
+);
   return {
     id: createId("footer-section"),
     type: "section",

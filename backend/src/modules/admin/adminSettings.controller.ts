@@ -28,6 +28,28 @@ export const updateAdminSettings = async (
     data: settings,
   });
 };
+
+export const testAdminWebhook = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { webhookUrl } = req.body;
+
+    const result =
+      await AdminSettingsService.testWebhook(webhookUrl);
+
+    return res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error: any) {
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 export const generateAdminApiKey = async (
   req: Request,
   res: Response

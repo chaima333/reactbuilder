@@ -21,6 +21,7 @@ import {
   People as UsersIcon,
   AdminPanelSettings as AdminIcon,
   Extension as PluginIcon,
+  AutoAwesome as AIIcon,
 } from "@mui/icons-material";
 
 import { useNavigate, useLocation } from "react-router-dom";
@@ -115,6 +116,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       adminOnly: true,
     },
     {
+      text: "AI Analytics",
+      icon: <AIIcon />,
+      path: "/admin/ai-analytics",
+      adminOnly: true,
+    },
+    {
       text: "Utilisateurs",
       icon: <UsersIcon />,
       path: "/users",
@@ -126,10 +133,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/settings",
       adminOnly: true,
     },
-    
   ];
-
-  
 
   const canShowItem = (item: SidebarItem): boolean => {
     if (item.adminOnly && !isAdmin) {
@@ -298,8 +302,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <Divider sx={{ my: 2 }} />
             {renderSectionTitle("Administration")}
             {renderItems(adminItems)}
-             <Divider sx={{ my: 2 }} />
-  
+            <Divider sx={{ my: 2 }} />
           </>
         )}
       </List>

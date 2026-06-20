@@ -120,9 +120,22 @@ console.log(
   element.querySelectorAll("form").length,
   element.className
 );
-
+const hasContactSignal =
+  [
+    "contact",
+    "get in touch",
+    "email",
+    "phone",
+    "address",
+    "location",
+    "message us",
+    "call us"
+  ].some((keyword) =>
+    text.includes(keyword)
+  );
 if (
   hasForm &&
+  hasContactSignal &&
   (hasGridCandidate ||
    hasRepeatedCandidate)
 )
@@ -139,6 +152,19 @@ if (
     className: element.className
   }
 );
+console.log("CONTACT CHECK", {
+  candidateTypes: candidates.map(c => c.type),
+  hasGridCandidate,
+  hasRepeatedCandidate,
+  hasContactSignal,
+  repeatedNode: repeatedNode
+    ? {
+        className: repeatedNode.element.className,
+        candidateTypes: repeatedNode.candidates.map(c => c.type)
+      }
+    : null,
+  hasForm
+});
     
 const payload =
   extractContactLayout(node);

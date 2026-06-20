@@ -30,24 +30,41 @@ const globalLayout =
   // NAVBAR
   // =========================
 
+  const pageBlocks: any[] =
+    page?.blocks || [];
+
+  const pageOwnsNavbar =
+    pageBlocks.some(
+      (block: any) => block?.type === "navbar"
+    );
+
+  const pageOwnsFooter =
+    pageBlocks.some(
+      (block: any) =>
+        block?.id?.startsWith("footer-section-")
+    );
+
 const navbarBlocks: any[] =
-  globalLayout?.navbar
+  globalLayout?.navbar && !pageOwnsNavbar
     ? [globalLayout.navbar]
     : [];
 
 const footerBlocks: any[] =
-  globalLayout?.footer
+  globalLayout?.footer && !pageOwnsFooter
     ? [globalLayout.footer]
     : [];
 
-  // =========================
-  // PAGE BLOCKS
-  // =========================
-
-  const pageBlocks =
-    page?.blocks || [];
-
-
+  console.log("NAVBAR_BLOCK_COUNT", {
+    pageNavbarCount:
+      pageBlocks.filter(
+        (block: any) => block?.type === "navbar"
+      ).length,
+    injectedNavbarCount: navbarBlocks.length,
+    renderedNavbarCount:
+      pageBlocks.filter(
+        (block: any) => block?.type === "navbar"
+      ).length + navbarBlocks.length
+  });
 
   // =========================
   // RENDER

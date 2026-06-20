@@ -24,8 +24,8 @@ export const adminApi = api.injectEndpoints({
       invalidatesTags: ["PendingUsers", "Users"],
     }),
 
-    getAdminStats: builder.query<any, void>({
-      query: () => "/admin/stats",
+   getAdminStats: builder.query<any, number>({
+  query: (days) => `/admin/stats?days=${days}`,
       transformResponse: (res: any) => res.data,
       providesTags: ["AdminStats"],
     }),
@@ -67,8 +67,27 @@ updateAdminSettings: builder.mutation<any, any>({
   }),
   invalidatesTags: ["AdminSettings", "PlatformSettings"],
 }),
+getAIStats: builder.query<any, number>({
+  query: (days) => `/admin/ai-stats?days=${days}`,
+  transformResponse: (res: any) => res.data,
+  providesTags: ["AdminStats"],
+}),
+
+generateAdminApiKey: builder.mutation<any, void>({
+  query: () => ({
+    url: "/admin/settings/generate-api-key",
+    method: "POST",
   }),
-  
+  invalidatesTags: ["AdminSettings", "PlatformSettings"],
+}),
+testWebhook: builder.mutation<any, { webhookUrl: string }>({
+  query: (body) => ({
+    url: "/admin/settings/test-webhook",
+    method: "POST",
+    body,
+  }),
+}),
+  }),
 });
 
 export const {
@@ -82,4 +101,7 @@ export const {
   useGetAdminActivityLogsQuery,
   useGetAdminSettingsQuery,
 useUpdateAdminSettingsMutation,
+useGetAIStatsQuery,
+useGenerateAdminApiKeyMutation,
+useTestWebhookMutation,
 } = adminApi;

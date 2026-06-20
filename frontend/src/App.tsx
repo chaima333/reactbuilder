@@ -60,6 +60,7 @@ import { useAppBootstrap } from "./modules/dashboard/hooks/useAppBootstrap";
 import AdminDashboard from "./modules/admin/pages/AdminDashboard";
 import { FigmaImportBridge } from "./modules/pageBuilder/pages/figma/FigmaImportBridge";
 import AdminPlugins from "./modules/admin/pages/AdminPlugins";
+import AdminAIAnalytics from "./modules/admin/pages/ai-analytics";
 
 
 // ======================================================
@@ -351,7 +352,10 @@ const AppContent: React.FC = () => {
   path="/admin/plugins"
   element={<AdminPlugins />}
 />
-
+<Route
+  path="/admin/ai-analytics"
+  element={<AdminAIAnalytics />}
+/>
                     </Route>
 
                   </Route>

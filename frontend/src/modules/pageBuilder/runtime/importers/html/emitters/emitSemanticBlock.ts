@@ -28,6 +28,9 @@ import { TwoColumnIntroPayload } from "../semanticResolvers/semanticContracts/Tw
 import { CtaCardPayload } from "../semanticResolvers/semanticContracts/CtaCardPayload";
 import { NavbarPayload } from "../semanticContracts/NavbarPayload";
 import { FooterPayload } from "../semanticContracts/FooterPayload";
+import type {
+  ServicePageSectionPayload
+} from "../semanticResolvers/semanticContracts/ServicePageSectionPayload";
 
 export type SemanticPayload =
   | NavbarPayload
@@ -44,7 +47,8 @@ export type SemanticPayload =
   | ContentListSectionPayload
   | InfoBannerPayload
   | TwoColumnIntroPayload
-  | CtaCardPayload;
+  | CtaCardPayload
+  | ServicePageSectionPayload;
 
 const getComputedDesignStyle = (
   element?: HTMLElement | null

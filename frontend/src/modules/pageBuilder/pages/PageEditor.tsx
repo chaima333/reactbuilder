@@ -484,16 +484,37 @@ const handleZipImportExecute = async () => {
     const footerHtml =
       result.globalLayout?.footerHtml || "";
 
-    const footerBlock =
-      (
-        await importGlobalLayoutBlock(
-          footerHtml,
-          "footer"
-        )
-      ) ||
-      footerHtmlToBlock(
-        footerHtml
-      );
+   const hasUsefulBlockContent = (block: any): boolean => {
+  if (!block) return false;
+
+  const propsText =
+    JSON.stringify(block.data?.props || {});
+
+  if (
+    propsText.replace(/\s+/g, "").length > 2
+  ) {
+    return true;
+  }
+
+  return (block.children || []).some(hasUsefulBlockContent);
+};
+
+const genericFooterBlock =
+  await importGlobalLayoutBlock(
+    footerHtml,
+    "footer"
+  );
+
+const legacyFooterBlock =
+  footerHtmlToBlock(
+    footerHtml
+  );
+
+const footerBlock =
+  genericFooterBlock &&
+  hasUsefulBlockContent(genericFooterBlock)
+    ? genericFooterBlock
+    : legacyFooterBlock;
 
     console.log(
       "ZIP_FOOTER_IMPORT_TRACE",

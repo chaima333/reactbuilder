@@ -441,7 +441,10 @@ export const pagesApi = api.injectEndpoints({
   }),
   transformResponse: (response: ApiResponse<Page>) =>
     response.data,
-  invalidatesTags: [{ type: "Pages", id: "LIST" }],
+  invalidatesTags: (result, error, { siteId }) => [
+    { type: "Pages", id: "LIST" },
+    { type: "Sites", id: siteId }
+  ],
 }),
 
     updatePage: builder.mutation<Page, { siteId: number | string; pageId: number | string; title?: string; slug?: string; blocks?: Block[]; theme?: any; }>({

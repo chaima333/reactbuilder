@@ -15,6 +15,7 @@ import {
   TableRow,
   Chip,
   Divider,
+  Alert,
 } from "@mui/material";
 
 import {
@@ -39,6 +40,9 @@ import {
   useGetAdminStatsQuery,
 } from "../../../redux/services/admin.api";
 
+import React from "react";
+
+// ==================== COMPONENTS ====================
 const StatCard = ({
   title,
   value,
@@ -105,9 +109,11 @@ const StatCard = ({
 const SectionCard = ({
   title,
   children,
+  action,
 }: {
   title: string;
   children: React.ReactNode;
+  action?: React.ReactNode;
 }) => (
   <Paper
     sx={{
@@ -115,17 +121,28 @@ const SectionCard = ({
       borderRadius: 4,
       boxShadow: "0 10px 30px rgba(0,0,0,0.07)",
       border: "1px solid rgba(0,0,0,0.06)",
+      height: "100%",
     }}
   >
-    <Typography variant="h6" fontWeight={800} mb={2}>
-      {title}
-    </Typography>
+    <Stack
+      direction="row"
+      justifyContent="space-between"
+      alignItems="center"
+      mb={2}
+    >
+      <Typography variant="h6" fontWeight={800}>
+        {title}
+      </Typography>
+      {action}
+    </Stack>
     {children}
   </Paper>
 );
 
+// ==================== MAIN COMPONENT ====================
 export default function AdminDashboard() {
-  const { data: stats, isLoading } = useGetAdminStatsQuery();
+  // ===== HOOKS =====
+  const { data: stats, isLoading: statsLoading, isError: statsError } = useGetAdminStatsQuery();
   const { data: users = [] } = useGetAdminUsersQuery();
   const { data: sites = [] } = useGetAdminSitesQuery();
   const { data: plugins = [] } = useGetAdminPluginsQuery();
@@ -135,7 +152,47 @@ export default function AdminDashboard() {
   const [approveUser] = useApproveUserMutation();
   const [rejectUser] = useRejectUserMutation();
 
-  if (isLoading) {
+  // ===== HELPERS =====
+  const timeAgo = (dateString: string | null) => {
+    if (!dateString) return "No activity";
+
+    const diff = Date.now() - new Date(dateString).getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+    return "Just now";
+  };
+
+  // ===== ACTION MAPPER =====
+  const actionMap: Record<string, string> = {
+    ai_page_generated: "AI Page Generated",
+    media_ai_uploaded: "AI Image Generated",
+    page_updated: "Page Updated",
+    page_published: "Page Published",
+    page_deleted: "Page Deleted",
+    site_created: "Site Created",
+    user_registered: "User Registered",
+    user_approved: "User Approved",
+    plugin_installed: "Plugin Installed",
+  };
+
+  const colorMap: Record<string, string> = {
+    ai_page_generated: "#00C49A",
+    media_ai_uploaded: "#FFBB28",
+    page_updated: "#8884d8",
+    page_published: "#4CAF50",
+    site_created: "#2196F3",
+    user_registered: "#FF8042",
+    user_approved: "#4CAF50",
+    plugin_installed: "#9C27B0",
+  };
+
+  // ===== EARLY RETURNS =====
+  if (statsLoading) {
     return (
       <Box
         minHeight="60vh"
@@ -148,6 +205,22 @@ export default function AdminDashboard() {
     );
   }
 
+  if (statsError) {
+    return (
+      <Box
+        minHeight="60vh"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <Alert severity="error" sx={{ maxWidth: 500 }}>
+          Failed to load dashboard data. Please try again later.
+        </Alert>
+      </Box>
+    );
+  }
+
+  // ===== RENDER =====
   return (
     <Box
       sx={{
@@ -155,6 +228,7 @@ export default function AdminDashboard() {
         minHeight: "100vh",
       }}
     >
+      {/* ===== HEADER ===== */}
       <Box mb={4}>
         <Typography variant="h4" fontWeight={900}>
           Super Admin Dashboard
@@ -165,6 +239,7 @@ export default function AdminDashboard() {
         </Typography>
       </Box>
 
+      {/* ===== STATS CARDS ===== */}
       <Grid container spacing={3}>
         <Grid item xs={12} md={3}>
           <StatCard
@@ -232,12 +307,13 @@ export default function AdminDashboard() {
         </Grid>
       </Grid>
 
-      <Grid container spacing={3} mt={1}>
+      {/* ===== PENDING USERS & ACTIVITY ===== */}
+      <Grid container spacing={3} mt={3}>
         <Grid item xs={12} lg={5}>
           <SectionCard title="Pending Users Approval">
             {pendingUsers.length === 0 ? (
-              <Typography color="text.secondary">
-                No pending users.
+              <Typography color="text.secondary" textAlign="center" py={4}>
+                ✅ No pending users.
               </Typography>
             ) : (
               <Table size="small">
@@ -255,7 +331,11 @@ export default function AdminDashboard() {
                       <TableCell>{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell align="right">
-                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          justifyContent="flex-end"
+                        >
                           <Button
                             size="small"
                             variant="contained"
@@ -286,34 +366,40 @@ export default function AdminDashboard() {
         <Grid item xs={12} lg={7}>
           <SectionCard title="Recent Activity">
             <Stack spacing={1.5}>
-              {logs.slice(0, 6).map((log: any) => (
-                <Box key={log.id}>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
-                    <Box>
-                      <Typography fontWeight={700}>
-                        {log.action}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {log.entityType} #{log.entityId ?? "-"}
-                      </Typography>
-                    </Box>
+              {logs.slice(0, 6).map((log: any) => {
+                const actionLabel = actionMap[log.action] || log.action;
+                const color = colorMap[log.action] || "#9e9e9e";
 
-                    <Typography variant="caption" color="text.secondary">
-                      {new Date(log.createdAt).toLocaleString()}
-                    </Typography>
-                  </Stack>
-                  <Divider sx={{ mt: 1.5 }} />
-                </Box>
-              ))}
+                return (
+                  <Box key={log.id}>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Box>
+                        <Typography fontWeight={700} sx={{ color }}>
+                          {actionLabel}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {log.entityType} #{log.entityId ?? "-"}
+                        </Typography>
+                      </Box>
+
+                      <Typography variant="caption" color="text.secondary">
+                        {timeAgo(log.createdAt)}
+                      </Typography>
+                    </Stack>
+                    <Divider sx={{ mt: 1.5 }} />
+                  </Box>
+                );
+              })}
             </Stack>
           </SectionCard>
         </Grid>
 
-        <Grid item xs={12} lg={6}>
+        {/* ===== LATEST USERS ===== */}
+        <Grid item xs={12} md={6}>
           <SectionCard title="Latest Users">
             <Table size="small">
               <TableHead>
@@ -325,7 +411,7 @@ export default function AdminDashboard() {
               </TableHead>
 
               <TableBody>
-                {users.slice(0, 6).map((user: any) => (
+                {users.slice(0, 5).map((user: any) => (
                   <TableRow key={user.id}>
                     <TableCell>{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
@@ -343,7 +429,8 @@ export default function AdminDashboard() {
           </SectionCard>
         </Grid>
 
-        <Grid item xs={12} lg={6}>
+        {/* ===== LATEST SITES ===== */}
+        <Grid item xs={12} md={6}>
           <SectionCard title="Latest Sites">
             <Table size="small">
               <TableHead>
@@ -355,7 +442,7 @@ export default function AdminDashboard() {
               </TableHead>
 
               <TableBody>
-                {sites.slice(0, 6).map((site: any) => (
+                {sites.slice(0, 5).map((site: any) => (
                   <TableRow key={site.id}>
                     <TableCell>{site.name}</TableCell>
                     <TableCell>{site.subdomain}</TableCell>
@@ -373,6 +460,7 @@ export default function AdminDashboard() {
           </SectionCard>
         </Grid>
 
+        {/* ===== PLUGINS ===== */}
         <Grid item xs={12}>
           <SectionCard title="Registered Plugins">
             <Grid container spacing={2}>
@@ -387,9 +475,7 @@ export default function AdminDashboard() {
                   >
                     <CardContent>
                       <Stack direction="row" justifyContent="space-between">
-                        <Typography fontWeight={800}>
-                          {plugin.name}
-                        </Typography>
+                        <Typography fontWeight={800}>{plugin.name}</Typography>
 
                         <Chip
                           size="small"
@@ -398,7 +484,11 @@ export default function AdminDashboard() {
                         />
                       </Stack>
 
-                      <Typography variant="body2" color="text.secondary" mt={1}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        mt={1}
+                      >
                         {plugin.description || "No description"}
                       </Typography>
 

@@ -70,7 +70,14 @@ const servicePageCheck = {
 const matches =
   servicePageCheck.hasSvcGrid &&
   servicePageCheck.hasDeliverables &&
-  servicePageCheck.hasCtaSvc;
+  servicePageCheck.hasMarkets &&
+  servicePageCheck.hasCtaSvc &&
+  servicePageCheck.otherServiceCount >= 3;
+
+const isServicePageAggregate =
+  matches &&
+  node.element.tagName !==
+    "BODY";
 
 if (
   matches &&
@@ -145,6 +152,21 @@ if (isCardLikeChild) {
   return [];
 }
 for (const resolver of semanticResolverRegistry) {
+ if (
+   isServicePageAggregate
+ ) {
+   console.log(
+     "SERVICE_PAGE_AGGREGATE_DEFERRED_TO_CHILD_RESOLVERS",
+     {
+       tag:
+         node.element.tagName,
+       className
+     }
+   );
+
+   break;
+ }
+
  console.log(
     "🧪 TRY RESOLVER",
     resolver.name,

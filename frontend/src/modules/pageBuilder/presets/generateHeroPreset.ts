@@ -12,6 +12,9 @@ import {
   extractTypographyStyles
 } from "../runtime/importers/css/extractStyleProps";
 import {
+  extractTitleSegments
+} from "../runtime/importers/html/typography/extractTitleSegments";
+import {
   filterCardStyle,
   filterHeroSectionStyle,
   filterTextStyle,
@@ -341,13 +344,19 @@ const createTextBlock = (
 
 const createTitleBlock = (
   content: string,
-  style: any
+  style: any,
+  segments: any[] = []
 ): Block => ({
   id: uuidv4(),
   type: "title" as const,
   data: {
     props: {
-      content
+      content,
+      ...(segments.length
+        ? {
+            segments
+          }
+        : {})
     },
     style
   },
@@ -1612,7 +1621,16 @@ export const generateHeroPreset = (
     );
 
   const titleBlocks =
-    titleLineEntries.map(entry =>
+    titleLineEntries.map(entry => {
+      const segmentSource =
+        entry.element ||
+        (
+          titleLineEntries.length === 1
+            ? titleElement
+            : null
+        );
+
+      return (
       createTitleBlock(
         entry.content,
         entry.element &&
@@ -1638,9 +1656,13 @@ export const generateHeroPreset = (
               ),
               titleStyle
             )
-          : scaledTitleBaseStyle
+          : scaledTitleBaseStyle,
+        extractTitleSegments(
+          segmentSource
+        )
       )
-    );
+      );
+    });
 
   const subtitleBlock =
     createTextBlock(

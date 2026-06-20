@@ -2,6 +2,12 @@ export type TitleSegment = {
   text: string;
   variant: "default" | "accent";
   sourceClass?: string;
+  style?: {
+    background?: string;
+    backgroundImage?: string;
+    color?: string;
+    WebkitTextFillColor?: string;
+  };
 };
 
 const normalizeTextNode = (
@@ -23,6 +29,37 @@ const getVariant = (
   )
     ? "accent"
     : "default";
+};
+
+const getSegmentStyle = (
+  element: Element
+) => {
+  const view =
+    element.ownerDocument
+      .defaultView;
+  const computed =
+    view?.getComputedStyle(
+      element
+    );
+
+  if (!computed) {
+    return undefined;
+  }
+
+  return {
+    background:
+      computed.background,
+    backgroundImage:
+      computed.backgroundImage,
+    color:
+      computed.color,
+    WebkitTextFillColor:
+      (
+        computed as CSSStyleDeclaration & {
+          webkitTextFillColor?: string;
+        }
+      ).webkitTextFillColor
+  };
 };
 
 export const extractTitleSegments = (
@@ -80,7 +117,11 @@ export const extractTitleSegments = (
                 child
               ),
             sourceClass:
-              child.getAttribute("class") || undefined
+              child.getAttribute("class") || undefined,
+            style:
+              getSegmentStyle(
+                child
+              )
           };
         }
 
@@ -100,7 +141,11 @@ export const extractTitleSegments = (
               child
             ),
           sourceClass:
-            child.getAttribute("class") || undefined
+            child.getAttribute("class") || undefined,
+          style:
+            getSegmentStyle(
+              child
+            )
         };
       })
       .filter(

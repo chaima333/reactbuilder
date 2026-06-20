@@ -28,6 +28,35 @@ export class AdminSettingsService {
     return created.value;
   }
 
+  static async testWebhook(webhookUrl: string) {
+  if (!webhookUrl) {
+    throw new Error("Webhook URL is required");
+  }
+
+  const response = await fetch(webhookUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "User-Agent": "ReactBuilder-Webhook-Test",
+    },
+    body: JSON.stringify({
+      event: "webhook.test",
+      source: "ReactBuilder",
+      message: "Webhook test from ReactBuilder",
+      timestamp: new Date().toISOString(),
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Webhook failed with status ${response.status}`);
+  }
+
+  return {
+    message: "Webhook connected successfully",
+    status: response.status,
+  };
+}
+
   static async generateApiKey() {
     const current = await this.getSettings();
 

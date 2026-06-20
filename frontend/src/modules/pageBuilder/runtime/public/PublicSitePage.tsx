@@ -93,18 +93,35 @@ export const PublicSite: React.FC = () => {
   // HOMEPAGE
   // =========================
 
- const selectedPage =
-  slug
-    ? publishedPages.find(
-        (p: any) => p.slug === slug
-      )
-    : publishedPages.find(
-        (p: any) => p.isHomepage === true
-      ) ||
-      publishedPages.find(
-        (p: any) => p.slug === "home"
-      ) ||
-      publishedPages[0];
+  const homepage =
+    publishedPages.find(
+      (p: any) => p.isHomepage === true
+    ) ||
+    publishedPages.find(
+      (p: any) => p.slug === "home"
+    ) ||
+    publishedPages[0];
+
+  const isHomepageRoute =
+    !slug ||
+    slug === "home" ||
+    /^home-\d+$/.test(slug);
+
+  const selectedPage =
+    !isHomepageRoute
+      ? publishedPages.find(
+          (p: any) => p.slug === slug
+        )
+      : homepage;
+
+  console.log("PUBLISHED_HOMEPAGE_ID", {
+    homepageId: homepage?.id,
+    selectedPageId: selectedPage?.id,
+    selectedSlug: selectedPage?.slug,
+    requestedSlug: slug,
+    isHomepage: selectedPage?.isHomepage,
+    blocksCount: selectedPage?.blocks?.length || 0
+  });
 
   // =========================
   // RENDER

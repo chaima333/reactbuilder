@@ -107,6 +107,142 @@ let activeSemanticReplacementMap =
 let activeSemanticReplacementDiagnostics:
   Array<Record<string, any>> = [];
 
+type ContainerChildCompileTrace = {
+  compiledRootBlockIds: string[];
+  compiledBlockIds: string[];
+  compiledBlockTypes: string[];
+  fallbackBranch:
+    string | null;
+};
+
+let activeBodyChildTwoContainer:
+  HTMLElement | null = null;
+
+let activeContainerChildCompileTraces =
+  new WeakMap<
+    HTMLElement,
+    ContainerChildCompileTrace
+  >();
+
+const TARGET_CONTAINER_CHILD_CLASSES =
+  new Set([
+    "svc-grid",
+    "deliverables",
+    "markets",
+    "cta-svc",
+    "sec-head",
+    "other-svc"
+  ]);
+
+const getTargetContainerChildClass = (
+  element: HTMLElement
+) =>
+  getElementClassName(
+    element
+  )
+    .split(/\s+/)
+    .find(className =>
+      TARGET_CONTAINER_CHILD_CLASSES.has(
+        className
+      )
+  ) ||
+  null;
+
+const findTargetSemanticContainer = (
+  root: HTMLElement
+) => {
+  const containsAllTargets = (
+    candidate: HTMLElement
+  ) =>
+    Array.from(
+      TARGET_CONTAINER_CHILD_CLASSES
+    ).every(
+      className =>
+        candidate.classList.contains(
+          className
+        ) ||
+        !!candidate.querySelector(
+          `.${className}`
+        )
+    );
+
+  const candidates = [
+    root,
+    ...Array.from(
+      root.querySelectorAll(
+        "*"
+      )
+    ).filter(
+      (
+        element
+      ): element is HTMLElement =>
+        isHtmlElementLike(
+          element
+        )
+    )
+  ].filter(
+    containsAllTargets
+  );
+
+  const getDepth = (
+    element: HTMLElement
+  ) => {
+    let depth = 0;
+    let current:
+      HTMLElement | null =
+      element;
+
+    while (
+      current &&
+      current !== root
+    ) {
+      depth += 1;
+      current =
+        current.parentElement;
+    }
+
+    return depth;
+  };
+
+  const deepest = (
+    elements: HTMLElement[]
+  ) =>
+    elements.sort(
+      (left, right) =>
+        getDepth(
+          right
+        ) -
+        getDepth(
+          left
+        )
+    )[0] ||
+    null;
+
+  const directChildCandidates =
+    candidates.filter(
+      candidate =>
+        new Set(
+          getSafeChildren(
+            candidate
+          )
+            .map(
+              getTargetContainerChildClass
+            )
+            .filter(Boolean)
+        ).size ===
+        TARGET_CONTAINER_CHILD_CLASSES.size
+    );
+
+  return (
+    deepest(
+      directChildCandidates
+    ) ||
+    deepest(
+      candidates
+    )
+  );
+};
+
   const getElementId = (
   element: HTMLElement
 ) => {
@@ -149,6 +285,85 @@ const generateNodeId = (
   path: (string | number)[]
 ) => {
   return `${type}-${path.join("-")}`;
+};
+
+const isTrackedContainerChild = (
+  element: HTMLElement
+) =>
+  !!activeBodyChildTwoContainer &&
+  element.parentElement ===
+    activeBodyChildTwoContainer &&
+  !!getTargetContainerChildClass(
+    element
+  );
+
+const collectBlockIds = (
+  blocks: SerializedBlock[]
+) => {
+  const ids: string[] = [];
+
+  const walk = (
+    items: SerializedBlock[]
+  ) => {
+    items.forEach(block => {
+      if (block?.id) {
+        ids.push(block.id);
+      }
+
+      walk(
+        block?.children || []
+      );
+    });
+  };
+
+  walk(blocks || []);
+
+  return ids;
+};
+
+const recordTrackedFallbackBranch = (
+  element: HTMLElement,
+  fallbackBranch: string
+) => {
+  if (
+    !isTrackedContainerChild(
+      element
+    )
+  ) {
+    return;
+  }
+
+  const current =
+    activeContainerChildCompileTraces.get(
+      element
+    ) || {
+      compiledRootBlockIds: [],
+      compiledBlockIds: [],
+      compiledBlockTypes: [],
+      fallbackBranch: null
+    };
+
+  activeContainerChildCompileTraces.set(
+    element,
+    {
+      ...current,
+      fallbackBranch
+    }
+  );
+
+  console.log(
+    "BODY_CHILD_2_CONTAINER_BRANCH",
+    {
+      child:
+        getElementClassName(
+          element
+        ),
+      branch:
+        "fallbackCompileElement",
+      outcome:
+        fallbackBranch
+    }
+  );
 };
 
 const collectDescendantsByTypeForBlock = (
@@ -620,9 +835,9 @@ const logSemanticDroppedText = (
       "SEMANTIC_DROPPED_DOM_TEXT",
       {
         semantic:
-          emittedBlock.meta?.semanticType,
+          (emittedBlock as any)?.meta?.semanticType,
         resolver:
-          emittedBlock.meta?.resolverName,
+         (emittedBlock as any)?.meta?.semanticType,
         tag:
           element.tagName,
         className:
@@ -2147,11 +2362,33 @@ function fallbackCompileElement(
   matcherHits: ImportMatcherHit[]
 ): SerializedBlock[] {
 
+  console.log(
+    "GENERIC_FALLBACK_USED",
+    {
+      tag:
+        element.tagName,
+      className:
+        getElementClassName(
+          element
+        ),
+      path
+    }
+  );
+
+  recordTrackedFallbackBranch(
+    element,
+    "entered"
+  );
+
   if (
     shouldSkipImportedElement(
       element
     )
   ) {
+    recordTrackedFallbackBranch(
+      element,
+      "skipped:shouldSkipImportedElement"
+    );
 
     return [];
   }
@@ -2162,6 +2399,10 @@ function fallbackCompileElement(
     totalImportedNodes >
     MAX_IMPORT_NODES
   ) {
+    recordTrackedFallbackBranch(
+      element,
+      "skipped:MAX_IMPORT_NODES"
+    );
 
     warnings.push({
       type: "MAX_IMPORT_NODES",
@@ -2177,6 +2418,10 @@ function fallbackCompileElement(
     path.length >
     MAX_IMPORT_DEPTH
   ) {
+    recordTrackedFallbackBranch(
+      element,
+      "skipped:MAX_IMPORT_DEPTH"
+    );
 
 
     warnings.push({
@@ -2218,6 +2463,10 @@ function fallbackCompileElement(
       "noscript"
     ].includes(tagName)
   ) {
+    recordTrackedFallbackBranch(
+      element,
+      "skipped:non-visual-tag"
+    );
 
     return [];
   }
@@ -2620,6 +2869,10 @@ if (
     );
 
   if (structured.length) {
+    recordTrackedFallbackBranch(
+      element,
+      "compiled:emitFallbackStructuredContainer"
+    );
     return structured;
   }
 }
@@ -2642,8 +2895,12 @@ if (
       matcherHits
     );
 
-  if (mixedChildren.length) {
-    return [
+    if (mixedChildren.length) {
+      recordTrackedFallbackBranch(
+        element,
+        "compiled:mixed-direct-content"
+      );
+      return [
       createFallbackFlexWrapper(
         [...path, "mixed"],
         mixedChildren,
@@ -2685,6 +2942,13 @@ const compiledChildren =
           matcherHits
         )
     );
+
+recordTrackedFallbackBranch(
+  element,
+  compiledChildren.length
+    ? "compiled:flattened-wrapper"
+    : "skipped:flattened-wrapper-produced-no-children"
+);
 
 return compiledChildren;
   }
@@ -2974,6 +3238,149 @@ const isNavbarLinksChild =
   ];
 }
 
+function splitNestedSemanticSectionsForRoot(
+  blocks: SerializedBlock[],
+  allowTopLevelSections = false
+): SerializedBlock[] {
+  const isSection = (
+    block: SerializedBlock
+  ) =>
+    block.type ===
+      COMPILER_BLOCK_TYPES.SECTION;
+
+  const containsSection = (
+    block: SerializedBlock
+  ): boolean =>
+    isSection(
+      block
+    ) ||
+    (block.children || []).some(
+      containsSection
+    );
+
+  const splitBlock = (
+    block: SerializedBlock,
+    isTopLevel = false
+  ): SerializedBlock[] => {
+    if (
+      isSection(
+        block
+      ) &&
+      !(
+        allowTopLevelSections &&
+        isTopLevel
+      )
+    ) {
+      return [
+        block
+      ];
+    }
+
+    const children =
+      block.children || [];
+
+    if (
+      !children.some(
+        containsSection
+      )
+    ) {
+      return [
+        block
+      ];
+    }
+
+    const output:
+      SerializedBlock[] = [];
+    let pendingChildren:
+      SerializedBlock[] = [];
+    let segmentIndex = 0;
+
+    const flushPending = () => {
+      if (
+        !pendingChildren.length
+      ) {
+        return;
+      }
+
+      output.push({
+        ...block,
+        id:
+          `${block.id}-segment-${segmentIndex}`,
+        children:
+          pendingChildren
+      });
+
+      segmentIndex += 1;
+      pendingChildren = [];
+    };
+
+    children.forEach(
+      child => {
+        splitBlock(
+          child,
+          false
+        ).forEach(
+          part => {
+            if (
+              isSection(
+                part
+              )
+            ) {
+              flushPending();
+              output.push(
+                part
+              );
+              return;
+            }
+
+            pendingChildren.push(
+              part
+            );
+          }
+        );
+      }
+    );
+
+    flushPending();
+
+    return output;
+  };
+
+  const result =
+    blocks.flatMap(
+      block =>
+        splitBlock(
+          block,
+          true
+        )
+    );
+
+  console.log(
+    "SPLIT_NESTED_INPUT",
+    blocks.map((b: any) => ({
+      id: b.id,
+      type: b.type,
+      semantic: b.meta?.semanticType,
+      childTypes: (b.children || []).map((c: any) => ({
+        type: c.type,
+        semantic: c.meta?.semanticType,
+        childCount: c.children?.length || 0
+      }))
+    }))
+  );
+
+  console.log(
+    "SPLIT_NESTED_OUTPUT",
+    result.map((b: any) => ({
+      id: b.id,
+      type: b.type,
+      semantic: b.meta?.semanticType
+    }))
+  );
+
+  return result;
+}
+
 function emitContainer(
   element: HTMLElement,
   path: (string | number)[],
@@ -2997,19 +3404,115 @@ function emitContainer(
     ...desktopStyle
   } = extracted.desktop || {};
 
-  const children =
+  const directChildren =
     getSafeChildren(
       element
-    ).flatMap(
-      (child, index) =>
-        parseDomToBlocks(
-          child,
-          [...path, index],
-          ownership,
-          warnings,
-          matcherHits
-        )
     );
+
+  const children =
+    directChildren.flatMap(
+      (child, index) => {
+        const compiled =
+          parseDomToBlocks(
+            child,
+            [...path, index],
+            ownership,
+            warnings,
+            matcherHits
+          );
+
+        if (
+          isTrackedContainerChild(
+            child
+          )
+        ) {
+          const current =
+            activeContainerChildCompileTraces.get(
+              child
+            );
+
+          activeContainerChildCompileTraces.set(
+            child,
+            {
+              compiledRootBlockIds:
+                compiled
+                  .map(
+                    block =>
+                      block.id
+                  )
+                  .filter(
+                    (
+                      id
+                    ): id is string =>
+                      !!id
+                  ),
+              compiledBlockIds:
+                collectBlockIds(
+                  compiled
+                ),
+              compiledBlockTypes:
+                compiled.map(
+                  block =>
+                    block.type
+                ),
+              fallbackBranch:
+                current?.fallbackBranch ||
+                null
+            }
+          );
+        }
+
+        return splitNestedSemanticSectionsForRoot(
+          compiled
+        );
+      }
+    );
+
+  if (
+    element ===
+    activeBodyChildTwoContainer
+  ) {
+    console.log(
+      "BODY_CHILD_2_CONTAINER_EMIT_CONTAINER",
+      directChildren.map(
+        (child, domIndex) => {
+          const trace =
+            activeContainerChildCompileTraces.get(
+              child
+            );
+
+          return {
+            domIndex,
+            child:
+              getElementClassName(
+                child
+              ) ||
+              child.tagName.toLowerCase(),
+            compiled:
+              !!trace
+                ?.compiledBlockIds
+                .length,
+            compiledBlockTypes:
+              trace
+                ?.compiledBlockTypes ||
+              [],
+            compiledBlockIds:
+              trace
+                ?.compiledBlockIds ||
+              [],
+            compiledRootBlockIds:
+              trace
+                ?.compiledRootBlockIds ||
+              [],
+            fallbackBranch:
+              trace
+                ?.fallbackBranch ||
+              null
+          };
+        }
+      )
+    );
+  }
 
   if (!children.length) {
     return [];
@@ -3094,12 +3597,29 @@ function emitContainer(
     }
   );
 
-  return [
-    {
+  const createContainerSegment = (
+    segmentChildren:
+      SerializedBlock[],
+    segmentIndex:
+      number | null
+  ): SerializedBlock => {
+    const segmentSuffix =
+      segmentIndex === null
+        ? []
+        : [
+            "segment",
+            segmentIndex
+          ];
+
+    return {
       id:
         generateNodeId(
           COMPILER_BLOCK_TYPES.FLEX,
-          [...path, "container"]
+          [
+            ...path,
+            "container",
+            ...segmentSuffix
+          ]
         ),
       type:
         COMPILER_BLOCK_TYPES.FLEX,
@@ -3116,6 +3636,7 @@ function emitContainer(
               [
                 ...path,
                 "container",
+                ...segmentSuffix,
                 "item"
               ]
             ),
@@ -3141,11 +3662,221 @@ function emitContainer(
               }
             }
           },
-          children
+          children:
+            segmentChildren
         }
       ]
+    };
+  };
+
+  const isSection = (
+    block: SerializedBlock
+  ) =>
+    block.type ===
+      COMPILER_BLOCK_TYPES.SECTION;
+
+  if (
+    !children.some(
+      isSection
+    )
+  ) {
+    return [
+      createContainerSegment(
+        children,
+        null
+      )
+    ];
+  }
+
+  const orderedOutput:
+    SerializedBlock[] = [];
+  let pendingGeneric:
+    SerializedBlock[] = [];
+  let segmentIndex = 0;
+
+  const flushGeneric = () => {
+    if (
+      !pendingGeneric.length
+    ) {
+      return;
     }
-  ];
+
+    orderedOutput.push(
+      createContainerSegment(
+        pendingGeneric,
+        segmentIndex
+      )
+    );
+
+    segmentIndex += 1;
+    pendingGeneric = [];
+  };
+
+  children.forEach(
+    block => {
+      if (
+        isSection(
+          block
+        )
+      ) {
+        flushGeneric();
+        orderedOutput.push(
+          block
+        );
+        return;
+      }
+
+      pendingGeneric.push(
+        block
+      );
+    }
+  );
+
+  flushGeneric();
+
+  console.log(
+    "CONTAINER_SECTIONS_HOISTED",
+    {
+      className:
+        getElementClassName(
+          element
+        ),
+      orderedOutput:
+        orderedOutput.map(
+          block => ({
+            id:
+              block.id,
+            type:
+              block.type,
+            semantic:
+              (block as any).meta
+                ?.semanticType ||
+              null
+          })
+        )
+    }
+  );
+
+  return orderedOutput;
+}
+
+function compileServiceContainerInDomOrder(
+  container: HTMLElement,
+  path: (string | number)[],
+  ownership: OwnershipBuckets,
+  warnings: ImportWarning[],
+  matcherHits: ImportMatcherHit[]
+): SerializedBlock[] {
+  const orderedBlocks:
+    SerializedBlock[] = [];
+
+  getSafeChildren(
+    container
+  ).forEach(
+    (
+      child,
+      index
+    ) => {
+      const replacement =
+        activeSemanticReplacementMap.get(
+          child
+        );
+      const isServiceReplacement =
+        (
+          replacement as any
+        )?.meta
+          ?.semanticType ===
+        "SERVICE_PAGE_SECTION";
+
+      if (
+        replacement &&
+        isServiceReplacement
+      ) {
+        orderedBlocks.push(
+          replacement
+        );
+
+        console.log(
+          "SERVICE_PAGE_ORDERED_INSERT",
+          {
+            domIndex:
+              index,
+            tag:
+              child.tagName,
+            className:
+              getElementClassName(
+                child
+              ),
+            emittedId:
+              replacement.id,
+            emittedType:
+              replacement.type,
+            semanticVariant:
+              (
+                replacement as any
+              ).meta
+                ?.semanticVariant ||
+              null
+          }
+        );
+
+        return;
+      }
+
+      const compiled =
+        parseDomToBlocks(
+          child,
+          [
+            ...path,
+            index
+          ],
+          ownership,
+          warnings,
+          matcherHits
+        );
+
+      orderedBlocks.push(
+        ...splitNestedSemanticSectionsForRoot(
+          compiled
+        )
+      );
+    }
+  );
+
+  console.log(
+    "SERVICE_PAGE_ORDERED_COMPILE",
+    {
+      container:
+        getElementClassName(
+          container
+        ) ||
+        container.tagName
+          .toLowerCase(),
+      orderedBlocks:
+        orderedBlocks.map(
+          (
+            block: any,
+            index
+          ) => ({
+            index,
+            id:
+              block.id,
+            type:
+              block.type,
+            semanticType:
+              block.meta
+                ?.semanticType ||
+              null,
+            semanticVariant:
+              block.meta
+                ?.semanticVariant ||
+              null
+          })
+        )
+    }
+  );
+
+  return orderedBlocks;
 }
 
 function emitGridContainer(
@@ -3449,11 +4180,49 @@ function parseDomToBlocks(
     activeSemanticReplacementMap.get(
       element
     );
+const serviceClasses = [
+  "svc-grid",
+  "deliverables",
+  "markets",
+  "cta-svc",
+  "sec-head",
+  "other-svc"
+];
+
+if (
+  serviceClasses.some(className =>
+    getElementClassName(element).includes(className)
+  )
+) {
+  console.log("SERVICE_PARSE_REPLACEMENT_CHECK", {
+    tag: element.tagName,
+    className: getElementClassName(element),
+    path,
+    hasReplacement: !!semanticReplacement,
+    replacementType: semanticReplacement?.type,
+    semanticType: (semanticReplacement as any)?.meta?.semanticType,
+    childrenCount: semanticReplacement?.children?.length || 0
+  });
+}
+    if (
+  getElementClassName(element).toLowerCase().includes("cta")
+) {
+  console.log(
+    "CTA_PARSE_ELEMENT",
+    {
+      tag: element.tagName,
+      className: getElementClassName(element),
+      hasReplacement: !!semanticReplacement,
+      replacementSemantic:
+      (semanticReplacement as any)?.meta?.semanticType
+    }
+  );
+}
 if (semanticReplacement) {
   if (
-    semanticReplacement.meta
+    (semanticReplacement as any)?.meta?.semanticType
       ?.semanticType === "FOOTER" &&
-    semanticReplacement.meta
+    (semanticReplacement as any)?.meta?.semanticType
       ?.preserveGenericSubtree
   ) {
     activeSemanticReplacementMap.delete(
@@ -3475,7 +4244,7 @@ if (semanticReplacement) {
             semanticType:
               "FOOTER",
             resolverName:
-              semanticReplacement.meta
+              (semanticReplacement as any)?.meta?.semanticType
                 ?.resolverName ||
               "resolveFooter"
           }
@@ -3528,7 +4297,7 @@ if (semanticReplacement) {
       "🚨 EMPTY_SEMANTIC_REPLACEMENT_SKIPPED",
       {
         semantic:
-          semanticReplacement.meta?.semanticType,
+          (semanticReplacement as any)?.meta?.semanticType,
         type:
           semanticReplacement.type,
         tag:
@@ -3552,7 +4321,7 @@ if (semanticReplacement) {
         path,
         tag: element.tagName,
         className: getElementClassName(element),
-        semantic: semanticReplacement.meta?.semanticType,
+        semantic: (semanticReplacement as any)?.meta?.semanticType,
         emittedType: semanticReplacement.type
       }
     );
@@ -3650,6 +4419,100 @@ style:
     }
   ];
 }
+
+const directSemanticReplacementChildren =
+  getSafeChildren(
+    element
+  )
+    .map(
+      (
+        child,
+        index
+      ) => ({
+        child,
+        index,
+        replacement:
+          activeSemanticReplacementMap.get(
+            child
+          )
+      })
+    )
+    .filter(
+      entry =>
+        !!entry.replacement
+    );
+
+if (
+  directSemanticReplacementChildren.length >
+  0
+) {
+  console.log(
+    "CONTAINER_HAS_SEMANTIC_REPLACEMENT_CHILDREN",
+    {
+      tag:
+        element.tagName,
+      className:
+        getElementClassName(
+          element
+        ),
+      path,
+      directChildCount:
+        getSafeChildren(
+          element
+        ).length,
+      replacementChildren:
+        directSemanticReplacementChildren.map(
+          entry => ({
+            index:
+              entry.index,
+            tag:
+              entry.child.tagName,
+            className:
+              getElementClassName(
+                entry.child
+              ),
+            emittedId:
+              entry.replacement
+                ?.id ||
+              null,
+            emittedType:
+              entry.replacement
+                ?.type ||
+              null,
+            semanticType:
+              (
+                entry.replacement as any
+              )?.meta
+                ?.semanticType ||
+              null,
+            semanticVariant:
+              (
+                entry.replacement as any
+              )?.meta
+                ?.semanticVariant ||
+              null
+          })
+        )
+    }
+  );
+
+  const semanticAwareContainer =
+    emitContainer(
+      element,
+      path,
+      ownership,
+      warnings,
+      matcherHits,
+      false
+    );
+
+  if (
+    semanticAwareContainer.length
+  ) {
+    return semanticAwareContainer;
+  }
+}
+
   // =====================================
 // OWNERSHIP LOOKUP
 // =====================================
@@ -4162,6 +5025,9 @@ export async function importHtmlDocument(
 ): Promise<ImportHtmlResult> {
   totalImportedNodes = 0;
   elementIds = new WeakMap();
+  activeBodyChildTwoContainer = null;
+  activeContainerChildCompileTraces =
+    new WeakMap();
   const warnings: ImportWarning[] = [];
   const matcherHits: ImportMatcherHit[] = [];
 
@@ -4951,7 +5817,19 @@ return css;
 
     const designTokens = extractDesignTokens(body);
     console.log("🎨 EXTRACTED DESIGN TOKENS", designTokens);
+console.log(
+  "SOURCE_DOM_CTA",
+  body.innerText.includes(
+    "Échangeons sur votre projet"
+  )
+);
 
+console.log(
+  "SOURCE_DOM_OTHER_SERVICES",
+  body.innerText.includes(
+    "Explorer nos autres expertises"
+  )
+);
     const {
       ownership,
       semanticBlocks
@@ -5121,10 +5999,155 @@ console.log(
     const ownershipBuckets = toOwnershipBuckets(ownership);
     console.log("🔥 OWNERSHIP BUCKETS", ownershipBuckets);
     const finalBlocks: SerializedBlock[] = [];
+    console.log(
+      "SEMANTIC_BLOCKS_BEFORE_REPLACEMENT_MAP",
+      semanticBlocks.map(
+        (entry: any) => ({
+          semanticResultType:
+            entry?.semanticResult
+              ?.type ||
+            null,
+          emittedSemanticType:
+            entry?.emitted?.meta
+              ?.semanticType ||
+            null,
+          emittedId:
+            entry?.emitted?.id ||
+            null,
+          emittedType:
+            entry?.emitted?.type ||
+            null,
+          resolverName:
+            entry?.resolverName ||
+            entry?.emitted?.meta
+              ?.resolverName ||
+            null,
+          claimedNodeTag:
+            entry?.claimedNode
+              ?.element?.tagName ||
+            null,
+          claimedNodeClassName:
+            entry?.claimedNode
+              ?.element
+              ? getElementClassName(
+                  entry.claimedNode
+                    .element
+                )
+              : null,
+          claimedNodePath:
+            entry?.claimedNode
+              ?.path ||
+            null,
+          emittedText:
+            normalizeDiagnosticText(
+              collectTextProps(
+                entry?.emitted
+                  ? [
+                      entry.emitted
+                    ]
+                  : []
+              )
+                .map(
+                  textEntry =>
+                    textEntry.text
+                )
+                .join(
+                  " "
+                )
+            )
+        }))
+    );
     activeSemanticReplacementMap =
       createSemanticReplacementMap(
-        semanticBlocks
+        semanticBlocks,
+        body
       );
+
+    const bodyChildTwoContainer =
+      findTargetSemanticContainer(
+        body
+      );
+
+    if (
+      bodyChildTwoContainer
+    ) {
+      activeBodyChildTwoContainer =
+        bodyChildTwoContainer;
+
+      console.log(
+        "BODY_CHILD_2_CONTAINER_DOM_ORDER",
+        {
+          detectedBy:
+            "closest-ancestor-containing-all-target-classes",
+          container:
+            describeClaimedElement(
+              bodyChildTwoContainer,
+              body
+            ),
+          directChildren:
+            getSafeChildren(
+              bodyChildTwoContainer
+            ).map(
+          (element, domIndex) => {
+            const exactClaims =
+              semanticBlocks.filter(
+                (entry: any) =>
+                  entry?.claimedNode
+                    ?.element ===
+                  element
+              );
+            const nestedClaims =
+              semanticBlocks.filter(
+                (entry: any) => {
+                  const claimed =
+                    entry?.claimedNode
+                      ?.element;
+
+                  return (
+                    claimed &&
+                    claimed !==
+                      element &&
+                    element.contains(
+                      claimed
+                    )
+                  );
+                }
+              );
+
+            return {
+              domIndex,
+              child:
+                getElementClassName(
+                  element
+                ) ||
+                element.tagName.toLowerCase(),
+              claimedBySemanticBlocks:
+                exactClaims.length >
+                  0 ||
+                nestedClaims.length >
+                  0,
+              exactSemanticClaims:
+                exactClaims.map(
+                  (entry: any) =>
+                    entry?.emitted
+                      ?.meta
+                      ?.semanticType ||
+                    null
+                ),
+              nestedSemanticClaims:
+                nestedClaims.map(
+                  (entry: any) =>
+                    entry?.emitted
+                      ?.meta
+                      ?.semanticType ||
+                    null
+                )
+            };
+          }
+        )
+        }
+      );
+    }
 
 
 
@@ -5139,6 +6162,32 @@ console.log(
 
 
     getSafeChildren(body).forEach((child, index) => {
+      if (
+        activeBodyChildTwoContainer &&
+        (
+          child ===
+            activeBodyChildTwoContainer ||
+          child.contains(
+            activeBodyChildTwoContainer
+          )
+        )
+      ) {
+        finalBlocks.push(
+          ...compileServiceContainerInDomOrder(
+            activeBodyChildTwoContainer,
+            [
+              index,
+              "servicePage"
+            ],
+            ownershipBuckets,
+            warnings,
+            matcherHits
+          )
+        );
+
+        return;
+      }
+
       const matchedSemantic = semanticBlocks.find((b: any) => {
         const claimed = b.claimedNode?.element;
         return claimed === child ;
@@ -5205,27 +6254,23 @@ console.log(
         child.contains(claimed)
       );
     });
+if (nestedSemanticMatches.length > 0) {
+  const compiled = parseDomToBlocks(
+    child,
+    [index],
+    ownershipBuckets,
+    warnings,
+    matcherHits
+  );
 
-  if (nestedSemanticMatches.length > 0) {
-    nestedSemanticMatches.forEach((entry: any) => {
-      if (entry.emitted) {
-        finalBlocks.push(
-          entry.emitted
-        );
+  finalBlocks.push(
+    ...splitNestedSemanticSectionsForRoot(
+      compiled
+    )
+  );
 
-        if (
-          entry.claimedNode?.element
-        ) {
-          logSemanticDroppedText(
-            entry.claimedNode.element,
-            entry.emitted
-          );
-        }
-      }
-    });
-
-    return;
-  }
+  return;
+}
 
   const compiled = parseDomToBlocks(
     child,
@@ -5242,11 +6287,45 @@ console.log(
   );
 }
     });
-
+console.log(
+  "CTA_BEFORE_RESTORE",
+  collectAllBlocks(finalBlocks).filter(
+    (b: any) =>
+      b?.meta?.semanticType === "CTA_SECTION"
+  )
+);
 preserveMissingSemanticBlocks(
   "finalBlocks",
   finalBlocks,
   semanticBlocks
+);
+
+const orderedServiceSections =
+  finalBlocks.filter(
+    (block: any) =>
+      block?.meta
+        ?.semanticType ===
+      "SERVICE_PAGE_SECTION"
+  );
+
+console.log(
+  "SERVICE_PAGE_ORDERED_FINAL",
+  {
+    count:
+      orderedServiceSections.length,
+    variants:
+      orderedServiceSections.map(
+        (block: any) =>
+          block?.meta
+            ?.semanticVariant ||
+          null
+      )
+  }
+);
+
+assertNoSectionInsideLayout(
+  "finalBlocks",
+  finalBlocks
 );
 
 assertFeaturePillarsPreservedAfterMerge(
@@ -5260,6 +6339,48 @@ const semanticMergedBlocks =
     finalBlocks as any
   );
 
+assertNoSectionInsideLayout(
+  "semanticMergedBlocks",
+  semanticMergedBlocks
+);
+console.log(
+  "FINAL BLOCKS TOP LEVEL SEMANTICS",
+  semanticMergedBlocks.map((b:any) => ({
+    type: b.type,
+    semantic: b.meta?.semanticType,
+    title:
+      b.children?.[0]?.data?.props?.text
+  }))
+);
+console.log(
+  "SECTION_2_FULL_TREE",
+  JSON.stringify(
+    finalBlocks[1],
+    null,
+    2
+  )
+);
+
+console.log(
+  "TWO_COLUMN_FULL_TREE",
+  JSON.stringify(
+    finalBlocks[2],
+    null,
+    2
+  )
+);
+console.log(
+  "ALL_TOP_LEVEL_BLOCKS",
+  finalBlocks.map((b:any,index:number)=>({
+    index,
+    id:b.id,
+    type:b.type,
+    semantic:b.meta?.semanticType,
+    firstText:
+      JSON.stringify(b)
+        .slice(0,300)
+  }))
+);
 logLargeLayoutBlocks(
   "semanticMergedBlocks",
   semanticMergedBlocks
@@ -5409,6 +6530,17 @@ const cleanedBlocks =
     semanticMergedBlocks as any
   );
 
+const rootSafeCleanedBlocks =
+  splitNestedSemanticSectionsForRoot(
+    cleanedBlocks as any,
+    true
+  );
+
+assertNoSectionInsideLayout(
+  "rootSafeCleanedBlocks",
+  rootSafeCleanedBlocks
+);
+
 logLargeLayoutBlocks(
   "cleanedBlocks",
   cleanedBlocks
@@ -5524,26 +6656,58 @@ const wrapInvalidRootBlocks = (
 };
 
 
-const normalized =
+const normalizedBeforeRootSafety =
   wrapInvalidRootBlocks(
     normalizeTree(
-      cleanedBlocks
+      rootSafeCleanedBlocks as any
     ) as any
   );
+
+const normalized =
+  wrapInvalidRootBlocks(
+    splitNestedSemanticSectionsForRoot(
+      normalizedBeforeRootSafety as any,
+      true
+    )
+  );
+
+assertNoSectionInsideLayout(
+  "normalized",
+  normalized
+);
 
 logLargeLayoutBlocks(
   "normalizedBlocks",
   normalized
 );
 
+console.log(
+  "BEFORE_NORMALIZE_TREE",
+  JSON.stringify(cleanedBlocks, null, 2)
+);
 
+
+console.log(
+  "AFTER_NORMALIZE_TREE",
+  JSON.stringify(normalized, null, 2)
+);
 logFeaturePillarsStageTransition(
   "normalizedBlocks",
   cleanedBlocks,
   normalized,
   "normalizeTree(cleanedBlocks)"
 );
+console.log(
+  "BEFORE_NORMALIZE_TREE",
+  JSON.stringify(cleanedBlocks, null, 2)
+);
 
+
+
+console.log(
+  "AFTER_NORMALIZE_TREE",
+  JSON.stringify(normalized, null, 2)
+);
 assertFeaturePillarsPreservedAfterMerge(
   "normalizedBlocks",
   normalized,
@@ -5976,6 +7140,65 @@ const serializableVisualBlocks =
     "importHtmlDocument.finalBlocks"
   );
 
+console.log(
+  "FINAL_PAGE_BLOCKS",
+  {
+    topLevelCount:
+      serializableVisualBlocks.length,
+    topLevel:
+      serializableVisualBlocks.map(
+        (
+          block: any,
+          index: number
+        ) => ({
+          index,
+          id:
+            block?.id,
+          type:
+            block?.type,
+          semanticType:
+            block?.meta
+              ?.semanticType ||
+            null,
+          semanticVariant:
+            block?.meta
+              ?.semanticVariant ||
+            null,
+          childTypes:
+            (
+              block?.children ||
+              []
+            ).map(
+              (child: any) =>
+                child?.type
+            )
+        })
+      ),
+    serviceSections:
+      collectAllBlocks(
+        serializableVisualBlocks as any
+      )
+        .filter(
+          (block: any) =>
+            block?.meta
+              ?.semanticType ===
+            "SERVICE_PAGE_SECTION"
+        )
+        .map(
+          (block: any) => ({
+            id:
+              block.id,
+            type:
+              block.type,
+            semanticVariant:
+              block.meta
+                ?.semanticVariant ||
+              null
+          })
+        )
+  }
+);
+
 return {
   blocks:
     serializableVisualBlocks as any,
@@ -6122,7 +7345,8 @@ function collectDescendantsByType(
 }
 
 function createSemanticReplacementMap(
-  semanticBlocks: any[]
+  semanticBlocks: any[],
+  importRoot?: HTMLElement
 ) {
   const map =
     new WeakMap<
@@ -6131,6 +7355,7 @@ function createSemanticReplacementMap(
     >();
 
   const body =
+    importRoot ||
     semanticBlocks.find(
       (entry: any) =>
         entry.claimedNode?.element
@@ -6138,20 +7363,169 @@ function createSemanticReplacementMap(
     )?.claimedNode?.element
       ?.ownerDocument?.body as HTMLElement | undefined;
 
+  const serviceSelectorByVariant:
+    Record<string, string> = {
+      SERVICE_INTRO_GRID:
+        ".svc-grid",
+      SERVICE_DELIVERABLES:
+        ".deliverables",
+      SERVICE_MARKETS:
+        ".markets",
+      SERVICE_CTA:
+        ".cta-svc",
+      SERVICE_HEADING:
+        ".sec-head",
+      SERVICE_CARDS:
+        ".other-svc"
+    };
+
+  const resolveRegistrationElement = (
+    entry: any
+  ) => {
+    const claimedElement =
+      (
+        entry?.claimedNode
+          ?.element ||
+        entry?.semanticResult
+          ?.claimedNode
+          ?.element
+      ) as HTMLElement | undefined;
+    const variant =
+      entry?.semanticResult
+        ?.variant as string | undefined;
+    const serviceSelector =
+      variant
+        ? serviceSelectorByVariant[
+            variant
+          ]
+        : undefined;
+
+    if (
+      claimedElement &&
+      (
+        !body ||
+        claimedElement === body ||
+        body.contains(
+          claimedElement
+        )
+      )
+    ) {
+      return {
+        element:
+          claimedElement,
+        source:
+          "claimedNode.element"
+      };
+    }
+
+    if (
+      body &&
+      serviceSelector
+    ) {
+      const liveServiceElement =
+        body.querySelector(
+          serviceSelector
+        ) as HTMLElement | null;
+
+      if (
+        liveServiceElement
+      ) {
+        return {
+          element:
+            liveServiceElement,
+          source:
+            "service-variant-live-dom"
+        };
+      }
+    }
+
+    return {
+      element:
+        claimedElement,
+      source:
+        claimedElement
+          ? "detached-claimedNode.element"
+          : "missing-claimedNode.element"
+    };
+  };
+
   const registered =
     semanticBlocks
       .map((entry: any) => {
-        const element =
-          entry.claimedNode
-            ?.element as HTMLElement | undefined;
+        const {
+          element,
+          source:
+            elementSource
+        } =
+          resolveRegistrationElement(
+            entry
+          );
 
         const emitted =
           entry.emitted as SerializedBlock | undefined;
+
+        console.log(
+          "SEMANTIC_REGISTER_ATTEMPT",
+          {
+            semanticResultType:
+              entry?.semanticResult
+                ?.type ||
+              null,
+            variant:
+              entry?.semanticResult
+                ?.variant ||
+              null,
+            resolver:
+              entry?.resolverName ||
+              (emitted as any)?.meta
+                ?.resolverName ||
+              null,
+            hasClaimedElement:
+              !!element,
+            elementSource,
+            tag:
+              element?.tagName ||
+              null,
+            className:
+              element
+                ? getElementClassName(
+                    element
+                  )
+                : null,
+            hasEmitted:
+              !!emitted,
+            emittedId:
+              emitted?.id ||
+              null,
+            emittedType:
+              emitted?.type ||
+              null
+          }
+        );
 
         if (
           !element ||
           !emitted
         ) {
+          console.warn(
+            "SEMANTIC_REGISTER_SKIPPED",
+            {
+              semanticResultType:
+                entry?.semanticResult
+                  ?.type ||
+                null,
+              variant:
+                entry?.semanticResult
+                  ?.variant ||
+                null,
+              reason:
+                !element
+                  ? "missing-registration-element"
+                  : "missing-emitted-block",
+              elementSource
+            }
+          );
+
           return null;
         }
 
@@ -6160,12 +7534,78 @@ function createSemanticReplacementMap(
           emitted
         );
 
+        const registeredBlock =
+          map.get(
+            element
+          );
+
+        if (
+          registeredBlock !==
+          emitted
+        ) {
+          console.warn(
+            "SEMANTIC_REGISTER_SKIPPED",
+            {
+              semanticResultType:
+                entry?.semanticResult
+                  ?.type ||
+                null,
+              variant:
+                entry?.semanticResult
+                  ?.variant ||
+                null,
+              reason:
+                "weakmap-set-verification-failed",
+              tag:
+                element.tagName,
+              className:
+                getElementClassName(
+                  element
+                )
+            }
+          );
+
+          return null;
+        }
+
+        console.log(
+          "SEMANTIC_REGISTER_DONE",
+          {
+            semanticResultType:
+              entry?.semanticResult
+                ?.type ||
+              null,
+            variant:
+              entry?.semanticResult
+                ?.variant ||
+              null,
+            resolver:
+              entry?.resolverName ||
+              (emitted as any).meta
+                ?.resolverName ||
+              null,
+            elementSource,
+            tag:
+              element.tagName,
+            className:
+              getElementClassName(
+                element
+              ),
+            emittedId:
+              emitted.id,
+            emittedType:
+              emitted.type,
+            verified:
+              true
+          }
+        );
+
         return {
           semantic:
-            emitted.meta?.semanticType,
+            (emitted as any).meta?.semanticType,
           resolver:
             entry.resolverName ||
-            emitted.meta?.resolverName,
+            (emitted as any).meta?.resolverName,
           emittedType:
             emitted.type,
           emittedBlockType:
@@ -6183,7 +7623,11 @@ function createSemanticReplacementMap(
               element
             ),
           structuralPath:
-            entry.claimedNode?.path,
+            entry.claimedNode
+              ?.path ||
+            entry.semanticResult
+              ?.claimedNode
+              ?.path,
           bodyDirectIndex:
             body
               ? getSafeChildren(body)
@@ -6194,6 +7638,114 @@ function createSemanticReplacementMap(
         };
       })
       .filter(Boolean);
+
+  if (
+    body
+  ) {
+    Object.entries(
+      serviceSelectorByVariant
+    ).forEach(
+      (
+        [
+          variant,
+          selector
+        ]
+      ) => {
+        const entry =
+          semanticBlocks.find(
+            (candidate: any) =>
+              candidate
+                ?.semanticResult
+                ?.type ===
+                "SERVICE_PAGE_SECTION" &&
+              candidate
+                ?.semanticResult
+                ?.variant ===
+                variant
+          );
+        const emitted =
+          entry?.emitted as
+            | SerializedBlock
+            | undefined;
+        const liveElement =
+          body.querySelector(
+            selector
+          ) as HTMLElement | null;
+
+        console.log(
+          "SEMANTIC_REGISTER_ATTEMPT",
+          {
+            semanticResultType:
+              "SERVICE_PAGE_SECTION",
+            variant,
+            selector,
+            registrationPass:
+              "service-live-dom-guarantee",
+            hasLiveElement:
+              !!liveElement,
+            hasSemanticEntry:
+              !!entry,
+            hasEmitted:
+              !!emitted
+          }
+        );
+
+        if (
+          !liveElement ||
+          !emitted
+        ) {
+          console.warn(
+            "SEMANTIC_REGISTER_SKIPPED",
+            {
+              semanticResultType:
+                "SERVICE_PAGE_SECTION",
+              variant,
+              selector,
+              registrationPass:
+                "service-live-dom-guarantee",
+              reason:
+                !liveElement
+                  ? "live-service-element-not-found"
+                  : "service-emitted-block-not-found"
+            }
+          );
+
+          return;
+        }
+
+        map.set(
+          liveElement,
+          emitted
+        );
+
+        console.log(
+          "SEMANTIC_REGISTER_DONE",
+          {
+            semanticResultType:
+              "SERVICE_PAGE_SECTION",
+            variant,
+            selector,
+            registrationPass:
+              "service-live-dom-guarantee",
+            tag:
+              liveElement.tagName,
+            className:
+              getElementClassName(
+                liveElement
+              ),
+            emittedId:
+              emitted.id,
+            emittedType:
+              emitted.type,
+            verified:
+              map.get(
+                liveElement
+              ) === emitted
+          }
+        );
+      }
+    );
+  }
 
   activeSemanticReplacementDiagnostics =
     registered as Array<Record<string, any>>;
@@ -6207,7 +7759,13 @@ function createSemanticReplacementMap(
         registered
     }
   );
-
+console.log(
+  "CTA_REPLACEMENT_REGISTERED",
+  registered.filter((r: any) =>
+    r.semantic === "CTA_SECTION" ||
+    String(r.className || "").includes("cta")
+  )
+);
   return map;
 }
 
@@ -6288,79 +7846,33 @@ function collectAllBlocks(
   return result;
 }
 
-function splitNestedSemanticSectionsForRoot(
-  blocks: SerializedBlock[]
-): SerializedBlock[] {
-  const result: SerializedBlock[] = [];
 
-  const pushSectionSegment = (
-    section: SerializedBlock,
-    children: SerializedBlock[],
-    index: number
-  ) => {
-    if (!children.length) {
-      return;
-    }
 
-    result.push({
-      ...section,
-      id:
-        `${section.id}-segment-${index}`,
-      children
-    });
-  };
 
-  blocks.forEach((block: SerializedBlock) => {
-    if (
-      isSemanticBlock(block) ||
-      block.type !== COMPILER_BLOCK_TYPES.SECTION
-    ) {
-      result.push(block);
-      return;
-    }
 
-    const children =
-      block.children || [];
 
-    if (
-      !children.some(
-        isSemanticBlock
-      )
-    ) {
-      result.push(block);
-      return;
-    }
 
-    let pendingChildren: SerializedBlock[] = [];
-    let segmentIndex = 0;
 
-    children.forEach((child: SerializedBlock) => {
-      if (
-        isSemanticBlock(child)
-      ) {
-        pushSectionSegment(
-          block,
-          pendingChildren,
-          segmentIndex
-        );
-        segmentIndex += 1;
-        pendingChildren = [];
-        result.push(child);
-        return;
-      }
 
-      pendingChildren.push(child);
-    });
 
-    pushSectionSegment(
-      block,
-      pendingChildren,
-      segmentIndex
-    );
-  });
 
-  return result;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function preserveMissingSemanticBlocks(
   stage: string,
@@ -6379,14 +7891,137 @@ function preserveMissingSemanticBlocks(
       entry?.emitted;
     const semanticType =
       emitted?.meta?.semanticType;
+    const semanticResultType =
+      entry?.semanticResult?.type;
+    const emittedText =
+      normalizeDiagnosticText(
+        collectTextProps(
+          emitted
+            ? [
+                emitted
+              ]
+            : []
+        )
+          .map(
+            textEntry =>
+              textEntry.text
+          )
+          .join(
+            " "
+          )
+      );
+    const alreadyExists =
+      !!emitted &&
+      existingIds.has(
+        emitted.id
+      );
+      if (semanticType === "CTA_SECTION") {
+  console.log(
+    "CTA_RESTORE_SKIPPED_WAIT_FOR_DOM_PARSE",
+    {
+      stage,
+      id: emitted?.id,
+      claimedNodeClassName:
+        entry?.claimedNode?.element
+          ? getElementClassName(entry.claimedNode.element)
+          : null
+    }
+  );
+
+  return;
+}
 
     if (
       !emitted ||
       !semanticType ||
-      existingIds.has(
-        emitted.id
-      )
+      alreadyExists
     ) {
+      console.log(
+        "SEMANTIC_RESTORE_DECISION",
+        {
+          stage,
+          semanticResultType:
+            semanticResultType ||
+            null,
+          emittedSemanticType:
+            semanticType ||
+            null,
+          id:
+            emitted?.id ||
+            null,
+          emittedType:
+            emitted?.type ||
+            null,
+          claimedNodeClassName:
+            entry?.claimedNode
+              ?.element
+              ? getElementClassName(
+                  entry.claimedNode
+                    .element
+                )
+              : null,
+          emittedText,
+          decision:
+            "skip",
+          reason:
+            !emitted
+              ? "missing-emitted-block"
+              : !semanticType
+                ? "missing-emitted-meta-semanticType"
+                : "emitted-id-already-present"
+        }
+      );
+
+      return;
+    }
+
+    if (
+      emitted.type ===
+      COMPILER_BLOCK_TYPES.SECTION
+    ) {
+      if (
+        semanticType ===
+        "SERVICE_PAGE_SECTION"
+      ) {
+        console.log(
+          "SEMANTIC_RESTORE_DECISION",
+          {
+            stage,
+            semanticResultType,
+            emittedSemanticType:
+              semanticType,
+            id:
+              emitted.id,
+            decision:
+              "skip",
+            reason:
+              "service-sections-are-inserted-during-ordered-dom-compilation"
+          }
+        );
+
+        return;
+      }
+
+      console.error(
+        "SEMANTIC_SECTION_MISSING_FROM_ORDERED_COMPILE",
+        {
+          stage,
+          semanticType,
+          id:
+            emitted.id,
+          claimedNodeClassName:
+            entry?.claimedNode
+              ?.element
+              ? getElementClassName(
+                  entry.claimedNode
+                    .element
+                )
+              : null,
+          reason:
+            "A semantic section cannot be restored by appending it after DOM compilation."
+        }
+      );
+
       return;
     }
 
@@ -6408,6 +8043,35 @@ function preserveMissingSemanticBlocks(
     if (
       overlappingIds.length
     ) {
+      console.log(
+        "SEMANTIC_RESTORE_DECISION",
+        {
+          stage,
+          semanticResultType:
+            semanticResultType ||
+            null,
+          emittedSemanticType:
+            semanticType,
+          id:
+            emitted.id,
+          emittedType:
+            emitted.type,
+          claimedNodeClassName:
+            entry?.claimedNode
+              ?.element
+              ? getElementClassName(
+                  entry.claimedNode
+                    .element
+                )
+              : null,
+          emittedText,
+          decision:
+            "skip",
+          reason:
+            "overlapping-subtree-ids",
+          overlappingIds
+        }
+      );
       console.warn(
         "SEMANTIC_RESTORE_SKIPPED_DUPLICATE_SUBTREE",
         {
@@ -6423,6 +8087,35 @@ function preserveMissingSemanticBlocks(
     }
 
     
+
+    console.log(
+      "SEMANTIC_RESTORE_DECISION",
+      {
+        stage,
+        semanticResultType:
+          semanticResultType ||
+          null,
+        emittedSemanticType:
+          semanticType,
+        id:
+          emitted.id,
+        emittedType:
+          emitted.type,
+        claimedNodeClassName:
+          entry?.claimedNode
+            ?.element
+            ? getElementClassName(
+                entry.claimedNode
+                  .element
+              )
+            : null,
+        emittedText,
+        decision:
+          "restore",
+        reason:
+          "missing-without-overlap"
+      }
+    );
 
     console.log(
       "SEMANTIC_BLOCK_RESTORED_AFTER_MERGE",
@@ -6445,6 +8138,92 @@ function preserveMissingSemanticBlocks(
       emitted.id
     );
   });
+}
+
+function assertNoSectionInsideLayout(
+  stage: string,
+  blocks: any[]
+) {
+  const layoutTypes =
+    new Set([
+      COMPILER_BLOCK_TYPES.FLEX,
+      COMPILER_BLOCK_TYPES.FLEX_ITEM,
+      COMPILER_BLOCK_TYPES.GRID,
+      COMPILER_BLOCK_TYPES.GRID_ITEM
+    ]);
+
+  const violations:
+    Array<{
+      parentId: string;
+      parentType: string;
+      sectionId: string;
+      semanticType: string;
+    }> = [];
+
+  const walk = (
+    items: any[],
+    layoutParent:
+      any | null
+  ) => {
+    items.forEach(
+      block => {
+        if (!block) {
+          return;
+        }
+
+        if (
+          layoutParent &&
+          block.type ===
+            COMPILER_BLOCK_TYPES.SECTION
+        ) {
+          violations.push({
+            parentId:
+              layoutParent.id,
+            parentType:
+              layoutParent.type,
+            sectionId:
+              block.id,
+            semanticType:
+              block.meta
+                ?.semanticType ||
+              "generic-section"
+          });
+        }
+
+        walk(
+          block.children || [],
+          layoutTypes.has(
+            block.type
+          )
+            ? block
+            : layoutParent
+        );
+      }
+    );
+  };
+
+  walk(
+    blocks || [],
+    null
+  );
+
+  if (
+    !violations.length
+  ) {
+    return;
+  }
+
+  console.error(
+    "SECTION_NESTED_INSIDE_LAYOUT",
+    {
+      stage,
+      violations
+    }
+  );
+
+  throw new Error(
+    "SECTION_NESTED_INSIDE_LAYOUT"
+  );
 }
 
 function assertFeaturePillarsPreservedAfterMerge(

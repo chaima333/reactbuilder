@@ -234,6 +234,14 @@ export const TitleBlock = ({
                   segment?.variant === "accent"
                     ? {
                         background:
+                          segment?.style
+                            ?.backgroundImage &&
+                          segment.style
+                            .backgroundImage !==
+                            "none"
+                            ? segment.style
+                                .backgroundImage
+                            :
                           "linear-gradient(90deg, #0A84FF, #F77F00)",
                         WebkitBackgroundClip:
                           "text",

@@ -112,6 +112,10 @@ builder.query<
     (response:any) =>
 
       response.data,
+
+  providesTags: (result, error, siteId) => [
+    { type: "Sites", id: siteId }
+  ],
 }),
 
   }),

@@ -1175,6 +1175,9 @@ console.log(
     id: uuidv4(),
 
     type: "section" as const,
+     meta: {
+    semanticType: "CTA_SECTION",
+  },
 
     data: {
 

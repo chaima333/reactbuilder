@@ -31,6 +31,9 @@ import { resolveTwoColumnIntro } from "../twoColumnIntro/resolveTwoColumnIntro";
 import { resolveCtaCard } from "../ctaCard/resolveCtaCard";
 import { resolveNavbar } from "../navbar/resolveNavbar";
 import { resolveFooter } from "../footer/resolveFooter";
+import {
+  resolveServicePageSection
+} from "../servicePage/resolveServicePageSection";
 
 export const semanticResolverRegistry = [
 resolveNavbar,
@@ -38,6 +41,8 @@ resolveNavbar,
   resolveFooter,
   
   resolveHero,
+
+  resolveServicePageSection,
 
   resolveAuthHero,
 
