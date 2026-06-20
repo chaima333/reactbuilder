@@ -1701,11 +1701,17 @@ export const generatePageBlocksByType = (
   aiContent: any,
   heroImageUrl?: string,
   navigationItems: Array<{ label: string; href: string }> = [],
-  pageTitle?: string
+  pageTitle?: string,
+  generatedBlocks: PageBlock[] = []
 ): PageBlock[] => {
   switch (pageType) {
-    case "home":
-      return generateHomeBlocks(category, aiContent, heroImageUrl, navigationItems);
+    case "home": {
+      if (generatedBlocks.length === 0) {
+        throw new Error("HOME_GENERATED_BLOCKS_REQUIRED");
+      }
+
+      return generatedBlocks;
+    }
     case "about":
       return generateAboutBlocks(category, aiContent, heroImageUrl, navigationItems);
     case "services":
@@ -1743,13 +1749,39 @@ export function buildPageFromTemplate(
   template: TemplateConfig,
   prompt: string,
   aiContent: any,
-  heroImageUrl?: string
+  heroImageUrl?: string,
+  navigationItems: Array<{ label: string; href: string }> = []
 ): PageBlock[] {
   const pageTitle =
     aiContent?.title || template.defaultTitle;
 
-  const sections = template.sections.map((section) => {
-    if (section.kind === "navbar" || section.kind === "footer") {
+  const homeKinds: SectionKind[] = [
+    "navbar",
+    "hero",
+    "mission",
+    "features",
+    "stats",
+    "cta",
+    "footer"
+  ];
+
+  const sections = template.sections
+    .filter((section) => homeKinds.includes(section.kind))
+    .map((section) => {
+    if (section.kind === "navbar") {
+      const contactLink = navigationItems.find(
+        (item) => item.label.toLowerCase() === "contact"
+      );
+
+      return {
+        ...section,
+        title: pageTitle,
+        navigationItems,
+        ctaHref: contactLink?.href || section.ctaHref
+      };
+    }
+
+    if (section.kind === "footer") {
       return {
         ...section,
         title: pageTitle
@@ -1819,7 +1851,7 @@ export function buildPageFromTemplate(
     }
 
     return section;
-  });
+    });
 
   return sections.map((section) => buildSectionFromConfig(section));
 }
@@ -1832,7 +1864,8 @@ export function generateTemplate(
   category: string,
   prompt: string,
   aiContent: any,
-  heroImageUrl?: string
+  heroImageUrl?: string,
+  navigationItems: Array<{ label: string; href: string }> = []
 ): GeneratedPage {
   const template =
     CATEGORY_TEMPLATES[category] ??
@@ -1843,7 +1876,8 @@ export function generateTemplate(
       template,
       prompt,
       aiContent,
-      heroImageUrl
+      heroImageUrl,
+      navigationItems
     );
 
   return {

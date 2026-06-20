@@ -1,4 +1,5 @@
 import { ActivityLog } from "../../models/activityLog";
+import { Page } from "../../models/page";
 import { Seo } from "../../models/Seo";
 import { MediaService } from "../media/media.service";
 import { PageService } from "../pages/services/page.service";
@@ -252,20 +253,6 @@ console.log("MEDIA_AI_NOTIFICATION_DISPATCHED", {
     }
   }
 
-const generated = generateTemplate(
-  category,
-  prompt,
-  aiContent,
-  heroImageUrl
-);
-
-  console.log("AI_GENERATED_TITLE", generated.title);
-  console.log(
-    "AI_GENERATED_BLOCKS_COUNT",
-    generated.blocks?.length || 0
-  );
-
-
 const selectedPages =
   sitePlan.slice(0, 6);
 
@@ -285,6 +272,21 @@ const navigationItems = plannedPages.map((page) => ({
       : `/site/${siteId}/${page.finalSlug}`
 }));
 
+const generated = generateTemplate(
+  category,
+  prompt,
+  aiContent,
+  heroImageUrl,
+  navigationItems
+);
+
+console.log("AI_GENERATED_TITLE", generated.title);
+console.log(
+  "AI_GENERATED_BLOCKS_COUNT",
+  generated.blocks?.length || 0
+);
+console.log("HOME_BLOCKS_COUNT", generated.blocks?.length || 0);
+
 console.log(
   "AI_WILL_CREATE_PAGES",
   plannedPages.map((page) => ({
@@ -294,6 +296,7 @@ console.log(
   }))
 );
 const createdPages: any[] = [];
+let homepagePageId: number | undefined;
 
 for (const planPage of plannedPages) {
 
@@ -309,8 +312,24 @@ for (const planPage of plannedPages) {
     aiContent,
     heroImageUrl,
     navigationItems,
-    planPage.title
+    planPage.title,
+    generated.blocks
   );
+
+  console.log("PAGE_TYPE_ASSIGNED", {
+    type: planPage.type,
+    slug: pageSlug,
+    blocksCount: pageBlocks.length,
+    source:
+      planPage.type === "home"
+        ? "generated.blocks"
+        : `generate${planPage.title}Blocks`
+  });
+
+  if (planPage.type === "about") {
+    console.log("ABOUT_BLOCKS_COUNT", pageBlocks.length);
+  }
+
   const result = await PageService.createPage(
     siteId,
     userId,
@@ -321,12 +340,19 @@ for (const planPage of plannedPages) {
       isHomepage: planPage.type === "home"
     }
   );
+
+  if (planPage.type === "home") {
+    homepagePageId = result.data.id;
+    console.log("HOMEPAGE_PAGE_ID", result.data.id);
+  }
+
   const publishedResult = await PageService.publishPage(
     siteId,
     result.data.id,
     "OWNER",
     userId
   );
+
   createdPages.push(publishedResult.data);
 
   await ActivityLog.create({
@@ -363,6 +389,25 @@ for (const planPage of plannedPages) {
     twitterDescription: seo.twitterDescription,
     twitterImage: seo.twitterImage
   });
+}
+
+const publishedHomepage = await Page.findOne({
+  where: {
+    siteId,
+    isHomepage: true,
+    status: "published"
+  }
+});
+
+console.log("PUBLISHED_HOMEPAGE_ID", {
+  expectedId: homepagePageId,
+  publishedId: publishedHomepage?.id,
+  slug: publishedHomepage?.slug,
+  blocksCount: publishedHomepage?.blocks?.length || 0
+});
+
+if (!publishedHomepage || publishedHomepage.id !== homepagePageId) {
+  throw new Error("PUBLISHED_HOMEPAGE_MISMATCH");
 }
 
 return createdPages[0];
