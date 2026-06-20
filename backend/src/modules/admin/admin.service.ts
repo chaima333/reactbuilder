@@ -227,19 +227,26 @@ export class AdminAnalyticsService {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    const recentGenerations = [...logs]
-      .sort(
-        (a: any, b: any) =>
-          new Date(b.createdAt).getTime() -
-          new Date(a.createdAt).getTime()
-      )
-      .slice(0, 10)
-      .map((log: any) => ({
-        id: log.id,
-        siteId: log.siteId,
-        category: log.details?.category || "Unknown",
-        createdAt: log.createdAt,
-      }));
+   const recentGenerations = [...logs]
+  .sort(
+    (a: any, b: any) =>
+      new Date(b.createdAt).getTime() -
+      new Date(a.createdAt).getTime()
+  )
+  .slice(0, 10)
+  .map((log: any) => {
+    const site = sites.find(
+      (s: any) => String(s.id) === String(log.siteId)
+    );
+
+    return {
+      id: log.id,
+      siteId: log.siteId,
+      siteName: site?.name || `Site #${log.siteId}`,
+      category: log.details?.category || "Unknown",
+      createdAt: log.createdAt,
+    };
+  });
 
     return {
       generatedPages,

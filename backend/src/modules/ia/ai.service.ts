@@ -2,7 +2,13 @@ import { ActivityLog } from "../../models/activityLog";
 import { Seo } from "../../models/Seo";
 import { MediaService } from "../media/media.service";
 import { PageService } from "../pages/services/page.service";
-import { generateAboutBlocks, generateContactBlocks, generateServicesBlocks, generateTemplate } from "./ai.builder";
+import {
+  generateAboutBlocks,
+  generateContactBlocks,
+  generateServicesBlocks,
+  generateTemplate,
+  generateHomeBlocks
+} from "./ai.builder";
 import { CATEGORY_TEMPLATES } from "./ai.templates";
 import { generateAiContent } from "./content.generator";
 import { generateSeo } from "./seo.generator";
@@ -264,7 +270,7 @@ const generated = generateTemplate(
 
 
 const selectedPages =
-  sitePlan.slice(0, 4);
+  sitePlan.slice(0, 6);
 
 console.log(
   "AI_WILL_CREATE_PAGES",
@@ -288,7 +294,7 @@ for (const planPage of selectedPages) {
 let pageBlocks = generated.blocks;
 
 if (planPage.type === "home") {
-  pageBlocks = generated.blocks;
+  pageBlocks = generateHomeBlocks(category, aiContent, heroImageUrl);
 }
 
 if (planPage.type === "about") {

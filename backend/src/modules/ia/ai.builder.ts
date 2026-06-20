@@ -1057,6 +1057,284 @@ const buildFooter = (config: SectionConfig): PageBlock => {
 };
 
 // ============================================
+// CONTACT FORM BUILDER
+// ============================================
+
+const buildContactForm = (): PageBlock => {
+  const fields = [
+    { name: "name", type: "text", label: "Full Name", required: true },
+    { name: "email", type: "email", label: "Email Address", required: true },
+    { name: "subject", type: "text", label: "Subject", required: false },
+    { name: "message", type: "textarea", label: "Message", required: true },
+  ];
+
+  const fieldBlocks: PageBlock[] = fields.map((field) => ({
+    id: makeId(`form-field-${field.name}`),
+    type: field.type === "textarea" ? "textarea" : "input",
+    data: {
+      props: {
+        name: field.name,
+        placeholder: field.label,
+        required: field.required,
+        type: field.type,
+        label: field.label,
+      },
+      style: responsiveStyle({
+        width: "100%",
+        padding: "12px 16px",
+        fontSize: "16px",
+        border: "1px solid #d1d5db",
+        borderRadius: "8px",
+        marginBottom: "16px",
+        backgroundColor: "#ffffff",
+        color: "#0f172a",
+        "&:focus": {
+          borderColor: "#2563eb",
+          outline: "none",
+          boxShadow: "0 0 0 3px rgba(37,99,235,0.1)",
+        },
+      }),
+    },
+    children: [],
+  }));
+
+  const formContainer: PageBlock = {
+    id: makeId("contact-form-container"),
+    type: "flex",
+    data: {
+      props: {},
+      style: responsiveStyle({
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px",
+        width: "100%",
+        maxWidth: "500px",
+        margin: "0 auto",
+      }),
+    },
+    children: [
+      ...fieldBlocks,
+      {
+        id: makeId("form-submit"),
+        type: "button",
+        data: {
+          props: {
+            label: "Send Message",
+            type: "submit",
+          },
+          style: responsiveStyle({
+            padding: "14px 32px",
+            backgroundColor: "#2563eb",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: "8px",
+            fontSize: "16px",
+            fontWeight: "600",
+            cursor: "pointer",
+            transition: "background-color 0.2s ease",
+            "&:hover": {
+              backgroundColor: "#1d4ed8",
+            },
+          }),
+        },
+        children: [],
+      },
+    ],
+  };
+
+  return {
+    id: makeId("contact-form-section"),
+    type: "section",
+    data: {
+      props: {},
+      style: responsiveStyle({
+        backgroundColor: "#ffffff",
+        padding: "60px 40px",
+        borderRadius: "12px",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        maxWidth: "600px",
+        margin: "0 auto",
+        width: "100%",
+      }),
+    },
+    children: [flexItemBlock([formContainer])],
+  };
+};
+
+// ============================================
+// CONTACT INFO BUILDER
+// ============================================
+
+const buildContactInfo = (): PageBlock => {
+  const infoItems = [
+    { icon: "📍", label: "Address", value: "123 Business Street, Tunis, Tunisia" },
+    { icon: "📞", label: "Phone", value: "+216 XX XXX XXX" },
+    { icon: "✉️", label: "Email", value: "contact@example.com" },
+    { icon: "🕐", label: "Hours", value: "Mon - Fri: 9:00 - 18:00" },
+  ];
+
+  const infoBlocks: PageBlock[] = infoItems.map((item) =>
+    flexItemBlock([
+      {
+        id: makeId(`contact-info-${item.label}`),
+        type: "flex",
+        data: {
+          props: {},
+          style: responsiveStyle({
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: "12px",
+            padding: "16px",
+            backgroundColor: "#f8fafc",
+            borderRadius: "8px",
+            width: "100%",
+          }),
+        },
+        children: [
+          {
+            id: makeId(`contact-info-icon-${item.label}`),
+            type: "text",
+            data: {
+              props: { text: item.icon },
+              style: responsiveStyle({
+                fontSize: "24px",
+                flexShrink: 0,
+              }),
+            },
+            children: [],
+          },
+          {
+            id: makeId(`contact-info-text-${item.label}`),
+            type: "flex",
+            data: {
+              props: {},
+              style: responsiveStyle({
+                display: "flex",
+                flexDirection: "column",
+                gap: "2px",
+              }),
+            },
+            children: [
+              {
+                id: makeId(`contact-info-label-${item.label}`),
+                type: "text",
+                data: {
+                  props: { text: item.label },
+                  style: responsiveStyle({
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    color: "#64748b",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                  }),
+                },
+                children: [],
+              },
+              {
+                id: makeId(`contact-info-value-${item.label}`),
+                type: "text",
+                data: {
+                  props: { text: item.value },
+                  style: responsiveStyle({
+                    fontSize: "16px",
+                    fontWeight: "500",
+                    color: "#0f172a",
+                  }),
+                },
+                children: [],
+              },
+            ],
+          },
+        ],
+      },
+    ])
+  );
+
+  const infoContainer: PageBlock = {
+    id: makeId("contact-info-container"),
+    type: "flex",
+    data: {
+      props: {},
+      style: responsiveStyle({
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+        width: "100%",
+        maxWidth: "500px",
+        margin: "0 auto",
+      }),
+    },
+    children: infoBlocks,
+  };
+
+  return {
+    id: makeId("contact-info-section"),
+    type: "section",
+    data: {
+      props: {},
+      style: responsiveStyle({
+        backgroundColor: "#ffffff",
+        padding: "40px",
+        borderRadius: "12px",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        maxWidth: "600px",
+        margin: "0 auto",
+        width: "100%",
+      }),
+    },
+    children: [flexItemBlock([infoContainer])],
+  };
+};
+
+// ============================================
+// MAP BUILDER
+// ============================================
+
+const buildMap = (): PageBlock => {
+  return {
+    id: makeId("map-section"),
+    type: "section",
+    data: {
+      props: {},
+      style: responsiveStyle({
+        backgroundColor: "#f8fafc",
+        padding: "40px",
+        borderRadius: "12px",
+        maxWidth: "600px",
+        margin: "0 auto",
+        width: "100%",
+        minHeight: "300px",
+      }),
+    },
+    children: [
+      flexItemBlock([
+        {
+          id: makeId("map-placeholder"),
+          type: "text",
+          data: {
+            props: {
+              text: "🗺️ Interactive Map",
+            },
+            style: responsiveStyle({
+              fontSize: "18px",
+              fontWeight: "600",
+              color: "#64748b",
+              textAlign: "center",
+              padding: "40px",
+              backgroundColor: "#f1f5f9",
+              borderRadius: "8px",
+              width: "100%",
+            }),
+          },
+          children: [],
+        },
+      ]),
+    ],
+  };
+};
+
+// ============================================
 // MAIN BUILDER (SWITCH B KIND)
 // ============================================
 
@@ -1088,6 +1366,181 @@ export function buildSectionFromConfig(
 }
 
 // ============================================
+// ENRICH SECTION WITH AI CONTENT
+// ============================================
+
+const enrichSection = (
+  section: SectionConfig,
+  aiContent: any,
+  heroImageUrl?: string
+): SectionConfig => {
+  if (section.kind === "navbar" || section.kind === "footer") {
+    return {
+      ...section,
+      title: aiContent?.title || section.title,
+    };
+  }
+
+  if (section.kind === "hero") {
+    return {
+      ...section,
+      title: aiContent?.heroTitle || section.title,
+      text: aiContent?.heroText || section.text,
+      resolvedImage: heroImageUrl || section.image,
+    };
+  }
+
+  if (section.kind === "mission") {
+    return {
+      ...section,
+      title: aiContent?.missionTitle || section.title,
+      text: aiContent?.missionText || section.text,
+    };
+  }
+
+  if (section.kind === "features" && aiContent?.features?.length) {
+    return {
+      ...section,
+      items: aiContent.features,
+    };
+  }
+
+  if (section.kind === "services" && aiContent?.services?.length) {
+    return {
+      ...section,
+      items: aiContent.services.map(
+        (service: string) => `📌 ${service}|Professional ${service.toLowerCase()} services.`
+      ),
+    };
+  }
+
+  if (section.kind === "stats" && aiContent?.stats?.length) {
+    return {
+      ...section,
+      items: aiContent.stats.map((stat: any) => `${stat.value}|${stat.label}`),
+    };
+  }
+
+  if (section.kind === "testimonial" && aiContent?.testimonials?.length) {
+    return {
+      ...section,
+      items: aiContent.testimonials.map((item: string) => {
+        const [quote, author] = item.split("|");
+        return `★★★★★|${quote}|${author || "Client"}`;
+      }),
+    };
+  }
+
+  if (section.kind === "cta") {
+    return {
+      ...section,
+      title: aiContent?.ctaTitle || section.title,
+      text: aiContent?.ctaText || section.text,
+    };
+  }
+
+  return section;
+};
+
+// ============================================
+// GENERATE HOME BLOCKS
+// ============================================
+
+export const generateHomeBlocks = (
+  category: string,
+  aiContent: any,
+  heroImageUrl?: string
+): PageBlock[] => {
+  const template = CATEGORY_TEMPLATES[category] ?? CATEGORY_TEMPLATES["Corporate"];
+  
+  // Home: navbar + hero + mission + features + stats + cta + footer
+  const homeKinds: SectionKind[] = ["navbar", "hero", "mission", "features", "stats", "cta", "footer"];
+  
+  const sections = template.sections
+    .filter((section) => homeKinds.includes(section.kind))
+    .map((section) => enrichSection(section, aiContent, heroImageUrl));
+  
+  return sections.map((section) => buildSectionFromConfig(section));
+};
+
+// ============================================
+// GENERATE ABOUT BLOCKS
+// ============================================
+
+export const generateAboutBlocks = (
+  category: string,
+  aiContent: any,
+  heroImageUrl?: string
+): PageBlock[] => {
+  const template = CATEGORY_TEMPLATES[category] ?? CATEGORY_TEMPLATES["Corporate"];
+  
+  // About: navbar + mission + features + testimonial + stats + footer
+  const aboutKinds: SectionKind[] = ["navbar", "mission", "features", "testimonial", "stats", "footer"];
+  
+  const sections = template.sections
+    .filter((section) => aboutKinds.includes(section.kind))
+    .map((section) => enrichSection(section, aiContent, heroImageUrl));
+  
+  return sections.map((section) => buildSectionFromConfig(section));
+};
+
+// ============================================
+// GENERATE SERVICES BLOCKS
+// ============================================
+
+export const generateServicesBlocks = (
+  category: string,
+  aiContent: any,
+  heroImageUrl?: string
+): PageBlock[] => {
+  const template = CATEGORY_TEMPLATES[category] ?? CATEGORY_TEMPLATES["Corporate"];
+  
+  // Services: navbar + hero + services + features + cta + footer
+  const servicesKinds: SectionKind[] = ["navbar", "hero", "services", "features", "cta", "footer"];
+  
+  const sections = template.sections
+    .filter((section) => servicesKinds.includes(section.kind))
+    .map((section) => enrichSection(section, aiContent, heroImageUrl));
+  
+  return sections.map((section) => buildSectionFromConfig(section));
+};
+
+// ============================================
+// GENERATE CONTACT BLOCKS
+// ============================================
+
+export const generateContactBlocks = (
+  category: string,
+  aiContent: any,
+  heroImageUrl?: string
+): PageBlock[] => {
+  const template = CATEGORY_TEMPLATES[category] ?? CATEGORY_TEMPLATES["Corporate"];
+  
+  // Contact: navbar + hero + cta + footer + contactForm + contactInfo + map
+  const contactKinds: SectionKind[] = ["navbar", "hero", "cta", "footer"];
+  
+  // Build standard sections
+  const standardSections = template.sections
+    .filter((section) => contactKinds.includes(section.kind))
+    .map((section) => enrichSection(section, aiContent, heroImageUrl))
+    .map((section) => buildSectionFromConfig(section));
+  
+  // Add contact-specific blocks
+  const contactBlocks: PageBlock[] = [
+    // Standard sections
+    ...standardSections,
+    // Contact Form
+    buildContactForm(),
+    // Contact Info
+    buildContactInfo(),
+    // Map
+    buildMap(),
+  ];
+  
+  return contactBlocks;
+};
+
+// ============================================
 // BUILD FULL PAGE
 // ============================================
 
@@ -1117,7 +1570,6 @@ export function buildPageFromTemplate(
       };
     }
 
-    // ✅ AJOUT : MISSION avec missionTitle et missionText
     if (section.kind === "mission") {
       return {
         ...section,
@@ -1221,45 +1673,9 @@ export {
   buildStats,
   buildCTA,
   buildFooter,
-  featureCard
-};
-
-
-export const generateAboutBlocks = (
-  category: string,
-  aiContent: any,
-  heroImageUrl?: string
-) => {
-  return generateTemplate(
-    category,
-    "about",
-    aiContent,
-    heroImageUrl
-  ).blocks;
-};
-
-export const generateServicesBlocks = (
-  category: string,
-  aiContent: any,
-  heroImageUrl?: string
-) => {
-  return generateTemplate(
-    category,
-    "services",
-    aiContent,
-    heroImageUrl
-  ).blocks;
-};
-
-export const generateContactBlocks = (
-  category: string,
-  aiContent: any,
-  heroImageUrl?: string
-) => {
-  return generateTemplate(
-    category,
-    "contact",
-    aiContent,
-    heroImageUrl
-  ).blocks;
+  buildContactForm,
+  buildContactInfo,
+  buildMap,
+  featureCard,
+  enrichSection,
 };

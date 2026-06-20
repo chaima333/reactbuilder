@@ -181,6 +181,11 @@ const BLOCK_RENDERERS: Record<string, (data: any, childrenHTML: string) => strin
   title: (data) => renderTitleBlock(data),
   text: (data) => renderTextBlock(data),
   image: (data) => renderImageBlock(data),
+  link: (data) => renderLinkBlock(data),
+  input: (data) => renderInputBlock(data),
+  textarea: (data) => renderTextareaBlock(data),
+  select: (data) => renderSelectBlock(data),
+  navbar: renderFlexBlock,
 };
 
 /**
@@ -237,3 +242,31 @@ export const renderFullPage = (page: any, seo: any, canonical: string, blocksHTM
 </body>
 </html>`;
 };
+const renderLinkBlock = (data: any) => `
+  <a href="${safeURL(data.props?.href || data.props?.url)}">
+    ${escapeHTML(data.props?.label || data.props?.text || "Link")}
+  </a>
+`;
+
+const renderInputBlock = (data: any) => `
+  <input
+    type="${escapeHTML(data.props?.type || "text")}"
+    name="${escapeHTML(data.props?.name || "")}"
+    placeholder="${escapeHTML(data.props?.placeholder || "")}"
+    style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:12px;"
+  />
+`;
+
+const renderTextareaBlock = (data: any) => `
+  <textarea
+    name="${escapeHTML(data.props?.name || "")}"
+    placeholder="${escapeHTML(data.props?.placeholder || "")}"
+    style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:12px;min-height:120px;"
+  ></textarea>
+`;
+
+const renderSelectBlock = (data: any) => `
+  <select style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:12px;">
+    <option>${escapeHTML(data.props?.placeholder || "Select option")}</option>
+  </select>
+`;
