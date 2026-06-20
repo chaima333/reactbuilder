@@ -1116,6 +1116,12 @@ export function buildPageFromTemplate(
         resolvedImage: heroImageUrl || section.image
       };
     }
+    if (section.kind === "features" && aiContent?.features?.length) {
+  return {
+    ...section,
+    items: aiContent.features
+  };
+}
 if (section.kind === "services" && aiContent?.services?.length) {
   return {
     ...section,
