@@ -272,11 +272,17 @@ const selectedPages =
 const generationId = Date.now();
 const plannedPages = selectedPages.map((page) => ({
   ...page,
-  finalSlug: `${page.slug}-${generationId}`
+  finalSlug:
+    page.type === "home"
+      ? "home"
+      : `${page.slug}-${generationId}`
 }));
 const navigationItems = plannedPages.map((page) => ({
   label: page.title,
-  href: `/site/${siteId}/${page.finalSlug}`
+  href:
+    page.type === "home"
+      ? `/site/${siteId}`
+      : `/site/${siteId}/${page.finalSlug}`
 }));
 
 console.log(
@@ -315,13 +321,13 @@ for (const planPage of plannedPages) {
       isHomepage: planPage.type === "home"
     }
   );
-await PageService.publishPage(
-  siteId,
-  result.data.id,
-  "OWNER",
-  userId
-);
-  createdPages.push(result.data);
+  const publishedResult = await PageService.publishPage(
+    siteId,
+    result.data.id,
+    "OWNER",
+    userId
+  );
+  createdPages.push(publishedResult.data);
 
   await ActivityLog.create({
     userId,
