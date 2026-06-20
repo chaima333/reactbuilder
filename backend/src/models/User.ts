@@ -102,6 +102,20 @@ resetPasswordToken!: string | null;
   type: DataType.DATE,
   allowNull: true,
 })
+@Column({
+  type: DataType.BOOLEAN,
+  allowNull: false,
+  defaultValue: false,
+  field: "two_factor_enabled",
+})
+twoFactorEnabled!: boolean;
+
+@Column({
+  type: DataType.STRING(255),
+  allowNull: true,
+  field: "two_factor_secret",
+})
+twoFactorSecret!: string | null;
 resetPasswordExpires!: Date | null;
 
   toJSON() {
@@ -111,7 +125,8 @@ resetPasswordExpires!: Date | null;
       email: this.email,
       role: this.role,
       avatar: this.avatar,
-      createdAt: this.createdAt
+      createdAt: this.createdAt,
+      twoFactorEnabled: this.twoFactorEnabled,
     };
   }
 }

@@ -65,6 +65,25 @@ const generateCTAGroupPreset = (
   );
 };
 
+const debugMissingRepeatedEntityEmitter = (
+  payload: any
+) => {
+  console.log(
+    "REPEATED_ENTITY_PAYLOAD_DEBUG",
+    {
+      type:
+        payload?.type,
+      keys:
+        Object.keys(
+          payload || {}
+        ),
+      payload
+    }
+  );
+
+  return null;
+};
+
 export const semanticEmitterRegistry:
 
 Partial<
@@ -119,5 +138,14 @@ Partial<
 
   CTA_CARD:
   generateCTAGroupPreset,
+
+  LABEL_VALUE_GROUP:
+    debugMissingRepeatedEntityEmitter,
+
+  CONTACT_TABLE:
+    debugMissingRepeatedEntityEmitter,
+
+  OFFICE_LIST:
+    debugMissingRepeatedEntityEmitter,
     
 };

@@ -1,691 +1,528 @@
-import {
+import type {
+  Block
+} from "../types/page.types";
+import type {
   ContactLayoutPayload
 } from "../runtime/importers/html/semanticContracts/ContactLayoutPayload";
 
-// =====================================
-// ID GENERATOR
-// =====================================
-
-const generateId = () => {
-
-  if (
-    typeof globalThis !== "undefined" &&
-    globalThis.crypto?.randomUUID
-  ) {
-
-    return globalThis
-      .crypto
-      .randomUUID();
-  }
-
-  return Math.random()
+const generateId = () =>
+  globalThis.crypto
+    ?.randomUUID?.() ||
+  Math.random()
     .toString(36)
     .slice(2);
-};
 
-
-// =====================================
-// TAG REGISTRY
-// =====================================
-
-const TAG_TO_BLOCK_TYPE:
-Record<string, string> = {
-
-  textarea:
-    "textarea",
-
-  select:
-    "select",
-
-  input:
-    "input"
-};
-
-// =====================================
-// NORMALIZE PAYLOAD
-// =====================================
-
-const normalizePayload = (
-  payload: ContactLayoutPayload
-) => {
-
-  return {
-
-    sections:
-
-      (payload.sections || [])
-      .map(section => ({
-
-        title:
-          section?.title || "",
-
-        items:
-          section?.items || [],
-
-        style:
-          section?.style || {}
-      })),
-
-    formRows:
-
-      (payload.formRows || [])
-      .map(row => ({
-
-        style:
-          row?.style || {},
-
-        fields:
-
-          (row?.fields || [])
-          .map(field => ({
-
-            tag:
-              field?.tag || "input",
-
-            placeholder:
-              field?.placeholder || "",
-
-            type:
-              field?.type || "text",
-
-            label:
-              field?.label || "",
-
-            options:
-              field?.options || [],
-
-            style:
-              field?.style || {}
-          }))
-      })),
-
-    formTitle:
-      payload.formTitle ||
-      "Envoyer un message",
-
-    formDescription:
-      payload.formDescription ||
-      "Nous orienterons votre demande vers le practice lead concerné.",
-
-    submitLabel:
-      payload.submitLabel ||
-      "ENVOYER LE MESSAGE"
-  };
-};
-
-// =====================================
-// NODE BUILDERS
-// =====================================
-
-const makeTitle = (
-  content: string,
-  style: any = {},
-  role: "heroTitle" | "sectionTitle" | "eyebrowLabel" | "microLabel" = "sectionTitle",
-  level: 1 | 2 | 3 | 4 | 5 | 6 = 2
+const responsive = (
+  desktop: Record<string, any>,
+  mobile: Record<string, any> = {}
 ) => ({
-  id: generateId(),
-  type: "title",
+  desktop,
+  tablet: {},
+  mobile
+});
+
+const cleanStyle = (
+  style: any = {}
+) =>
+  Object.fromEntries(
+    Object.entries(
+      style
+    ).filter(
+      (
+        [
+          ,
+          value
+        ]
+      ) =>
+        value !==
+          undefined &&
+        value !==
+          null &&
+        value !== ""
+    )
+  );
+
+const styleOf = (
+  style: any = {},
+  fallback: Record<string, any> = {}
+) =>
+  responsive({
+    ...fallback,
+    ...cleanStyle(
+      style
+    )
+  });
+
+const titleBlock = (
+  content: string,
+  style: any = {}
+): Block => ({
+  id:
+    generateId(),
+  type:
+    "title",
   data: {
     props: {
       content,
-      role,
-      level
+      level:
+        "h3"
     },
-    style
+    style:
+      styleOf(
+        style
+      )
   },
   children: []
 });
 
-const makeText = (
+const textBlock = (
   content: string,
   style: any = {}
-) => ({
-
+): Block => ({
   id:
     generateId(),
-
   type:
     "text",
-
   data: {
-
     props: {
       content
     },
-
-    style
+    style:
+      styleOf(
+        style
+      )
   },
-
   children: []
 });
 
-const makeButton = (
-  text: string
-) => ({
-
-  id:
-    generateId(),
-
-  type:
-    "button",
-
-  data: {
-
-    props: {
-
-      text,
-
-      submit:
-        true,
-
-      role:
-        "submit"
-    },
-
-    style: {
-
-      desktop: {
-
-        width:
-          "100%",
-
-        padding:
-          "18px 24px",
-
-        borderRadius:
-          "14px",
-
-        fontWeight:
-          "700",
-
-        marginTop:
-          "12px"
-      }
-    }
-  },
-
-  children: []
-});
-
-const makeFieldBlock = (
-  field: any
-) => {
-
-  const blockType =
-
-    TAG_TO_BLOCK_TYPE[
-      field.tag
-    ];
-
-  if (!blockType) {
-
-    console.warn(
-      "⚠️ Unknown field tag:",
-      field.tag
-    );
-  }
-
-  const resolvedType =
-    blockType || "input";
+const fieldBlock = (
+  field: NonNullable<
+    ContactLayoutPayload[
+      "formRows"
+    ]
+  >[number]["fields"][number]
+): Block => {
+  const type =
+    field.tag ===
+      "textarea"
+      ? "textarea"
+      : field.tag ===
+          "select"
+        ? "select"
+        : "input";
 
   return {
-
     id:
       generateId(),
-
-    type:
-      resolvedType,
-
+    type,
     data: {
-
       props: {
-
         label:
-          field.label || "",
-
+          field.label ||
+          "",
+        name:
+          field.name ||
+          "",
         placeholder:
-          field.placeholder || "",
-
+          field.placeholder ||
+          "",
         type:
-          field.type || "text",
-
-        ...(resolvedType === "select"
-
+          field.type ||
+          "text",
+        ...(type ===
+        "select"
           ? {
-
               options:
-                field.options || []
+                field.options ||
+                []
             }
-
           : {})
       },
-
-      style: {
-
-        desktop: {
-
-          flex:
-            1,
-
-          width:
-            "100%",
-
-          boxSizing:
-            "border-box",
-
-          borderRadius:
-            "14px",
-
-          padding:
-            "14px 16px"
-        }
-      }
+      style:
+        styleOf(
+          field.style,
+          {
+            width:
+              "100%",
+            boxSizing:
+              "border-box"
+          }
+        )
     },
-
     children: []
-  };
+  } as Block;
 };
 
-const makeSectionGroup = (
-  section: any
-) => ({
-
+const formRow = (
+  row: NonNullable<
+    ContactLayoutPayload[
+      "formRows"
+    ]
+  >[number]
+): Block => ({
   id:
     generateId(),
-
   type:
-    "flex",
-
+    "grid",
   data: {
-
-    props: {
-
-      role:
-        "contact-section"
-    },
-
+    props: {},
     style: {
-
+      ...styleOf(
+        row.style
+      ),
       desktop: {
-
+        ...styleOf(
+          row.style
+        ).desktop,
         display:
-          "flex",
-
-        flexDirection:
-          "column",
-
-        gap:
-          "8px",
-
+          "grid",
+        gridTemplateColumns:
+          row.fields.length >=
+          2
+            ? (
+                row.style
+                  ?.gridTemplateColumns &&
+                row.style
+                  .gridTemplateColumns !==
+                  "none"
+                  ? row.style
+                      .gridTemplateColumns
+                  : "repeat(2, minmax(0, 1fr))"
+              )
+            : "minmax(0, 1fr)",
         width:
           "100%"
+      },
+      mobile: {
+        gridTemplateColumns:
+          "minmax(0, 1fr)"
       }
     }
   },
-
-  children: [
-
-    makeTitle(
-      section.title,
-
-      {
-        desktop: {
-
-          fontSize:
-            "18px",
-
-          fontWeight:
-            "700",
-
-          marginTop:
-            "28px",
-
-          marginBottom:
-            "8px",
-
-          textTransform:
-            "uppercase",
-
-          letterSpacing:
-            "1px"
-        }
-      }
-    ),
-
-    ...(section.items || [])
-    .map((item: string) =>
-
-      makeText(
-        item,
-
-        {
-          desktop: {
-
-            fontSize:
-              "16px",
-
-            lineHeight:
-              "1.8",
-
-            whiteSpace:
-              "pre-line"
-          }
-        }
-      )
-    )
-  ]
-});
-
-const makeFormRow = (
-  row: any
-) => {
-
-  const fields =
-
-    row.fields ||
-    row.inputs ||
-    row.children ||
-    [];
-
-  console.log(
-    "🔥 FORM ROW FIELDS",
-    fields
-  );
-
-  return {
-
-    id:
-      generateId(),
-
-    type:
-      "grid",
-
-    data: {
-
-      style: {
-
-        desktop: {
-
-          display:
-            "grid",
-
-          gridTemplateColumns:
-
-            fields.length >= 2
-              ? "1fr 1fr"
-              : "1fr",
-
-          gap:
-            "16px",
-
-          width:
-            "100%"
-        }
-      }
-    },
-
-    children:
-
-      fields.map((field: any) => ({
-
+  children:
+    row.fields.map(
+      field => ({
         id:
           generateId(),
-
         type:
           "gridItem",
-
         data: {
-
-          style: {
-
-            desktop: {
-
+          props: {},
+          style:
+            responsive({
               width:
-                "100%"
-            }
-          }
+                "100%",
+              minWidth:
+                "0"
+            })
         },
-
         children: [
-
-          makeFieldBlock(
+          fieldBlock(
             field
           )
         ]
-      }))
-  };
-};
-// =====================================
-// MAIN GENERATOR
-// =====================================
+      } as Block)
+    )
+});
+
+const contactRow = (
+  row: NonNullable<
+    ContactLayoutPayload[
+      "contactRows"
+    ]
+  >[number]
+): Block => ({
+  id:
+    generateId(),
+  type:
+    "flex",
+  data: {
+    props: {
+      semanticRole:
+        "contactRow"
+    },
+    style:
+      styleOf(
+        row.style,
+        {
+          display:
+            "flex",
+          flexDirection:
+            "column",
+          width:
+            "100%"
+        }
+      )
+  },
+  children: [
+    {
+      id:
+        generateId(),
+      type:
+        "flexItem",
+      data: {
+        props: {},
+        style:
+          responsive({
+            width:
+              "100%"
+          })
+      },
+      children: [
+        textBlock(
+          row.label,
+          row.labelStyle
+        ),
+        textBlock(
+          row.value,
+          row.valueStyle
+        )
+      ]
+    }
+  ]
+});
 
 export const generateContactLayoutPreset = (
-  rawPayload: ContactLayoutPayload
-) => {
-  console.log(
-    "🔥 RAW CONTACT PAYLOAD",
-    JSON.stringify(
-      rawPayload,
-      null,
-      2
+  payload: ContactLayoutPayload
+): Block => {
+  const contactRows =
+    payload.contactRows ||
+    (payload.sections || [])
+      .flatMap(section =>
+        section.items.map(
+          item => ({
+            label:
+              section.title,
+            value:
+              item,
+            style:
+              section.style
+          })
+        )
+      );
+  const formChildren:
+    Block[] = [];
+
+  if (payload.formTitle) {
+    formChildren.push(
+      titleBlock(
+        payload.formTitle,
+        payload.formTitleStyle
+      )
+    );
+  }
+
+  if (
+    payload.formDescription
+  ) {
+    formChildren.push(
+      textBlock(
+        payload.formDescription,
+        payload.formDescriptionStyle
+      )
+    );
+  }
+
+  formChildren.push(
+    ...(payload.formRows ||
+      []).map(
+      formRow
     )
   );
-  const payload =
-    normalizePayload(
-      rawPayload
-    );
 
-  return {
-
+  formChildren.push({
     id:
       generateId(),
+    type:
+      "button",
+    data: {
+      props: {
+        text:
+          payload.submitLabel ||
+          "Submit",
+        submit:
+          true
+      },
+      style:
+        styleOf(
+          payload.submitStyle,
+          {
+            width:
+              "100%"
+          }
+        )
+    },
+    children: []
+  } as Block);
 
+  const emitted: Block = {
+    id:
+      generateId(),
     type:
       "section",
-
+    meta: {
+      semanticType:
+        "CONTACT_LAYOUT"
+    } as any,
     data: {
-
-      style: {
-
-        desktop: {
-
+      props: {},
+      style:
+        responsive({
           width:
             "100%",
-
-          padding:
-            "80px 48px",
-
           boxSizing:
             "border-box"
-        }
-      }
+        })
     },
-
     children: [
-
       {
         id:
           generateId(),
-
         type:
           "grid",
-
         data: {
-
+          props: {},
           style: {
-
+            ...styleOf(
+              payload.gridStyle
+            ),
             desktop: {
-
+              ...styleOf(
+                payload.gridStyle
+              ).desktop,
+              display:
+                "grid",
               gridTemplateColumns:
-                "1fr 1fr",
-
-              gap:
-                "64px",
-
+                payload.gridStyle
+                  ?.gridTemplateColumns &&
+                payload.gridStyle
+                  .gridTemplateColumns !==
+                  "none"
+                  ? payload.gridStyle
+                      .gridTemplateColumns
+                  : "repeat(2, minmax(0, 1fr))",
               alignItems:
-                "start"
+                payload.gridStyle
+                  ?.alignItems ||
+                "start",
+              width:
+                "100%"
             },
-
-            tablet: {
-
-              gridTemplateColumns:
-                "1fr",
-
-              alignItems:
-                "start"
-            },
-
             mobile: {
-
               gridTemplateColumns:
-                "1fr",
-
-              alignItems:
-                "start"
+                "minmax(0, 1fr)"
             }
           }
         },
-
         children: [
-
-          // =====================================
-          // LEFT COLUMN
-          // =====================================
-
           {
             id:
               generateId(),
-
             type:
               "gridItem",
-
             data: {
-
-              style: {
-
-                desktop: {
-
-                  display:
-                    "flex",
-
-                  flexDirection:
-                    "column",
-
-                  gap:
-                    "18px",
-
-                  width:
-                    "100%"
-                }
-              }
+              props: {},
+              style:
+                styleOf(
+                  payload.contactTableStyle,
+                  {
+                    width:
+                      "100%",
+                    minWidth:
+                      "0"
+                  }
+                )
             },
-
-            children: [
-
-              ...(payload.sections || [])
-              .map(
-                makeSectionGroup
+            children:
+              contactRows.map(
+                contactRow
               )
-            ]
           },
-
-          // =====================================
-          // RIGHT COLUMN
-          // =====================================
-
           {
             id:
               generateId(),
-
             type:
               "gridItem",
-
             data: {
-
-              style: {
-
-                desktop: {
-
-                  backgroundColor:
-                    "rgba(6,32,61,.75)",
-
-                  borderRadius:
-                    "28px",
-
-                  padding:
-                    "40px",
-
-                  display:
-                    "flex",
-
-                  flexDirection:
-                    "column",
-
-                  gap:
-                    "20px",
-
-                  width:
-                    "100%",
-
-                  boxSizing:
-                    "border-box"
-                }
-              }
+              props: {},
+              style:
+                styleOf(
+                  payload.formStyle,
+                  {
+                    display:
+                      "flex",
+                    flexDirection:
+                      "column",
+                    width:
+                      "100%",
+                    minWidth:
+                      "0",
+                    boxSizing:
+                      "border-box"
+                  }
+                )
             },
-
-            children: [
-
-              makeTitle(
-                payload.formTitle,
-
-                {
-                  desktop: {
-
-                    fontSize:
-                      "10px",
-
-                    lineHeight:
-                      "1.1",
-
-                    fontWeight:
-                      "700",
-
-                    marginBottom:
-                      "8px"
-                  }
-                }
-              ),
-
-              makeText(
-                payload.formDescription,
-
-                {
-                  desktop: {
-
-                    fontSize:
-                      "15px",
-
-                    lineHeight:
-                      "1.7",
-
-                    marginBottom:
-                      "12px"
-                  }
-                }
-              ),
-
-              ...(payload.formRows || [])
-              .map(
-                makeFormRow
-              ),
-
-              makeButton(
-                payload.submitLabel
-              )
-            ]
+            children:
+              formChildren
           }
         ]
       }
     ]
   };
+
+  console.log(
+    "CONTACT_LAYOUT_EMIT",
+    {
+      contactRowCount:
+        contactRows.length,
+      formRowCount:
+        payload.formRows
+          ?.length ||
+        0,
+      formFieldCount:
+        payload.formRows
+          ?.reduce(
+            (
+              count,
+              row
+            ) =>
+              count +
+              row.fields.length,
+            0
+          ) ||
+        0,
+      gridColumns:
+        (
+          emitted.children[0]
+            .data.style as any
+        )?.desktop
+          ?.gridTemplateColumns
+    }
+  );
+
+  console.log(
+    "CONTACT_LAYOUT_FINAL",
+    {
+      id:
+        emitted.id,
+      type:
+        emitted.type,
+      semanticType:
+        emitted.meta
+          ?.semanticType,
+      childTypes:
+        emitted.children.map(
+          child =>
+            child.type
+        ),
+      columnChildTypes:
+        emitted.children[0]
+          ?.children.map(
+            child =>
+              child.type
+          )
+    }
+  );
+
+  return emitted;
 };

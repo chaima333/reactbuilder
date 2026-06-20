@@ -19,6 +19,19 @@ export type ContactLayoutPayload = {
 
   }[];
 
+  contactRows?: {
+    label: string;
+    value: string;
+    href?: string;
+    style?: any;
+    labelStyle?: any;
+    valueStyle?: any;
+  }[];
+
+  gridStyle?: any;
+
+  contactTableStyle?: any;
+
   // =====================================
   // FORM ROWS
   // =====================================
@@ -40,9 +53,13 @@ export type ContactLayoutPayload = {
 
       label?: string;
 
+      name?: string;
+
       options?: string[];
 
       style?: any;
+
+      labelStyle?: any;
 
     }[];
 
@@ -58,8 +75,14 @@ export type ContactLayoutPayload = {
   formDescription?:
     string;
 
+  formTitleStyle?: any;
+
+  formDescriptionStyle?: any;
+
   submitLabel?:
     string;
+
+  submitStyle?: any;
 
   // =====================================
   // GLOBAL STYLES

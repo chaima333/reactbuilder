@@ -1,406 +1,304 @@
 import {
   extractComputedStyles
 } from "../../../css/extractComputedStyles";
-
 import type {
   StructuralNode
 } from "../../structure/buildStructuralGraph";
 
+const cleanText = (
+  value?: string | null
+) =>
+  value
+    ?.replace(/\s+/g, " ")
+    .trim() || "";
+
+const asHtml = (
+  element?: Element | null
+) =>
+  element as HTMLElement | null;
+
+const getFieldGroups = (
+  form: HTMLFormElement
+) => {
+  const rows =
+    Array.from(
+      form.querySelectorAll(
+        ".field-row"
+      )
+    ) as HTMLElement[];
+  const standaloneFields =
+    Array.from(
+      form.querySelectorAll(
+        ".field"
+      )
+    ).filter(
+      (
+        field
+      ): field is HTMLElement =>
+        !field.closest(
+          ".field-row"
+        )
+    );
+
+  return [
+    ...rows,
+    ...standaloneFields
+  ].sort(
+    (
+      left,
+      right
+    ) =>
+      left.compareDocumentPosition(
+        right
+      ) &
+      Node.DOCUMENT_POSITION_FOLLOWING
+        ? -1
+        : 1
+  );
+};
+
 export const extractContactLayout = (
   node: StructuralNode
 ) => {
+  const contactGrid =
+    node.element;
+  const contactTable =
+    contactGrid.querySelector(
+      ":scope > .ctable, .ctable"
+    ) as HTMLElement | null;
+  const form =
+    contactGrid.querySelector(
+      ":scope > form.form, :scope > form, form.form"
+    ) as HTMLFormElement | null;
 
-  // =====================================
-  // CONTACT SECTIONS
-  // =====================================
+  const contactRows =
+    contactTable
+      ? Array.from(
+          contactTable.querySelectorAll(
+            ".crow"
+          )
+        ).map(row => {
+          const rowElement =
+            row as HTMLElement;
+          const labelElement =
+            asHtml(
+              rowElement.querySelector(
+                ".k,.label,dt,strong"
+              )
+            );
+          const valueElement =
+            asHtml(
+              rowElement.querySelector(
+                ".v,.value,dd,a,p"
+              )
+            );
 
-  const rows =
+          return {
+            label:
+              cleanText(
+                labelElement
+                  ?.textContent
+              ),
+            value:
+              cleanText(
+                valueElement
+                  ?.textContent
+              ),
+            href:
+              valueElement
+                ?.tagName === "A"
+                ? valueElement.getAttribute(
+                    "href"
+                  ) ||
+                  ""
+                : "",
+            style:
+              extractComputedStyles(
+                rowElement
+              ),
+            labelStyle:
+              labelElement
+                ? extractComputedStyles(
+                    labelElement
+                  )
+                : {},
+            valueStyle:
+              valueElement
+                ? extractComputedStyles(
+                    valueElement
+                  )
+                : {}
+          };
+        }).filter(
+          row =>
+            !!row.label ||
+            !!row.value
+        )
+      : [];
 
-    Array.from(
-      node.element.querySelectorAll(
-        ".crow"
+  const formRows =
+    form
+      ? getFieldGroups(
+          form
+        ).map(group => {
+          const controls =
+            Array.from(
+              group.querySelectorAll(
+                "input,select,textarea"
+              )
+            ) as HTMLElement[];
+
+          return {
+            style:
+              extractComputedStyles(
+                group
+              ),
+            fields:
+              controls.map(control => {
+                const labelElement =
+                  asHtml(
+                    control.closest(
+                      ".field"
+                    )?.querySelector(
+                      "label"
+                    )
+                  );
+                const select =
+                  control.tagName ===
+                    "SELECT"
+                    ? control as HTMLSelectElement
+                    : null;
+
+                return {
+                  tag:
+                    control.tagName
+                      .toLowerCase(),
+                  placeholder:
+                    control.getAttribute(
+                      "placeholder"
+                    ) ||
+                    "",
+                  type:
+                    control.getAttribute(
+                      "type"
+                    ) ||
+                    "",
+                  name:
+                    control.getAttribute(
+                      "name"
+                    ) ||
+                    "",
+                  label:
+                    cleanText(
+                      labelElement
+                        ?.textContent
+                    ),
+                  options:
+                    select
+                      ? Array.from(
+                          select.options
+                        ).map(option =>
+                          cleanText(
+                            option.textContent
+                          )
+                        ).filter(
+                          Boolean
+                        )
+                      : [],
+                  style:
+                    extractComputedStyles(
+                      control
+                    ),
+                  labelStyle:
+                    labelElement
+                      ? extractComputedStyles(
+                          labelElement
+                        )
+                      : {}
+                };
+              })
+          };
+        }).filter(
+          row =>
+            row.fields.length >
+            0
+        )
+      : [];
+
+  const formTitleElement =
+    asHtml(
+      form?.querySelector(
+        ":scope > h1,:scope > h2,:scope > h3,:scope > h4"
+      )
+    );
+  const formDescriptionElement =
+    asHtml(
+      form?.querySelector(
+        ":scope > p"
+      )
+    );
+  const submitElement =
+    asHtml(
+      form?.querySelector(
+        "button[type='submit'],button,input[type='submit']"
       )
     );
 
-  const sections =
-    rows.map(row => {
-
-      // =====================================
-      // TITLE
-      // =====================================
-
-      const titleEl =
-
-        row.querySelector(
-          "h1,h2,h3,h4,h5,strong,.label,.k"
-        );
-
-      const title =
-
-        titleEl?.textContent
-          ?.trim() || "";
-
-      // =====================================
-      // ITEMS
-      // =====================================
-
-      const itemElements =
-
-        Array.from(
-          row.children
-        )
-
-        .filter(el => {
-
-          const text =
-            el.textContent?.trim();
-
-          if (!text) {
-            return false;
-          }
-
-          // =====================================
-          // AVOID DUPLICATED TITLE
-          // =====================================
-
-          if (
-            text === title
-          ) {
-
-            return false;
-          }
-
-          return true;
-        });
-
-      // =====================================
-      // EXTRACT ITEMS
-      // =====================================
-
-      const items =
-
-        itemElements
-
-          .flatMap(el => {
-
-            // =====================================
-            // DIRECT TEXT NODES
-            // =====================================
-
-            const directTexts =
-
-              Array.from(
-                el.childNodes
-              )
-
-              .filter(
-                node =>
-
-                  node.nodeType ===
-                  Node.TEXT_NODE
-              )
-
-              .map(
-                node =>
-
-                  node.textContent
-                    ?.trim()
-              )
-
-              .filter(
-                (
-                  item
-                ): item is string =>
-                  !!item
-              );
-
-            // =====================================
-            // CHILD ELEMENT TEXT
-            // =====================================
-
-            const childTexts =
-
-              Array.from(
-                el.children
-              )
-
-              .flatMap(child => {
-
-                // =====================================
-                // LEAF NODE
-                // =====================================
-
-                if (
-                  !child.children.length
-                ) {
-
-                  const text =
-                    child.textContent
-                      ?.trim();
-
-                  return text
-                    ? [text]
-                    : [];
-                }
-
-                // =====================================
-                // NESTED CHILDREN
-                // =====================================
-
-                return Array.from(
-                  child.children
-                )
-
-                .map(
-                  nested =>
-
-                    nested.textContent
-                      ?.trim()
-                )
-
-                .filter(
-                  (
-                    item
-                  ): item is string =>
-                    !!item
-                );
-              });
-
-            // =====================================
-            // RETURN
-            // =====================================
-
-            return [
-
-              ...directTexts,
-              ...childTexts
-            ];
-          })
-
-          // =====================================
-          // CLEAN TEXT
-          // =====================================
-
-          .map(
-            item =>
-
-              item
-                .replace(/\s+/g, " ")
-                .trim()
-          )
-
-          // =====================================
-          // REMOVE NOISE
-          // =====================================
-
-          .filter(
-            item =>
-              item.length > 2
-          )
-
-          // =====================================
-          // REMOVE DUPLICATES
-          // =====================================
-
-          .filter(
-            (
-              item,
-              index,
-              array
-            ) =>
-
-              array.indexOf(item)
-              === index
-          );
-
-      // =====================================
-      // RETURN SECTION
-      // =====================================
-
-      return {
-
-        title,
-
-        items,
-
-        style:
-          extractComputedStyles(
-            row as HTMLElement
-          )
-      };
-    });
-
-  // =====================================
-  // FORM
-  // =====================================
-
-  const form =
-
-    node.element.querySelector(
-      "form"
-    );
-
-  const formStyle =
-
-    form
-      ? extractComputedStyles(
-          form as HTMLElement
-        )
-      : {};
-
-  // =====================================
-  // FORM FIELDS
-  // =====================================
-
-const formRows =
-
-  Array.from(
-
-    node.element.querySelectorAll(
-
-      ".field-row, .field, .frow, .cinput"
-    )
-  );
- 
-const formFields =
-
-  formRows
-
-    .map(row => {
-
-      const inputs =
-
-        Array.from(
-          row.querySelectorAll(
-            "input, textarea, select"
-          )
-        );
-
-      const fields =
-        inputs.map(input => {
-
-          // =====================================
-          // LABEL
-          // =====================================
-
-          const parent =
-            input.parentElement;
-
-          const label =
-
-            parent
-              ?.querySelector(
-                "label"
-              )
-              ?.textContent
-              ?.trim() || "";
-
-          // =====================================
-          // OPTIONS
-          // =====================================
-
-          const options =
-
-            input.tagName.toLowerCase()
-            === "select"
-
-              ? Array.from(
-                  (
-                    input as HTMLSelectElement
-                  ).options
-                )
-
-                .map(
-                  option =>
-                    option.textContent
-                      ?.trim()
-                )
-
-                .filter(
-                  (
-                    item
-                  ): item is string =>
-                    !!item
-                )
-
-              : [];
-
-          // =====================================
-          // FIELD
-          // =====================================
-
-          return {
-
-            tag:
-              input.tagName.toLowerCase(),
-
-            placeholder:
-              input.getAttribute(
-                "placeholder"
-              ) || "",
-
-            type:
-              input.getAttribute(
-                "type"
-              ) || "",
-
-            label,
-
-            options,
-
-            style:
-              extractComputedStyles(
-                input as HTMLElement
-              )
-          };
-        });
-
-      if (!fields.length) {
-        return null;
-      }
-
-      return {
-
-        style:
-          extractComputedStyles(
-            row as HTMLElement
-          ),
-
-        fields
-      };
-    })
-
-    .filter(Boolean);
-  // =====================================
-  // HERO TITLE
-  // =====================================
-
-  const heroTitle =
-
-    node.element.querySelector(
-      "h1"
-    );
-
-  const heroStyle =
-
-    heroTitle
-      ? extractComputedStyles(
-          heroTitle as HTMLElement
-        )
-      : {};
-
-  // =====================================
-  // RETURN
-  // =====================================
-
   return {
-
-  sections,
-
-  formRows: formFields,
-
-  formStyle,
-
-  heroStyle
-};
+    contactRows,
+    gridStyle:
+      extractComputedStyles(
+        contactGrid
+      ),
+    contactTableStyle:
+      contactTable
+        ? extractComputedStyles(
+            contactTable
+          )
+        : {},
+    formRows,
+    formTitle:
+      cleanText(
+        formTitleElement
+          ?.textContent
+      ),
+    formTitleStyle:
+      formTitleElement
+        ? extractComputedStyles(
+            formTitleElement
+          )
+        : {},
+    formDescription:
+      cleanText(
+        formDescriptionElement
+          ?.textContent
+      ),
+    formDescriptionStyle:
+      formDescriptionElement
+        ? extractComputedStyles(
+            formDescriptionElement
+          )
+        : {},
+    submitLabel:
+      cleanText(
+        submitElement
+          ?.textContent
+      ) ||
+      submitElement?.getAttribute(
+        "value"
+      ) ||
+      "Submit",
+    submitStyle:
+      submitElement
+        ? extractComputedStyles(
+            submitElement
+          )
+        : {},
+    formStyle:
+      form
+        ? extractComputedStyles(
+            form
+          )
+        : {}
+  };
 };
