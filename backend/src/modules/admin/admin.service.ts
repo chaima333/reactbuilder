@@ -192,11 +192,19 @@ const dailyGenerations = Array.from({ length: 7 }).map((_, index) => {
         count,
       }))
       .sort((a, b) => b.count - a.count);
-const topSites = Object.entries(siteMap)
-  .map(([siteId, count]) => ({
-    siteId,
-    count,
-  }))
+     const sites = await Site.findAll({ attributes: ["id", "name"],}); 
+  const topSites = Object.entries(siteMap)
+  .map(([siteId, count]) => {
+    const site = sites.find(
+      (s: any) => String(s.id) === siteId
+    );
+
+    return {
+      siteId,
+      siteName: site?.name || "Unknown",
+      count,
+    };
+  })
   .sort((a, b) => b.count - a.count)
   .slice(0, 5);
     return {

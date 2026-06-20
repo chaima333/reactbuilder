@@ -1,224 +1,199 @@
+// ==================== HELPERS ====================
+
+/**
+ * Extract keywords from prompt
+ * - Supprime les mots communs (stop words)
+ * - Garde les mots significatifs (noms, verbes, adjectifs)
+ * - Retourne une liste de mots-clés uniques
+ */
+const extractKeywordsFromPrompt = (prompt: string): string[] => {
+  const cleanPrompt = prompt.trim().replace(/\s+/g, " ");
+  
+  // Stop words à ignorer
+  const stopWords = new Set([
+    'a', 'an', 'the', 'of', 'for', 'on', 'at', 'to', 'in', 'with', 'without',
+    'and', 'or', 'but', 'so', 'for', 'nor', 'yet', 'as', 'by', 'from', 'into',
+    'through', 'during', 'including', 'providing', 'platform', 'solution',
+    'service', 'management', 'system', 'software', 'tool', 'suite', 'application',
+    'for', 'with', 'our', 'your', 'their', 'its', 'are', 'is', 'was', 'were',
+    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should',
+    'may', 'might', 'must', 'shall', 'can'
+  ]);
+
+  // Nettoyer et splitter
+  const words = cleanPrompt
+    .toLowerCase()
+    .replace(/[^a-zA-Z\s]/g, '') // Enlever la ponctuation
+    .split(' ')
+    .filter(word => word.length > 2) // Ignorer les mots trop courts
+    .filter(word => !stopWords.has(word)); // Ignorer les stop words
+
+  // Retourner les mots uniques (sans doublons)
+  return [...new Set(words)];
+};
+
+/**
+ * Génère des services à partir des mots-clés
+ * - Formate les mots-clés en titres de services
+ * - Prend les 4-6 premiers mots significatifs
+ */
+const generateServicesFromKeywords = (keywords: string[], maxCount: number = 6): string[] => {
+  if (keywords.length === 0) {
+    // Fallback si pas de mots-clés
+    return [
+      "Professional Services",
+      "Expert Solutions",
+      "Quality Delivery",
+      "Customer Success"
+    ];
+  }
+
+  // Formatter les mots-clés en titres de services
+  return keywords.slice(0, maxCount).map(keyword => {
+    // Transformer "cybersecurity" -> "Cybersecurity"
+    // Transformer "threat_detection" -> "Threat Detection"
+    return keyword
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  });
+};
+
+/**
+ * Génère des features à partir des mots-clés
+ * - Différent des services (plus axé sur les bénéfices)
+ * - Prend les 4 mots suivants si disponibles
+ */
+const generateFeaturesFromKeywords = (keywords: string[], maxCount: number = 4): string[] => {
+  if (keywords.length === 0) {
+    return [
+      "Innovative Solutions",
+      "Expert Team",
+      "Quality Assurance",
+      "Customer Focus"
+    ];
+  }
+
+  // Prendre les mots suivants (offset de 2 pour varier des services)
+  const startIndex = Math.min(2, keywords.length);
+  const featureKeywords = keywords.slice(startIndex, startIndex + maxCount);
+  
+  if (featureKeywords.length === 0) {
+    // Si pas assez de mots, prendre les premiers
+    return keywords.slice(0, maxCount).map(k => 
+      k.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+    );
+  }
+
+  return featureKeywords.map(keyword => {
+    // Ajouter des suffixes pour les features
+    const suffixes = [' System', ' Platform', ' Solution', ' Service', ' Tool', ' Suite'];
+   const suffix =suffixes[ keyword.length % suffixes.length];    
+    return keyword
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ') + suffix;
+  });
+};
+
+/**
+ * Génère des statistiques dynamiques basées sur les mots-clés
+ */
+const generateStatsFromKeywords = (keywords: string[]): { value: string; label: string }[] => {
+  if (keywords.length === 0) {
+    return [
+      { value: "100+", label: "Projects" },
+      { value: "50+", label: "Clients" },
+      { value: "95%", label: "Satisfaction" }
+    ];
+  }
+
+  // Générer des stats basées sur le contexte
+  const stats: { value: string; label: string }[] = [];
+  
+  // Vérifier les mots-clés pour des stats spécifiques
+  const hasUsers = keywords.some(k => ['user', 'customer', 'client', 'member'].includes(k));
+  const hasProjects = keywords.some(k => ['project', 'task', 'work', 'build'].includes(k));
+  const hasYears = keywords.some(k => ['year', 'experience', 'expert'].includes(k));
+  const hasPercent = keywords.some(k => ['rate', 'success', 'satisfaction', 'quality'].includes(k));
+
+  if (hasUsers) stats.push({ value: "500+", label: "Users" });
+  else if (hasProjects) stats.push({ value: "200+", label: "Projects" });
+  else stats.push({ value: "100+", label: "Clients" });
+
+  if (hasYears) stats.push({ value: "10+", label: "Years Experience" });
+  else if (hasPercent) stats.push({ value: "98%", label: "Satisfaction Rate" });
+  else stats.push({ value: "50+", label: "Team Members" });
+
+  // Toujours ajouter une 3ème stat
+  stats.push({ value: "24/7", label: "Support" });
+
+  return stats;
+};
+
+/**
+ * Génère un brand name dynamique à partir des mots-clés
+ */
+const generateBrandFromKeywords = (keywords: string[]): string => {
+  if (keywords.length === 0) {
+    return "InnovatePro";
+  }
+
+  // Prendre les 2 premiers mots significatifs
+  const firstWords = keywords.slice(0, 2);
+  const brand = firstWords.map(w => 
+    w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+  ).join('');
+
+  // Ajouter un suffixe si le nom est trop court
+  if (brand.length < 4) {
+    return brand + 'Pro';
+  }
+
+  return brand;
+};
+
+/**
+ * Génère un hero title dynamique
+ */
+const generateHeroTitle = (keywords: string[], category: string): string => {
+  if (keywords.length === 0) {
+    return `Modern ${category} Solutions`;
+  }
+
+  const firstKeyword = keywords[0];
+  const capitalized = firstKeyword.charAt(0).toUpperCase() + firstKeyword.slice(1);
+  
+  const templates = [
+    `Smart ${capitalized} Solutions For Modern Businesses`,
+    `${capitalized} Platform For Digital Success`,
+    `Enterprise-Grade ${capitalized} Services`,
+    `Next-Generation ${capitalized} Solutions`,
+    `Transform Your Business With ${capitalized}`
+  ];
+
+  return templates[Math.floor(Math.random() * templates.length)];
+};
+
+// ==================== MAIN FUNCTION ====================
+
 export const generateAiContent = (
   category: string,
   prompt: string
 ) => {
-  const cleanPrompt =
-    prompt.trim().replace(/\s+/g, " ");
-    const words = cleanPrompt
-  .split(" ")
-  .filter((w) => w.length > 3);
+  const cleanPrompt = prompt.trim().replace(/\s+/g, " ");
+  
+  // 1. Extraire les mots-clés du prompt
+  const keywords = extractKeywordsFromPrompt(cleanPrompt);
+  
+  // 2. Générer les contenus dynamiques
+  const dynamicBrand = generateBrandFromKeywords(keywords);
+  const dynamicServices = generateServicesFromKeywords(keywords);
+  const dynamicFeatures = generateFeaturesFromKeywords(keywords);
+  const dynamicStats = generateStatsFromKeywords(keywords);
+  const dynamicHeroTitle = generateHeroTitle(keywords, category);
 
-const dynamicBrand =
-  words.slice(0, 2)
-    .map(
-      (w) =>
-        w.charAt(0).toUpperCase() +
-        w.slice(1).toLowerCase()
-    )
-    .join("");
-
-
-  // ===== SERVICES BY CATEGORY =====
-  const SERVICES_BY_CATEGORY: Record<string, string[]> = {
-    Finance: [
-      "Investment Advisory",
-      "Risk Analysis",
-      "Portfolio Management",
-      "Capital Structuring"
-    ],
-
-    Medical: [
-      "Appointment Booking",
-      "Telemedicine",
-      "Patient Records",
-      "Clinic Analytics"
-    ],
-
-    Technology: [
-      "Software Development",
-      "Cloud Solutions",
-      "AI Automation",
-      "DevOps Services"
-    ],
-
-    Corporate: [
-      "Consulting",
-      "Management",
-      "Strategy",
-      "Operations"
-    ],
-
-    // ===== NOUVEAUX =====
-    Education: [
-      "Online Courses",
-      "Expert Instructors",
-      "Learning Materials",
-      "Certification Programs"
-    ],
-
-    Ecommerce: [
-      "Product Catalog",
-      "Secure Payments",
-      "Order Tracking",
-      "Customer Support"
-    ],
-
-    Agency: [
-      "Brand Strategy",
-      "Digital Marketing",
-      "Content Creation",
-      "Social Media Management"
-    ],
-
-    Portfolio: [
-      "Project Showcase",
-      "Case Studies",
-      "Creative Gallery",
-      "Client Work"
-    ],
-
-    Restaurant: [
-      "Menu Management",
-      "Table Reservations",
-      "Online Ordering",
-      "Customer Reviews"
-    ],
-
-    Consulting: [
-      "Strategic Planning",
-      "Business Analysis",
-      "Market Research",
-      "Performance Optimization"
-    ],
-
-    RealEstate: [
-      "Property Listings",
-      "Virtual Tours",
-      "Mortgage Services",
-      "Real Estate Analytics"
-    ],
-
-    Event: [
-      "Event Planning",
-      "Ticketing System",
-      "Speaker Management",
-      "Sponsor Relations"
-    ],
-
-    Construction: [
-      "Project Management",
-      "Building Design",
-      "Cost Estimation",
-      "Quality Control"
-    ],
-
-    Travel: [
-      "Destination Guides",
-      "Booking System",
-      "Travel Packages",
-      "Customer Reviews"
-    ],
-
-    Blog: [
-      "Content Publishing",
-      "SEO Optimization",
-      "Social Media Integration",
-      "Analytics Dashboard"
-    ],
-  };
-
-  // ===== STATS BY CATEGORY =====
-  const STATS_BY_CATEGORY: Record<string, { value: string; label: string }[]> = {
-    Finance: [
-      { value: "500+", label: "Clients" },
-      { value: "$50M+", label: "Managed Assets" }
-    ],
-
-    Medical: [
-      { value: "10k+", label: "Patients" },
-      { value: "200+", label: "Doctors" }
-    ],
-
-    Technology: [
-      { value: "150+", label: "Projects" },
-      { value: "99%", label: "Uptime" }
-    ],
-
-    Corporate: [
-      { value: "100+", label: "Partners" },
-      { value: "25+", label: "Countries" }
-    ],
-
-    // ===== NOUVEAUX =====
-    Education: [
-      { value: "5000+", label: "Students" },
-      { value: "120+", label: "Courses" },
-      { value: "40+", label: "Instructors" },
-      { value: "95%", label: "Success Rate" }
-    ],
-
-    Ecommerce: [
-      { value: "10k+", label: "Orders" },
-      { value: "500+", label: "Products" },
-      { value: "98%", label: "Customer Satisfaction" }
-    ],
-
-    Agency: [
-      { value: "300+", label: "Projects" },
-      { value: "120+", label: "Clients" },
-      { value: "15+", label: "Years Experience" }
-    ],
-
-    Portfolio: [
-      { value: "50+", label: "Projects" },
-      { value: "20+", label: "Clients" },
-      { value: "10+", label: "Awards" }
-    ],
-
-    Restaurant: [
-      { value: "200+", label: "Menu Items" },
-      { value: "500+", label: "Daily Customers" },
-      { value: "4.8/5", label: "Average Rating" }
-    ],
-
-    Consulting: [
-      { value: "300+", label: "Consultants" },
-      { value: "200+", label: "Clients" },
-      { value: "15+", label: "Years Experience" }
-    ],
-
-    RealEstate: [
-      { value: "1000+", label: "Properties" },
-      { value: "500+", label: "Happy Clients" },
-      { value: "97%", label: "Satisfaction Rate" }
-    ],
-
-    Event: [
-      { value: "500+", label: "Events" },
-      { value: "50k+", label: "Attendees" },
-      { value: "200+", label: "Speakers" }
-    ],
-
-    Construction: [
-      { value: "200+", label: "Projects" },
-      { value: "150+", label: "Clients" },
-      { value: "98%", label: "Quality Rate" }
-    ],
-
-    Travel: [
-      { value: "500+", label: "Destinations" },
-      { value: "10k+", label: "Happy Travelers" },
-      { value: "4.9/5", label: "Average Rating" }
-    ],
-
-    Blog: [
-      { value: "1000+", label: "Posts" },
-      { value: "50k+", label: "Readers" },
-      { value: "200+", label: "Authors" }
-    ],
-  };
-
-  // ===== BRAND NAMES =====
+  // 3. Brand name (priorité au dynamique)
   const brandByCategory: Record<string, string> = {
     Medical: "MediCare Pro",
     Finance: "FinVision",
@@ -237,27 +212,35 @@ const dynamicBrand =
     Blog: "BlogSphere"
   };
 
-  const brandName = brandByCategory[category] || `${category} Platform`;
+  // Utiliser le brand dynamique si des mots-clés ont été trouvés, sinon fallback
+  const brandName = keywords.length > 0 
+    ? dynamicBrand 
+    : (brandByCategory[category] || `${category} Platform`);
 
-  // ===== HERO TITLES =====
-  const heroTitleByCategory: Record<string, string> = {
-    Finance: "Smart Financial Advisory For Growing Businesses",
-    Medical: "Modern Healthcare Made Simple",
-    Technology: "Build Smarter Digital Products",
-    Education: "Empower Your Learning Journey",
-    Ecommerce: "Next-Generation Online Shopping Experience",
-    Agency: "Creative Solutions For Modern Brands",
-    Portfolio: "Showcasing Excellence In Every Project",
-    Restaurant: "Delicious Food, Exceptional Service",
-    Consulting: "Strategic Solutions For Business Growth",
-    RealEstate: "Find Your Dream Property Today",
-    Event: "Create Unforgettable Events",
-    Construction: "Building Dreams, One Project At A Time",
-    Travel: "Explore The World With Confidence",
-    Blog: "Stories That Inspire And Inform"
-  };
+  // 4. Hero title (dynamique si possible)
+  const heroTitle = keywords.length > 0
+    ? dynamicHeroTitle
+    : (() => {
+        const heroTitleByCategory: Record<string, string> = {
+          Finance: "Smart Financial Advisory For Growing Businesses",
+          Medical: "Modern Healthcare Made Simple",
+          Technology: "Build Smarter Digital Products",
+          Education: "Empower Your Learning Journey",
+          Ecommerce: "Next-Generation Online Shopping Experience",
+          Agency: "Creative Solutions For Modern Brands",
+          Portfolio: "Showcasing Excellence In Every Project",
+          Restaurant: "Delicious Food, Exceptional Service",
+          Consulting: "Strategic Solutions For Business Growth",
+          RealEstate: "Find Your Dream Property Today",
+          Event: "Create Unforgettable Events",
+          Construction: "Building Dreams, One Project At A Time",
+          Travel: "Explore The World With Confidence",
+          Blog: "Stories That Inspire And Inform"
+        };
+        return heroTitleByCategory[category] || `Modern ${category} Solutions`;
+      })();
 
-  // ===== CTA TITLES =====
+  // 5. CTA Titles (fallback par catégorie)
   const ctaTitleByCategory: Record<string, string> = {
     Finance: "Ready to Grow Your Financial Strategy?",
     Medical: "Ready to Modernize Your Clinic?",
@@ -275,7 +258,7 @@ const dynamicBrand =
     Blog: "Ready to Share Your Story?"
   };
 
-  // ===== CTA TEXTS =====
+  // 6. CTA Texts (fallback par catégorie)
   const ctaTextByCategory: Record<string, string> = {
     Finance: "Start planning smarter funding and investment decisions today.",
     Medical: "Launch your digital healthcare experience today.",
@@ -293,7 +276,7 @@ const dynamicBrand =
     Blog: "Share your stories and connect with your audience."
   };
 
-  // ===== TESTIMONIALS =====
+  // 7. Testimonials (fallback par catégorie)
   const testimonialsByCategory: Record<string, string[]> = {
     Finance: [
       "Helped us structure funding faster|Startup Founder",
@@ -370,18 +353,25 @@ const dynamicBrand =
   // ===== RETOUR =====
   return {
     title: brandName,
-    heroTitle:cleanPrompt.split(" ").slice(0, 6).join(" "),
-    heroText:cleanPrompt,
-    services: SERVICES_BY_CATEGORY[category] || SERVICES_BY_CATEGORY.Corporate,
-
-    stats: STATS_BY_CATEGORY[category] || STATS_BY_CATEGORY.Corporate,
-
+    heroTitle: heroTitle,
+    heroText: cleanPrompt,
+    
+    // Services dynamiques (plus de SERVICES_BY_CATEGORY)
+    services: dynamicServices,
+    
+    // Features dynamiques (NOUVEAU)
+    features: dynamicFeatures,
+    
+    // Stats dynamiques (plus de STATS_BY_CATEGORY)
+    stats: dynamicStats,
+    
+    // Testimonials (fallback par catégorie)
     testimonials: testimonialsByCategory[category] || [
       "Professional service and strong results|Client"
     ],
-
+    
+    // CTA (fallback par catégorie)
     ctaTitle: ctaTitleByCategory[category] || `Ready to Build Your ${category} Platform?`,
-
     ctaText: ctaTextByCategory[category] || "Create a modern digital presence with AI."
   };
 };
