@@ -72,7 +72,29 @@ export const getPlatformStats = async () => {
     totalPages > 0
       ? Number(((aiStats.generatedPages / totalPages) * 100).toFixed(1))
       : 0;
+const startOfDay = new Date();
+startOfDay.setHours(0, 0, 0, 0);
 
+const generatedToday = await ActivityLog.count({
+  where: {
+    action: "ai_page_generated",
+    createdAt: {
+      [Op.gte]: startOfDay,
+    },
+  },
+});
+
+const startOfWeek = new Date();
+startOfWeek.setDate(startOfWeek.getDate() - 7);
+
+const generatedThisWeek = await ActivityLog.count({
+  where: {
+    action: "ai_page_generated",
+    createdAt: {
+      [Op.gte]: startOfWeek,
+    },
+  },
+});
   return {
     totalUsers,
     pendingUsers,
@@ -84,6 +106,8 @@ export const getPlatformStats = async () => {
     activeSites,
     aiStats,
     aiAdoptionRate,
+    generatedToday,
+   generatedThisWeek,
   };
 };
 

@@ -296,7 +296,12 @@ for (const planPage of selectedPages) {
       isHomepage: planPage.type === "home"
     }
   );
-
+await PageService.publishPage(
+  siteId,
+  result.data.id,
+  "OWNER",
+  userId
+);
   createdPages.push(result.data);
 
   await ActivityLog.create({
