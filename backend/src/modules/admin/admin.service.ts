@@ -72,43 +72,18 @@ export const getPlatformStats = async () => {
     totalPages > 0
       ? Number(((aiStats.generatedPages / totalPages) * 100).toFixed(1))
       : 0;
-const startOfDay = new Date();
-startOfDay.setHours(0, 0, 0, 0);
-
-const generatedToday = await ActivityLog.count({
-  where: {
-    action: "ai_page_generated",
-    createdAt: {
-      [Op.gte]: startOfDay,
-    },
-  },
-});
-
-const startOfWeek = new Date();
-startOfWeek.setDate(startOfWeek.getDate() - 7);
-
-const generatedThisWeek = await ActivityLog.count({
-  where: {
-    action: "ai_page_generated",
-    createdAt: {
-      [Op.gte]: startOfWeek,
-    },
-  },
-});
   return {
-    totalUsers,
-    pendingUsers,
-    totalSites,
-    totalPages,
-    totalPlugins,
-    totalActivityLogs: totalActivities,
-    publishedPages,
-    activeSites,
-    aiStats,
-    aiAdoptionRate,
-    generatedToday,
-   generatedThisWeek,
-  };
+  totalUsers,
+  pendingUsers,
+  totalSites,
+  totalPages,
+  totalPlugins,
+  totalActivityLogs: totalActivities,
+  publishedPages,
+  activeSites,
+  aiStats,
+  aiAdoptionRate,
+};
 };
 
 export const fetchAdminUsers = async () => {
@@ -147,7 +122,29 @@ export class AdminAnalyticsService {
     const generatedImages = await ActivityLog.count({
       where: { action: "media_ai_uploaded" },
     });
+const startOfDay = new Date();
+startOfDay.setHours(0, 0, 0, 0);
 
+const generatedToday = await ActivityLog.count({
+  where: {
+    action: "ai_page_generated",
+    createdAt: {
+      [Op.gte]: startOfDay,
+    },
+  },
+});
+
+const startOfWeek = new Date();
+startOfWeek.setDate(startOfWeek.getDate() - 7);
+
+const generatedThisWeek = await ActivityLog.count({
+  where: {
+    action: "ai_page_generated",
+    createdAt: {
+      [Op.gte]: startOfWeek,
+    },
+  },
+});
     const lastGeneration = await ActivityLog.findOne({
       where: { action: "ai_page_generated" },
       order: [["createdAt", "DESC"]],
@@ -205,6 +202,8 @@ const topSites = Object.entries(siteMap)
     return {
       generatedPages,
       generatedImages,
+      generatedToday,
+       generatedThisWeek,
       lastGenerationAt: lastGeneration?.createdAt || null,
       dailyGenerations,
       topCategories,

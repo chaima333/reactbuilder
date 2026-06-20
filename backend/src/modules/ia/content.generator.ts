@@ -4,6 +4,19 @@ export const generateAiContent = (
 ) => {
   const cleanPrompt =
     prompt.trim().replace(/\s+/g, " ");
+    const words = cleanPrompt
+  .split(" ")
+  .filter((w) => w.length > 3);
+
+const dynamicBrand =
+  words.slice(0, 2)
+    .map(
+      (w) =>
+        w.charAt(0).toUpperCase() +
+        w.slice(1).toLowerCase()
+    )
+    .join("");
+
 
   // ===== SERVICES BY CATEGORY =====
   const SERVICES_BY_CATEGORY: Record<string, string[]> = {
@@ -357,10 +370,8 @@ export const generateAiContent = (
   // ===== RETOUR =====
   return {
     title: brandName,
-
-    heroTitle: heroTitleByCategory[category] || `Modern ${category} Solutions`,
-    heroText: `A modern ${category.toLowerCase()} solution designed for professional digital experiences.`,
-
+    heroTitle:cleanPrompt.split(" ").slice(0, 6).join(" "),
+    heroText:cleanPrompt,
     services: SERVICES_BY_CATEGORY[category] || SERVICES_BY_CATEGORY.Corporate,
 
     stats: STATS_BY_CATEGORY[category] || STATS_BY_CATEGORY.Corporate,
