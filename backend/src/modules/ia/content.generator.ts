@@ -371,7 +371,13 @@ export const generateAiContent = (
     ],
     
     // CTA (fallback par catégorie)
-    ctaTitle: ctaTitleByCategory[category] || `Ready to Build Your ${category} Platform?`,
-    ctaText: ctaTextByCategory[category] || "Create a modern digital presence with AI."
+    ctaTitle:
+  keywords.length > 0
+    ? `Ready to Launch Your ${dynamicServices[0]} Platform?`
+    : ctaTitleByCategory[category] || `Ready to Build Your ${category} Platform?`,
+    ctaText:
+  keywords.length > 0
+    ? `Turn your ${dynamicServices[0].toLowerCase()} vision into a scalable digital experience.`
+    : ctaTextByCategory[category] || "Create a modern digital presence with AI.",
   };
 };
