@@ -226,7 +226,33 @@ export class AdminAnalyticsService {
       })
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
+const lastActiveSites = Object.entries(siteMap)
+  .map(([siteId, count]) => {
+    const site = sites.find((s: any) => String(s.id) === siteId);
 
+    const siteLogs = logs.filter(
+      (log: any) => String(log.siteId) === siteId
+    );
+
+    const lastLog = siteLogs.sort(
+      (a: any, b: any) =>
+        new Date(b.createdAt).getTime() -
+        new Date(a.createdAt).getTime()
+    )[0];
+
+    return {
+      siteId,
+      siteName: site?.name || `Site #${siteId}`,
+      count,
+      lastActivityAt: lastLog?.createdAt || null,
+    };
+  })
+  .sort(
+    (a, b) =>
+      new Date(b.lastActivityAt || 0).getTime() -
+      new Date(a.lastActivityAt || 0).getTime()
+  )
+  .slice(0, 10);
    const recentGenerations = [...logs]
   .sort(
     (a: any, b: any) =>
@@ -258,6 +284,7 @@ export class AdminAnalyticsService {
       topCategories,
       topSites,
       recentGenerations,
+      lastActiveSites,
     };
   }
 }

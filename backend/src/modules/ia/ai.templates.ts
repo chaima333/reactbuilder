@@ -16,7 +16,12 @@ export interface SectionConfig {
   title: string;
   text: string;
   cta?: string;
+  ctaHref?: string;
   items?: string[];
+  navigationItems?: Array<{
+    label: string;
+    href: string;
+  }>;
   image?: string;
   resolvedImage?: string;
   style?: {

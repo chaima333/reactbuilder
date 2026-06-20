@@ -179,7 +179,15 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
   const color = config.style?.color || "#111827";
   const bgColor = config.style?.backgroundColor || "#ffffff";
 
-  const links = config.items || ["Home", "Services", "About", "Contact"];
+  const links =
+    config.navigationItems?.length
+      ? config.navigationItems
+      : (config.items || ["Home", "Services", "About", "Contact"]).map(
+          (label) => ({
+            label,
+            href: "#"
+          })
+        );
 
   return {
     id,
@@ -272,7 +280,7 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
                 width: "100%"
               })
             },
-            children: links.map((label, index) => ({
+            children: links.map((link, index) => ({
               id: makeId(`navbar-link-item-${index}`),
               type: "flexItem",
               data: {
@@ -287,8 +295,8 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
                   type: "link",
                   data: {
                     props: {
-                      label,
-                      href: "#"
+                      label: link.label,
+                      href: link.href
                     },
                     style: responsiveStyle({
                       textDecoration: "none",
@@ -327,7 +335,7 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
                   data: {
                     props: {
                       label: config.cta,
-                      href: "#"
+                      href: config.ctaHref || "#"
                     },
                     style: responsiveStyle({
                       borderRadius: "999px",
@@ -1372,9 +1380,23 @@ export function buildSectionFromConfig(
 const enrichSection = (
   section: SectionConfig,
   aiContent: any,
-  heroImageUrl?: string
+  heroImageUrl?: string,
+  navigationItems: Array<{ label: string; href: string }> = []
 ): SectionConfig => {
-  if (section.kind === "navbar" || section.kind === "footer") {
+  if (section.kind === "navbar") {
+    const contactLink = navigationItems.find(
+      (item) => item.label.toLowerCase() === "contact"
+    );
+
+    return {
+      ...section,
+      title: aiContent?.title || section.title,
+      navigationItems,
+      ctaHref: contactLink?.href || section.ctaHref
+    };
+  }
+
+  if (section.kind === "footer") {
     return {
       ...section,
       title: aiContent?.title || section.title,
@@ -1449,7 +1471,8 @@ const enrichSection = (
 export const generateHomeBlocks = (
   category: string,
   aiContent: any,
-  heroImageUrl?: string
+  heroImageUrl?: string,
+  navigationItems: Array<{ label: string; href: string }> = []
 ): PageBlock[] => {
   const template = CATEGORY_TEMPLATES[category] ?? CATEGORY_TEMPLATES["Corporate"];
   
@@ -1458,7 +1481,7 @@ export const generateHomeBlocks = (
   
   const sections = template.sections
     .filter((section) => homeKinds.includes(section.kind))
-    .map((section) => enrichSection(section, aiContent, heroImageUrl));
+    .map((section) => enrichSection(section, aiContent, heroImageUrl, navigationItems));
   
   return sections.map((section) => buildSectionFromConfig(section));
 };
@@ -1470,7 +1493,8 @@ export const generateHomeBlocks = (
 export const generateAboutBlocks = (
   category: string,
   aiContent: any,
-  heroImageUrl?: string
+  heroImageUrl?: string,
+  navigationItems: Array<{ label: string; href: string }> = []
 ): PageBlock[] => {
   const template = CATEGORY_TEMPLATES[category] ?? CATEGORY_TEMPLATES["Corporate"];
   
@@ -1479,7 +1503,7 @@ export const generateAboutBlocks = (
   
   const sections = template.sections
     .filter((section) => aboutKinds.includes(section.kind))
-    .map((section) => enrichSection(section, aiContent, heroImageUrl));
+    .map((section) => enrichSection(section, aiContent, heroImageUrl, navigationItems));
   
   return sections.map((section) => buildSectionFromConfig(section));
 };
@@ -1491,7 +1515,8 @@ export const generateAboutBlocks = (
 export const generateServicesBlocks = (
   category: string,
   aiContent: any,
-  heroImageUrl?: string
+  heroImageUrl?: string,
+  navigationItems: Array<{ label: string; href: string }> = []
 ): PageBlock[] => {
   const template = CATEGORY_TEMPLATES[category] ?? CATEGORY_TEMPLATES["Corporate"];
   
@@ -1500,7 +1525,7 @@ export const generateServicesBlocks = (
   
   const sections = template.sections
     .filter((section) => servicesKinds.includes(section.kind))
-    .map((section) => enrichSection(section, aiContent, heroImageUrl));
+    .map((section) => enrichSection(section, aiContent, heroImageUrl, navigationItems));
   
   return sections.map((section) => buildSectionFromConfig(section));
 };
@@ -1512,7 +1537,8 @@ export const generateServicesBlocks = (
 export const generateContactBlocks = (
   category: string,
   aiContent: any,
-  heroImageUrl?: string
+  heroImageUrl?: string,
+  navigationItems: Array<{ label: string; href: string }> = []
 ): PageBlock[] => {
   const template = CATEGORY_TEMPLATES[category] ?? CATEGORY_TEMPLATES["Corporate"];
   
@@ -1522,7 +1548,7 @@ export const generateContactBlocks = (
   // Build standard sections
   const standardSections = template.sections
     .filter((section) => contactKinds.includes(section.kind))
-    .map((section) => enrichSection(section, aiContent, heroImageUrl))
+    .map((section) => enrichSection(section, aiContent, heroImageUrl, navigationItems))
     .map((section) => buildSectionFromConfig(section));
   
   // Add contact-specific blocks
@@ -1538,6 +1564,175 @@ export const generateContactBlocks = (
   ];
   
   return contactBlocks;
+};
+
+const generateSpecializedBlocks = (
+  category: string,
+  aiContent: any,
+  heroImageUrl: string | undefined,
+  navigationItems: Array<{ label: string; href: string }>,
+  overrides: Partial<Record<SectionKind, Partial<SectionConfig>>>,
+  kinds: SectionKind[]
+): PageBlock[] => {
+  const template = CATEGORY_TEMPLATES[category] ?? CATEGORY_TEMPLATES["Corporate"];
+
+  return template.sections
+    .filter((section) => kinds.includes(section.kind))
+    .map((section) =>
+      enrichSection(section, aiContent, heroImageUrl, navigationItems)
+    )
+    .map((section) => ({
+      ...section,
+      ...(overrides[section.kind] || {})
+    }))
+    .map((section) => buildSectionFromConfig(section));
+};
+
+export const generateSolutionsBlocks = (
+  category: string,
+  aiContent: any,
+  heroImageUrl?: string,
+  navigationItems: Array<{ label: string; href: string }> = []
+): PageBlock[] =>
+  generateSpecializedBlocks(
+    category,
+    aiContent,
+    heroImageUrl,
+    navigationItems,
+    {
+      hero: {
+        title: `${aiContent?.title || category} Solutions`,
+        text: "Explore practical solutions designed around your workflows, customers, and growth goals."
+      },
+      services: {
+        title: "Solutions Built for Real Work",
+        text: "Choose focused capabilities that solve concrete business problems."
+      },
+      features: {
+        title: "What You Can Achieve",
+        text: "Turn complex processes into reliable, scalable outcomes."
+      },
+      cta: {
+        title: "Find the Right Solution",
+        text: "Talk with our team about the outcome you need."
+      }
+    },
+    ["navbar", "hero", "services", "features", "testimonial", "cta", "footer"]
+  );
+
+export const generatePricingBlocks = (
+  category: string,
+  aiContent: any,
+  heroImageUrl?: string,
+  navigationItems: Array<{ label: string; href: string }> = []
+): PageBlock[] =>
+  generateSpecializedBlocks(
+    category,
+    aiContent,
+    heroImageUrl,
+    navigationItems,
+    {
+      hero: {
+        title: "Simple, Scalable Pricing",
+        text: "Start with the plan that fits today and upgrade as your needs grow."
+      },
+      services: {
+        title: "Choose Your Plan",
+        text: "Clear options for teams at every stage.",
+        items: [
+          "Starter|Essential tools for individuals and small teams.",
+          "Growth|Advanced workflows for growing organizations.",
+          "Scale|Enterprise controls, support, and customization."
+        ]
+      },
+      features: {
+        title: "Included in Every Plan",
+        text: "Core capabilities, secure infrastructure, and room to grow."
+      },
+      cta: {
+        title: "Need a Custom Plan?",
+        text: "Contact us for volume pricing and tailored requirements."
+      }
+    },
+    ["navbar", "hero", "services", "features", "cta", "footer"]
+  );
+
+export const generateIntegrationsBlocks = (
+  category: string,
+  aiContent: any,
+  heroImageUrl?: string,
+  navigationItems: Array<{ label: string; href: string }> = []
+): PageBlock[] =>
+  generateSpecializedBlocks(
+    category,
+    aiContent,
+    heroImageUrl,
+    navigationItems,
+    {
+      hero: {
+        title: "Connect Your Essential Tools",
+        text: "Bring your existing stack together with secure, flexible integrations."
+      },
+      services: {
+        title: "Popular Integrations",
+        text: "Connect the systems your team already relies on.",
+        items: [
+          "CRM|Keep customer data synchronized across your workflow.",
+          "Analytics|Send trusted product and business data to your reporting tools.",
+          "Collaboration|Turn events into notifications and team actions.",
+          "Developer API|Build custom connections with documented APIs and webhooks."
+        ]
+      },
+      features: {
+        title: "Built to Connect",
+        text: "Reliable synchronization, secure access, and developer-friendly extensibility."
+      },
+      cta: {
+        title: "Do Not See Your Tool?",
+        text: "Ask about a custom integration for your stack."
+      }
+    },
+    ["navbar", "hero", "services", "features", "stats", "cta", "footer"]
+  );
+
+export const generatePageBlocksByType = (
+  pageType: string,
+  category: string,
+  aiContent: any,
+  heroImageUrl?: string,
+  navigationItems: Array<{ label: string; href: string }> = [],
+  pageTitle?: string
+): PageBlock[] => {
+  switch (pageType) {
+    case "home":
+      return generateHomeBlocks(category, aiContent, heroImageUrl, navigationItems);
+    case "about":
+      return generateAboutBlocks(category, aiContent, heroImageUrl, navigationItems);
+    case "services":
+      return generateServicesBlocks(category, aiContent, heroImageUrl, navigationItems);
+    case "contact":
+      return generateContactBlocks(category, aiContent, heroImageUrl, navigationItems);
+    case "solutions":
+      return generateSolutionsBlocks(category, aiContent, heroImageUrl, navigationItems);
+    case "pricing":
+      return generatePricingBlocks(category, aiContent, heroImageUrl, navigationItems);
+    case "integrations":
+      return generateIntegrationsBlocks(category, aiContent, heroImageUrl, navigationItems);
+    default:
+      return generateSpecializedBlocks(
+        category,
+        aiContent,
+        heroImageUrl,
+        navigationItems,
+        {
+          hero: {
+            title: pageTitle || pageType,
+            text: `Explore our ${pageTitle || pageType} resources and capabilities.`
+          }
+        },
+        ["navbar", "hero", "features", "cta", "footer"]
+      );
+  }
 };
 
 // ============================================

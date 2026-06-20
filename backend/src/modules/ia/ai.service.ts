@@ -3,11 +3,8 @@ import { Seo } from "../../models/Seo";
 import { MediaService } from "../media/media.service";
 import { PageService } from "../pages/services/page.service";
 import {
-  generateAboutBlocks,
-  generateContactBlocks,
-  generateServicesBlocks,
   generateTemplate,
-  generateHomeBlocks
+  generatePageBlocksByType
 } from "./ai.builder";
 import { CATEGORY_TEMPLATES } from "./ai.templates";
 import { generateAiContent } from "./content.generator";
@@ -272,42 +269,42 @@ const generated = generateTemplate(
 const selectedPages =
   sitePlan.slice(0, 6);
 
+const generationId = Date.now();
+const plannedPages = selectedPages.map((page) => ({
+  ...page,
+  finalSlug: `${page.slug}-${generationId}`
+}));
+const navigationItems = plannedPages.map((page) => ({
+  label: page.title,
+  href: `/site/${siteId}/${page.finalSlug}`
+}));
+
 console.log(
   "AI_WILL_CREATE_PAGES",
-  selectedPages.map((page) => ({
+  plannedPages.map((page) => ({
     title: page.title,
-    slug: page.slug,
+    slug: page.finalSlug,
     type: page.type
   }))
 );
 const createdPages: any[] = [];
 
-for (const planPage of selectedPages) {
+for (const planPage of plannedPages) {
 
   const pageTitle =
     planPage.type === "home"
-      ? `${generated.title || category} Home ${Date.now()}`
-      : `${generated.title || category} ${planPage.title} ${Date.now()}`;
+      ? `${generated.title || category} Home ${generationId}`
+      : `${generated.title || category} ${planPage.title} ${generationId}`;
 
-  const pageSlug =
-    `${planPage.slug}-${Date.now()}`;
-let pageBlocks = generated.blocks;
-
-if (planPage.type === "home") {
-  pageBlocks = generateHomeBlocks(category, aiContent, heroImageUrl);
-}
-
-if (planPage.type === "about") {
-  pageBlocks = generateAboutBlocks(category, aiContent, heroImageUrl);
-}
-
-if (planPage.type === "services") {
-  pageBlocks = generateServicesBlocks(category, aiContent, heroImageUrl);
-}
-
-if (planPage.type === "contact") {
-  pageBlocks = generateContactBlocks(category, aiContent, heroImageUrl);
-}
+  const pageSlug = planPage.finalSlug;
+  const pageBlocks = generatePageBlocksByType(
+    planPage.type,
+    category,
+    aiContent,
+    heroImageUrl,
+    navigationItems,
+    planPage.title
+  );
   const result = await PageService.createPage(
     siteId,
     userId,
