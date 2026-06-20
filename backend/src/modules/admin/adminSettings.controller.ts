@@ -28,3 +28,21 @@ export const updateAdminSettings = async (
     data: settings,
   });
 };
+export const generateAdminApiKey = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const result = await AdminSettingsService.generateApiKey();
+
+    return res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

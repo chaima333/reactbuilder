@@ -51,12 +51,21 @@ export const getPublicPage = async (req: Request, res: Response) => {
     const globalLayout =
       site?.get("globalLayout") || {};
 
+    const pageBlocks =
+      Array.isArray(page.blocks) ? page.blocks : [];
+    const pageOwnsNavbar =
+      pageBlocks.some((block: any) => block?.type === "navbar");
+    const pageOwnsFooter =
+      pageBlocks.some((block: any) =>
+        block?.id?.startsWith("footer-section-")
+      );
+
     const allBlocks = [
-      ...(globalLayout.navbar
+      ...(globalLayout.navbar && !pageOwnsNavbar
         ? [globalLayout.navbar]
         : []),
-      ...page.blocks,
-      ...(globalLayout.footer
+      ...pageBlocks,
+      ...(globalLayout.footer && !pageOwnsFooter
         ? [globalLayout.footer]
         : [])
     ];

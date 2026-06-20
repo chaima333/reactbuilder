@@ -1541,28 +1541,46 @@ export const generateContactBlocks = (
   navigationItems: Array<{ label: string; href: string }> = []
 ): PageBlock[] => {
   const template = CATEGORY_TEMPLATES[category] ?? CATEGORY_TEMPLATES["Corporate"];
-  
-  // Contact: navbar + hero + cta + footer + contactForm + contactInfo + map
-  const contactKinds: SectionKind[] = ["navbar", "hero", "cta", "footer"];
-  
-  // Build standard sections
-  const standardSections = template.sections
-    .filter((section) => contactKinds.includes(section.kind))
-    .map((section) => enrichSection(section, aiContent, heroImageUrl, navigationItems))
-    .map((section) => buildSectionFromConfig(section));
-  
-  // Add contact-specific blocks
-  const contactBlocks: PageBlock[] = [
-    // Standard sections
-    ...standardSections,
-    // Contact Form
-    buildContactForm(),
-    // Contact Info
-    buildContactInfo(),
-    // Map
-    buildMap(),
-  ];
-  
+
+  const buildTemplateSection = (kind: SectionKind): PageBlock | undefined => {
+    const section = template.sections.find((item) => item.kind === kind);
+
+    return section
+      ? buildSectionFromConfig(
+          enrichSection(section, aiContent, heroImageUrl, navigationItems)
+        )
+      : undefined;
+  };
+
+  const navbar = buildTemplateSection("navbar");
+  const hero = buildTemplateSection("hero");
+  const cta = buildTemplateSection("cta");
+  const footer = buildTemplateSection("footer");
+
+  const orderedBlocks = [
+    { label: "navbar", block: navbar },
+    { label: "hero", block: hero },
+    { label: "contact-form", block: buildContactForm() },
+    { label: "contact-info", block: buildContactInfo() },
+    { label: "map", block: buildMap() },
+    { label: "cta", block: cta },
+    { label: "footer", block: footer }
+  ].filter(
+    (item): item is { label: string; block: PageBlock } =>
+      Boolean(item.block)
+  );
+
+  const contactBlocks = orderedBlocks.map((item) => item.block);
+
+  console.log(
+    "CONTACT_BLOCK_ORDER",
+    orderedBlocks.map((item) => item.label)
+  );
+  console.log(
+    "NAVBAR_BLOCK_COUNT",
+    contactBlocks.filter((block) => block.type === "navbar").length
+  );
+
   return contactBlocks;
 };
 

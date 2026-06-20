@@ -12,7 +12,7 @@ import {
   getAIStats,
 } from "./admin.controller";
 import { authorizeRoles } from "../../core/middleware/role.middleware";
-import { getAdminSettings, updateAdminSettings } from "./adminSettings.controller";
+import { generateAdminApiKey, getAdminSettings, updateAdminSettings } from "./adminSettings.controller";
 
 const router = Router();
 
@@ -37,6 +37,11 @@ router.get(
 router.put(
   "/settings",
   updateAdminSettings
+);
+
+router.post(
+  "/settings/generate-api-key",
+  generateAdminApiKey
 );
 router.get("/ai-stats", getAIStats);
 export default router;

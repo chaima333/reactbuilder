@@ -330,6 +330,17 @@ for (const planPage of plannedPages) {
     console.log("ABOUT_BLOCKS_COUNT", pageBlocks.length);
   }
 
+  console.log("PAGE_BLOCK_TYPES_BEFORE_CREATE", {
+    pageType: planPage.type,
+    slug: pageSlug,
+    blockTypes: pageBlocks.map((block) => block.type),
+    blockIds: pageBlocks.map((block) => block.id)
+  });
+  console.log(
+    "NAVBAR_BLOCK_COUNT",
+    pageBlocks.filter((block) => block.type === "navbar").length
+  );
+
   const result = await PageService.createPage(
     siteId,
     userId,
