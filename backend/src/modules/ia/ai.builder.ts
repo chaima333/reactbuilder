@@ -177,7 +177,7 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
   const id = makeId("navbar");
   
   const color = config.style?.color || "#111827";
-  const bgColor = config.style?.backgroundColor || "#ffffff";
+  const bgColor = config.style?.backgroundColor || "#111010";
 
   const links =
     config.navigationItems?.length
@@ -199,9 +199,11 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
         alignItems: "center",
         justifyContent: "space-between",
         width: "100%",
-        maxWidth: "1200px", 
-        margin: "0 auto", 
+        display: "flex",
+        maxWidth: "none", 
+        margin: "0", 
         paddingTop: "14px",
+        boxSizing: "border-box",
         paddingBottom: "14px",
         paddingLeft: "28px",
         paddingRight: "28px",
@@ -258,7 +260,7 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
           props: {},
           style: responsiveStyle({
             flex: "1 1 auto",
-            minWidth: 0,
+            minWidth: "0",
             display: "flex",
             justifyContent: "center"
           })
