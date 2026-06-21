@@ -410,28 +410,27 @@ const profileBrand =
     : (brandByCategory[category] || `${category} Platform`);
 
   // 4. Hero title (dynamique si possible)
-  const heroTitle = keywords.length > 0
-    ? dynamicHeroTitle
-    : (() => {
-        const heroTitleByCategory: Record<string, string> = {
-          Finance: "Smart Financial Advisory For Growing Businesses",
-          Medical: "Modern Healthcare Made Simple",
-          Technology: "Build Smarter Digital Products",
-          Education: "Empower Your Learning Journey",
-          Ecommerce: "Next-Generation Online Shopping Experience",
-          Agency: "Creative Solutions For Modern Brands",
-          Portfolio: "Showcasing Excellence In Every Project",
-          Restaurant: "Delicious Food, Exceptional Service",
-          Consulting: "Strategic Solutions For Business Growth",
-          RealEstate: "Find Your Dream Property Today",
-          Event: "Create Unforgettable Events",
-          Construction: "Building Dreams, One Project At A Time",
-          Travel: "Explore The World With Confidence",
-          Blog: "Stories That Inspire And Inform"
-        };
-        return heroTitleByCategory[category] || `Modern ${category} Solutions`;
-      })();
+ const heroTitleByCategory: Record<string, string> = {
+  Finance: "Smart Financial Advisory For Growing Businesses",
+  Medical: "Modern Healthcare Made Simple",
+  Technology: "Build Smarter Digital Products",
+  Education: "Empower Your Learning Journey",
+  Ecommerce: "Next-Generation Online Shopping Experience",
+  Agency: "Creative Solutions For Modern Brands",
+  Portfolio: "Showcasing Excellence In Every Project",
+  Restaurant: "Delicious Food, Exceptional Service",
+  Consulting: "Strategic Solutions For Business Growth",
+  RealEstate: "Find Your Dream Property Today",
+  Event: "Create Unforgettable Events",
+  Construction: "Building Dreams, One Project At A Time",
+  Travel: "Explore The World With Confidence",
+  Blog: "Stories That Inspire And Inform"
+};
 
+const heroTitle =
+  heroTitleByCategory[category] ||
+  dynamicHeroTitle;
+  
   // 5. CTA Titles (fallback par catégorie)
   const ctaTitleByCategory: Record<string, string> = {
     Finance: "Ready to Grow Your Financial Strategy?",
