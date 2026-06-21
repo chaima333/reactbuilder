@@ -290,7 +290,64 @@ const generateMissionText = (keywords: string[], category: string, dynamicServic
 };
 
 // ==================== MAIN FUNCTION ====================
+const CATEGORY_SERVICES: Record<string, string[]> = {
+  Education: [
+    "Online Courses",
+    "Virtual Classrooms",
+    "Certification Programs",
+    "Learning Analytics"
+  ],
 
+  Technology: [
+    "AI Automation",
+    "Cloud Infrastructure",
+    "API Integrations",
+    "Business Analytics"
+  ],
+
+  Finance: [
+    "Investment Advisory",
+    "Risk Management",
+    "Capital Planning",
+    "Portfolio Management"
+  ],
+
+  Medical: [
+    "Online Appointments",
+    "Patient Management",
+    "Telemedicine",
+    "Medical Records"
+  ]
+};
+const CATEGORY_FEATURES: Record<string, string[]> = {
+  Education: [
+    "Interactive Learning",
+    "Expert Instructors",
+    "Progress Tracking",
+    "Industry Certifications"
+  ],
+
+  Technology: [
+    "Scalable Infrastructure",
+    "Real-Time Analytics",
+    "Automation Workflows",
+    "Secure Integrations"
+  ],
+
+  Finance: [
+    "Data Driven Insights",
+    "Risk Monitoring",
+    "Financial Reporting",
+    "Growth Planning"
+  ],
+
+  Medical: [
+    "Secure Patient Data",
+    "Easy Scheduling",
+    "Remote Consultations",
+    "24/7 Support"
+  ]
+};
 export const generateAiContent = (
   category: string,
   prompt: string,
@@ -312,8 +369,8 @@ const profileBrand =
   
   // 2. Générer les contenus dynamiques
   const dynamicBrand = profileBrand;
-  const dynamicServices = profileServices;
-  const dynamicFeatures = generateFeaturesFromKeywords(keywords);
+  const dynamicServices = CATEGORY_SERVICES[category] ||profileServices;
+  const dynamicFeatures = CATEGORY_FEATURES[category] || generateFeaturesFromKeywords(keywords);
   const dynamicHeroTitle = generateHeroTitle(keywords, category);
 
   // 3. Brand name (priorité au dynamique)
