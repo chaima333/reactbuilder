@@ -1,5 +1,7 @@
 // ==================== HELPERS ====================
 
+import { BusinessProfile } from "./business.profile";
+
 /**
  * Extract keywords from prompt
  * - Supprime les mots communs (stop words)
@@ -291,18 +293,27 @@ const generateMissionText = (keywords: string[], category: string, dynamicServic
 
 export const generateAiContent = (
   category: string,
-  prompt: string
+  prompt: string,
+  profile?: BusinessProfile
 ) => {
   const cleanPrompt = prompt.trim().replace(/\s+/g, " ");
   
   // 1. Extraire les mots-clés du prompt
   const keywords = extractKeywordsFromPrompt(cleanPrompt);
+  const profileServices =
+  profile?.services?.length
+    ? profile.services
+    : generateServicesFromKeywords(keywords);
+
+const profileAudience =  profile?.audience?.length ? profile.audience: ["businesses", "professionals"];
+
+const profileBrand =
+  profile?.companyName || generateBrandFromKeywords(keywords);
   
   // 2. Générer les contenus dynamiques
-  const dynamicBrand = generateBrandFromKeywords(keywords);
-  const dynamicServices = generateServicesFromKeywords(keywords);
+  const dynamicBrand = profileBrand;
+  const dynamicServices = profileServices;
   const dynamicFeatures = generateFeaturesFromKeywords(keywords);
-  const dynamicStats = generateStatsFromKeywords(keywords);
   const dynamicHeroTitle = generateHeroTitle(keywords, category);
 
   // 3. Brand name (priorité au dynamique)
@@ -473,14 +484,12 @@ export const generateAiContent = (
   return {
     title: brandName,
     heroTitle: heroTitle,
-    heroText:
-  keywords.length > 0
-    ? `Helping organizations succeed through ${dynamicServices
+    heroText:keywords.length > 0
+    ? `Helping ${profileAudience.join(", ")} succeed through ${dynamicServices
         .slice(0, 3)
         .join(", ")
         .toLowerCase()}.`
     : `A modern ${category.toLowerCase()} solution designed for professional digital experiences.`,
-    
     // Mission / Vision (NOUVEAU)
     missionTitle: missionTitle,
     missionText: missionText,

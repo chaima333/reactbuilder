@@ -1,9 +1,16 @@
-import { Table, Column, Model, DataType, HasMany, CreatedAt, UpdatedAt } from "sequelize-typescript";
+import {
+  Table,
+  Column,
+  Model,
+  DataType,
+  CreatedAt,
+  UpdatedAt,
+} from "sequelize-typescript";
 
-@Table({ 
+@Table({
   tableName: "users",
   timestamps: true,
-  underscored: true
+  underscored: true,
 })
 export class User extends Model<User> {
   [x: string]: any;
@@ -11,79 +18,104 @@ export class User extends Model<User> {
   @Column({
     type: DataType.INTEGER,
     autoIncrement: true,
-    primaryKey: true
+    primaryKey: true,
   })
   id!: number;
 
   @Column({
     type: DataType.STRING(255),
-    allowNull: false
+    allowNull: false,
   })
   name!: string;
 
   @Column({
     type: DataType.STRING(255),
     allowNull: false,
-    unique: true
+    unique: true,
   })
   email!: string;
 
   @Column({
     type: DataType.STRING(255),
-    allowNull: true
+    allowNull: true,
   })
   password!: string;
 
   @Column({
-    type: DataType.ENUM('ADMIN', 'EDITOR', 'VIEWER'),
+    type: DataType.ENUM("ADMIN", "EDITOR", "VIEWER"),
     allowNull: false,
-    defaultValue: 'VIEWER'
+    defaultValue: "VIEWER",
   })
-role!: 'ADMIN' | 'EDITOR' | 'VIEWER';
+  role!: "ADMIN" | "EDITOR" | "VIEWER";
 
   @Column({
     type: DataType.STRING(500),
-    allowNull: true
+    allowNull: true,
   })
   avatar!: string;
 
   @Column({
     type: DataType.BOOLEAN,
     defaultValue: false,
-    field: 'is_approved'
+    field: "is_approved",
   })
   isApproved!: boolean;
 
-  
   @CreatedAt
   @Column({
     type: DataType.DATE,
-    field: 'created_at'
+    field: "created_at",
   })
   createdAt!: Date;
 
   @UpdatedAt
   @Column({
     type: DataType.DATE,
-    field: 'updated_at'
+    field: "updated_at",
   })
   updatedAt!: Date;
 
-@Column({
-  type: DataType.STRING(255),
-  allowNull: true,
-  field: 'google_id',
-  unique: true
-})
-googleId!: string;
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: true,
+    field: "google_id",
+    unique: true,
+  })
+  googleId!: string | null;
 
-  // Méthodes utilitaires
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: true,
+  })
+  resetPasswordToken!: string | null;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+  })
+  resetPasswordExpires!: Date | null;
+
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    field: "two_factor_enabled",
+  })
+  twoFactorEnabled!: boolean;
+
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: true,
+    field: "two_factor_secret",
+  })
+  twoFactorSecret!: string | null;
+
   isAdmin(): boolean {
-    return this.role === 'ADMIN';
+    return this.role === "ADMIN";
   }
 
   isEditor(): boolean {
-    return this.role === 'EDITOR';
+    return this.role === "EDITOR";
   }
 
   canEditPage(pageUserId: number): boolean {
@@ -91,32 +123,6 @@ googleId!: string;
     if (this.isEditor() && this.id === pageUserId) return true;
     return false;
   }
-  
- @Column({
-  type: DataType.STRING(255),
-  allowNull: true,
-})
-resetPasswordToken!: string | null;
-
-@Column({
-  type: DataType.DATE,
-  allowNull: true,
-})
-@Column({
-  type: DataType.BOOLEAN,
-  allowNull: false,
-  defaultValue: false,
-  field: "two_factor_enabled",
-})
-twoFactorEnabled!: boolean;
-
-@Column({
-  type: DataType.STRING(255),
-  allowNull: true,
-  field: "two_factor_secret",
-})
-twoFactorSecret!: string | null;
-resetPasswordExpires!: Date | null;
 
   toJSON() {
     return {
@@ -130,3 +136,5 @@ resetPasswordExpires!: Date | null;
     };
   }
 }
+
+export default User;

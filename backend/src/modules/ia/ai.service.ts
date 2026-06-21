@@ -213,7 +213,7 @@ console.log("BUSINESS_PROFILE", businessProfile);
 const sitePlan = generateSitePlan(category, prompt, businessProfile);
 console.log( "SITE_PLAN_CATEGORY", category, sitePlan.map((p) => p.slug));
   
-const aiContent = generateAiContent(category,prompt);
+const aiContent = generateAiContent(category,prompt,businessProfile);
 console.log("AI_CONTENT_TITLE", aiContent.title);
 
   const template =
