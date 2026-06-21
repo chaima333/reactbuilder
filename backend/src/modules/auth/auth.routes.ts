@@ -17,5 +17,28 @@ router.post("/reset-password/:token", AuthController.resetPassword);
 router.get("/profile", authenticateJWT, (req: any, res) => {
     res.json({ success: true, user: req.user });
 });
+//2FA
+router.post(
+  "/2fa/setup",
+  authenticateJWT,
+  AuthController.setupTwoFactorController
+);
+
+router.post(
+  "/2fa/verify-setup",
+  authenticateJWT,
+  AuthController.verifyTwoFactorSetupController
+);
+
+router.post(
+  "/2fa/disable",
+  authenticateJWT,
+  AuthController.disableTwoFactorController
+);
+
+router.post(
+  "/2fa/verify-login",
+  AuthController.verifyTwoFactorLoginController
+);
 
 export default router;

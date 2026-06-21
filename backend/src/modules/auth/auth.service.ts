@@ -10,7 +10,8 @@ import {
 } from "../../shared/auth.util";
 import { Resend } from "resend";
 import { AdminSettingsService } from "../admin/adminSettings.service";
-
+import speakeasy from "speakeasy";
+import QRCode from "qrcode";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // 1. LOGIN
@@ -27,10 +28,21 @@ export const loginUser = async (email: string, pass: string) => {
   const isPasswordValid = await bcrypt.compare(pass, user.password);
   if (!isPasswordValid) throw new Error("Invalid credentials");
 
+if (user.twoFactorEnabled) {
+  return {
+    requires2FA: true,
+    userId: user.id,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  };
+}
 
   await revokeUserTokens(user.id);
 
-  // 🚀 التعديل: نحينا الـ role من الـ generateToken
   const accessToken = generateToken({ userId: user.id, type: "access" });
   const refreshToken = generateToken({ userId: user.id, type: "refresh" });
 
@@ -223,4 +235,112 @@ export const processResetPassword = async (token: string, pass: string) => {
   user.resetPasswordToken = null;
   user.resetPasswordExpires = null;
   await user.save();
+};
+
+//2FA
+export const setupTwoFactor = async (userId: number) => {
+  const user = await User.findByPk(userId);
+  if (!user) throw new Error("User not found");
+
+  const secret = speakeasy.generateSecret({
+    name: `ReactBuilder (${user.email})`,
+  });
+
+  user.twoFactorSecret = secret.base32;
+  await user.save();
+
+  const qrCode = await QRCode.toDataURL(secret.otpauth_url || "");
+
+  return {
+    qrCode,
+    secret: secret.base32,
+  };
+};
+
+export const verifyTwoFactorSetup = async (
+  userId: number,
+  token: string
+) => {
+  const user = await User.findByPk(userId);
+  if (!user || !user.twoFactorSecret) {
+    throw new Error("2FA setup not found");
+  }
+
+  const verified = speakeasy.totp.verify({
+    secret: user.twoFactorSecret,
+    encoding: "base32",
+    token,
+    window: 1,
+  });
+
+  if (!verified) {
+    throw new Error("Invalid 2FA code");
+  }
+
+  user.twoFactorEnabled = true;
+  await user.save();
+
+  return {
+    twoFactorEnabled: true,
+  };
+};
+
+export const verifyTwoFactorLogin = async (
+  userId: number,
+  token: string
+) => {
+  const user = await User.findByPk(userId);
+  if (!user || !user.twoFactorSecret || !user.twoFactorEnabled) {
+    throw new Error("2FA not enabled");
+  }
+
+  const verified = speakeasy.totp.verify({
+    secret: user.twoFactorSecret,
+    encoding: "base32",
+    token,
+    window: 1,
+  });
+
+  if (!verified) {
+    throw new Error("Invalid 2FA code");
+  }
+
+  await revokeUserTokens(user.id);
+
+  const accessToken = generateToken({
+    userId: user.id,
+    type: "access",
+  });
+
+  const refreshToken = generateToken({
+    userId: user.id,
+    type: "refresh",
+  });
+
+  await addToken(refreshToken, "refresh", user.id);
+
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      twoFactorEnabled: user.twoFactorEnabled,
+    },
+  };
+};
+
+export const disableTwoFactor = async (userId: number) => {
+  const user = await User.findByPk(userId);
+  if (!user) throw new Error("User not found");
+
+  user.twoFactorEnabled = false;
+  user.twoFactorSecret = null;
+  await user.save();
+
+  return {
+    twoFactorEnabled: false,
+  };
 };

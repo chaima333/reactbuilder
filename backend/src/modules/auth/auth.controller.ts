@@ -72,3 +72,63 @@ export const logoutController = async (req: any, res: Response) => {
     return res.status(400).json({ success: false, message: error.message });
   }
 };
+
+//2FA
+export const setupTwoFactorController = async (
+  req: any,
+  res: Response
+) => {
+  try {
+    const result = await AuthService.setupTwoFactor(req.user.id);
+    return res.json({ success: true, data: result });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+export const verifyTwoFactorSetupController = async (
+  req: any,
+  res: Response
+) => {
+  try {
+    const { token } = req.body;
+    const result = await AuthService.verifyTwoFactorSetup(
+      req.user.id,
+      token
+    );
+
+    return res.json({ success: true, data: result });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+export const verifyTwoFactorLoginController = async (
+  req: any,
+  res: Response
+) => {
+  try {
+    const { userId, token } = req.body;
+
+    const result = await AuthService.verifyTwoFactorLogin(
+      Number(userId),
+      token
+    );
+
+    return res.json({ success: true, ...result });
+  } catch (error: any) {
+    return res.status(401).json({ success: false, message: error.message });
+  }
+};
+
+export const disableTwoFactorController = async (
+  req: any,
+  res: Response
+) => {
+  try {
+    const result = await AuthService.disableTwoFactor(req.user.id);
+    return res.json({ success: true, data: result });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+};
