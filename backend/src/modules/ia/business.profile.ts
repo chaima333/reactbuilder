@@ -83,6 +83,27 @@ export const buildBusinessProfile = (
       services.push("SaaS Platform");
     }
   }
+  if (category === "RealEstate") {
+  if (includesAny(text, ["property", "properties", "listing", "listings"])) {
+    services.push("Property Listings");
+  }
+
+  if (includesAny(text, ["rental", "rent", "tenant", "landlord"])) {
+    services.push("Rental Management");
+  }
+
+  if (includesAny(text, ["investment", "investor", "roi"])) {
+    services.push("Real Estate Investment");
+  }
+
+  if (includesAny(text, ["valuation", "market analysis"])) {
+    services.push("Property Valuation");
+  }
+
+  if (includesAny(text, ["villa", "apartment", "home", "house"])) {
+    services.push("Residential Properties");
+  }
+}
 
   if (includesAny(text, ["enterprise", "corporation", "companies"])) {
     audience.push("Enterprises");
@@ -107,7 +128,24 @@ export const buildBusinessProfile = (
   if (includesAny(text, ["student", "students", "learners"])) {
     audience.push("Students");
   }
+ 
+  if (category === "RealEstate") {
+  if (includesAny(text, ["buyer", "buyers", "home", "house", "apartment", "villa"])) {
+    audience.push("Property Buyers");
+  }
 
+  if (includesAny(text, ["seller", "sellers", "owner", "owners", "landlord"])) {
+    audience.push("Property Owners");
+  }
+
+  if (includesAny(text, ["investor", "investors", "investment"])) {
+    audience.push("Real Estate Investors");
+  }
+
+  if (includesAny(text, ["tenant", "rental", "rent"])) {
+    audience.push("Tenants");
+  }
+}
   const needsPricing =
     includesAny(text, ["pricing", "price", "plans", "subscription"]);
 
@@ -127,13 +165,15 @@ export const buildBusinessProfile = (
   return {
     industry: category,
     companyName:
-      category === "Finance"
-        ? "GlobalFinance"
-        : category === "Medical"
-          ? "MediCare"
-          : category === "Technology"
-            ? "TechNova"
-            : "SmartBusiness",
+    category === "Finance"
+    ? "GlobalFinance"
+    : category === "Medical"
+      ? "MediCare"
+      : category === "Technology"
+        ? "TechNova"
+        : category === "RealEstate"
+          ? "HomeHaven"
+          : "SmartBusiness",
     services:
       unique(services).length > 0
         ? unique(services)
@@ -143,14 +183,16 @@ export const buildBusinessProfile = (
         ? unique(audience)
         : ["Businesses", "Professionals"],
     keywords: unique(keywords),
-    tone:
-      category === "Finance"
-        ? "professional"
-        : category === "Medical"
-          ? "trustworthy"
-          : category === "Technology"
-            ? "innovative"
-            : "modern",
+   tone:
+  category === "Finance"
+    ? "professional"
+    : category === "Medical"
+      ? "trustworthy"
+      : category === "Technology"
+        ? "innovative"
+        : category === "RealEstate"
+          ? "premium"
+          : "modern",
     needsPricing,
     needsIntegrations,
     needsBooking

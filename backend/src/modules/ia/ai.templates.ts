@@ -494,6 +494,103 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
     ],
   },
+//=====================Immobilier=================================
+  RealEstate: {
+  defaultTitle: "Real Estate Platform",
+  sections: [
+    {
+      kind: "navbar",
+      title: "HomeHaven",
+      text: "",
+      cta: "Browse Properties",
+      items: ["Home", "Properties", "Services", "About", "Contact"],
+      style: {
+        backgroundColor: "#0f172a",
+        color: "#ffffff"
+      }
+    },
+    {
+      kind: "hero",
+      title: "Find Your Dream Property Today",
+      text: "Premium real estate solutions for buyers, investors and property owners.",
+      cta: "Explore Properties",
+      image:
+        "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&h=400&fit=crop",
+      style: {
+        backgroundColor: "#0f172a",
+        color: "#ffffff",
+        titleSize: "56px"
+      }
+    },
+    {
+      kind: "mission",
+      title: "Our Mission",
+      text: "Helping clients discover, invest and grow through premium real estate opportunities."
+    },
+    {
+      kind: "features",
+      title: "Property Solutions",
+      text: "Everything you need for successful property investments.",
+      items: [
+        "Property Listings",
+        "Property Valuation",
+        "Investment Advisory",
+        "Rental Management"
+      ]
+    },
+    {
+      kind: "services",
+      title: "Real Estate Services",
+      text: "Comprehensive services for buyers, sellers and investors.",
+      items: [
+        "🏠 Property Listings|Browse premium residential and commercial properties.",
+        "📈 Investment Advisory|Identify profitable real estate opportunities.",
+        "📊 Property Valuation|Accurate market-based property assessments.",
+        "🔑 Rental Management|Professional management for rental properties."
+      ]
+    },
+    {
+      kind: "testimonial",
+      title: "What Clients Say",
+      text: "Trusted by buyers and investors.",
+      items: [
+        "★★★★★|Found our dream home quickly.|Home Buyer",
+        "★★★★★|Professional and transparent process.|Investor",
+        "★★★★★|Outstanding support from start to finish.|Property Owner",
+        "★★★★★|Highly recommended real estate experts.|Client"
+      ]
+    },
+    {
+      kind: "stats",
+      title: "Our Impact",
+      text: "Real estate results that matter.",
+      items: [
+        "1000+|Properties",
+        "500+|Happy Clients",
+        "150M+|Property Value",
+        "98%|Satisfaction"
+      ]
+    },
+    {
+      kind: "cta",
+      title: "Ready To Find Your Next Property?",
+      text: "Start your real estate journey today.",
+      cta: "Contact Us"
+    },
+    {
+      kind: "footer",
+      title: "HomeHaven",
+      text: "Premium real estate solutions.",
+      items: [
+        "About|Properties|Services|Contact",
+        "LinkedIn|Facebook|Instagram|YouTube"
+      ],
+      style: {
+        backgroundColor: "#0f172a"
+      }
+    }
+  ]
+},
 
   // ===== RESTAURANT =====
   Restaurant: {

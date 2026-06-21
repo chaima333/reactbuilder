@@ -20,7 +20,7 @@ export const NotificationPlugin: ICmsPlugin = {
     dashboard: {
       type: "notifications",
       title: "Notifications",
-      col: 6,
+      col: 4,
       order: 3,
     },
   },

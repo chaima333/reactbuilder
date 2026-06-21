@@ -317,7 +317,13 @@ const CATEGORY_SERVICES: Record<string, string[]> = {
     "Patient Management",
     "Telemedicine",
     "Medical Records"
-  ]
+  ],
+  RealEstate: [
+  "Property Listings",
+  "Property Management",
+  "Real Estate Investment",
+  "Property Valuation"
+]
 };
 const CATEGORY_FEATURES: Record<string, string[]> = {
   Education: [
@@ -346,7 +352,13 @@ const CATEGORY_FEATURES: Record<string, string[]> = {
     "Easy Scheduling",
     "Remote Consultations",
     "24/7 Support"
-  ]
+  ],
+  RealEstate: [
+  "Premium Listings",
+  "Market Insights",
+  "Property Search",
+  "Investment Opportunities"
+]
 };
 export const generateAiContent = (
   category: string,
