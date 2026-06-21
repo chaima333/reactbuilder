@@ -41,6 +41,7 @@ import figmaPluginRoutes from "./modules/figmaPlugin/figmaPlugin.routes";
 import { maintenanceMode } from "./core/middleware/maintenance";
 import notificationRoutes from "./modules/notifications/notification.routes";
 import iaRoutes from "./modules/ia/ai.routes";
+import exportRoutes from "./modules/export/export.routes";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 
@@ -93,6 +94,7 @@ app.use("/api/sites/:siteId/ia", tenantStack, iaRoutes);
 ======================== */
 app.use("/api/users", authStack, userRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/export", exportRoutes);
 
 /* ========================
    COMMANDS / PLUGINS
