@@ -1,4 +1,7 @@
-export const generateSitePlan = (category: string, prompt?: string) => {
+import { BusinessProfile } from "./business.profile";
+
+export const generateSitePlan = (category: string, prompt?: string,  profile?: BusinessProfile
+) => {
   // ===== NORMALIZATION MAP =====
   const normalizedCategoryMap: Record<string, string> = {
     Medical: "health",
@@ -46,7 +49,56 @@ export const generateSitePlan = (category: string, prompt?: string) => {
       required: true,
     },
   ];
+if (profile) {
+  const pages: any[]  = [...basePages];
 
+  if (profile.services.length > 2) {
+    pages.push({
+      title: "Solutions",
+      slug: "solutions",
+      type: "solutions",
+      icon: "⚡",
+    });
+  }
+
+  if (profile.needsPricing) {
+    pages.push({
+      title: "Pricing",
+      slug: "pricing",
+      type: "pricing",
+      icon: "💰",
+    });
+  }
+
+  if (profile.needsIntegrations) {
+    pages.push({
+      title: "Integrations",
+      slug: "integrations",
+      type: "integrations",
+      icon: "🔗",
+    });
+  }
+
+  if (profile.needsBooking) {
+    pages.push({
+      title:
+        category === "Restaurant"
+          ? "Reservations"
+          : "Appointments",
+      slug:
+        category === "Restaurant"
+          ? "reservations"
+          : "appointments",
+      type:
+        category === "Restaurant"
+          ? "reservations"
+          : "appointments",
+      icon: "📅",
+    });
+  }
+
+  return pages;
+}
   // ===== PAGES PAR CATEGORIE =====
   const categoryPages: Record<string, any[]> = {
     // === BUSINESS / CORPORATE ===

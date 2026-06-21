@@ -202,27 +202,20 @@ if (
     throw new Error("PROMPT_REQUIRED");
   }
 
-  const category = await this.predictCategory(prompt);
+const category = await this.predictCategory(prompt);
 console.log("FINAL_CATEGORY", category);
 console.log("FINAL_PROMPT", prompt);
 
-  const sitePlan =
-  generateSitePlan(category, prompt);
-console.log(
-  "SITE_PLAN_CATEGORY",
-  category,
-  sitePlan.map((p) => p.slug)
-);
-  
-  const aiContent = generateAiContent(
-  category,
-  prompt
-);
-console.log("AI_CONTENT_TITLE", aiContent.title);
-const businessProfile =
-  buildBusinessProfile(category, prompt);
+const businessProfile = buildBusinessProfile(category, prompt);
 
 console.log("BUSINESS_PROFILE", businessProfile);
+
+const sitePlan = generateSitePlan(category, prompt, businessProfile);
+console.log( "SITE_PLAN_CATEGORY", category, sitePlan.map((p) => p.slug));
+  
+const aiContent = generateAiContent(category,prompt);
+console.log("AI_CONTENT_TITLE", aiContent.title);
+
   const template =
     CATEGORY_TEMPLATES[category] ??
     CATEGORY_TEMPLATES["Corporate"];
