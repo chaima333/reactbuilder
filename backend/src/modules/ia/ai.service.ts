@@ -8,6 +8,7 @@ import {
   generatePageBlocksByType
 } from "./ai.builder";
 import { CATEGORY_TEMPLATES } from "./ai.templates";
+import { buildBusinessProfile } from "./business.profile";
 import { generateAiContent } from "./content.generator";
 import { generateSeo } from "./seo.generator";
 import { generateSitePlan } from "./site.plan";
@@ -218,7 +219,10 @@ console.log(
   prompt
 );
 console.log("AI_CONTENT_TITLE", aiContent.title);
+const businessProfile =
+  buildBusinessProfile(category, prompt);
 
+console.log("BUSINESS_PROFILE", businessProfile);
   const template =
     CATEGORY_TEMPLATES[category] ??
     CATEGORY_TEMPLATES["Corporate"];
