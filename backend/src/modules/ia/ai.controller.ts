@@ -132,8 +132,9 @@ export const getHistory = async (
   try {
     const history =
       await AiHistoryService.getHistory(
-        req.user.id
-      );
+        req.user.id,
+          Number(req.params.siteId)
+   );
 
     res.json({
       success: true,
