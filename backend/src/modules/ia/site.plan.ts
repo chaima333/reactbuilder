@@ -52,7 +52,7 @@ export const generateSitePlan = (category: string, prompt?: string,  profile?: B
 if (profile) {
   const pages: any[]  = [...basePages];
 
-  if (profile.services.length > 2) {
+  if (profile.services.length >= 2) {
     pages.push({
       title: "Solutions",
       slug: "solutions",
