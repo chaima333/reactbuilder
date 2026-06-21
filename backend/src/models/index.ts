@@ -16,15 +16,16 @@ import { ContactSubmission } from "./contactSubmission";
 import { FigmaPluginToken } from "./FigmaPluginToken";
 import PlatformSetting from "./PlatformSetting";
 import Notification from "./Notification";
+import { AiGeneration } from "./AiGeneration";
 
 export const models = [
   User, Token, Page, Site, ActivityLog, Media, 
   Seo, Plugin, SitePlugin, SiteMember, 
-  PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken,PlatformSetting,Notification
+  PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken,PlatformSetting,Notification,AiGeneration
 ];
 
 export { 
   User, Token, Page, Site, ActivityLog, 
   Media, Seo, Plugin, SitePlugin, SiteMember, 
-  PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken,PlatformSetting,Notification
+  PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken,PlatformSetting,Notification,AiGeneration
 };

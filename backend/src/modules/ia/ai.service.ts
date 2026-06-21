@@ -1,4 +1,5 @@
 import { ActivityLog } from "../../models/activityLog";
+import { AiGeneration } from "../../models/AiGeneration";
 import { Page } from "../../models/page";
 import { Seo } from "../../models/Seo";
 import { MediaService } from "../media/media.service";
@@ -424,6 +425,21 @@ if (!publishedHomepage || publishedHomepage.id !== homepagePageId) {
   throw new Error("PUBLISHED_HOMEPAGE_MISMATCH");
 }
 
+console.log("AI_HISTORY_WILL_SAVE", {
+  siteId,
+  userId,
+  category,
+  pagesGenerated: plannedPages.length
+});
+console.log("AI_HISTORY_SAVED");
+await AiGeneration.create({
+  siteId,
+  userId,
+  prompt,
+  category,
+  pagesGenerated: plannedPages.length,
+  status: "success"
+});
 return createdPages[0];
 }};
 
