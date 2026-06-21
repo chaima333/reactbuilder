@@ -8,22 +8,57 @@ export const exportAllData = async (
   try {
     const [users, sites, pages, media] = await Promise.all([
       User.findAll({
-        attributes: {
-          exclude: [
-            "password",
-            "resetPasswordToken",
-            "resetPasswordExpires",
-            "twoFactorSecret",
-          ],
-        },
+        attributes: [
+          "id",
+          "name",
+          "email",
+          "role",
+          "isApproved",
+          "createdAt",
+        ],
+        limit: 100,
       }),
-      Site.findAll({ limit: 500 }),
-      Page.findAll({ limit: 1000 }),
-      Media.findAll({ limit: 1000 }),
+
+      Site.findAll({
+        attributes: [
+          "id",
+          "name",
+          "subdomain",
+          "status",
+          "createdAt",
+          "updatedAt",
+        ],
+        limit: 200,
+      }),
+
+      Page.findAll({
+        attributes: [
+          "id",
+          "title",
+          "slug",
+          "status",
+          "siteId",
+          "createdAt",
+          "updatedAt",
+        ],
+        limit: 300,
+      }),
+
+      Media.findAll({
+        attributes: [
+          "id",
+          "url",
+          "type",
+          "siteId",
+          "createdAt",
+        ],
+        limit: 300,
+      }),
     ]);
 
     const data = {
       exportedAt: new Date().toISOString(),
+      mode: "metadata-only",
       counts: {
         users: users.length,
         sites: sites.length,
@@ -36,13 +71,7 @@ export const exportAllData = async (
       media,
     };
 
-    res.setHeader("Content-Type", "application/json");
-    res.setHeader(
-      "Content-Disposition",
-      "attachment; filename=reactbuilder-backup.json"
-    );
-
-    return res.status(200).send(JSON.stringify(data, null, 2));
+    return res.status(200).json(data);
   } catch (error: any) {
     console.error("EXPORT_ALL_DATA_ERROR", error);
 
