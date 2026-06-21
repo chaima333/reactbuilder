@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { AuthRequest } from "../../shared/auth.util";
 import { AiService } from "./ai.service";
+import { AiHistoryService } from "./ai.history.service";
 
 export const generatePage = async (req: AuthRequest, res: Response) => {
   try {
@@ -120,6 +121,28 @@ const generatedTitle =
       success: false,
       message: "An unexpected error occurred while generating the page",
       code: "INTERNAL_SERVER_ERROR"
+    });
+  }
+};
+
+export const getHistory = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const history =
+      await AiHistoryService.getHistory(
+        req.user.id
+      );
+
+    res.json({
+      success: true,
+      data: history
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message
     });
   }
 };
