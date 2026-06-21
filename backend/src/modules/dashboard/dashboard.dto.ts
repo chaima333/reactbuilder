@@ -5,6 +5,7 @@ export type DashboardBlockType =
   | "widget.version.summary"
   | "widget.seo.score"
   | "widget.media.summary"
+  | "widget.ai.history"
   | "notifications";
 /**
  * =====================================================
