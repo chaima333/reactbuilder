@@ -72,30 +72,6 @@ export class AiService {
     ) {
       return "Finance";
     }
-
-   if (
-  [
-    "software",
-    "technology",
-    "tech",
-    "ai",
-    "cloud",
-    "saas",
-    "application",
-    "platform",
-    "automation",
-    "machine learning",
-    "api",
-    "apis",
-    "devops",
-    "infrastructure",
-    "workflow",
-    "workflows"
-  ].some((keyword) => text.includes(keyword))
-) {
-  return "Technology";
-}
-
 if (
   [
     "school",
@@ -105,14 +81,21 @@ if (
     "academy",
     "training",
     "student",
+    "students",
     "education",
     "teacher",
-    "teachers"
+    "teachers",
+    "learning",
+    "learners",
+    "classroom",
+    "classrooms",
+    "certification",
+    "instructor",
+    "instructors"
   ].some((keyword) => text.includes(keyword))
 ) {
   return "Education";
 }
-
     if (
       [
         "portfolio",
@@ -149,6 +132,29 @@ if (
     ) {
       return "Consulting";
     }
+
+       if (
+  [
+    "software",
+    "technology",
+    "tech",
+    "ai",
+    "cloud",
+    "saas",
+    "application",
+    "platform",
+    "automation",
+    "machine learning",
+    "api",
+    "apis",
+    "devops",
+    "infrastructure",
+    "workflow",
+    "workflows"
+  ].some((keyword) => text.includes(keyword))
+) {
+  return "Technology";
+}
 
     return "Corporate";
   }

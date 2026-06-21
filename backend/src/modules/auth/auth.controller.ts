@@ -108,16 +108,37 @@ export const verifyTwoFactorLoginController = async (
   res: Response
 ) => {
   try {
-    const { userId, token } = req.body;
+    const userId = Number(req.body.userId);
+    const token = String(req.body.token || "").trim();
+
+    if (!userId || Number.isNaN(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid userId",
+      });
+    }
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: "2FA token is required",
+      });
+    }
 
     const result = await AuthService.verifyTwoFactorLogin(
-      Number(userId),
+      userId,
       token
     );
 
-    return res.json({ success: true, ...result });
+    return res.json({
+      success: true,
+      ...result,
+    });
   } catch (error: any) {
-    return res.status(401).json({ success: false, message: error.message });
+    return res.status(401).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
