@@ -152,18 +152,18 @@ const featureCard = (text: string): PageBlock => ({
   data: {
     props: { text },
     style: responsiveStyle({
-      padding: "32px",
+      padding: "40px",
       border: "1px solid #0a0a0b",
       borderRadius: "12px",
       backgroundColor: "#ffffff",
       textAlign: "center",
-      fontSize: "16px",
+      fontSize: "18px",
       fontWeight: "500",
-      minHeight: "110px",
+      minHeight: "180px",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
+      boxShadow: "0 10px 25px rgba(0,0,0,0.8)"
     })
   },
   children: []
@@ -514,9 +514,10 @@ const buildMission = (config: SectionConfig): PageBlock => {
         marginBottom: "24px"
       }),
       textBlock(config.text, {
-        fontSize: "20px",
-        maxWidth: "800px",
-        margin: "0 auto"
+        fontSize: "24px",
+        maxWidth: "1000px",
+        margin: "0 auto",
+        lineHeight:"1.8"
       })
     ],
     {
@@ -547,8 +548,8 @@ const buildFeatures = (config: SectionConfig): PageBlock => {
       props: {},
       style: responsiveStyle({
         display: "grid",
-        gridTemplateColumns: "repeat(2, minmax(160px, 1fr))",
-        gap: "24px",
+        gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
+        gap: "32px",
         maxWidth: "420px",
         margin: "0 auto",
         justifyContent: "center"
@@ -826,7 +827,7 @@ const buildStats = (config: SectionConfig): PageBlock => {
         data: {
           props: { text: number },
           style: responsiveStyle({
-            fontSize: "42px",
+            fontSize: "58px",
             fontWeight: "800",
             textAlign: "center",
             color: "#2563eb",
@@ -918,11 +919,12 @@ const buildCTA = (config: SectionConfig): PageBlock => {
       color,
       padding: "100px 40px",
       textAlign: "center",
-      minHeight: "40vh",
+      minHeight: "500px",
       display: "flex",
       flexDirection: "column",
       justifyContent: "center",
-      alignItems: "center"
+      alignItems: "center",
+      borderRadius:"24px"
     }
   );
 };
