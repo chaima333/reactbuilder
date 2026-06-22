@@ -42,6 +42,7 @@ import { maintenanceMode } from "./core/middleware/maintenance";
 import notificationRoutes from "./modules/notifications/notification.routes";
 import iaRoutes from "./modules/ia/ai.routes";
 import exportRoutes from "./modules/export/export.routes";
+import assistantRoutes from "./modules/ia/assistant/assistant.routes";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 
@@ -95,6 +96,7 @@ app.use("/api/sites/:siteId/ia", tenantStack, iaRoutes);
 app.use("/api/users", authStack, userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/export", exportRoutes);
+app.use("/api/ai/assistant", assistantRoutes);
 
 /* ========================
    COMMANDS / PLUGINS
