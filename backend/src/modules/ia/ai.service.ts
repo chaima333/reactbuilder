@@ -73,6 +73,22 @@ export class AiService {
     ) {
       return "Finance";
     }
+    if (
+  [
+    "cybersecurity",
+    "cyber security",
+    "threat detection",
+    "compliance",
+    "ethical hacking",
+    "penetration testing",
+    "incident response",
+    "security awareness",
+    "soc",
+    "siem"
+  ].some((keyword) => text.includes(keyword))
+) {
+  return "Technology";
+}
 if (
   [
     "school",

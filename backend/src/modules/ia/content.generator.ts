@@ -808,12 +808,45 @@ export const generateAiContent = (
   const categoryStats = generateCategoryStats(category);
 
   // 10. Récupérer les FAQs pour la catégorie
-  const faqs = FAQ_BY_CATEGORY[category] || [
-    "What services do you offer?|We offer professional services tailored to your needs.",
-    "How can I get started?|Contact us to discuss your requirements.",
-    "Do you provide support?|Yes, we offer comprehensive support.",
-    "What are your rates?|Contact us for a customized quote."
-  ];
+  const generateFaqFromKeywords = (
+  keywords: string[]
+): string[] => {
+
+  const faq: string[] = [];
+
+  if (
+    keywords.some(k =>
+      ["cybersecurity","security","threat"].includes(k)
+    )
+  ) {
+    faq.push(
+      "Do you provide threat detection labs?|Yes, practical labs are included."
+    );
+
+    faq.push(
+      "Do students receive cybersecurity certifications?|Yes, certificates are provided after completion."
+    );
+
+    faq.push(
+      "Are the labs hands-on?|Yes, all labs are practical and scenario-based."
+    );
+
+    faq.push(
+      "Do you cover compliance standards?|Yes, major compliance frameworks are included."
+    );
+  }
+
+  return faq;
+};
+const dynamicFaqs =
+  generateFaqFromKeywords(
+    keywords
+  );
+
+const faqs =
+  dynamicFaqs.length > 0
+    ? dynamicFaqs
+    : FAQ_BY_CATEGORY[category];
 
   // ===== RETOUR =====
   return {
