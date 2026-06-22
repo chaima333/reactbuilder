@@ -90,13 +90,13 @@ app.use("/api/sites/:siteId/import",tenantStack,importRoutes);
 app.use("/api/figma-plugin", figmaPluginRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/sites/:siteId/ia", tenantStack, iaRoutes);
+app.use("/api/ai/assistant", authStack, assistantRoutes);
 /* ========================
    ADMIN / USERS
 ======================== */
 app.use("/api/users", authStack, userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/export", exportRoutes);
-app.use("/api/ai/assistant", assistantRoutes);
 
 /* ========================
    COMMANDS / PLUGINS
