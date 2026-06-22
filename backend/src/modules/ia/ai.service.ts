@@ -87,7 +87,8 @@ export class AiService {
     "siem"
   ].some((keyword) => text.includes(keyword))
 ) {
-  return "Technology";
+    return "Cybersecurity";
+
 }
 if (
   [
@@ -238,7 +239,16 @@ console.log( "SITE_PLAN_CATEGORY", category, sitePlan.map((p) => p.slug));
   
 const aiContent = generateAiContent(category,prompt,businessProfile);
 console.log("AI_CONTENT_TITLE", aiContent.title);
+console.log("FINAL_CATEGORY", category);
+console.log(
+  "TEMPLATE_FOUND",
+  Object.keys(CATEGORY_TEMPLATES)
+);
 
+console.log(
+  "CURRENT_TEMPLATE",
+  CATEGORY_TEMPLATES[category]?.defaultTitle
+);
   const template =
     CATEGORY_TEMPLATES[category] ??
     CATEGORY_TEMPLATES["Corporate"];
