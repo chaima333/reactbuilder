@@ -152,14 +152,14 @@ const featureCard = (text: string): PageBlock => ({
   data: {
     props: { text },
     style: responsiveStyle({
-      padding: "40px",
+      padding: "24px",
       border: "1px solid #0a0a0b",
       borderRadius: "12px",
       backgroundColor: "#ffffff",
       textAlign: "center",
-      fontSize: "18px",
+      fontSize: "16px",
       fontWeight: "500",
-      minHeight: "180px",
+      minHeight: "110px",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -548,9 +548,9 @@ const buildFeatures = (config: SectionConfig): PageBlock => {
       props: {},
       style: responsiveStyle({
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
-        gap: "32px",
-        maxWidth: "420px",
+        gridTemplateColumns: "repeat(2, minmax(220px, 1fr))",
+        gap: "24px",
+        maxWidth: "720px",
         margin: "0 auto",
         justifyContent: "center"
       })
