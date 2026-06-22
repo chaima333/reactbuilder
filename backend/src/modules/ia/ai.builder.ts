@@ -146,29 +146,53 @@ const gridItemBlock = (children: PageBlock[]): PageBlock => ({
 // FEATURE CARD HELPER
 // ============================================
 
-const featureCard = (text: string): PageBlock => ({
-  id: makeId("feature"),
-  type: "text",
-  data: {
-    props: { text },
-    style: responsiveStyle({
-      padding: "24px",
-      border: "1px solid #0a0a0b",
-      borderRadius: "12px",
-      backgroundColor: "#ffffff",
-      textAlign: "center",
-      fontSize: "16px",
-      fontWeight: "500",
-      minHeight: "110px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      boxShadow: "0 10px 25px rgba(0,0,0,0.8)"
-    })
-  },
-  children: []
-});
+const featureCard = (text: string): PageBlock => {
+  const [title, description, button] = text.split("|");
 
+  return {
+    id: makeId("feature"),
+    type: "flex",
+    data: {
+      props: {},
+      style: responsiveStyle({
+        padding: "28px",
+        border: "1px solid #e5e7eb",
+        borderRadius: "18px",
+        backgroundColor: "#ffffff",
+        minHeight: "190px",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "14px",
+        boxShadow: "0 10px 25px rgba(0,0,0,0.08)"
+      })
+    },
+    children: [
+      textBlock(title || text, {
+        fontSize: "20px",
+        fontWeight: "800",
+        color: "#0f172a",
+        marginBottom: "0"
+      }),
+      ...(description
+        ? [
+            textBlock(description, {
+              fontSize: "15px",
+              color: "#64748b",
+              lineHeight: "1.6",
+              marginBottom: "0"
+            })
+          ]
+        : []),
+      ...(button
+        ? [
+            buttonBlock(button)
+          ]
+        : [])
+    ]
+  };
+};
 // ============================================
 // NAVBAR BUILDER
 // ============================================
