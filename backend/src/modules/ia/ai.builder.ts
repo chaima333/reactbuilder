@@ -165,7 +165,7 @@ const featureCard = (text: string): PageBlock => {
         alignItems: "center",
         justifyContent: "space-between",
         gap: "14px",
-        boxShadow: "0 10px 25px rgba(0,0,0,0.08)"
+        boxShadow: "0 12px 30px rgba(0,0,0,0.12)"
       })
     },
     children: [
@@ -710,64 +710,87 @@ const buildServices = (config: SectionConfig): PageBlock => {
 
 const buildTestimonial = (config: SectionConfig): PageBlock => {
   const items = config.items || [];
-  
+
   if (items.length > 0) {
     const testimonialBlocks: PageBlock[] = items.map((item) => {
-      const parts = item.split('|');
-      const stars = parts[0] || '★★★★★';
+      const parts = item.split("|");
+      const stars = parts[0] || "★★★★★";
       const quote = parts[1] || item;
-      const author = parts[2] || 'Client';
-      
-      const cardContent = flexBlock([
-        {
-          id: makeId("testimonial-stars"),
-          type: "text",
-          data: {
-            props: { text: stars },
-            style: responsiveStyle({
-              fontSize: "24px",
-              textAlign: "center",
-              color: "#f59e0b",
-              marginBottom: "8px"
-            })
-          },
-          children: []
+      const author = parts[2] || "Client";
+
+      const cardContent: PageBlock = {
+        id: makeId("testimonial-card"),
+        type: "flex",
+        data: {
+          props: {},
+          style: responsiveStyle({
+            padding: "32px",
+            borderRadius: "20px",
+            backgroundColor: "#ffffff",
+            border: "1px solid #e5e7eb",
+            minHeight: "260px",
+            boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "16px"
+          })
         },
-        {
-          id: makeId("testimonial-quote"),
-          type: "text",
-          data: {
-            props: { text: `"${quote}"` },
-            style: responsiveStyle({
-              fontSize: "16px",
-              textAlign: "center",
-              color: "#0f172a",
-              fontStyle: "italic",
-              marginBottom: "8px",
-              lineHeight: "1.6"
-            })
+        children: [
+          {
+            id: makeId("testimonial-stars"),
+            type: "text",
+            data: {
+              props: { text: stars },
+              style: responsiveStyle({
+                fontSize: "28px",
+                letterSpacing: "4px",
+                textAlign: "center",
+                color: "#f59e0b",
+                marginBottom: "4px"
+              })
+            },
+            children: []
           },
-          children: []
-        },
-        {
-          id: makeId("testimonial-author"),
-          type: "text",
-          data: {
-            props: { text: `— ${author}` },
-            style: responsiveStyle({
-              fontSize: "14px",
-              textAlign: "center",
-              fontWeight: "600",
-              color: "#64748b"
-            })
+          {
+            id: makeId("testimonial-quote"),
+            type: "text",
+            data: {
+              props: { text: `"${quote}"` },
+              style: responsiveStyle({
+                fontSize: "18px",
+                textAlign: "center",
+                color: "#0f172a",
+                fontStyle: "italic",
+                lineHeight: "1.8",
+                maxWidth: "280px",
+                marginBottom: "0"
+              })
+            },
+            children: []
           },
-          children: []
-        }
-      ]);
-      
+          {
+            id: makeId("testimonial-author"),
+            type: "text",
+            data: {
+              props: { text: `— ${author}` },
+              style: responsiveStyle({
+                fontSize: "15px",
+                textAlign: "center",
+                fontWeight: "700",
+                color: "#64748b",
+                marginTop: "8px"
+              })
+            },
+            children: []
+          }
+        ]
+      };
+
       return gridItemBlock([cardContent]);
     });
-    
+
     const testimonialContainer: PageBlock = {
       id: makeId("testimonial-grid"),
       type: "grid",
@@ -775,36 +798,36 @@ const buildTestimonial = (config: SectionConfig): PageBlock => {
         props: {},
         style: responsiveStyle({
           display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: "24px",
-          maxWidth: "1000px",
+          gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
+          gap: "28px",
+          maxWidth: "1100px",
           margin: "0 auto",
           padding: "20px"
         })
       },
       children: testimonialBlocks
     };
-    
+
     return sectionBlock(
       [
         titleBlock(config.title, {
-          fontSize: "38px",
+          fontSize: "42px",
           marginBottom: "16px"
         }),
         textBlock(config.text, {
-          fontSize: "18px",
-          marginBottom: "40px"
+          fontSize: "20px",
+          marginBottom: "44px"
         }),
         testimonialContainer
       ],
       {
         backgroundColor: config.style?.backgroundColor || "#f0f9ff",
-        padding: "80px 40px",
+        padding: "90px 40px",
         textAlign: "center"
       }
     );
   }
-  
+
   return sectionBlock(
     [
       titleBlock(config.title, {
