@@ -1643,9 +1643,18 @@ export const generateHomeBlocks = (
 ): PageBlock[] => {
   const template = CATEGORY_TEMPLATES[category] ?? CATEGORY_TEMPLATES["Corporate"];
   
-  // Home: navbar + hero + mission + features + stats + cta + footer + faq
-  const homeKinds: SectionKind[] = ["navbar", "hero", "mission", "features", "stats", "cta", "faq", "footer"];
-  
+const homeKinds: SectionKind[] = [
+  "navbar",
+  "hero",
+  "mission",
+  "features",
+  "services",
+  "testimonial",
+  "stats",
+  "faq",
+  "cta",
+  "footer"
+];  
   const sections = template.sections
     .filter((section) => homeKinds.includes(section.kind))
     .map((section) => enrichSection(section, aiContent, heroImageUrl, navigationItems));
@@ -1942,16 +1951,18 @@ export function buildPageFromTemplate(
   const pageTitle =
     aiContent?.title || template.defaultTitle;
 
-  const homeKinds: SectionKind[] = [
-    "navbar",
-    "hero",
-    "mission",
-    "features",
-    "stats",
-    "cta",
-    "faq",
-    "footer"
-  ];
+const homeKinds: SectionKind[] = [
+  "navbar",
+  "hero",
+  "mission",
+  "features",
+  "services",
+  "testimonial",
+  "stats",
+  "faq",
+  "cta",
+  "footer"
+];
 
   const sections = template.sections
     .filter((section) => homeKinds.includes(section.kind))

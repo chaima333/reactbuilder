@@ -10,6 +10,7 @@ export type SectionKind =
   | "stats"
   | "cta"
   | "faq"
+  | "pricing"
   | "footer";
 
 export interface SectionConfig {
