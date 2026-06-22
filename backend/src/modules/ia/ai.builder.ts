@@ -220,7 +220,9 @@ const buildFAQ = (config: SectionConfig): PageBlock => {
           flexDirection: "column",
           gap: "8px",
           width: "100%",
-          maxWidth: "800px"
+          maxWidth: "800px",
+          marginLeft: "auto",
+          marginRight: "auto",
         })
       },
       children: [
@@ -271,7 +273,8 @@ const buildFAQ = (config: SectionConfig): PageBlock => {
         gap: "8px",
         maxWidth: "900px",
         margin: "0 auto",
-        width: "100%"
+        width: "100%",
+        alignSelf: "center",
       })
     },
     children: faqBlocks
