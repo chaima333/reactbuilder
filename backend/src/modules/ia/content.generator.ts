@@ -361,6 +361,62 @@ const CATEGORY_SERVICES: Record<string, string[]> = {
     "Digital Marketing",
     "Content Creation"
   ],
+  
+  Ecommerce: [
+    "Online Store",
+    "Payment Gateway",
+    "Inventory Management",
+    "Customer Analytics"
+  ],
+  
+  Portfolio: [
+    "Project Showcase",
+    "Client Gallery",
+    "Creative Works",
+    "Case Studies"
+  ],
+  
+  Restaurant: [
+    "Menu Management",
+    "Online Ordering",
+    "Table Reservations",
+    "Customer Reviews"
+  ],
+  
+  Consulting: [
+    "Strategic Planning",
+    "Business Advisory",
+    "Market Research",
+    "Performance Optimization"
+  ],
+  
+  Event: [
+    "Event Planning",
+    "Ticket Management",
+    "Guest Registration",
+    "Live Streaming"
+  ],
+  
+  Construction: [
+    "Project Management",
+    "Architectural Design",
+    "Building Services",
+    "Quality Control"
+  ],
+  
+  Travel: [
+    "Trip Planning",
+    "Hotel Booking",
+    "Tour Packages",
+    "Travel Insurance"
+  ],
+  
+  Blog: [
+    "Content Creation",
+    "SEO Optimization",
+    "Audience Engagement",
+    "Analytics Dashboard"
+  ]
 };
 
 const CATEGORY_FEATURES: Record<string, string[]> = {
@@ -405,6 +461,162 @@ const CATEGORY_FEATURES: Record<string, string[]> = {
     "Content Strategy|Plan content that supports awareness, trust and growth.|Learn More",
     "Marketing Performance|Track results and improve campaigns with measurable insights.|Learn More"
   ],
+  
+  Ecommerce: [
+    "Online Store|Launch a professional online store in minutes.|Learn More",
+    "Payment Gateway|Accept payments securely with multiple payment options.|Learn More",
+    "Inventory Management|Track and manage your inventory in real-time.|Learn More",
+    "Customer Analytics|Understand your customers with detailed analytics.|Learn More"
+  ],
+  
+  Portfolio: [
+    "Project Showcase|Present your projects with stunning visuals.|Learn More",
+    "Client Gallery|Build trust with a gallery of successful projects.|Learn More",
+    "Creative Works|Share your creative works with the world.|Learn More",
+    "Case Studies|Showcase your expertise with detailed case studies.|Learn More"
+  ],
+  
+  Restaurant: [
+    "Menu Management|Easily manage and update your menu items.|Learn More",
+    "Online Ordering|Accept online orders and grow your delivery service.|Learn More",
+    "Table Reservations|Simplify table booking for your customers.|Learn More",
+    "Customer Reviews|Collect and respond to customer feedback.|Learn More"
+  ],
+  
+  Consulting: [
+    "Strategic Planning|Develop effective strategies for business growth.|Learn More",
+    "Business Advisory|Get expert advice to overcome business challenges.|Learn More",
+    "Market Research|Access in-depth market research and insights.|Learn More",
+    "Performance Optimization|Optimize your business processes for success.|Learn More"
+  ],
+  
+  Event: [
+    "Event Planning|Plan and organize events with ease.|Learn More",
+    "Ticket Management|Sell and manage tickets for your events.|Learn More",
+    "Guest Registration|Simplify guest registration and check-in.|Learn More",
+    "Live Streaming|Broadcast your events to a global audience.|Learn More"
+  ],
+  
+  Construction: [
+    "Project Management|Manage construction projects efficiently.|Learn More",
+    "Architectural Design|Create innovative and functional designs.|Learn More",
+    "Building Services|Access comprehensive building services.|Learn More",
+    "Quality Control|Ensure the highest quality standards.|Learn More"
+  ],
+  
+  Travel: [
+    "Trip Planning|Plan your trips with personalized recommendations.|Learn More",
+    "Hotel Booking|Find and book hotels at the best prices.|Learn More",
+    "Tour Packages|Discover amazing tour packages and deals.|Learn More",
+    "Travel Insurance|Protect your travels with comprehensive insurance.|Learn More"
+  ],
+  
+  Blog: [
+    "Content Creation|Create engaging content that resonates with readers.|Learn More",
+    "SEO Optimization|Optimize your content for better search visibility.|Learn More",
+    "Audience Engagement|Connect with your audience through compelling content.|Learn More",
+    "Analytics Dashboard|Track your performance with real-time analytics.|Learn More"
+  ]
+};
+
+const FAQ_BY_CATEGORY: Record<string, string[]> = {
+  Education: [
+    "Do I receive a certificate?|Yes, certificates are provided after course completion.",
+    "Can I learn at my own pace?|Yes, courses are available anytime.",
+    "Are instructors experienced?|Yes, all instructors are industry professionals.",
+    "What courses do you offer?|We offer a wide range of courses across various fields."
+  ],
+
+  Technology: [
+    "Do you provide API integrations?|Yes, we integrate with modern platforms and services.",
+    "Is the platform scalable?|Yes, it is designed for growth and performance.",
+    "Do you offer support?|Yes, our team provides ongoing support.",
+    "What technologies do you use?|We use cutting-edge technologies and frameworks."
+  ],
+
+  Finance: [
+    "Do you provide investment advisory?|Yes, we offer professional financial advisory services.",
+    "Who can use your services?|Businesses, investors and professionals.",
+    "How do I get started?|Contact our team for an initial consultation.",
+    "Is my data secure?|Yes, we use enterprise-grade security measures."
+  ],
+
+  Medical: [
+    "Can I book appointments online?|Yes, online booking is available 24/7.",
+    "Are your services covered by insurance?|Contact us for insurance coverage details.",
+    "What medical services do you offer?|We offer comprehensive medical services.",
+    "Is my medical data secure?|Yes, we comply with all privacy regulations."
+  ],
+
+  RealEstate: [
+    "Can I list my property?|Yes, property owners can submit listings.",
+    "Do you support rentals?|Yes, rental management services are available.",
+    "Do you provide market analysis?|Yes, we provide valuation and market insights.",
+    "What commission do you charge?|Contact us for detailed pricing information."
+  ],
+
+  Agency: [
+    "Do you handle social media?|Yes, we provide social media management services.",
+    "What industries do you serve?|We work across multiple industries and sectors.",
+    "How do you measure success?|We track key performance indicators and metrics.",
+    "Do you offer consulting?|Yes, we provide brand strategy consulting services."
+  ],
+
+  Ecommerce: [
+    "Can I sell physical products?|Yes, our platform supports physical products.",
+    "Do you support digital products?|Yes, digital products and services are supported.",
+    "What payment methods are accepted?|We support all major payment methods.",
+    "Is my store secure?|Yes, we ensure your store is fully secure."
+  ],
+
+  Portfolio: [
+    "Can I upload my own projects?|Yes, you can showcase all your projects.",
+    "Is it customizable?|Yes, you can customize your portfolio design.",
+    "Can I add categories?|Yes, organize your work by categories.",
+    "Is my portfolio visible online?|Yes, your portfolio is publicly accessible."
+  ],
+
+  Restaurant: [
+    "Can I manage my menu online?|Yes, you can update your menu anytime.",
+    "Do you offer delivery integration?|Yes, we integrate with delivery services.",
+    "How do I handle reservations?|You can manage reservations directly.",
+    "Can I collect customer feedback?|Yes, we provide review management tools."
+  ],
+
+  Consulting: [
+    "What consulting services do you offer?|We offer comprehensive business consulting.",
+    "Who are your typical clients?|We work with businesses of all sizes.",
+    "How long are consulting engagements?|Duration varies based on client needs.",
+    "Can I get a trial consultation?|Yes, we offer initial consultation sessions."
+  ],
+
+  Event: [
+    "Can I sell tickets online?|Yes, we provide complete ticketing solutions.",
+    "Do you support virtual events?|Yes, we support hybrid and virtual events.",
+    "How do I manage attendees?|You can manage attendees through our dashboard.",
+    "Do you provide event marketing?|Yes, we offer event promotion services."
+  ],
+
+  Construction: [
+    "What types of projects do you handle?|We handle all types of construction projects.",
+    "Can you provide estimates?|Yes, we provide detailed cost estimates.",
+    "What is your timeline?|Timelines vary based on project complexity.",
+    "Do you provide warranties?|Yes, we offer project warranties."
+  ],
+
+  Travel: [
+    "Do you offer package deals?|Yes, we provide travel packages.",
+    "Can I book last minute?|Yes, last minute bookings are available.",
+    "Do you provide travel insurance?|Yes, we offer comprehensive travel insurance.",
+    "Can I customize my trip?|Yes, we offer customizable travel experiences."
+  ],
+
+  Blog: [
+    "Can I start a blog with your platform?|Yes, start your blog in minutes.",
+    "Do you provide SEO tools?|Yes, we provide SEO optimization tools.",
+    "Can I monetize my blog?|Yes, we offer monetization options.",
+    "Do you have analytics?|Yes, we provide detailed analytics and insights."
+  ]
 };
 
 export const generateAiContent = (
@@ -595,6 +807,14 @@ export const generateAiContent = (
   // 9. Générer les stats category-aware (TOUTES les catégories ont 4 stats)
   const categoryStats = generateCategoryStats(category);
 
+  // 10. Récupérer les FAQs pour la catégorie
+  const faqs = FAQ_BY_CATEGORY[category] || [
+    "What services do you offer?|We offer professional services tailored to your needs.",
+    "How can I get started?|Contact us to discuss your requirements.",
+    "Do you provide support?|Yes, we offer comprehensive support.",
+    "What are your rates?|Contact us for a customized quote."
+  ];
+
   // ===== RETOUR =====
   return {
     title: brandName,
@@ -622,6 +842,9 @@ export const generateAiContent = (
     testimonials: testimonialsByCategory[category] || [
       "Professional service and strong results|Client"
     ],
+    
+    // FAQs (TOUTES les catégories ont des FAQs)
+    faqs: faqs,
     
     // CTA (fallback par catégorie)
     ctaTitle: keywords.length > 0

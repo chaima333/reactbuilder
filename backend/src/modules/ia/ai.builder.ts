@@ -193,6 +193,110 @@ const featureCard = (text: string): PageBlock => {
     ]
   };
 };
+
+// ============================================
+// FAQ BUILDER
+// ============================================
+
+const buildFAQ = (config: SectionConfig): PageBlock => {
+  const items = config.items || [];
+  
+  const faqBlocks: PageBlock[] = items.map((item) => {
+    const [question, answer] = item.split("|");
+    
+    return {
+      id: makeId("faq-item"),
+      type: "flex",
+      data: {
+        props: {},
+        style: responsiveStyle({
+          padding: "24px",
+          borderBottom: "1px solid #e5e7eb",
+          backgroundColor: "#ffffff",
+          borderRadius: "12px",
+          marginBottom: "12px",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+          width: "100%",
+          maxWidth: "800px"
+        })
+      },
+      children: [
+        {
+          id: makeId("faq-question"),
+          type: "text",
+          data: {
+            props: { text: `❓ ${question || item}` },
+            style: responsiveStyle({
+              fontSize: "18px",
+              fontWeight: "700",
+              color: "#0f172a",
+              textAlign: "left",
+              marginBottom: "4px"
+            })
+          },
+          children: []
+        },
+        {
+          id: makeId("faq-answer"),
+          type: "text",
+          data: {
+            props: { text: answer || "" },
+            style: responsiveStyle({
+              fontSize: "16px",
+              color: "#64748b",
+              textAlign: "left",
+              lineHeight: "1.6",
+              marginBottom: "0",
+              paddingLeft: "4px"
+            })
+          },
+          children: []
+        }
+      ]
+    };
+  });
+
+  const faqContainer: PageBlock = {
+    id: makeId("faq-container"),
+    type: "flex",
+    data: {
+      props: {},
+      style: responsiveStyle({
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "8px",
+        maxWidth: "900px",
+        margin: "0 auto",
+        width: "100%"
+      })
+    },
+    children: faqBlocks
+  };
+
+  return sectionBlock(
+    [
+      titleBlock(config.title, {
+        fontSize: "38px",
+        marginBottom: "16px"
+      }),
+      textBlock(config.text, {
+        fontSize: "18px",
+        marginBottom: "40px"
+      }),
+      faqContainer
+    ],
+    {
+      backgroundColor: config.style?.backgroundColor || "#f8fafc",
+      padding: "80px 40px",
+      textAlign: "center"
+    }
+  );
+};
+
 // ============================================
 // NAVBAR BUILDER
 // ============================================
@@ -333,7 +437,6 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
                       transition: "color 0.2s ease",
                       display: "inline-block",
                       marginRight: "24px"
-
                     })
                   },
                   children: []
@@ -1419,6 +1522,8 @@ export function buildSectionFromConfig(
       return buildCTA(config);
     case "footer":
       return buildFooter(config);
+    case "faq":
+      return buildFAQ(config);
     default:
       return buildMission(config);
   }
@@ -1478,6 +1583,13 @@ const enrichSection = (
     };
   }
 
+  if (section.kind === "faq" && aiContent?.faqs?.length) {
+    return {
+      ...section,
+      items: aiContent.faqs,
+    };
+  }
+
   if (section.kind === "services" && aiContent?.services?.length) {
     return {
       ...section,
@@ -1527,8 +1639,8 @@ export const generateHomeBlocks = (
 ): PageBlock[] => {
   const template = CATEGORY_TEMPLATES[category] ?? CATEGORY_TEMPLATES["Corporate"];
   
-  // Home: navbar + hero + mission + features + stats + cta + footer
-  const homeKinds: SectionKind[] = ["navbar", "hero", "mission", "features", "stats", "cta", "footer"];
+  // Home: navbar + hero + mission + features + stats + cta + footer + faq
+  const homeKinds: SectionKind[] = ["navbar", "hero", "mission", "features", "stats", "cta", "faq", "footer"];
   
   const sections = template.sections
     .filter((section) => homeKinds.includes(section.kind))
@@ -1549,8 +1661,8 @@ export const generateAboutBlocks = (
 ): PageBlock[] => {
   const template = CATEGORY_TEMPLATES[category] ?? CATEGORY_TEMPLATES["Corporate"];
   
-  // About: navbar + mission + features + testimonial + stats + footer
-  const aboutKinds: SectionKind[] = ["navbar", "mission", "features", "testimonial", "stats", "footer"];
+  // About: navbar + mission + features + testimonial + stats + footer + faq
+  const aboutKinds: SectionKind[] = ["navbar", "mission", "features", "testimonial", "stats", "faq", "footer"];
   
   const sections = template.sections
     .filter((section) => aboutKinds.includes(section.kind))
@@ -1571,8 +1683,8 @@ export const generateServicesBlocks = (
 ): PageBlock[] => {
   const template = CATEGORY_TEMPLATES[category] ?? CATEGORY_TEMPLATES["Corporate"];
   
-  // Services: navbar + hero + services + features + cta + footer
-  const servicesKinds: SectionKind[] = ["navbar", "hero", "services", "features", "cta", "footer"];
+  // Services: navbar + hero + services + features + cta + footer + faq
+  const servicesKinds: SectionKind[] = ["navbar", "hero", "services", "features", "cta", "faq", "footer"];
   
   const sections = template.sections
     .filter((section) => servicesKinds.includes(section.kind))
@@ -1607,6 +1719,7 @@ export const generateContactBlocks = (
   const hero = buildTemplateSection("hero");
   const cta = buildTemplateSection("cta");
   const footer = buildTemplateSection("footer");
+  const faq = buildTemplateSection("faq");
 
   const orderedBlocks = [
     { label: "navbar", block: navbar },
@@ -1614,6 +1727,7 @@ export const generateContactBlocks = (
     { label: "contact-form", block: buildContactForm() },
     { label: "contact-info", block: buildContactInfo() },
     { label: "map", block: buildMap() },
+    { label: "faq", block: faq },
     { label: "cta", block: cta },
     { label: "footer", block: footer }
   ].filter(
@@ -1686,7 +1800,7 @@ export const generateSolutionsBlocks = (
         text: "Talk with our team about the outcome you need."
       }
     },
-    ["navbar", "hero", "services", "features", "testimonial", "cta", "footer"]
+    ["navbar", "hero", "services", "features", "testimonial", "cta", "faq", "footer"]
   );
 
 export const generatePricingBlocks = (
@@ -1723,7 +1837,7 @@ export const generatePricingBlocks = (
         text: "Contact us for volume pricing and tailored requirements."
       }
     },
-    ["navbar", "hero", "services", "features", "cta", "footer"]
+    ["navbar", "hero", "services", "features", "cta", "faq", "footer"]
   );
 
 export const generateIntegrationsBlocks = (
@@ -1761,7 +1875,7 @@ export const generateIntegrationsBlocks = (
         text: "Ask about a custom integration for your stack."
       }
     },
-    ["navbar", "hero", "services", "features", "stats", "cta", "footer"]
+    ["navbar", "hero", "services", "features", "stats", "cta", "faq", "footer"]
   );
 
 export const generatePageBlocksByType = (
@@ -1805,7 +1919,7 @@ export const generatePageBlocksByType = (
             text: `Explore our ${pageTitle || pageType} resources and capabilities.`
           }
         },
-        ["navbar", "hero", "features", "cta", "footer"]
+        ["navbar", "hero", "features", "cta", "faq", "footer"]
       );
   }
 };
@@ -1831,6 +1945,7 @@ export function buildPageFromTemplate(
     "features",
     "stats",
     "cta",
+    "faq",
     "footer"
   ];
 
@@ -1878,6 +1993,13 @@ export function buildPageFromTemplate(
       return {
         ...section,
         items: aiContent.features
+      };
+    }
+
+    if (section.kind === "faq" && aiContent?.faqs?.length) {
+      return {
+        ...section,
+        items: aiContent.faqs
       };
     }
 
@@ -1974,6 +2096,7 @@ export {
   buildContactForm,
   buildContactInfo,
   buildMap,
+  buildFAQ,
   featureCard,
   enrichSection,
 };

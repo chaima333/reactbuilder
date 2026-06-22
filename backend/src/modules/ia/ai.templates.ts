@@ -9,6 +9,7 @@ export type SectionKind =
   | "testimonial"
   | "stats"
   | "cta"
+  | "faq"
   | "footer";
 
 export interface SectionConfig {
@@ -100,6 +101,17 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         items: ["1000+|Projects Deployed", "500+|Enterprise Clients", "40+|Countries", "99.9%|Uptime"],
       },
       {
+        kind: "faq",
+        title: "Frequently Asked Questions",
+        text: "Find answers to the most common questions about our technology solutions.",
+        items: [
+          "What technologies do you specialize in?|We specialize in AI, machine learning, cloud infrastructure, and full-stack development.",
+          "How do you ensure data security?|We follow industry best practices and compliance standards for data protection.",
+          "Do you offer ongoing support?|Yes, we provide comprehensive support and maintenance for all our solutions.",
+          "What is your development process?|We follow agile methodology with regular client collaboration and feedback.",
+        ],
+      },
+      {
         kind: "cta",
         title: "Ready to Innovate?",
         text: "Let's build the future together.",
@@ -174,6 +186,17 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Our Impact",
         text: "Transforming lives through education.",
         items: ["10K+|Students Enrolled", "500+|Courses Available", "150+|Expert Instructors", "95%|Completion Rate"],
+      },
+      {
+        kind: "faq",
+        title: "Frequently Asked Questions",
+        text: "Everything you need to know about our learning platform.",
+        items: [
+          "Do I receive a certificate?|Yes, certificates are provided after course completion.",
+          "Can I learn at my own pace?|Yes, courses are available anytime.",
+          "Are instructors experienced?|Yes, all instructors are industry professionals.",
+          "What courses do you offer?|We offer a wide range of courses across various fields.",
+        ],
       },
       {
         kind: "cta",
@@ -252,6 +275,17 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         items: ["5000+|Appointments", "120+|Doctors", "25+|Clinics", "98%|Satisfaction"],
       },
       {
+        kind: "faq",
+        title: "Frequently Asked Questions",
+        text: "Common questions about our healthcare services.",
+        items: [
+          "Can I book appointments online?|Yes, online booking is available 24/7.",
+          "Are your services covered by insurance?|Contact us for insurance coverage details.",
+          "What medical services do you offer?|We offer comprehensive medical services.",
+          "Is my medical data secure?|Yes, we comply with all privacy regulations.",
+        ],
+      },
+      {
         kind: "cta",
         title: "Ready to modernize your clinic?",
         text: "Launch your digital appointment experience today.",
@@ -326,6 +360,17 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "ShopVerse by the Numbers",
         text: "Trusted by customers worldwide.",
         items: ["100K+|Happy Customers", "50K+|Products Sold", "30+|Countries", "4.9★|Average Rating"],
+      },
+      {
+        kind: "faq",
+        title: "Frequently Asked Questions",
+        text: "Answers to common questions about our online store.",
+        items: [
+          "Can I sell physical products?|Yes, our platform supports physical products.",
+          "Do you support digital products?|Yes, digital products and services are supported.",
+          "What payment methods are accepted?|We support all major payment methods.",
+          "Is my store secure?|Yes, we ensure your store is fully secure.",
+        ],
       },
       {
         kind: "cta",
@@ -404,6 +449,17 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         items: ["$50B+|Assets Under Advisory", "500+|Clients Served", "40+|Countries", "99%|Client Satisfaction"],
       },
       {
+        kind: "faq",
+        title: "Frequently Asked Questions",
+        text: "Common questions about our financial services.",
+        items: [
+          "Do you provide investment advisory?|Yes, we offer professional financial advisory services.",
+          "Who can use your services?|Businesses, investors and professionals.",
+          "How do I get started?|Contact our team for an initial consultation.",
+          "Is my data secure?|Yes, we use enterprise-grade security measures.",
+        ],
+      },
+      {
         kind: "cta",
         title: "Ready to transform your financial strategy?",
         text: "Let's build the future together.",
@@ -480,6 +536,17 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         items: ["200+|Clients Served", "500+|Projects Completed", "30+|Countries", "98%|Client Retention"],
       },
       {
+        kind: "faq",
+        title: "Frequently Asked Questions",
+        text: "Common questions about our agency services.",
+        items: [
+          "Do you handle social media?|Yes, we provide social media management services.",
+          "What industries do you serve?|We work across multiple industries and sectors.",
+          "How do you measure success?|We track key performance indicators and metrics.",
+          "Do you offer consulting?|Yes, we provide brand strategy consulting services.",
+        ],
+      },
+      {
         kind: "cta",
         title: "Ready to Build Your Brand?",
         text: "Let's collaborate and create something extraordinary.",
@@ -494,103 +561,93 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
     ],
   },
-//=====================Immobilier=================================
+
+  // ===== REAL ESTATE =====
   RealEstate: {
-  defaultTitle: "Real Estate Platform",
-  sections: [
-    {
-      kind: "navbar",
-      title: "HomeHaven",
-      text: "",
-      cta: "Browse Properties",
-      items: ["Home", "Properties", "Services", "About", "Contact"],
-      style: {
-        backgroundColor: "#0f172a",
-        color: "#ffffff"
-      }
-    },
-    {
-      kind: "hero",
-      title: "Find Your Dream Property Today",
-      text: "Premium real estate solutions for buyers, investors and property owners.",
-      cta: "Explore Properties",
-      image:
-        "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&h=400&fit=crop",
-      style: {
-        backgroundColor: "#0f172a",
-        color: "#ffffff",
-        titleSize: "56px"
-      }
-    },
-    {
-      kind: "mission",
-      title: "Our Mission",
-      text: "Helping clients discover, invest and grow through premium real estate opportunities."
-    },
-    {
-      kind: "features",
-      title: "Property Solutions",
-      text: "Everything you need for successful property investments.",
-      items: [
-        "Property Listings",
-        "Property Valuation",
-        "Investment Advisory",
-        "Rental Management"
-      ]
-    },
-    {
-      kind: "services",
-      title: "Real Estate Services",
-      text: "Comprehensive services for buyers, sellers and investors.",
-      items: [
-        "🏠 Property Listings|Browse premium residential and commercial properties.",
-        "📈 Investment Advisory|Identify profitable real estate opportunities.",
-        "📊 Property Valuation|Accurate market-based property assessments.",
-        "🔑 Rental Management|Professional management for rental properties."
-      ]
-    },
-    {
-      kind: "testimonial",
-      title: "What Clients Say",
-      text: "Trusted by buyers and investors.",
-      items: [
-        "★★★★★|Found our dream home quickly.|Home Buyer",
-        "★★★★★|Professional and transparent process.|Investor",
-        "★★★★★|Outstanding support from start to finish.|Property Owner",
-        "★★★★★|Highly recommended real estate experts.|Client"
-      ]
-    },
-    {
-      kind: "stats",
-      title: "Our Impact",
-      text: "Real estate results that matter.",
-      items: [
-        "1000+|Properties",
-        "500+|Happy Clients",
-        "150M+|Property Value",
-        "98%|Satisfaction"
-      ]
-    },
-    {
-      kind: "cta",
-      title: "Ready To Find Your Next Property?",
-      text: "Start your real estate journey today.",
-      cta: "Contact Us"
-    },
-    {
-      kind: "footer",
-      title: "HomeHaven",
-      text: "Premium real estate solutions.",
-      items: [
-        "About|Properties|Services|Contact",
-        "LinkedIn|Facebook|Instagram|YouTube"
-      ],
-      style: {
-        backgroundColor: "#0f172a"
-      }
-    }
-  ]
-},
+    defaultTitle: "Real Estate Platform",
+    sections: [
+      {
+        kind: "navbar",
+        title: "HomeHaven",
+        text: "",
+        cta: "Browse Properties",
+        items: ["Home", "Properties", "Services", "About", "Contact"],
+        style: { backgroundColor: "#0f172a", color: "#ffffff" },
+      },
+      {
+        kind: "hero",
+        title: "Find Your Dream Property Today",
+        text: "Premium real estate solutions for buyers, investors and property owners.",
+        cta: "Explore Properties",
+        image:
+          "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&h=400&fit=crop",
+        style: { backgroundColor: "#0f172a", color: "#ffffff", titleSize: "56px" },
+      },
+      {
+        kind: "mission",
+        title: "Our Mission",
+        text: "Helping clients discover, invest and grow through premium real estate opportunities.",
+      },
+      {
+        kind: "features",
+        title: "Property Solutions",
+        text: "Everything you need for successful property investments.",
+        items: ["Property Listings", "Property Valuation", "Investment Advisory", "Rental Management"],
+      },
+      {
+        kind: "services",
+        title: "Real Estate Services",
+        text: "Comprehensive services for buyers, sellers and investors.",
+        items: [
+          "🏠 Property Listings|Browse premium residential and commercial properties.",
+          "📈 Investment Advisory|Identify profitable real estate opportunities.",
+          "📊 Property Valuation|Accurate market-based property assessments.",
+          "🔑 Rental Management|Professional management for rental properties.",
+        ],
+      },
+      {
+        kind: "testimonial",
+        title: "What Clients Say",
+        text: "Trusted by buyers and investors.",
+        items: [
+          "★★★★★|Found our dream home quickly.|Home Buyer",
+          "★★★★★|Professional and transparent process.|Investor",
+          "★★★★★|Outstanding support from start to finish.|Property Owner",
+          "★★★★★|Highly recommended real estate experts.|Client",
+        ],
+      },
+      {
+        kind: "stats",
+        title: "Our Impact",
+        text: "Real estate results that matter.",
+        items: ["1000+|Properties", "500+|Happy Clients", "150M+|Property Value", "98%|Satisfaction"],
+      },
+      {
+        kind: "faq",
+        title: "Frequently Asked Questions",
+        text: "Common questions about our real estate services.",
+        items: [
+          "Can I list my property?|Yes, property owners can submit listings.",
+          "Do you support rentals?|Yes, rental management services are available.",
+          "Do you provide market analysis?|Yes, we provide valuation and market insights.",
+          "What commission do you charge?|Contact us for detailed pricing information.",
+        ],
+      },
+      {
+        kind: "cta",
+        title: "Ready To Find Your Next Property?",
+        text: "Start your real estate journey today.",
+        cta: "Contact Us",
+      },
+      {
+        kind: "footer",
+        title: "HomeHaven",
+        text: "Premium real estate solutions.",
+        items: ["About|Properties|Services|Contact", "LinkedIn|Facebook|Instagram|YouTube"],
+        style: { backgroundColor: "#0f172a" },
+      },
+    ],
+  },
 
   // ===== RESTAURANT =====
   Restaurant: {
@@ -651,6 +708,17 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Our Story in Numbers",
         text: "Serving excellence every day.",
         items: ["20+|Years of Excellence", "500+|Happy Guests Daily", "50+|Award-Winning Dishes", "100%|Guest Satisfaction"],
+      },
+      {
+        kind: "faq",
+        title: "Frequently Asked Questions",
+        text: "Common questions about our restaurant.",
+        items: [
+          "Can I manage my menu online?|Yes, you can update your menu anytime.",
+          "Do you offer delivery integration?|Yes, we integrate with delivery services.",
+          "How do I handle reservations?|You can manage reservations directly.",
+          "Can I collect customer feedback?|Yes, we provide review management tools.",
+        ],
       },
       {
         kind: "cta",
@@ -729,6 +797,17 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         items: ["100+|Projects Delivered", "50+|Happy Clients", "10+|Awards Won", "8+|Years of Experience"],
       },
       {
+        kind: "faq",
+        title: "Frequently Asked Questions",
+        text: "Common questions about my creative services.",
+        items: [
+          "Can I upload my own projects?|Yes, you can showcase all your projects.",
+          "Is it customizable?|Yes, you can customize your portfolio design.",
+          "Can I add categories?|Yes, organize your work by categories.",
+          "Is my portfolio visible online?|Yes, your portfolio is publicly accessible.",
+        ],
+      },
+      {
         kind: "cta",
         title: "Let's Create Something Amazing",
         text: "Have a project in mind? Let's bring it to life together.",
@@ -739,6 +818,441 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         title: "Creative Studio",
         text: "Designing the future, one project at a time.",
         items: ["About|Projects|Contact|Blog", "Instagram|Dribbble|Behance|LinkedIn"],
+        style: { backgroundColor: "#0f172a" },
+      },
+    ],
+  },
+
+  // ===== CONSULTING =====
+  Consulting: {
+    defaultTitle: "Consulting Firm",
+    sections: [
+      {
+        kind: "navbar",
+        title: "StratEdge",
+        text: "",
+        cta: "Get a Consultation",
+        items: ["Home", "Services", "About", "Insights", "Contact"],
+        style: { backgroundColor: "#0f172a", color: "#ffffff" },
+      },
+      {
+        kind: "hero",
+        title: "Strategic Solutions for Business Growth",
+        text: "Expert consulting services to help you navigate challenges and achieve your goals.",
+        cta: "Get a Consultation",
+        image:
+          "https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=400&fit=crop",
+        style: { backgroundColor: "#0f172a", color: "#ffffff", titleSize: "52px" },
+      },
+      {
+        kind: "mission",
+        title: "Our Mission",
+        text: "To empower organizations with strategic insights and actionable solutions.",
+      },
+      {
+        kind: "features",
+        title: "Our Expertise",
+        text: "Strategic advisory across multiple domains.",
+        items: ["Business Strategy", "Operations Optimization", "Digital Transformation", "Market Entry"],
+      },
+      {
+        kind: "services",
+        title: "Consulting Services",
+        text: "We deliver measurable results for your business.",
+        items: [
+          "📊 Strategic Planning|Develop effective strategies for business growth.",
+          "💡 Business Advisory|Get expert advice to overcome business challenges.",
+          "🔍 Market Research|Access in-depth market research and insights.",
+          "⚙️ Performance Optimization|Optimize your business processes for success.",
+        ],
+      },
+      {
+        kind: "testimonial",
+        title: "Client Success Stories",
+        text: "Our clients trust us to deliver results.",
+        items: [
+          "★★★★★|Transformed our business strategy.|CEO, TechCorp",
+          "★★★★★|Exceptional guidance and expertise.|Founder, HealthStart",
+          "★★★★★|Helped us enter new markets successfully.|Director, GlobalCo",
+          "★★★★★|Delivered measurable results.|COO, RetailGroup",
+        ],
+      },
+      {
+        kind: "stats",
+        title: "Our Impact",
+        text: "Delivering results that matter.",
+        items: ["500+|Clients Served", "98%|Success Rate", "200+|Experts", "4.9★|Client Rating"],
+      },
+      {
+        kind: "faq",
+        title: "Frequently Asked Questions",
+        text: "Common questions about our consulting services.",
+        items: [
+          "What consulting services do you offer?|We offer comprehensive business consulting.",
+          "Who are your typical clients?|We work with businesses of all sizes.",
+          "How long are consulting engagements?|Duration varies based on client needs.",
+          "Can I get a trial consultation?|Yes, we offer initial consultation sessions.",
+        ],
+      },
+      {
+        kind: "cta",
+        title: "Ready to Transform Your Business?",
+        text: "Get expert guidance to achieve your business goals.",
+        cta: "Get a Consultation",
+      },
+      {
+        kind: "footer",
+        title: "StratEdge",
+        text: "Strategic solutions for business growth.",
+        items: ["About|Services|Insights|Contact", "LinkedIn|Twitter|YouTube|Instagram"],
+        style: { backgroundColor: "#0f172a" },
+      },
+    ],
+  },
+
+  // ===== EVENT =====
+  Event: {
+    defaultTitle: "Event Management",
+    sections: [
+      {
+        kind: "navbar",
+        title: "EventPro",
+        text: "",
+        cta: "Plan Your Event",
+        items: ["Home", "Events", "Services", "Gallery", "Contact"],
+        style: { backgroundColor: "#1a1a2e", color: "#f8f9fa" },
+      },
+      {
+        kind: "hero",
+        title: "Create Unforgettable Events",
+        text: "Professional event planning and management for corporate events, weddings, and more.",
+        cta: "Plan Your Event",
+        image:
+          "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=600&h=400&fit=crop",
+        style: { backgroundColor: "#1a1a2e", color: "#f8f9fa", titleSize: "52px" },
+      },
+      {
+        kind: "mission",
+        title: "Our Philosophy",
+        text: "Every event tells a story. We create experiences that leave lasting impressions.",
+      },
+      {
+        kind: "features",
+        title: "Event Solutions",
+        text: "Comprehensive event planning and management services.",
+        items: ["Corporate Events", "Weddings", "Conferences", "Private Parties"],
+      },
+      {
+        kind: "services",
+        title: "Event Services",
+        text: "We handle everything from concept to execution.",
+        items: [
+          "📋 Event Planning|Plan and organize events with ease.",
+          "🎫 Ticket Management|Sell and manage tickets for your events.",
+          "👥 Guest Registration|Simplify guest registration and check-in.",
+          "📡 Live Streaming|Broadcast your events to a global audience.",
+        ],
+      },
+      {
+        kind: "testimonial",
+        title: "What Our Clients Say",
+        text: "We bring your vision to life.",
+        items: [
+          "★★★★★|Flawless event execution.|Event Director",
+          "★★★★★|Exceeded all attendee expectations.|Marketing Lead",
+          "★★★★★|Professional event management.|Sponsor",
+          "★★★★★|Made our dream event possible.|Client",
+        ],
+      },
+      {
+        kind: "stats",
+        title: "Our Experience",
+        text: "Creating memorable experiences.",
+        items: ["500+|Events Planned", "50K+|Attendees", "4.9★|Rating", "98%|Satisfaction"],
+      },
+      {
+        kind: "faq",
+        title: "Frequently Asked Questions",
+        text: "Common questions about our event services.",
+        items: [
+          "Can I sell tickets online?|Yes, we provide complete ticketing solutions.",
+          "Do you support virtual events?|Yes, we support hybrid and virtual events.",
+          "How do I manage attendees?|You can manage attendees through our dashboard.",
+          "Do you provide event marketing?|Yes, we offer event promotion services.",
+        ],
+      },
+      {
+        kind: "cta",
+        title: "Ready to Plan Your Next Event?",
+        text: "Let's create an unforgettable experience together.",
+        cta: "Contact Us",
+      },
+      {
+        kind: "footer",
+        title: "EventPro",
+        text: "Creating unforgettable experiences.",
+        items: ["About|Events|Services|Contact", "Instagram|Facebook|Twitter|YouTube"],
+        style: { backgroundColor: "#1a1a2e" },
+      },
+    ],
+  },
+
+  // ===== CONSTRUCTION =====
+  Construction: {
+    defaultTitle: "Construction Company",
+    sections: [
+      {
+        kind: "navbar",
+        title: "BuildMaster",
+        text: "",
+        cta: "Get a Quote",
+        items: ["Home", "Projects", "Services", "About", "Contact"],
+        style: { backgroundColor: "#0f172a", color: "#ffffff" },
+      },
+      {
+        kind: "hero",
+        title: "Building Dreams, One Project at a Time",
+        text: "Quality construction services for residential and commercial projects.",
+        cta: "View Projects",
+        image:
+          "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=600&h=400&fit=crop",
+        style: { backgroundColor: "#0f172a", color: "#ffffff", titleSize: "52px" },
+      },
+      {
+        kind: "mission",
+        title: "Our Commitment",
+        text: "Delivering quality construction with integrity and excellence.",
+      },
+      {
+        kind: "features",
+        title: "Construction Services",
+        text: "From residential to commercial, we build with precision.",
+        items: ["Residential Construction", "Commercial Projects", "Renovations", "Interior Design"],
+      },
+      {
+        kind: "services",
+        title: "Our Services",
+        text: "We bring your vision to life.",
+        items: [
+          "🏗️ Project Management|Manage construction projects efficiently.",
+          "📐 Architectural Design|Create innovative and functional designs.",
+          "🔧 Building Services|Access comprehensive building services.",
+          "✅ Quality Control|Ensure the highest quality standards.",
+        ],
+      },
+      {
+        kind: "testimonial",
+        title: "Client Testimonials",
+        text: "Trusted for quality and reliability.",
+        items: [
+          "★★★★★|Completed our project on time.|Project Manager",
+          "★★★★★|Quality workmanship throughout.|Architect",
+          "★★★★★|Professional and reliable team.|Developer",
+          "★★★★★|Exceeded our expectations.|Homeowner",
+        ],
+      },
+      {
+        kind: "stats",
+        title: "Our Numbers",
+        text: "Building excellence since day one.",
+        items: ["200+|Projects Completed", "98%|On Time Delivery", "95%|Satisfaction", "4.9★|Rating"],
+      },
+      {
+        kind: "faq",
+        title: "Frequently Asked Questions",
+        text: "Common questions about our construction services.",
+        items: [
+          "What types of projects do you handle?|We handle all types of construction projects.",
+          "Can you provide estimates?|Yes, we provide detailed cost estimates.",
+          "What is your timeline?|Timelines vary based on project complexity.",
+          "Do you provide warranties?|Yes, we offer project warranties.",
+        ],
+      },
+      {
+        kind: "cta",
+        title: "Ready to Build Your Future?",
+        text: "Let's bring your vision to reality.",
+        cta: "Get a Quote",
+      },
+      {
+        kind: "footer",
+        title: "BuildMaster",
+        text: "Building excellence, one project at a time.",
+        items: ["About|Projects|Services|Contact", "LinkedIn|Facebook|Instagram|YouTube"],
+        style: { backgroundColor: "#0f172a" },
+      },
+    ],
+  },
+
+  // ===== TRAVEL =====
+  Travel: {
+    defaultTitle: "Travel Platform",
+    sections: [
+      {
+        kind: "navbar",
+        title: "Wanderlust",
+        text: "",
+        cta: "Plan Your Trip",
+        items: ["Home", "Destinations", "Packages", "About", "Contact"],
+        style: { backgroundColor: "#0f172a", color: "#ffffff" },
+      },
+      {
+        kind: "hero",
+        title: "Explore the World With Confidence",
+        text: "Curated travel experiences, insider tips, and expert guidance for your next adventure.",
+        cta: "Explore Destinations",
+        image:
+          "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600&h=400&fit=crop",
+        style: { backgroundColor: "#0f172a", color: "#ffffff", titleSize: "52px" },
+      },
+      {
+        kind: "mission",
+        title: "Our Vision",
+        text: "To make travel accessible, memorable, and transformative for everyone.",
+      },
+      {
+        kind: "features",
+        title: "Travel Solutions",
+        text: "Everything you need to plan your next adventure.",
+        items: ["Flight Booking", "Hotel Reservations", "Tour Packages", "Travel Insurance"],
+      },
+      {
+        kind: "services",
+        title: "Travel Services",
+        text: "We take care of the details so you can enjoy the journey.",
+        items: [
+          "✈️ Trip Planning|Plan your trips with personalized recommendations.",
+          "🏨 Hotel Booking|Find and book hotels at the best prices.",
+          "🧳 Tour Packages|Discover amazing tour packages and deals.",
+          "🛡️ Travel Insurance|Protect your travels with comprehensive insurance.",
+        ],
+      },
+      {
+        kind: "testimonial",
+        title: "Traveler Stories",
+        text: "Real experiences from real travelers.",
+        items: [
+          "★★★★★|Unforgettable travel experience.|Traveler",
+          "★★★★★|Expert guidance every step of the way.|Tourist",
+          "★★★★★|Made our dream vacation possible.|Adventurer",
+          "★★★★★|Highly recommended travel platform.|Globetrotter",
+        ],
+      },
+      {
+        kind: "stats",
+        title: "By the Numbers",
+        text: "Trusted by travelers worldwide.",
+        items: ["10K+|Travelers", "100+|Destinations", "4.9★|Rating", "98%|Satisfaction"],
+      },
+      {
+        kind: "faq",
+        title: "Frequently Asked Questions",
+        text: "Common questions about our travel services.",
+        items: [
+          "Do you offer package deals?|Yes, we provide travel packages.",
+          "Can I book last minute?|Yes, last minute bookings are available.",
+          "Do you provide travel insurance?|Yes, we offer comprehensive travel insurance.",
+          "Can I customize my trip?|Yes, we offer customizable travel experiences.",
+        ],
+      },
+      {
+        kind: "cta",
+        title: "Ready to Explore?",
+        text: "Start planning your next adventure today.",
+        cta: "Plan Your Trip",
+      },
+      {
+        kind: "footer",
+        title: "Wanderlust",
+        text: "Explore the world with confidence.",
+        items: ["About|Destinations|Packages|Contact", "Instagram|Facebook|Twitter|YouTube"],
+        style: { backgroundColor: "#0f172a" },
+      },
+    ],
+  },
+
+  // ===== BLOG =====
+  Blog: {
+    defaultTitle: "Blog Platform",
+    sections: [
+      {
+        kind: "navbar",
+        title: "BlogSphere",
+        text: "",
+        cta: "Start Writing",
+        items: ["Home", "Articles", "Categories", "About", "Contact"],
+        style: { backgroundColor: "#ffffff", color: "#0f172a" },
+      },
+      {
+        kind: "hero",
+        title: "Stories That Inspire and Inform",
+        text: "A platform for writers and readers to share ideas, insights, and inspiration.",
+        cta: "Read Articles",
+        image:
+          "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=600&h=400&fit=crop",
+        style: { backgroundColor: "#f8fafc", color: "#0f172a", titleSize: "52px" },
+      },
+      {
+        kind: "mission",
+        title: "Our Purpose",
+        text: "Empowering voices and sharing stories that matter.",
+      },
+      {
+        kind: "features",
+        title: "Blog Features",
+        text: "Everything you need to build your online presence.",
+        items: ["Content Creation", "SEO Optimization", "Audience Analytics", "Community Engagement"],
+      },
+      {
+        kind: "services",
+        title: "Writing Services",
+        text: "Professional content creation for blogs, websites, and social media.",
+        items: [
+          "✍️ Content Creation|Create engaging content that resonates with readers.",
+          "🔍 SEO Optimization|Optimize your content for better search visibility.",
+          "💬 Audience Engagement|Connect with your audience through compelling content.",
+          "📊 Analytics Dashboard|Track your performance with real-time analytics.",
+        ],
+      },
+      {
+        kind: "testimonial",
+        title: "Writer Testimonials",
+        text: "What our community says about us.",
+        items: [
+          "★★★★★|Grew our audience by 300%.|Content Manager",
+          "★★★★★|Valuable insights and practical advice.|Reader",
+          "★★★★★|Transformed our content strategy.|Editor",
+          "★★★★★|A platform that supports creativity.|Writer",
+        ],
+      },
+      {
+        kind: "stats",
+        title: "Blog Stats",
+        text: "Join our growing community.",
+        items: ["500+|Articles", "50K+|Readers", "4.8★|Rating", "95%|Engagement"],
+      },
+      {
+        kind: "faq",
+        title: "Frequently Asked Questions",
+        text: "Common questions about our blog platform.",
+        items: [
+          "Can I start a blog with your platform?|Yes, start your blog in minutes.",
+          "Do you provide SEO tools?|Yes, we provide SEO optimization tools.",
+          "Can I monetize my blog?|Yes, we offer monetization options.",
+          "Do you have analytics?|Yes, we provide detailed analytics and insights.",
+        ],
+      },
+      {
+        kind: "cta",
+        title: "Ready to Share Your Story?",
+        text: "Join thousands of writers who share their ideas with the world.",
+        cta: "Start Writing",
+      },
+      {
+        kind: "footer",
+        title: "BlogSphere",
+        text: "Stories that inspire and inform.",
+        items: ["About|Articles|Categories|Contact", "Instagram|Facebook|Twitter|YouTube"],
         style: { backgroundColor: "#0f172a" },
       },
     ],
