@@ -640,9 +640,44 @@ export const generateAiContent = (
   // 2. Générer les contenus dynamiques
   const dynamicBrand = profileBrand;
   const dynamicServices = CATEGORY_SERVICES[category] || profileServices;
+
+  if (
+  keywords.includes("cybersecurity") ||
+  keywords.includes("security")
+) {
+
+  dynamicServices.splice(
+    0,
+    dynamicServices.length,
+    "Threat Detection Labs",
+    "Penetration Testing",
+    "Compliance Certification",
+    "Incident Response Training"
+  );
+
+}
   
   // Pour TOUTES les catégories, features au format "Title|Description|Button"
   const dynamicFeatures = CATEGORY_FEATURES[category] || generateFeaturesFromKeywords(keywords);
+  if (
+  keywords.includes("cybersecurity") ||
+  keywords.includes("security")
+) {
+
+  dynamicFeatures.splice(
+    0,
+    dynamicFeatures.length,
+
+    "Threat Detection Labs|Practice on realistic attack scenarios.|Learn More",
+
+    "Compliance Training|Master security compliance frameworks.|Learn More",
+
+    "Security Certifications|Earn recognized cybersecurity certifications.|Learn More",
+
+    "Hands-On Exercises|Train with practical cyber defense labs.|Learn More"
+  );
+
+}
   
   const dynamicHeroTitle = generateHeroTitle(keywords, category);
 
