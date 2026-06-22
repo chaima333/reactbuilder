@@ -127,6 +127,102 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
       },
     ],
   },
+  // =========Cybersecurity ======
+  Cybersecurity: {
+    defaultTitle: "Cybersecurity Platform",
+    sections: [
+      {
+        kind: "navbar",
+        title: "CyberShield",
+        text: "",
+        cta: "Request Demo",
+        items: ["Home", "Labs", "Training", "Certifications", "Contact"],
+        style: { backgroundColor: "#020617", color: "#ffffff" },
+      },
+      {
+        kind: "hero",
+        title: "Build Cybersecurity Skills With Hands-On Labs",
+        text: "A modern cybersecurity training platform for enterprises, security teams and IT professionals.",
+        cta: "Start Training",
+        image:
+          "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&h=400&fit=crop",
+        style: { backgroundColor: "#020617", color: "#ffffff", titleSize: "56px" },
+      },
+      {
+        kind: "mission",
+        title: "Cyber Defense Training Built for Real Threats",
+        text: "We help organizations strengthen security skills through realistic attack scenarios, compliance training and expert-led cyber defense exercises.",
+      },
+      {
+        kind: "features",
+        title: "Cybersecurity Training Programs",
+        text: "Practical programs designed for security teams, IT professionals and enterprise defenders.",
+        items: [
+          "Threat Detection Labs|Practice realistic attack detection scenarios.|Explore Labs",
+          "Penetration Testing Workshops|Learn ethical hacking methods safely.|View Training",
+          "Compliance Certification|Prepare teams for security standards and audits.|Get Certified",
+          "SOC Monitoring Simulations|Train analysts with real-world monitoring workflows.|Start Simulation"
+        ],
+      },
+      {
+        kind: "services",
+        title: "Security Training Services",
+        text: "Everything your team needs to build stronger cyber defense capabilities.",
+        items: [
+          "🛡️ Threat Detection Labs|Hands-on labs for identifying and responding to threats.",
+          "🧪 Penetration Testing|Practical workshops for ethical hacking and vulnerability testing.",
+          "📋 Compliance Training|Programs focused on governance, risk and compliance readiness.",
+          "🚨 Incident Response|Scenario-based training for breach response and crisis handling.",
+        ],
+      },
+      {
+        kind: "testimonial",
+        title: "Trusted by Security Teams",
+        text: "Organizations use our platform to train teams against real-world cyber threats.",
+        items: [
+          "★★★★★|The labs helped our analysts respond faster to real incidents.|SOC Manager",
+          "★★★★★|A practical cybersecurity training platform, not just theory.|IT Director",
+          "★★★★★|Our team improved detection and response workflows quickly.|Security Lead",
+          "★★★★★|The compliance training made audit preparation much easier.|Risk Manager",
+        ],
+      },
+      {
+        kind: "stats",
+        title: "Security Training Results",
+        text: "Measurable outcomes for modern cyber defense teams.",
+        items: [
+          "500+|Security Teams Trained",
+          "120+|Hands-On Labs",
+          "95%|Certification Success",
+          "24/7|Training Access"
+        ],
+      },
+      {
+        kind: "faq",
+        title: "Frequently Asked Questions",
+        text: "Common questions about cybersecurity training, labs and certifications.",
+        items: [
+          "Do you provide threat detection labs?|Yes, the platform includes practical detection labs based on realistic scenarios.",
+          "Can teams earn cybersecurity certificates?|Yes, learners can complete programs and receive certificates.",
+          "Do you cover compliance training?|Yes, we include compliance-focused modules for enterprise security teams.",
+          "Are the exercises hands-on?|Yes, the training is built around practical labs and cyber defense simulations.",
+        ],
+      },
+      {
+        kind: "cta",
+        title: "Ready to Strengthen Your Cyber Defense?",
+        text: "Train your team with hands-on cybersecurity labs, expert guidance and real-world scenarios.",
+        cta: "Request Demo",
+      },
+      {
+        kind: "footer",
+        title: "CyberShield",
+        text: "Hands-on cybersecurity training for modern defense teams.",
+        items: ["About|Labs|Training|Certifications|Contact", "LinkedIn|Twitter|GitHub|YouTube"],
+        style: { backgroundColor: "#020617" },
+      },
+    ],
+  },
 
   // ===== EDUCATION =====
   Education: {
