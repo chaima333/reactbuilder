@@ -1421,6 +1421,41 @@ const buildContactInfo = (): PageBlock => {
     ]
   };
 };
+const buildContactLayout = (): PageBlock => ({
+  id: makeId("contact-layout-section"),
+  type: "section",
+  data: {
+    props: {},
+    style: responsiveStyle({
+      backgroundColor: "#f8fafc",
+      padding: "80px 40px"
+    })
+  },
+  children: [
+    {
+      id: makeId("contact-layout-flex"),
+      type: "flex",
+      data: {
+        props: {},
+        style: responsiveStyle({
+          display: "flex",
+          flexDirection: "row",
+          gap: "40px",
+          alignItems: "stretch",
+          justifyContent: "center",
+          maxWidth: "1200px",
+          margin: "0 auto",
+          width: "100%",
+          flexWrap: "wrap"
+        })
+      },
+      children: [
+        flexItemBlock([buildContactInfo()]),
+        flexItemBlock([buildContactForm()])
+      ]
+    }
+  ]
+});
 // ============================================
 // MAIN BUILDER (SWITCH B KIND)
 // ============================================
@@ -1657,8 +1692,7 @@ export const generateContactBlocks = (
   const orderedBlocks = [
     { label: "navbar", block: navbar },
     { label: "hero", block: hero },
-    { label: "contact-form", block: buildContactForm() },
-    { label: "contact-info", block: buildContactInfo() },
+    { label: "contact-layout", block: buildContactLayout() },
     { label: "cta", block: cta },
     { label: "footer", block: footer }
   ].filter(
