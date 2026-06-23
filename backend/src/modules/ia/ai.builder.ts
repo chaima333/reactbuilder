@@ -1332,90 +1332,56 @@ const buildContactForm = (): PageBlock => {
 // ============================================
 
 const buildContactInfo = (): PageBlock => {
-  const infoItems = [
-    { icon: "📍", label: "Address", value: "123 Business Street, Tunis, Tunisia" },
-    { icon: "📞", label: "Phone", value: "+216 XX XXX XXX" },
-    { icon: "✉️", label: "Email", value: "contact@example.com" },
-    { icon: "🕐", label: "Hours", value: "Mon - Fri: 9:00 - 18:00" },
+  const contactGroups = [
+    {
+      label: "EMAIL",
+      lines: ["contact@example.com", "partners@example.com"]
+    },
+    {
+      label: "PHONE",
+      lines: ["+216 XX XXX XXX", "+33 X XX XX XX XX"]
+    },
+    {
+      label: "OFFICES",
+      lines: [
+        "TN HQ — Tunis",
+        "Immeuble Molka, Rue de la Bourse",
+        "FR Paris",
+        "20 Rue du Bas Boulards",
+        "MA Casablanca",
+        "Twin Center, Boulevard Zerktouni"
+      ]
+    },
+    {
+      label: "SOCIAL",
+      lines: ["LinkedIn — /company/example", "X / Twitter — @example"]
+    }
   ];
 
-  const infoBlocks: PageBlock[] = infoItems.map((item) =>
-    flexItemBlock([
-      {
-        id: makeId(`contact-info-${item.label}`),
-        type: "flex",
-        data: {
-          props: {},
-          style: responsiveStyle({
-            display: "flex",
-            flexDirection: "row",
-            alignItems: "center",
-            gap: "12px",
-            padding: "16px",
-            backgroundColor: "#f8fafc",
-            borderRadius: "8px",
-            width: "100%",
+  const groupBlocks: PageBlock[] =
+    contactGroups.map((group) =>
+      flexItemBlock([
+        flexBlock([
+          textBlock(group.label, {
+            fontSize: "13px",
+            fontWeight: "800",
+            color: "#2563eb",
+            letterSpacing: "0.22em",
+            textAlign: "left",
+            marginBottom: "14px"
           }),
-        },
-        children: [
-          {
-            id: makeId(`contact-info-icon-${item.label}`),
-            type: "text",
-            data: {
-              props: { text: item.icon },
-              style: responsiveStyle({
-                fontSize: "24px",
-                flexShrink: 0,
-              }),
-            },
-            children: [],
-          },
-          {
-            id: makeId(`contact-info-text-${item.label}`),
-            type: "flex",
-            data: {
-              props: {},
-              style: responsiveStyle({
-                display: "flex",
-                flexDirection: "column",
-                gap: "2px",
-              }),
-            },
-            children: [
-              {
-                id: makeId(`contact-info-label-${item.label}`),
-                type: "text",
-                data: {
-                  props: { text: item.label },
-                  style: responsiveStyle({
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    color: "#64748b",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                  }),
-                },
-                children: [],
-              },
-              {
-                id: makeId(`contact-info-value-${item.label}`),
-                type: "text",
-                data: {
-                  props: { text: item.value },
-                  style: responsiveStyle({
-                    fontSize: "16px",
-                    fontWeight: "500",
-                    color: "#0f172a",
-                  }),
-                },
-                children: [],
-              },
-            ],
-          },
-        ],
-      },
-    ])
-  );
+          ...group.lines.map((line) =>
+            textBlock(line, {
+              fontSize: "16px",
+              color: "#334155",
+              textAlign: "left",
+              marginBottom: "6px",
+              lineHeight: "1.6"
+            })
+          )
+        ])
+      ])
+    );
 
   const infoContainer: PageBlock = {
     id: makeId("contact-info-container"),
@@ -1425,13 +1391,13 @@ const buildContactInfo = (): PageBlock => {
       style: responsiveStyle({
         display: "flex",
         flexDirection: "column",
-        gap: "12px",
+        gap: "28px",
         width: "100%",
-        maxWidth: "500px",
-        margin: "0 auto",
-      }),
+        maxWidth: "620px",
+        margin: "0 auto"
+      })
     },
-    children: infoBlocks,
+    children: groupBlocks
   };
 
   return {
@@ -1440,66 +1406,21 @@ const buildContactInfo = (): PageBlock => {
     data: {
       props: {},
       style: responsiveStyle({
-        backgroundColor: "#ffffff",
-        padding: "40px",
-        borderRadius: "12px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-        maxWidth: "600px",
-        margin: "0 auto",
-        width: "100%",
-      }),
-    },
-    children: [flexItemBlock([infoContainer])],
-  };
-};
-
-// ============================================
-// MAP BUILDER
-// ============================================
-
-const buildMap = (): PageBlock => {
-  return {
-    id: makeId("map-section"),
-    type: "section",
-    data: {
-      props: {},
-      style: responsiveStyle({
         backgroundColor: "#f8fafc",
-        padding: "40px",
-        borderRadius: "12px",
-        maxWidth: "600px",
+        padding: "60px 40px",
+        borderRadius: "16px",
+        maxWidth: "720px",
         margin: "0 auto",
-        width: "100%",
-        minHeight: "300px",
-      }),
+        width: "100%"
+      })
     },
     children: [
-      flexItemBlock([
-        {
-          id: makeId("map-placeholder"),
-          type: "text",
-          data: {
-            props: {
-              text: "🗺️ Interactive Map",
-            },
-            style: responsiveStyle({
-              fontSize: "18px",
-              fontWeight: "600",
-              color: "#64748b",
-              textAlign: "center",
-              padding: "40px",
-              backgroundColor: "#f1f5f9",
-              borderRadius: "8px",
-              width: "100%",
-            }),
-          },
-          children: [],
-        },
-      ]),
-    ],
+      flexBlock([
+        flexItemBlock([infoContainer])
+      ])
+    ]
   };
 };
-
 // ============================================
 // MAIN BUILDER (SWITCH B KIND)
 // ============================================
@@ -1732,15 +1653,12 @@ export const generateContactBlocks = (
   const hero = buildTemplateSection("hero");
   const cta = buildTemplateSection("cta");
   const footer = buildTemplateSection("footer");
-  const faq = buildTemplateSection("faq");
 
   const orderedBlocks = [
     { label: "navbar", block: navbar },
     { label: "hero", block: hero },
     { label: "contact-form", block: buildContactForm() },
     { label: "contact-info", block: buildContactInfo() },
-    { label: "map", block: buildMap() },
-    { label: "faq", block: faq },
     { label: "cta", block: cta },
     { label: "footer", block: footer }
   ].filter(
