@@ -310,6 +310,12 @@ export const askAssistant = async (
   const { prompt, blocks = [], pageTitle } = input;
 
   const text = prompt.toLowerCase();
+
+  console.log(
+    "ASSISTANT_BLOCKS_DEBUG",
+    JSON.stringify(blocks?.[0], null, 2)
+  );
+
   const analysis = analyzePageBlocks(blocks);
   const category = extractCategory(text);
   
