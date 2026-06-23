@@ -1254,18 +1254,14 @@ const buildContactForm = (): PageBlock => {
         marginBottom: "16px",
         backgroundColor: "#ffffff",
         color: "#0f172a",
-        "&:focus": {
-          borderColor: "#2563eb",
-          outline: "none",
-          boxShadow: "0 0 0 3px rgba(37,99,235,0.1)",
-        },
+        boxSizing: "border-box",
       }),
     },
     children: [],
   }));
 
-  const formContainer: PageBlock = {
-    id: makeId("contact-form-container"),
+  return {
+    id: makeId("contact-form-card"),
     type: "flex",
     data: {
       props: {},
@@ -1274,8 +1270,13 @@ const buildContactForm = (): PageBlock => {
         flexDirection: "column",
         gap: "8px",
         width: "100%",
-        maxWidth: "500px",
+        maxWidth: "600px",
         margin: "0 auto",
+        backgroundColor: "#ffffff",
+        padding: "60px 40px",
+        borderRadius: "12px",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        boxSizing: "border-box",
       }),
     },
     children: [
@@ -1297,33 +1298,11 @@ const buildContactForm = (): PageBlock => {
             fontSize: "16px",
             fontWeight: "600",
             cursor: "pointer",
-            transition: "background-color 0.2s ease",
-            "&:hover": {
-              backgroundColor: "#1d4ed8",
-            },
           }),
         },
         children: [],
       },
     ],
-  };
-
-  return {
-    id: makeId("contact-form-section"),
-    type: "section",
-    data: {
-      props: {},
-      style: responsiveStyle({
-        backgroundColor: "#ffffff",
-        padding: "60px 40px",
-        borderRadius: "12px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-        maxWidth: "600px",
-        margin: "0 auto",
-        width: "100%",
-      }),
-    },
-    children: [flexItemBlock([formContainer])],
   };
 };
 
@@ -1358,33 +1337,32 @@ const buildContactInfo = (): PageBlock => {
     }
   ];
 
-  const groupBlocks: PageBlock[] =
-    contactGroups.map((group) =>
-      flexItemBlock([
-        flexBlock([
-          textBlock(group.label, {
-            fontSize: "13px",
-            fontWeight: "800",
-            color: "#2563eb",
-            letterSpacing: "0.22em",
+  const groupBlocks: PageBlock[] = contactGroups.map((group) =>
+    flexItemBlock([
+      flexBlock([
+        textBlock(group.label, {
+          fontSize: "13px",
+          fontWeight: "800",
+          color: "#2563eb",
+          letterSpacing: "0.22em",
+          textAlign: "left",
+          marginBottom: "14px"
+        }),
+        ...group.lines.map((line) =>
+          textBlock(line, {
+            fontSize: "16px",
+            color: "#334155",
             textAlign: "left",
-            marginBottom: "14px"
-          }),
-          ...group.lines.map((line) =>
-            textBlock(line, {
-              fontSize: "16px",
-              color: "#334155",
-              textAlign: "left",
-              marginBottom: "6px",
-              lineHeight: "1.6"
-            })
-          )
-        ])
+            marginBottom: "6px",
+            lineHeight: "1.6"
+          })
+        )
       ])
-    );
+    ])
+  );
 
-  const infoContainer: PageBlock = {
-    id: makeId("contact-info-container"),
+  return {
+    id: makeId("contact-info-card"),
     type: "flex",
     data: {
       props: {},
@@ -1394,31 +1372,14 @@ const buildContactInfo = (): PageBlock => {
         gap: "28px",
         width: "100%",
         maxWidth: "620px",
-        margin: "0 auto"
-      })
-    },
-    children: groupBlocks
-  };
-
-  return {
-    id: makeId("contact-info-section"),
-    type: "section",
-    data: {
-      props: {},
-      style: responsiveStyle({
+        margin: "0 auto",
         backgroundColor: "#f8fafc",
         padding: "60px 40px",
         borderRadius: "16px",
-        maxWidth: "720px",
-        margin: "0 auto",
-        width: "100%"
+        boxSizing: "border-box"
       })
     },
-    children: [
-      flexBlock([
-        flexItemBlock([infoContainer])
-      ])
-    ]
+    children: groupBlocks
   };
 };
 const buildContactLayout = (): PageBlock => ({
