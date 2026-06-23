@@ -2028,7 +2028,6 @@ export {
   buildFooter,
   buildContactForm,
   buildContactInfo,
-  buildMap,
   buildFAQ,
   featureCard,
   enrichSection,
