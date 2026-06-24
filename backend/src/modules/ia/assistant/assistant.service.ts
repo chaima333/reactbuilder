@@ -310,12 +310,6 @@ export const askAssistant = async (
   const { prompt, blocks = [], pageTitle } = input;
 
   const text = prompt.toLowerCase();
-
-  console.log(
-    "ASSISTANT_BLOCKS_DEBUG",
-    JSON.stringify(blocks?.[0], null, 2)
-  );
-
   const analysis = analyzePageBlocks(blocks);
   const category = extractCategory(text);
   
@@ -329,13 +323,22 @@ export const askAssistant = async (
     action: "ADD_FAQ",
   });
 }
-
 if (!analysis.hasCTA) {
   suggestions.push({
     id: "missing-cta",
     title: "🚀 Add CTA",
     description: "Your page needs a clear call-to-action.",
     action: "ADD_CTA",
+    payload: {
+      title: "Ready to grow your business?",
+      text: "Contact our team today and take the next step.",
+      actions: [
+        {
+          label: "Contact Us",
+          href: "#contact",
+        },
+      ],
+    },
   });
 }
 
@@ -390,14 +393,22 @@ if (!analysis.hasServices) {
   }
 
   // ===== CTA =====
-  if (text.includes("cta") || text.includes("button") || text.includes("convert") || text.includes("action")) {
-    suggestions.push({
-      id: `${category}-add-cta`,
-      title: "🚀 Add Call-to-Action",
-      description: "Encourage visitors to take the next step with a clear CTA.",
-      action: "ADD_CTA"
-    });
-  }
+  suggestions.push({
+  id: `${category}-add-cta`,
+  title: "🚀 Add Call-to-Action",
+  description: "Encourage visitors to take the next step with a clear CTA.",
+  action: "ADD_CTA",
+  payload: {
+    title: "Ready to grow your business?",
+    text: "Contact our team today and take the next step.",
+    actions: [
+      {
+        label: "Contact Us",
+        href: "#contact",
+      },
+    ],
+  },
+});
 
   // ===== TESTIMONIALS =====
   if (text.includes("testimonial") || text.includes("review") || text.includes("social proof")) {
