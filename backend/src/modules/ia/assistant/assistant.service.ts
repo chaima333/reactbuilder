@@ -253,34 +253,92 @@ const getBlockText = (block: any): string => {
 
 const analyzePageBlocks = (blocks: any[] = []) => {
   const flat = flattenBlocks(blocks);
-  const text = flat.map(getBlockText).join(" ");
 
-  const hasHero = text.includes("hero");
-  const hasServices =
-    text.includes("services") ||
-    text.includes("service-title") ||
-    text.includes("services-grid");
+  const hasHero = flat.some(b => {
+    const marker = [
+      b.id,
+      b.type,
+      b.meta?.semanticType,
+      b.data?.meta?.semanticType
+    ].join(" ").toLowerCase();
+    return marker.includes("hero");
+  });
 
-  const hasFAQ =
-    text.includes("faq") ||
-    text.includes("faq-container") ||
-    text.includes("faq-question");
+ const hasServices = flat.some(b => {
+  const marker = [
+    b.id,
+    b.type,
+    b.meta?.semanticType,
+    b.data?.meta?.semanticType
+  ].join(" ").toLowerCase();
+console.log("ASSISTANT_ANALYSIS", {
+  hasHero,
+  hasServices,
+  hasFAQ,
+  hasCTA,
+  hasPricing,
+  hasTestimonials,
+});
 
-  const hasCTA =
-    text.includes("cta") ||
-    text.includes("request") ||
-    text.includes("start") ||
-    text.includes("contact");
+console.log(
+  "ASSISTANT_MARKERS",
+  flat.map((b: any) => ({
+    id: b.id,
+    type: b.type,
+    semantic:
+      b.data?.meta?.semanticType ||
+      b.meta?.semanticType
+  }))
+);
+  return (
+    marker.includes("services") ||
+    marker.includes("service") ||
+    marker.includes("features") ||
+    marker.includes("featurepillars") ||
+    marker.includes("valuesgrid")
+  );
+});
 
-  const hasPricing =
-    text.includes("pricing") ||
-    text.includes("price") ||
-    text.includes("plan");
 
-  const hasTestimonials =
-    text.includes("testimonial") ||
-    text.includes("review") ||
-    text.includes("client");
+  const hasFAQ = flat.some(b => {
+    const marker = [
+      b.id,
+      b.type,
+      b.meta?.semanticType,
+      b.data?.meta?.semanticType
+    ].join(" ").toLowerCase();
+    return marker.includes("faq");
+  });
+
+  const hasCTA = flat.some(b => {
+    const marker = [
+      b.id,
+      b.type,
+      b.meta?.semanticType,
+      b.data?.meta?.semanticType
+    ].join(" ").toLowerCase();
+    return marker.includes("cta") || marker.includes("cta_section");
+  });
+
+  const hasPricing = flat.some(b => {
+    const marker = [
+      b.id,
+      b.type,
+      b.meta?.semanticType,
+      b.data?.meta?.semanticType
+    ].join(" ").toLowerCase();
+    return marker.includes("pricing") || marker.includes("plan");
+  });
+
+  const hasTestimonials = flat.some(b => {
+    const marker = [
+      b.id,
+      b.type,
+      b.meta?.semanticType,
+      b.data?.meta?.semanticType
+    ].join(" ").toLowerCase();
+    return marker.includes("testimonial") || marker.includes("review");
+  });
 
   let score = 20;
   if (hasHero) score += 20;
@@ -301,6 +359,8 @@ const analyzePageBlocks = (blocks: any[] = []) => {
     score: Math.min(score, 100),
   };
 };
+
+
 /**
  * Main assistant function
  */
@@ -433,23 +493,6 @@ if (!analysis.hasCTA) {
     });
   }
 
-  // ===== FALLBACK SUGGESTIONS (always include hero if no others) =====
-  if (suggestions.length === 1) {
-    suggestions.push(
-      {
-        id: `${category}-services`,
-        title: " Add Services Section",
-        description: `Showcase your ${category} services and expertise.`,
-        action: "ADD_SERVICES"
-      },
-      {
-        id: `${category}-faq`,
-        title: " Add FAQ Section",
-        description: "Add frequently asked questions to build trust.",
-        action: "ADD_FAQ"
-      },
-    );
-  }
 
   // Generate reply
  const reply = `✅ I analyzed "${pageTitle || "this page"}". Score: ${analysis.score}/100. I found ${suggestions.length} improvements you can apply immediately.`;
