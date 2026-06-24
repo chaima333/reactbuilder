@@ -251,93 +251,62 @@ const getBlockText = (block: any): string => {
     .toLowerCase();
 };
 
+const buildMarker = (b: any) =>
+  [
+    b?.id,
+    b?.type,
+    b?.meta?.semanticType,
+    b?.data?.meta?.semanticType,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
 const analyzePageBlocks = (blocks: any[] = []) => {
   const flat = flattenBlocks(blocks);
 
-  const hasHero = flat.some(b => {
-    const marker = [
-      b.id,
-      b.type,
-      b.meta?.semanticType,
-      b.data?.meta?.semanticType
-    ].join(" ").toLowerCase();
-    return marker.includes("hero");
-  });
-
- const hasServices = flat.some(b => {
-  const marker = [
-    b.id,
-    b.type,
-    b.meta?.semanticType,
-    b.data?.meta?.semanticType
-  ].join(" ").toLowerCase();
-console.log("ASSISTANT_ANALYSIS", {
-  hasHero,
-  hasServices,
-  hasFAQ,
-  hasCTA,
-  hasPricing,
-  hasTestimonials,
-});
-
-console.log(
-  "ASSISTANT_MARKERS",
-  flat.map((b: any) => ({
-    id: b.id,
-    type: b.type,
-    semantic:
-      b.data?.meta?.semanticType ||
-      b.meta?.semanticType
-  }))
-);
-  return (
-    marker.includes("services") ||
-    marker.includes("service") ||
-    marker.includes("features") ||
-    marker.includes("featurepillars") ||
-    marker.includes("valuesgrid")
+  const hasHero = flat.some((b: any) =>
+    buildMarker(b).includes("hero")
   );
-});
 
+  const hasServices = flat.some((b: any) => {
+    const marker = buildMarker(b);
 
-  const hasFAQ = flat.some(b => {
-    const marker = [
-      b.id,
-      b.type,
-      b.meta?.semanticType,
-      b.data?.meta?.semanticType
-    ].join(" ").toLowerCase();
-    return marker.includes("faq");
+    return (
+      marker.includes("services") ||
+      marker.includes("service") ||
+      marker.includes("features") ||
+      marker.includes("featurepillars") ||
+      marker.includes("valuesgrid")
+    );
   });
 
-  const hasCTA = flat.some(b => {
-    const marker = [
-      b.id,
-      b.type,
-      b.meta?.semanticType,
-      b.data?.meta?.semanticType
-    ].join(" ").toLowerCase();
+  const hasFAQ = flat.some((b: any) =>
+    buildMarker(b).includes("faq")
+  );
+
+  const hasCTA = flat.some((b: any) => {
+    const marker = buildMarker(b);
     return marker.includes("cta") || marker.includes("cta_section");
   });
 
-  const hasPricing = flat.some(b => {
-    const marker = [
-      b.id,
-      b.type,
-      b.meta?.semanticType,
-      b.data?.meta?.semanticType
-    ].join(" ").toLowerCase();
+  const hasPricing = flat.some((b: any) => {
+    const marker = buildMarker(b);
     return marker.includes("pricing") || marker.includes("plan");
   });
 
-  const hasTestimonials = flat.some(b => {
-    const marker = [
-      b.id,
-      b.type,
-      b.meta?.semanticType,
-      b.data?.meta?.semanticType
-    ].join(" ").toLowerCase();
+  const hasTestimonials = flat.some((b: any) => {
+    const marker = buildMarker(b);
     return marker.includes("testimonial") || marker.includes("review");
+  });
+
+  console.log("ASSISTANT_ANALYSIS", {
+    hasHero,
+    hasServices,
+    hasFAQ,
+    hasCTA,
+    hasPricing,
+    hasTestimonials,
   });
 
   let score = 20;
@@ -359,7 +328,6 @@ console.log(
     score: Math.min(score, 100),
   };
 };
-
 
 /**
  * Main assistant function
