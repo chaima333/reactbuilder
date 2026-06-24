@@ -94,6 +94,9 @@ export type ContactLayoutPayload = {
   heroStyle?:
     any;
 
+  sectionStyle?: any;
+inheritedPageStyle?: any;
+
   // =====================================
   // CLAIMED NODE
   // =====================================

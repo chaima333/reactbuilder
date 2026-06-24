@@ -27,6 +27,7 @@ export type AssistantInput = {
  */
 const extractCategory = (prompt: string): string => {
   const text = prompt.toLowerCase();
+ 
   
   const categories = [
     "restaurant", "cybersecurity", "finance", "education", "medical",
@@ -339,8 +340,18 @@ export const askAssistant = async (
 
   const text = prompt.toLowerCase();
   const analysis = analyzePageBlocks(blocks);
-  const category = extractCategory(text);
-  
+  const pageText = flattenBlocks(blocks)
+  .map(getBlockText)
+  .join(" ");
+  const category = extractCategory(
+  [
+    prompt,
+    pageTitle,
+    pageText
+  ]
+    .filter(Boolean)
+    .join(" ")
+);
   const suggestions: AssistantSuggestion[] = [];
 
   if (!analysis.hasFAQ) {

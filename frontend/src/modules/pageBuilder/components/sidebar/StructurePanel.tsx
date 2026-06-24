@@ -71,19 +71,41 @@ const getBlockColor = (type: BlockType) => {
   return blockConfig[type]?.color || "#94a3b8";
 };
 
-const findBlockPath = (id: string, blocks: Block[], path: Block[] = []): Block[] | null => {
+const findBlockPath = (
+  id: string,
+  blocks?: Block[],
+  path: Block[] = []
+): Block[] | null => {
+
+  if (!Array.isArray(blocks)) {
+    return null;
+  }
+
   for (const block of blocks) {
-    if (block.id === id) return [...path, block];
+
+    if (block.id === id) {
+      return [...path, block];
+    }
+
     if (block.children?.length) {
-      const found = findBlockPath(id, block.children, [...path, block]);
-      if (found) return found;
+
+      const found = findBlockPath(
+        id,
+        block.children,
+        [...path, block]
+      );
+
+      if (found) {
+        return found;
+      }
     }
   }
+
   return null;
 };
 
 export const StructurePanel = ({
-  blocks,
+  blocks = [],
   selectedId,
   hoveredId,
   onSelect,

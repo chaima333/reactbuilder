@@ -17,6 +17,35 @@ const asHtml = (
 ) =>
   element as HTMLElement | null;
 
+const extractValueText = (
+  element?: HTMLElement | null
+) => {
+  if (!element) {
+    return "";
+  }
+
+  const directItems =
+    Array.from(
+      element.querySelectorAll(
+        ":scope > a, :scope > .office, :scope > p, :scope > div"
+      )
+    )
+      .map(item =>
+        cleanText(
+          item.textContent
+        )
+      )
+      .filter(Boolean);
+
+  if (directItems.length) {
+    return directItems.join("\n");
+  }
+
+  return cleanText(
+    element.textContent
+  );
+};
+
 const getFieldGroups = (
   form: HTMLFormElement
 ) => {
@@ -100,9 +129,8 @@ export const extractContactLayout = (
                   ?.textContent
               ),
             value:
-              cleanText(
+              extractValueText(
                 valueElement
-                  ?.textContent
               ),
             href:
               valueElement
@@ -243,7 +271,23 @@ export const extractContactLayout = (
         "button[type='submit'],button,input[type='submit']"
       )
     );
-
+console.log(
+  "CONTACT_STYLES_DEBUG",
+  {
+    sectionStyle:
+      extractComputedStyles(
+        contactGrid.closest("section") as HTMLElement
+      ),
+    gridStyle:
+      extractComputedStyles(
+        contactGrid
+      ),
+    contactTableStyle:
+      contactTable
+        ? extractComputedStyles(contactTable)
+        : {}
+  }
+);
   return {
     contactRows,
     gridStyle:
@@ -299,6 +343,16 @@ export const extractContactLayout = (
         ? extractComputedStyles(
             form
           )
-        : {}
+        : {},
+  sectionStyle:
+  extractComputedStyles(
+    (contactGrid.closest("section") as HTMLElement) ||
+    contactGrid
+  ),
+
+inheritedPageStyle:
+  extractComputedStyles(
+    contactGrid.ownerDocument.body as HTMLElement
+  ),
   };
 };

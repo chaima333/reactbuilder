@@ -65,66 +65,24 @@ export const GridItemBlock = ({
   // OUTER STYLE
   // =====================================
 
-  const outerStyle:
-  React.CSSProperties = {
-
-    width:
-      "100%",
-
-    minWidth:
-      0,
-
+  const outerStyle: React.CSSProperties = {
+  width: "100%",
+  minWidth: 0,
+  maxWidth: "100%",
+  minHeight: 0,
   alignSelf: resolved.alignSelf || "stretch",
-justifySelf: resolved.justifySelf || "stretch",
-
-    minHeight:
-      0,
-
-    overflow:
-      resolved.overflow || "visible",
-
-    boxSizing:
-      "border-box",
-
-    display:
-      "block",
-
-    gridColumn:
-
-      device === "mobile" ||
-      device === "tablet"
-
-        ? "span 1"
-
-        : resolved.gridColumn || "auto",
-
-    gridRow:
-      resolved.gridRow || "auto",
-
-    backgroundColor:
-      resolved.backgroundColor,
-
-boxShadow:
-  resolved.boxShadow,
-
-  background:
-  resolved.background ||
-  resolved.backgroundColor,
-
-borderRadius:
-  resolved.borderRadius,
-
-border: resolved.border,
-
-color:
-  resolved.color,
-    
-    position:
-      "relative",
-
-    transition:
-      "all 0.15s ease-in-out"
-  };
+  justifySelf: resolved.justifySelf || "stretch",
+  overflow: "visible",
+  boxSizing: "border-box",
+  display: "block",
+  gridColumn:
+    device === "mobile" || device === "tablet"
+      ? "span 1"
+      : resolved.gridColumn || "auto",
+  gridRow: resolved.gridRow || "auto",
+  position: "relative",
+  transition: "all 0.15s ease-in-out"
+};
 
   // =====================================
   // INNER STYLE
@@ -135,60 +93,55 @@ const isImportedLayout =
   resolved.display === "flex" ||
   !!resolved.gridTemplateColumns;
 
+  const shouldPreserveImportedLayout =
+  resolved.display === "grid" ||
+  resolved.display === "flex";
+
 const innerStyle: React.CSSProperties = {
   minWidth: 0,
+  maxWidth: "100%",
   boxSizing: "border-box",
 
   display:
-    isImportedLayout
-      ? resolved.display || "grid"
-      : "flex",
+    shouldPreserveImportedLayout
+      ? resolved.display
+      : "block",
 
   flexDirection:
-    isImportedLayout
+    shouldPreserveImportedLayout
       ? resolved.flexDirection
-      : "column",
+      : undefined,
 
   gridTemplateColumns:
-    resolved.gridTemplateColumns,
+    shouldPreserveImportedLayout
+      ? resolved.gridTemplateColumns
+      : undefined,
 
   gap:
-    resolved.gap || "16px",
+    shouldPreserveImportedLayout
+      ? resolved.gap
+      : undefined,
 
   width: "100%",
-  maxWidth: "100%",
-  overflow: "visible",
+  overflow: "hidden",
 
   alignItems:
-    resolved.alignItems ||
-    (isImportedLayout ? "center" : "stretch"),
+    shouldPreserveImportedLayout
+      ? resolved.alignItems
+      : undefined,
 
-justifyContent:
-  resolved.justifyContent || "center",
+  justifyContent:
+    shouldPreserveImportedLayout
+      ? resolved.justifyContent
+      : undefined,
 
-  padding:
-    resolved.padding,
-
-  paddingTop:
-    resolved.paddingTop || (isImportedLayout ? undefined : "20px"),
-
-  paddingRight:
-    resolved.paddingRight || (isImportedLayout ? undefined : "20px"),
-
-  paddingBottom:
-    resolved.paddingBottom || (isImportedLayout ? undefined : "20px"),
-
-  paddingLeft:
-    resolved.paddingLeft || (isImportedLayout ? undefined : "20px")
+  padding: resolved.padding,
+  paddingTop: resolved.paddingTop,
+  paddingRight: resolved.paddingRight,
+  paddingBottom: resolved.paddingBottom,
+  paddingLeft: resolved.paddingLeft
 };
-  // =====================================
-  // RENDER
-  // =====================================
-
-  console.log(
-  "GRID_ITEM_OUTER_STYLE",
-  outerStyle
-);
+ 
   return (
 
     <div

@@ -10,7 +10,12 @@
   "license": "ISC",
   "devDependencies": {
     "@figma/plugin-typings": "^1.128.0",
+    "@types/qrcode": "^1.5.6",
     "typescript": "^6.0.3"
   },
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "qrcode": "^1.5.4",
+    "speakeasy": "^2.0.0"
+  }
 }

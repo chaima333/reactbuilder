@@ -92,25 +92,20 @@ export const LinkBlock = ({
   // =====================================
   // RENDER
   // =====================================
-
   return (
-
-    <LinkPrimitive
-
-      label={
-        label
-      }
-
-      href={
-        targetHref
-      }
-
-      style={{
-        ...resolvedStyle,
-
-        cursor:
-          resolvedStyle.cursor
-      }}
-    />
-  );
+  <LinkPrimitive
+    label={label}
+    href={targetHref}
+    disabledNavigation={
+      context.mode === "editor"
+    }
+    style={{
+      ...resolvedStyle,
+      cursor:
+        context.mode === "editor"
+          ? "pointer"
+          : resolvedStyle.cursor
+    }}
+  />
+);
 };

@@ -123,8 +123,8 @@ export const ImageBlock = ({
 
           height:
             styles.height ||
-            "200px",
-
+            "auto",
+          maxHeight:styles.maxHeight,
           objectFit:
             styles.objectFit ||
             "cover",

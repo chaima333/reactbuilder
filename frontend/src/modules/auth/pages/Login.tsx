@@ -16,6 +16,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import GoogleIcon from '@mui/icons-material/Google';
 import LoginIcon from '@mui/icons-material/Login';
+import { useLoginMutation, useVerify2FALoginMutation } from '../../../redux/services/auth.api';
 
 const BACKEND = 'https://backend-rmfq.onrender.com';
 
@@ -33,23 +34,69 @@ export const Login: React.FC = () => {
   
   const successMessage = location.state?.message;
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+
+  //2fa
+ const [requires2FA, setRequires2FA] = useState(false);
+const [userId, setUserId] = useState<number | null>(null);
+const [otpCode, setOtpCode] = useState("");
+const [login] = useLoginMutation();
+const [verify2FA] = useVerify2FALoginMutation();
+
+ const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  try {
+    setError("");
     setLoading(true);
 
-    try {
-      const res = await axios.post(`${BACKEND}/api/auth/login`, { email, password });
-      if (res.data.accessToken) {
-        dispatch(setCredentials(res.data));
-        navigate('/dashboard');
-      }
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Login failed');
-    } finally {
-      setLoading(false);
+    const res: any = await login({
+      email,
+      password,
+    }).unwrap();
+
+    if (res.requires2FA) {
+      setRequires2FA(true);
+      setUserId(res.userId);
+      return;
     }
-  };
+
+    dispatch(setCredentials(res));
+    navigate("/dashboard");
+  } catch (err: any) {
+    setError(
+      err?.data?.message ||
+      err?.message ||
+      "Login failed"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+const handleVerify2FA = async () => {
+  try {
+    if (!userId) return;
+
+    setLoading(true);
+
+    const result = await verify2FA({
+      userId,
+      token: otpCode,
+    }).unwrap();
+
+    dispatch(setCredentials(result));
+
+    navigate("/dashboard");
+  } catch (err: any) {
+    setError(
+      err?.data?.message ||
+      "Invalid verification code"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
@@ -214,8 +261,33 @@ export const Login: React.FC = () => {
                 {error}
               </Alert>
             )}
+            {requires2FA && (
+  <>
+    <Alert severity="info" sx={{ mb: 2 }}>
+      Enter your authentication code
+    </Alert>
 
-            <form onSubmit={handleLogin}>
+    <TextField
+      fullWidth
+      label="2FA Code"
+      value={otpCode}
+      onChange={(e) =>
+        setOtpCode(e.target.value)
+      }
+      sx={{ mb: 2 }}
+    />
+
+    <Button
+      fullWidth
+      variant="contained"
+      onClick={handleVerify2FA}
+    >
+      Verify Code
+    </Button>
+  </>
+)}
+
+            {!requires2FA && (<form onSubmit={handleLogin}>
               <TextField
                 fullWidth
                 label="Email Address"
@@ -334,6 +406,7 @@ export const Login: React.FC = () => {
                 {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
               </Button>
             </form>
+              )}
 
             <Divider sx={{ my: 3 }}>
               <Typography variant="body2" color="text.secondary">

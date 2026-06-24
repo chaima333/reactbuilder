@@ -47,12 +47,34 @@ export const resolveDropBehavior = ({
   targetChildrenCount
 }: ResolveDropParams): DropResolution => {
   const defaultIndex = targetChildrenCount;
-  
-const effectiveDraggedType =
-  ["hero", "cta", "features"]
-    .includes(draggedType)
+
+  const effectiveDraggedType =
+    ["hero", "cta", "features"].includes(draggedType)
       ? "section"
       : draggedType;
+
+  if (
+    targetType === "navbar" &&
+    ["image", "text", "link", "button", "title", "flexItem"].includes(
+      effectiveDraggedType
+    )
+  ) {
+    return inside(defaultIndex, {
+      autoWrap: effectiveDraggedType !== "flexItem",
+      wrapperType:
+        effectiveDraggedType === "flexItem"
+          ? undefined
+          : "flexItem"
+    });
+  }
+
+  if (
+    targetType === "section" &&
+    ["title", "text", "button", "image", "link"].includes(effectiveDraggedType)
+  ) {
+    return inside(defaultIndex);
+  }
+
   if (canAcceptChild(targetType, effectiveDraggedType)) {
     return inside(defaultIndex);
   }

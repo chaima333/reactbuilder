@@ -576,6 +576,21 @@ builder.query<
 
       response.data,
 }),
+askAssistant: builder.mutation<
+  any,
+  {
+    prompt: string;
+    blocks?: Block[];
+    pageTitle?: string;
+    slug?: string;
+  }
+>({
+  query: (body) => ({
+    url: "/ai/assistant",
+    method: "POST",
+    body
+  })
+}),
   }), 
 
   
@@ -596,4 +611,5 @@ export const {
   useUpdateGlobalLayoutMutation,
   useGenerateFigmaPluginTokenMutation,
   useGenerateAiPageMutation,
+  useAskAssistantMutation
 } = pagesApi;

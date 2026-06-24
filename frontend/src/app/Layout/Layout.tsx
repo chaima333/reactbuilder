@@ -17,9 +17,9 @@ export const Layout: React.FC = () => {
   const { sites, currentSite } = useSelector((state: RootState) => state.site);
 
   const isEditorPage =
-    location.pathname.includes("/pages/new") ||
-    location.pathname.includes("/pages/edit") ||
-    location.pathname.includes("/editor");
+  location.pathname.includes("/pages/new") ||
+  /\/pages\/[^/]+\/edit$/.test(location.pathname) ||
+  location.pathname.includes("/editor");
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);

@@ -1,0 +1,26 @@
+services:
+  backend:
+    build: ./backend
+    container_name: reactbuilder-backend
+    ports:
+      - "10000:10000"
+    env_file:
+      - ./backend/.env
+    environment:
+      ML_SERVICE_URL: http://ml-service:5000
+    depends_on:
+      - ml-service
+
+  frontend:
+    build: ./frontend
+    container_name: reactbuilder-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+  ml-service:
+    build: ./ml-service
+    container_name: reactbuilder-ml
+    ports:
+      - "5000:5000"

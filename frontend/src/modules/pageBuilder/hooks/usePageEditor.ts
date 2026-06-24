@@ -168,20 +168,51 @@ const errors = useMemo(() => {
   // =========================
   // 5. HELPERS
   // =========================
-  const findBlockInTree = useCallback((tree: Block[], id: string): Block | null => {
+  const findBlockInTree = useCallback(
+  (
+    tree: Block[] | undefined,
+    id: string
+  ): Block | null => {
+
+    if (!Array.isArray(tree)) {
+      return null;
+    }
+
     for (const node of tree) {
-      if (node.id === id) return node;
+
+      if (node.id === id) {
+        return node;
+      }
+
       if (node.children?.length) {
-        const found = findBlockInTree(node.children, id);
-        if (found) return found;
+
+        const found =
+          findBlockInTree(
+            node.children,
+            id
+          );
+
+        if (found) {
+          return found;
+        }
       }
     }
-    return null;
-  }, []);
 
-  const selectedBlock = useMemo(() => {
-    return findBlockInTree(blocks, selectedBlockId || "");
-  }, [blocks, selectedBlockId, findBlockInTree]);
+    return null;
+  },
+  []
+);
+
+ const selectedBlock = useMemo(() => {
+  return findBlockInTree(
+    blocks || [],
+    selectedBlockId || ""
+  );
+}, [
+  blocks,
+  selectedBlockId,
+  findBlockInTree
+]);
 
   // =========================
   // 6. ACTIONS
@@ -388,37 +419,55 @@ const errors = useMemo(() => {
     tree.id
   );
       },
+      
+updateBlock: (id: string, newData: any) => {
+  const safeBlocks =
+    Array.isArray(blocks)
+      ? blocks
+      : [];
 
-      updateBlock: (id: string, newData: any) => {
-        setBlocks((prevBlocks) => {
-          const update = (tree: Block[]): Block[] =>
-            tree.map((b) => {
-              if (b.id === id) {
-                const updated = structuredClone(b);
-                
-                // 📝 تحسين تحديث الـ Props:
-                // نستخدم SpreadOperator باش نحافظو على النص القديم في الحقول اللي متبدلتش
-                if (newData.props) {
-                   updated.data.props = { 
-                     ...updated.data.props, 
-                     ...newData.props 
-                   };
-                }
+  const update = (tree: Block[]): Block[] =>
+    tree.map((b) => {
+      if (b.id === id) {
+        const updated = structuredClone(b);
 
-                if (newData.style) {
-                  updated.data.style = {
-                    desktop: { ...(updated.data.style.desktop || {}), ...(newData.style.desktop || {}) },
-                    tablet: { ...(updated.data.style.tablet || {}), ...(newData.style.tablet || {}) },
-                    mobile: { ...(updated.data.style.mobile || {}), ...(newData.style.mobile || {}) },
-                  };
-                }
-                return updated;
-              }
-              return { ...b, children: b.children ? update(b.children) : [] };
-            });
-          return update(prevBlocks);
-        });
-      },
+        if (newData.props) {
+          updated.data.props = {
+            ...(updated.data?.props || {}),
+            ...newData.props,
+          };
+        }
+
+        if (newData.style) {
+          updated.data.style = {
+            desktop: {
+              ...(updated.data?.style?.desktop || {}),
+              ...(newData.style.desktop || {}),
+            },
+            tablet: {
+              ...(updated.data?.style?.tablet || {}),
+              ...(newData.style.tablet || {}),
+            },
+            mobile: {
+              ...(updated.data?.style?.mobile || {}),
+              ...(newData.style.mobile || {}),
+            },
+          };
+        }
+
+        return updated;
+      }
+
+      return {
+        ...b,
+        children: Array.isArray(b.children)
+          ? update(b.children)
+          : [],
+      };
+    });
+
+  setBlocks(update(safeBlocks));
+},
 
       deleteBlock: (id: string) => {
         setBlocks((prevBlocks) => {

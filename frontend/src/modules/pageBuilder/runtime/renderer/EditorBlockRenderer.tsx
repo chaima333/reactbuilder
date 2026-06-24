@@ -22,6 +22,7 @@ export interface BlockComponentProps<
   block: Block;
   data?: T;
   device: Device;
+  display: "contents",
   children?: React.ReactNode;
 }
 
@@ -224,31 +225,22 @@ return (
 
     className="editor-wrapper"
 
-    style={{
+   style={{
+  pointerEvents: "auto",
+  position: "relative",
 
-      pointerEvents:
-        "auto",
+  display: "contents",
+  width: "100%",
+  maxWidth: "100%",
+  minWidth: 0,
 
-      position:
-        "relative",
+  overflow: "visible",
+  boxSizing: "border-box",
 
-        display:
-  "contents",
+  flexShrink: 1,
 
-      minWidth:
-        0,
-
-      overflow:
-        "visible",
-
-      boxSizing:
-        "border-box",
-
-      opacity:
-        isDragging
-          ? 0.3
-          : 1
-    }}
+  opacity: isDragging ? 0.3 : 1
+}}
   >
 
     {/* TOP INDICATOR */}

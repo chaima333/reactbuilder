@@ -94,10 +94,12 @@ export const TitleBlock = ({
 
     overflowWrap:
       "break-word",
+    wordBreak: "normal",
+lineHeight:
+  resolvedStyle.lineHeight || "1.15",
 
-    wordBreak:
-      "break-word",
-
+overflow:
+  "visible",
     whiteSpace:
       "normal",
 
@@ -222,42 +224,42 @@ export const TitleBlock = ({
       ref={titleRef}
       style={finalStyle}
     >
-      {hasSegments
-        ? segments.map(
-            (
-              segment: any,
-              index: number
-            ) => (
-              <span
-                key={`${index}-${segment?.text || ""}`}
-                style={
-                  segment?.variant === "accent"
-                    ? {
-                        background:
-                          segment?.style
-                            ?.backgroundImage &&
-                          segment.style
-                            .backgroundImage !==
-                            "none"
-                            ? segment.style
-                                .backgroundImage
-                            :
-                          "linear-gradient(90deg, #0A84FF, #F77F00)",
-                        WebkitBackgroundClip:
-                          "text",
-                        backgroundClip:
-                          "text",
-                        WebkitTextFillColor:
-                          "transparent"
-                      }
-                    : undefined
+     {hasSegments &&
+segments
+  .map((segment: any) => segment?.text || "")
+  .join("")
+  .replace(/\s+/g, " ")
+  .trim() ===
+String(content)
+  .replace(/\s+/g, " ")
+  .trim()
+  ? segments.map(
+      (
+        segment: any,
+        index: number
+      ) => (
+        <span
+          key={`${index}-${segment?.text || ""}`}
+          style={
+            segment?.variant === "accent"
+              ? {
+                  background:
+                    segment?.style?.backgroundImage &&
+                    segment.style.backgroundImage !== "none"
+                      ? segment.style.backgroundImage
+                      : "linear-gradient(90deg, #0A84FF, #F77F00)",
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  WebkitTextFillColor: "transparent"
                 }
-              >
-                {segment?.text || ""}
-              </span>
-            )
-          )
-        : content}
+              : undefined
+          }
+        >
+          {segment?.text || ""}
+        </span>
+      )
+    )
+  : content}
     </h2>
   );
 };

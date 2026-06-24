@@ -37,10 +37,11 @@ import { downloadJsonFile, readJsonFile } from "../services/importExport";
 import { findBlockById } from "../core/tree/findBlockById";
 import { importHtmlDocument } from "../runtime/importers/html/importHtmlDocument";
 import { footerHtmlToBlock } from "../runtime/importers/html/footerToBlock";
-import { useCreatePageMutation, useImportFigmaMutation, usePublishPageMutation, useUploadHtmlZipMutation, useUpdateGlobalLayoutMutation, useGenerateFigmaPluginTokenMutation, useGenerateAiPageMutation } from "../../../redux/services/pages.api";
+import { useCreatePageMutation, useImportFigmaMutation, usePublishPageMutation, useUploadHtmlZipMutation, useUpdateGlobalLayoutMutation, useGenerateFigmaPluginTokenMutation, useGenerateAiPageMutation, useAskAssistantMutation } from "../../../redux/services/pages.api";
 import { useGetPlatformSettingsQuery } from "../../../redux/services/platform.api";
 import { figmaToSemanticTree } from "../runtime/importers/figma/figmaToSemanticTree";
 import { semanticTreeToBlocks } from "../runtime/importers/figma/semanticTreeToBlocks";
+import AssistantPanel from "./aiAssistant/AssistantPanel";
 
 const generateUniqueId = () => Math.random().toString(36).substring(2, 9);
 const hydrateBlocks = (blocks: any[]): any[] => {
@@ -111,7 +112,6 @@ const DragGhost = ({ type, isAllowed }: { type: string; isAllowed: boolean }) =>
     <Typography variant="caption" sx={{ opacity: 0.7 }}>[{type.toUpperCase()}]</Typography>
   </Paper>
 );
-
 export const PageEditor = ({ mode }: { mode: "create" | "edit" }) => {
   const { siteId,pageId } = useParams();
   const editor = usePageEditor(mode);
@@ -174,6 +174,10 @@ useEffect(() => {
 const [aiLoading, setAiLoading] = useState(false);
 const [generateAiPage] = useGenerateAiPageMutation();
 const navigate = useNavigate();
+const [askAssistant] = useAskAssistantMutation();
+const [assistantReply, setAssistantReply] = useState<any>(null);
+
+
 
 useEffect(() => {
 
@@ -296,36 +300,12 @@ const selectedBlock = useMemo(() => {
             children: block.children || []
           }))
         );
-console.log(
-  "🚨 IMPORTED BLOCKS",
-  imported.blocks.map((b: any) => ({
-    type: b.type,
-    semantic: b.meta?.semanticType
-  }))
-);
 
-console.log(
-  "🚨 HYDRATED BLOCKS",
-  hydrated.map((b: any) => ({
-    type: b.type,
-    semantic: b.meta?.semanticType
-  }))
-);
        actions.setBlocks(
   hydrated as any
 );
 
 setTimeout(() => {
-  console.log(
-    "🚨 STORE BLOCKS",
-    editor.blocks?.map(
-      (b: any) => ({
-        type: b.type,
-        semantic:
-          b.meta?.semanticType
-      })
-    )
-  );
 }, 1000);
         setIsModalOpen(false);
         setHtmlCode("");
@@ -455,17 +435,7 @@ const handleZipImportExecute = async () => {
           }))
         );
 
-      console.log(
-        "ZIP_GLOBAL_LAYOUT_HYDRATED_OUT",
-        {
-          blockCount:
-            hydrated.length,
-          blockTypes:
-            hydrated.map((block: any) => block?.type),
-          firstBlock:
-            hydrated[0]
-        }
-      );
+     
 
       return hydrated[0] || null;
     };
@@ -791,83 +761,19 @@ rightSidebar={
             />
           )}
 {activeTab === 4 && (
-  <Box>
-    <Typography
-      variant="h6"
-      fontWeight="bold"
-      mb={2}
-    >
-      AI Assistant
-    </Typography>
-
-    <TextField
-      fullWidth
-      multiline
-      rows={6}
-      placeholder="Create a modern restaurant homepage"
-      value={aiPrompt}
-      onChange={(e) =>
-        setAiPrompt(e.target.value)
-      }
-    />
-
-    <Button
-      fullWidth
-      sx={{ mt: 2 }}
-      variant="contained"
-      disabled={
-        aiLoading ||
-        !aiPrompt.trim()
-      }
-      onClick={async () => {
-  try {
-    setAiLoading(true);
-
-   const result = await generateAiPage({
-  siteId: Number(siteId),
-  prompt: aiPrompt
-}).unwrap();
-
-    console.log("AI GENERATED PAGE", result);
-
-    const generatedPage = result;
-
-    if (!generatedPage.id) {
-      throw new Error("AI generation returned a page without an id");
-    }
-
-    const hydrated = hydrateBlocks(generatedPage.blocks || []);
-
-    actions.setBlocks(hydrated as any);
-setPageTitle(generatedPage.title || "Generated Page");
-
-setSelectedBlockId(hydrated[0]?.id || null);
-
-navigate(`/sites/${siteId}/pages/${generatedPage.id}/edit`, {
-  replace: true
-});
-
-alert("Page generated successfully");
-
-console.log("GENERATED PAGE", generatedPage);
-  } catch (error) {
-    console.error("AI GENERATION FAILED", error);
-    alert("Generation failed");
-  } finally {
-    setAiLoading(false);
-  }
-}
-}
-    >
-      {
-        aiLoading
-          ? "Generating..."
-          : "Generate Page"
-      }
-    </Button>
-  </Box>
+  <AssistantPanel
+    siteId={siteId || ""}
+    blocks={blocks}
+    pageTitle={pageTitle}
+    slug={slug}
+    actions={actions}
+    setPageTitle={setPageTitle}
+    setSelectedBlockId={setSelectedBlockId}
+    generateAiPage={generateAiPage}
+    askAssistant={askAssistant}
+    hydrateBlocks={hydrateBlocks}
+  />
 )}
-
         </Box>
       )}
     </Paper>
@@ -891,7 +797,7 @@ console.log("GENERATED PAGE", generatedPage);
   <Box
     sx={{
       width: "100%",
-      maxWidth: device === "desktop" ? 1180 : device === "tablet" ? 768 : 390,
+      maxWidth: device === "desktop" ? 1440 : device === "tablet" ? 768 : 390,
     }}
   >
                 <EditorCanvas
@@ -1066,3 +972,4 @@ console.log("GENERATED PAGE", generatedPage);
     </RuntimeProvider>
   );
 };
+export default PageEditor;

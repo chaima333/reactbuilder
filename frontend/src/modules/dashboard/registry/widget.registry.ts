@@ -18,6 +18,7 @@ from "../components/widgets/MediaWidget";
 
 import { NotificationsWidget }
 from "../components/widgets/NotificationsWidget";
+import { AiHistoryWidget } from "../components/widgets/AiHistoryWidget";
 
 export const pluginRegistry:
 Record<string, any> = {
@@ -41,6 +42,7 @@ Record<string, any> = {
   MediaWidget,
 
  notifications:
-  NotificationsWidget
+  NotificationsWidget,
+  "widget.ai.history": AiHistoryWidget,
 
 };

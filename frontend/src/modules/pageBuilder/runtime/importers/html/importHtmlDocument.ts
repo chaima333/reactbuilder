@@ -84,11 +84,6 @@ export type ImportHtmlContext = {
 const MAX_IMPORT_DEPTH = 20;
 const MAX_IMPORT_CHILDREN = 100;
 const MAX_IMPORT_NODES = 5000;
-
-// =====================================================
-// STATE
-// =====================================================
-
 let totalImportedNodes = 0;
 
 let elementIds =
@@ -130,7 +125,6 @@ const TARGET_CONTAINER_CHILD_CLASSES =
     "deliverables",
     "markets",
     "cta-svc",
-    "sec-head",
     "other-svc"
   ]);
 
@@ -350,20 +344,6 @@ const recordTrackedFallbackBranch = (
       fallbackBranch
     }
   );
-
-  console.log(
-    "BODY_CHILD_2_CONTAINER_BRANCH",
-    {
-      child:
-        getElementClassName(
-          element
-        ),
-      branch:
-        "fallbackCompileElement",
-      outcome:
-        fallbackBranch
-    }
-  );
 };
 
 const collectDescendantsByTypeForBlock = (
@@ -413,21 +393,6 @@ const logEmptyTextBlocks = (
       !content?.trim()
     ) {
 
-      console.log(
-        "🚨 EMPTY TEXT BLOCK",
-        {
-          stage,
-          id:
-            block.id,
-          type:
-            block.type,
-          content,
-          path:
-            blockPath,
-          parentType,
-          block
-        }
-      );
     }
 
     logEmptyTextBlocks(
@@ -492,32 +457,12 @@ const sanitizeSectionLayoutStyle = (
     }
   };
 
-  const beforeHeight =
-    nextStyle.desktop.height;
-  const beforeMinHeight =
-    nextStyle.desktop.minHeight;
-
   delete nextStyle.desktop.height;
   delete nextStyle.desktop.maxHeight;
+  delete nextStyle.desktop.minHeight;
 
-  if (
-    nextStyle.desktop.minHeight === "0px" ||
-    nextStyle.desktop.minHeight === "0" ||
-    nextStyle.desktop.minHeight === "none"
-  ) {
-    delete nextStyle.desktop.minHeight;
-  }
-
-  console.log(
-    "SECTION_HEIGHT_SANITIZED",
-    {
-      id,
-      beforeHeight,
-      beforeMinHeight,
-      afterStyle:
-        nextStyle.desktop
-    }
-  );
+  delete nextStyle.desktop.paddingTop;
+  delete nextStyle.desktop.paddingBottom;
 
   return nextStyle;
 };
@@ -831,30 +776,7 @@ const logSemanticDroppedText = (
   if (
     droppedTextNodes.length
   ) {
-    console.warn(
-      "SEMANTIC_DROPPED_DOM_TEXT",
-      {
-        semantic:
-          (emittedBlock as any)?.meta?.semanticType,
-        resolver:
-         (emittedBlock as any)?.meta?.semanticType,
-        tag:
-          element.tagName,
-        className:
-          getElementClassName(
-            element
-          ),
-        originalTextNodeCount:
-          collectDomTextNodes(
-            element
-          ).length,
-        emittedTextPropCount:
-          collectTextProps(
-            [emittedBlock]
-          ).length,
-        droppedTextNodes
-      }
-    );
+   
   }
 
   return droppedTextNodes;
@@ -1013,15 +935,7 @@ const logLargeLayoutBlocks = (
   if (
     largeBlocks.length
   ) {
-    console.warn(
-      "IMPORT_LARGE_LAYOUT_BLOCKS",
-      {
-        stage,
-        count:
-          largeBlocks.length,
-        largeBlocks
-      }
-    );
+  
   }
 };
 
@@ -1293,15 +1207,6 @@ const sanitizeBlockTreeStyles = (
   if (
     issues.length
   ) {
-    console.warn(
-      "IMPORT_STYLE_SERIALIZATION_SANITIZER",
-      {
-        context,
-        issueCount:
-          issues.length,
-        issues
-      }
-    );
   }
 
   return sanitized;
@@ -1545,37 +1450,6 @@ const logTrustSectionAnalysis = (
     findTrustLikeSections(
       body
     );
-
-  console.log(
-    "TRUST_SECTION_ANALYSIS",
-    JSON.stringify(
-      {
-        label,
-        count:
-          sections.length,
-        sections:
-          sections.map((section) => {
-            const domSummary =
-              summarizeTrustSectionDom(
-                section,
-                semanticBlocks
-              );
-
-            return {
-              ...domSummary,
-              finalFallbackBlockShape:
-                finalBlocks[domSummary.path]
-                  ? summarizeDiagnosticBlockTree(
-                      finalBlocks[domSummary.path]
-                    )
-                  : null
-            };
-          })
-      },
-      null,
-      2
-    )
-  );
 };
 
 const createFallbackFlexWrapper = (
@@ -1651,14 +1525,6 @@ const parseDomToItemChildren = (
   warnings: ImportWarning[],
   matcherHits: ImportMatcherHit[]
 ): SerializedBlock[] => {
-  console.log(
-    "JOB_CHILD_PARSE_IN",
-    {
-      tag: element.tagName,
-      className: getElementClassName(element),
-      text: element.textContent?.trim()?.slice(0, 120)
-    }
-  );
 
   const parsed =
     parseDomToBlocks(
@@ -1671,16 +1537,6 @@ const parseDomToItemChildren = (
 
   const flattened =
     flattenSectionBoundaryBlocks(parsed);
-
-  console.log(
-    "JOB_CHILD_PARSE_OUT",
-    {
-      className: getElementClassName(element),
-      parsedCount: parsed.length,
-      flattenedCount: flattened.length,
-      types: flattened.map(block => block.type)
-    }
-  );
 
   return flattened;
 };
@@ -2181,29 +2037,6 @@ const emitFallbackStructuredContainer = (
           "border-box",
         overflow: "visible"
       };
-
-      console.log(
-        "FALLBACK_PRESERVED_CONTAINER_STYLE",
-        {
-          tag:
-            element.tagName,
-          className:
-            getElementClassName(
-              element
-            ),
-          containerType:
-            COMPILER_BLOCK_TYPES.GRID,
-          sourceComputed:
-            computed,
-          containerDesktopStyle,
-          itemDesktopStyles:
-            gridChildren.map(
-              item =>
-                item.data?.style?.desktop
-            )
-        }
-      );
-
       return [
         {
           id:
@@ -2298,7 +2131,6 @@ const emitFallbackStructuredContainer = (
   ) {
     return [];
   }
-
   return [
     {
       id:
@@ -2312,30 +2144,19 @@ const emitFallbackStructuredContainer = (
         props: {},
         style: {
           ...layoutStyle,
-          desktop: {
-            ...desktopStyle,
-            display: "flex",
-            flexDirection:
-              computed.display === "grid"
-                ? "row"
-                : computed.display === "flex"
-                  ? (
-                      computed.flexDirection === "column"
-                        ? "column"
-                        : "row"
-                    )
-                  : "column",
-            flexWrap:
-              computed.flexWrap === "wrap"
-                ? "wrap"
-                : "nowrap",
-            alignItems:
-              computed.alignItems ||
-              "center",
-            gap:
-              computed.gap ||
-              "12px"
-          },
+desktop: {
+  ...desktopStyle,
+  display: "flex",
+  flexDirection:
+    computed.display === "flex"
+      ? computed.flexDirection
+      : "column",
+  flexWrap: "nowrap",
+  alignItems:
+    computed.alignItems || "stretch",
+  gap:
+    computed.gap || "12px"
+},
           tablet: {
             ...(layoutStyle.tablet || {})
           },
@@ -2361,19 +2182,6 @@ function fallbackCompileElement(
   warnings: ImportWarning[],
   matcherHits: ImportMatcherHit[]
 ): SerializedBlock[] {
-
-  console.log(
-    "GENERIC_FALLBACK_USED",
-    {
-      tag:
-        element.tagName,
-      className:
-        getElementClassName(
-          element
-        ),
-      path
-    }
-  );
 
   recordTrackedFallbackBranch(
     element,
@@ -2438,16 +2246,6 @@ function fallbackCompileElement(
     getTagNameLower(
       element
     );
-    console.log(
-  "🚨 FALLBACK",
-  tagName,
-  getElementClassName(
-    element
-  ),
-  path
-);
-
-
   // =========================================
   // IGNORE NON-VISUAL NODES
   // =========================================
@@ -2483,16 +2281,6 @@ if (
     "article"
   ].includes(tagName)
 ) {
-console.log(
-  "🚨 COMPILING SECTION",
-    {
-      path,
-    className:
-      getElementClassName(
-        element
-      )
-  }
-);
   const compiledChildren =
     compileSectionChildren(
       element,
@@ -2501,46 +2289,58 @@ console.log(
       warnings,
       matcherHits
     );
+
   const sectionId =
     generateNodeId(
       COMPILER_BLOCK_TYPES.SECTION,
       path
     );
 
+  const computedSection =
+    extractComputedStyles(element);
+
   const sectionStyle =
     sanitizeSectionLayoutStyle(
       sectionId,
-      extractLayoutStyles(
-        element
-      )
+      extractLayoutStyles(element)
     );
 
-console.log(
-  "🚨 SECTION CHILDREN RESULT",
-  compiledChildren.map(
-    b => ({
-      type: b.type
-    })
-  )
-);
+  sectionStyle.desktop = {
+    ...(sectionStyle.desktop || {}),
+
+    background:
+      computedSection.background ||
+      sectionStyle.desktop?.background,
+
+    backgroundColor:
+      computedSection.backgroundColor ||
+      sectionStyle.desktop?.backgroundColor,
+
+    color:
+      computedSection.color ||
+      sectionStyle.desktop?.color,
+
+    padding:
+      computedSection.padding ||
+      sectionStyle.desktop?.padding,
+
+    width: "100%",
+    maxWidth: "100%",
+    boxSizing: "border-box",
+    overflow: "visible"
+  };
+
   return [
     {
-      id:
-        sectionId,
-
-      type:
-        COMPILER_BLOCK_TYPES.SECTION,
+      id: sectionId,
+      type: COMPILER_BLOCK_TYPES.SECTION,
 
       data: {
-
         props: {},
-
-        style:
-          sectionStyle
+        style: sectionStyle
       },
 
-      children:
-        compiledChildren
+      children: compiledChildren
     }
   ];
 }
@@ -2582,10 +2382,7 @@ console.log(
         level:
           tagName,
 
-        segments:
-          extractTitleSegments(
-            element
-          )
+        segments: []
       },
 
       style:
@@ -2953,9 +2750,6 @@ recordTrackedFallbackBranch(
 return compiledChildren;
   }
 
-// =====================================================
-// MAIN PARSER
-// =====================================================
 type OwnershipBuckets = {
 
   grids: StructuralCandidate[];
@@ -3201,8 +2995,7 @@ const isNavbarLinksChild =
                         "nowrap"
                     }
                   : {
-                      flexGrow: 1,
-                      minWidth: "0"
+                      flexGrow: 0,height: "auto",minHeight: "auto", minWidth: "0"
                     },
               tablet: {},
               mobile:
@@ -3355,29 +3148,6 @@ function splitNestedSemanticSectionsForRoot(
         )
     );
 
-  console.log(
-    "SPLIT_NESTED_INPUT",
-    blocks.map((b: any) => ({
-      id: b.id,
-      type: b.type,
-      semantic: b.meta?.semanticType,
-      childTypes: (b.children || []).map((c: any) => ({
-        type: c.type,
-        semantic: c.meta?.semanticType,
-        childCount: c.children?.length || 0
-      }))
-    }))
-  );
-
-  console.log(
-    "SPLIT_NESTED_OUTPUT",
-    result.map((b: any) => ({
-      id: b.id,
-      type: b.type,
-      semantic: b.meta?.semanticType
-    }))
-  );
-
   return result;
 }
 
@@ -3472,95 +3242,58 @@ function emitContainer(
     element ===
     activeBodyChildTwoContainer
   ) {
-    console.log(
-      "BODY_CHILD_2_CONTAINER_EMIT_CONTAINER",
-      directChildren.map(
-        (child, domIndex) => {
-          const trace =
-            activeContainerChildCompileTraces.get(
-              child
-            );
-
-          return {
-            domIndex,
-            child:
-              getElementClassName(
-                child
-              ) ||
-              child.tagName.toLowerCase(),
-            compiled:
-              !!trace
-                ?.compiledBlockIds
-                .length,
-            compiledBlockTypes:
-              trace
-                ?.compiledBlockTypes ||
-              [],
-            compiledBlockIds:
-              trace
-                ?.compiledBlockIds ||
-              [],
-            compiledRootBlockIds:
-              trace
-                ?.compiledRootBlockIds ||
-              [],
-            fallbackBranch:
-              trace
-                ?.fallbackBranch ||
-              null
-          };
-        }
-      )
-    );
   }
 
   if (!children.length) {
     return [];
   }
 
-  const constrainedMaxWidth =
-    computed.maxWidth &&
-    computed.maxWidth !== "none"
-      ? computed.maxWidth
-      : desktopStyle.maxWidth;
+const constrainedMaxWidth =
+  centered
+    ? "1180px"
+    : computed.maxWidth &&
+      computed.maxWidth !== "none"
+        ? computed.maxWidth
+        : desktopStyle.maxWidth || "100%";
 
-  const containerStyle = {
-    ...extracted,
-    desktop: {
-      ...desktopStyle,
-      display: "flex",
-      flexDirection: "column",
-      width:
-        centered
-          ? "100%"
-          : computed.width ||
-            desktopStyle.width ||
-            "100%",
-      maxWidth:
-        constrainedMaxWidth ||
-        "100%",
-      marginLeft:
-        centered
-          ? "auto"
-          : computed.marginLeft ||
-            desktopStyle.marginLeft,
-      marginRight:
-        centered
-          ? "auto"
-          : computed.marginRight ||
-            desktopStyle.marginRight,
-      paddingLeft:
-        computed.paddingLeft ||
-        desktopStyle.paddingLeft,
-      paddingRight:
-        computed.paddingRight ||
-        desktopStyle.paddingRight,
-      boxSizing:
-        computed.boxSizing ||
-        desktopStyle.boxSizing ||
-        "border-box",
-      minWidth: "0"
-    },
+const containerStyle = {
+  ...extracted,
+  desktop: {
+    ...desktopStyle,
+
+    display:
+      desktopStyle.display ||
+      computed.display ||
+      "block",
+
+    width: "100%",
+    maxWidth: constrainedMaxWidth,
+
+    marginLeft:
+      centered ? "auto" : computed.marginLeft || desktopStyle.marginLeft,
+
+    marginRight:
+      centered ? "auto" : computed.marginRight || desktopStyle.marginRight,
+
+    paddingLeft:
+      computed.paddingLeft || desktopStyle.paddingLeft,
+
+    paddingRight:
+      computed.paddingRight || desktopStyle.paddingRight,
+
+    color:
+      computed.color || desktopStyle.color,
+
+    background:
+      computed.background || desktopStyle.background,
+
+    backgroundColor:
+      computed.backgroundColor || desktopStyle.backgroundColor,
+
+    boxSizing: "border-box",
+    minWidth: "0",
+    overflow: "visible"
+  },
     tablet: {
       ...(extracted.tablet || {}),
       width: "100%",
@@ -3580,23 +3313,6 @@ function emitContainer(
       minWidth: "0"
     }
   };
-
-  console.log(
-    "PRESERVED_LAYOUT_CONTAINER",
-    {
-      tag:
-        element.tagName,
-      className:
-        getElementClassName(
-          element
-        ),
-      centered,
-      computed,
-      emittedDesktop:
-        containerStyle.desktop
-    }
-  );
-
   const createContainerSegment = (
     segmentChildren:
       SerializedBlock[],
@@ -3733,30 +3449,6 @@ function emitContainer(
   );
 
   flushGeneric();
-
-  console.log(
-    "CONTAINER_SECTIONS_HOISTED",
-    {
-      className:
-        getElementClassName(
-          element
-        ),
-      orderedOutput:
-        orderedOutput.map(
-          block => ({
-            id:
-              block.id,
-            type:
-              block.type,
-            semantic:
-              (block as any).meta
-                ?.semanticType ||
-              null
-          })
-        )
-    }
-  );
-
   return orderedOutput;
 }
 
@@ -3795,31 +3487,6 @@ function compileServiceContainerInDomOrder(
         orderedBlocks.push(
           replacement
         );
-
-        console.log(
-          "SERVICE_PAGE_ORDERED_INSERT",
-          {
-            domIndex:
-              index,
-            tag:
-              child.tagName,
-            className:
-              getElementClassName(
-                child
-              ),
-            emittedId:
-              replacement.id,
-            emittedType:
-              replacement.type,
-            semanticVariant:
-              (
-                replacement as any
-              ).meta
-                ?.semanticVariant ||
-              null
-          }
-        );
-
         return;
       }
 
@@ -3842,40 +3509,6 @@ function compileServiceContainerInDomOrder(
       );
     }
   );
-
-  console.log(
-    "SERVICE_PAGE_ORDERED_COMPILE",
-    {
-      container:
-        getElementClassName(
-          container
-        ) ||
-        container.tagName
-          .toLowerCase(),
-      orderedBlocks:
-        orderedBlocks.map(
-          (
-            block: any,
-            index
-          ) => ({
-            index,
-            id:
-              block.id,
-            type:
-              block.type,
-            semanticType:
-              block.meta
-                ?.semanticType ||
-              null,
-            semanticVariant:
-              block.meta
-                ?.semanticVariant ||
-              null
-          })
-        )
-    }
-  );
-
   return orderedBlocks;
 }
 
@@ -3888,285 +3521,168 @@ function emitGridContainer(
   style: Record<string, any>,
   semanticMetadata?: any
 ): SerializedBlock[] {
-
-  // =====================================
-  // COMPUTED STYLES
-  // =====================================
-
-  const computedStyles =
-
-    extractComputedStyles(
-      element
-    );
-
-  // =====================================
-  // DEBUG
-  // =====================================
-
-  console.log(
-
-    "🔥 GRID STYLE",
-
-    {
-
-      className:
-        getElementClassName(
-          element
-        ),
-
-      display:
-        computedStyles.display,
-
-      gridTemplateColumns:
-        computedStyles.gridTemplateColumns
-    }
-  );
-
-  // =====================================
-  // NORMALIZE COLUMNS
-  // =====================================
-
-  const rawColumns =
-
-    computedStyles
-      .gridTemplateColumns ||
-
-    "";
-
- const semanticColumns =
-
-  semanticMetadata
-    ?.columnCount;
-
-const computedColumnCount =
-
-  rawColumns
-    .split(" ")
-    .filter(Boolean)
-    .length;
-
-const columnCount =
-
-  semanticColumns ||
-
-  computedColumnCount ||
-
-  2;
-
-
-const semanticColumnCount =
-
-  semanticMetadata
-    ?.columnCount;
-
-const finalColumnCount =
-  computedColumnCount > 0
-    ? computedColumnCount
-    : semanticColumnCount || 2;
-
+const computedStyles = extractComputedStyles(element);
+const rawColumns = computedStyles.gridTemplateColumns || "";
+const semanticColumns = semanticMetadata?.columnCount;
+const computedColumnCount = rawColumns .split(" ").filter(Boolean).length;
+const columnCount = semanticColumns || computedColumnCount || 2;
+const semanticColumnCount = semanticMetadata ?.columnCount;
+const finalColumnCount = computedColumnCount > 0 ? computedColumnCount   : semanticColumnCount || 2;
 const normalizedColumns =
-
-  `repeat(${
-    finalColumnCount
-  }, minmax(0,1fr))`;
-
+  rawColumns && rawColumns !== "none"
+    ? rawColumns
+    : `repeat(${finalColumnCount}, minmax(0, 1fr))`;
   // =====================================
   // NORMALIZED STYLE
   // =====================================
 
-  const normalizedStyle = {
+ const normalizedStyle = {
+  desktop: {
+    display: "grid",
 
-    desktop: {
+    gridTemplateColumns:
+      rawColumns && rawColumns !== "none"
+        ? makeGridTracksShrinkSafe(rawColumns)
+        : `repeat(${finalColumnCount}, minmax(0, 1fr))`,
 
-      display:
-        "grid",
+    gridTemplateRows:
+      style?.desktop?.gridTemplateRows ||
+      style?.gridTemplateRows,
 
-      gridTemplateColumns:
-        normalizedColumns,
+    gap:
+      style?.desktop?.gap ||
+      style?.gap ||
+      computedStyles.gap ||
+      "24px",
 
-      gridTemplateRows:
-        style?.desktop
-          ?.gridTemplateRows ||
+    padding:
+      style?.desktop?.padding ||
+      style?.padding ||
+      computedStyles.padding,
 
-        style?.gridTemplateRows,
+    margin: "0 auto",
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: "0",
 
-      gap:
-        style?.desktop
-          ?.gap ||
+    backgroundColor:
+      style?.desktop?.backgroundColor ||
+      style?.backgroundColor ||
+      computedStyles.backgroundColor,
 
-        style?.gap ||
+    borderRadius:
+      style?.desktop?.borderRadius ||
+      style?.borderRadius ||
+      computedStyles.borderRadius,
 
-        computedStyles.gap ||
+    overflow: "visible",
+    boxSizing: "border-box"
+  },
 
-        "24px",
+  tablet: {
+    display: "grid",
+    gridTemplateColumns:
+      columnCount >= 2
+        ? "repeat(2, minmax(0, 1fr))"
+        : "minmax(0, 1fr)",
+    gap: computedStyles.gap || "16px",
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: "0",
+    boxSizing: "border-box"
+  },
 
-      padding:
-        style?.desktop
-          ?.padding ||
-
-        style?.padding ||
-
-        computedStyles.padding,
-
-      margin:
-        style?.desktop
-          ?.margin ||
-
-        style?.margin ||
-
-        computedStyles.margin,
-
-      width:
-        style?.desktop
-          ?.width ||
-
-        style?.width ||
-
-        computedStyles.width ||
-
-        "100%",
-
-      backgroundColor:
-        style?.desktop
-          ?.backgroundColor ||
-
-        style?.backgroundColor ||
-
-        computedStyles.backgroundColor,
-
-      borderRadius:
-        style?.desktop
-          ?.borderRadius ||
-
-        style?.borderRadius ||
-
-        computedStyles.borderRadius
-    },
-
-    tablet: {
-
-      display:
-        "grid",
-
-      gridTemplateColumns:
-
-        columnCount >= 2
-
-          ? "repeat(2, 1fr)"
-
-          : "1fr",
-
-      gap:
-        computedStyles.gap ||
-
-        "16px"
-    },
-
-    mobile: {
-
-      display:
-        "grid",
-
-      gridTemplateColumns:
-        "1fr",
-
-      gap:
-        computedStyles.gap ||
-
-        "12px"
-    }
-  };
-  return [ {
-      id:
-        generateNodeId(
-          COMPILER_BLOCK_TYPES.GRID,
-          path
-        ),
-
-      type:
-        COMPILER_BLOCK_TYPES.GRID,
-
-      data: {
-
-        props: {
-
-          ...(semanticMetadata
-            ? {
-                semantic:
-                  semanticMetadata
-              }
-            : {})
-        },
-
-        style:
-          normalizedStyle
-      },
-
-      children:
-
-        getSafeChildren(element)
-.map((child, index) => {
-  const childLayoutStyle =
-    extractLayoutStyles(child);
-
-  const parsedChildren =
-    parseDomToItemChildren(
-      child,
-      [...path, index],
-      ownership,
-      warnings,
-      matcherHits
-    );
-
-  const fallbackChildren =
-    parsedChildren.length > 0
-      ? parsedChildren
-      : fallbackCompileElement(
-          child,
-          [...path, index],
-          ownership,
-          warnings,
-          matcherHits
-        );
-         console.log(
-  "GRID_COLUMN_DEBUG",
-  {
-    className: getElementClassName(element),
-    semanticColumnCount,
-    computedColumnCount,
-    finalColumnCount,
-    childCount: getSafeChildren(element).length,
-    rawColumns
+  mobile: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr)",
+    gap: computedStyles.gap || "12px",
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: "0",
+    boxSizing: "border-box"
   }
-);
+};
 
-  return {
+return [
+  {
     id: generateNodeId(
-      COMPILER_BLOCK_TYPES.GRID_ITEM,
-      [...path, index]
+      COMPILER_BLOCK_TYPES.GRID,
+      path
     ),
 
-    type: COMPILER_BLOCK_TYPES.GRID_ITEM,
+    type: COMPILER_BLOCK_TYPES.GRID,
 
     data: {
-      props: {},
-      style: {
-        desktop: {
-          ...(childLayoutStyle.desktop ||
-            childLayoutStyle ||
-            {}),
-          width: "100%"
-        },
-        tablet: {},
-        mobile: {}
-      }
+      props: {
+        ...(semanticMetadata
+          ? {
+              semantic: semanticMetadata
+            }
+          : {})
+      },
+
+      style: normalizedStyle
     },
 
-    children: fallbackChildren
-  };
-})
-    }
-  ];
+    children: getSafeChildren(element).map(
+      (child, index) => {
+        const childLayoutStyle =
+          extractLayoutStyles(child);
+
+        const fallbackChildren =
+          fallbackCompileElement(
+            child,
+            [...path, index],
+            ownership,
+            warnings,
+            matcherHits
+          );
+
+        return {
+          id: generateNodeId(
+            COMPILER_BLOCK_TYPES.GRID_ITEM,
+            [...path, index]
+          ),
+
+          type: COMPILER_BLOCK_TYPES.GRID_ITEM,
+
+          data: {
+            props: {},
+
+            style: {
+              desktop: {
+                ...(childLayoutStyle.desktop || {}),
+                width: "100%",
+                maxWidth: "100%",
+                minWidth: "0",
+                overflow: "hidden",
+                boxSizing: "border-box"
+              },
+
+              tablet: {
+                width: "100%",
+                maxWidth: "100%",
+                minWidth: "0",
+                overflow: "hidden",
+                boxSizing: "border-box"
+              },
+
+              mobile: {
+                width: "100%",
+                maxWidth: "100%",
+                minWidth: "0",
+                overflow: "hidden",
+                boxSizing: "border-box"
+              }
+            }
+          },
+
+          children: fallbackChildren
+        };
+      }
+    )
+  }
+];
 }
 function parseDomToBlocks(
   element: HTMLElement,
@@ -4175,546 +3691,234 @@ function parseDomToBlocks(
   warnings: ImportWarning[],
   matcherHits: ImportMatcherHit[]
 ): SerializedBlock[] {
-
   const semanticReplacement =
-    activeSemanticReplacementMap.get(
-      element
-    );
-const serviceClasses = [
-  "svc-grid",
-  "deliverables",
-  "markets",
-  "cta-svc",
-  "sec-head",
-  "other-svc"
-];
+    activeSemanticReplacementMap.get(element);
 
-if (
-  serviceClasses.some(className =>
-    getElementClassName(element).includes(className)
-  )
-) {
-  console.log("SERVICE_PARSE_REPLACEMENT_CHECK", {
-    tag: element.tagName,
-    className: getElementClassName(element),
-    path,
-    hasReplacement: !!semanticReplacement,
-    replacementType: semanticReplacement?.type,
-    semanticType: (semanticReplacement as any)?.meta?.semanticType,
-    childrenCount: semanticReplacement?.children?.length || 0
-  });
-}
+  if (semanticReplacement) {
     if (
-  getElementClassName(element).toLowerCase().includes("cta")
-) {
-  console.log(
-    "CTA_PARSE_ELEMENT",
-    {
-      tag: element.tagName,
-      className: getElementClassName(element),
-      hasReplacement: !!semanticReplacement,
-      replacementSemantic:
-      (semanticReplacement as any)?.meta?.semanticType
-    }
-  );
-}
-if (semanticReplacement) {
-  if (
-    (semanticReplacement as any)?.meta?.semanticType
-      ?.semanticType === "FOOTER" &&
-    (semanticReplacement as any)?.meta?.semanticType
-      ?.preserveGenericSubtree
-  ) {
-    activeSemanticReplacementMap.delete(
-      element
-    );
+      (semanticReplacement as any)?.meta?.semanticType?.semanticType ===
+        "FOOTER" &&
+      (semanticReplacement as any)?.meta?.semanticType?.preserveGenericSubtree
+    ) {
+      activeSemanticReplacementMap.delete(element);
 
-    const preservedBlocks =
-      parseDomToBlocks(
+     const preservedBlocks =
+  parseDomToBlocks(
+    element,
+    path,
+    ownership,
+    warnings,
+    matcherHits
+  ).map(block => {
+    const blockAny = block as any;
+
+    return {
+      ...block,
+      meta: {
+        ...(blockAny.meta || {}),
+        semanticType: "FOOTER",
+        resolverName:
+          (semanticReplacement as any)?.meta?.semanticType
+            ?.resolverName || "resolveFooter"
+      }
+    } as SerializedBlock;
+  });
+
+      activeSemanticReplacementMap.set(
         element,
-        path,
-        ownership,
-        warnings,
-        matcherHits
-      ).map(
-        block => ({
-          ...block,
-          meta: {
-            ...(block.meta || {}),
-            semanticType:
-              "FOOTER",
-            resolverName:
-              (semanticReplacement as any)?.meta?.semanticType
-                ?.resolverName ||
-              "resolveFooter"
-          }
-        })
+        semanticReplacement
       );
 
-    activeSemanticReplacementMap.set(
-      element,
-      semanticReplacement
-    );
+      return preservedBlocks;
+    }
 
-    console.log(
-      "FOOTER_GENERIC_SUBTREE_PRESERVED",
-      {
-        tag:
-          element.tagName,
-        className:
-          getElementClassName(
-            element
-          ),
-        emitted:
-          preservedBlocks.map(
-            block => ({
-              type:
-                block.type,
-              semanticType:
-                block.meta?.semanticType,
-              desktopStyle:
-                block.data?.style?.desktop
-            })
-          )
-      }
-    );
+    const hasChildren =
+      Array.isArray(semanticReplacement.children) &&
+      semanticReplacement.children.length > 0;
 
-    return preservedBlocks;
+    const propsText =
+      JSON.stringify(
+        semanticReplacement.data?.props || {}
+      );
+
+    const hasUsefulProps =
+      propsText.replace(/\s+/g, "").length > 2;
+
+    if (hasChildren || hasUsefulProps) {
+      logSemanticDroppedText(
+        element,
+        semanticReplacement
+      );
+
+      return [semanticReplacement];
+    }
   }
 
-  const hasChildren =
-    Array.isArray(semanticReplacement.children) &&
-    semanticReplacement.children.length > 0;
-
-  const propsText =
-    JSON.stringify(semanticReplacement.data?.props || {});
-
-  const hasUsefulProps =
-    propsText.replace(/\s+/g, "").length > 2;
-
-  if (!hasChildren && !hasUsefulProps) {
-    console.warn(
-      "🚨 EMPTY_SEMANTIC_REPLACEMENT_SKIPPED",
-      {
-        semantic:
-          (semanticReplacement as any)?.meta?.semanticType,
-        type:
-          semanticReplacement.type,
-        tag:
-          element.tagName,
-        className:
-          getElementClassName(element)
-      }
-    );
-  } else {
-    const returnedBlocks =
-      [semanticReplacement];
-
-    logSemanticDroppedText(
-      element,
-      semanticReplacement
-    );
-
-    console.log(
-      "SEMANTIC SUBTREE REPLACED",
-      {
-        path,
-        tag: element.tagName,
-        className: getElementClassName(element),
-        semantic: (semanticReplacement as any)?.meta?.semanticType,
-        emittedType: semanticReplacement.type
-      }
-    );
-
-    return returnedBlocks;
-  }
-}
-  if (
-    shouldSkipImportedElement(
-      element
-    )
-  ) {
-
+  if (shouldSkipImportedElement(element)) {
     return [];
   }
 
-  let bestMatcher = null;
-
+  let bestMatcher: any = null;
   let highestScore = 0;
 
-const elementId =
+  const elementId =
+    getElementId(element);
 
-  getElementId(
-    element
-  );
+  // =====================================
+  // INLINE TEXT GUARD
+  // يمنع span/small داخل heading من الخروج كـ TEXT ثاني
+  // =====================================
 
-if (
+  if (
+    [
+      "SPAN",
+      "SMALL",
+      "LABEL"
+    ].includes(element.tagName)
+  ) {
+    const isInsideHeading =
+      !!element.parentElement?.closest(
+        "h1,h2,h3,h4,h5,h6"
+      );
 
-  [
-    "P",
-    "SPAN",
-    "SMALL",
-    "LABEL"
-  ].includes(
-    element.tagName
-  ))
-  {
+    if (isInsideHeading) {
+      return [];
+    }
 
-  const text =
+    const text =
+      (element.textContent || "").trim();
 
-    (
-      element.textContent || ""
-    ).trim();
+    if (!text) {
+      return [];
+    }
 
-  if (!text) {
-    console.log(
-      "🚨 INLINE EMPTY TEXT SKIPPED",
+    return [
       {
-        tag:
-          element.tagName,
-        className:
-          getElementClassName(
-            element
-          ),
-        path
-      }
-    );
-
-    console.log(
-  "🔵 PARSE",
-  element.tagName,
-  getElementClassName(
-    element
-  )
-);
-
-    return [];
-  }
-
-  return [
-
-    {
-
-      id:
-        generateNodeId(
+        id: generateNodeId(
           COMPILER_BLOCK_TYPES.TEXT,
           path
         ),
 
-      type:
-        COMPILER_BLOCK_TYPES.TEXT,
+        type: COMPILER_BLOCK_TYPES.TEXT,
 
-      data: {
+        data: {
+          props: {
+            content: text
+          },
 
-        props: {
-  content: text
-},
-style:
-  extractTypographyStyles(
-    element
-  )
-      },
+          style: extractTypographyStyles(element)
+        },
 
-      children: []
-    }
-  ];
-}
+        children: []
+      }
+    ];
+  }
 
-const directSemanticReplacementChildren =
-  getSafeChildren(
-    element
-  )
-    .map(
-      (
-        child,
-        index
-      ) => ({
+  const directSemanticReplacementChildren =
+    getSafeChildren(element)
+      .map((child, index) => ({
         child,
         index,
         replacement:
-          activeSemanticReplacementMap.get(
-            child
-          )
-      })
-    )
-    .filter(
-      entry =>
-        !!entry.replacement
+          activeSemanticReplacementMap.get(child)
+      }))
+      .filter(entry => !!entry.replacement);
+
+  if (directSemanticReplacementChildren.length > 0) {
+    const semanticAwareContainer =
+      emitContainer(
+        element,
+        path,
+        ownership,
+        warnings,
+        matcherHits,
+        false
+      );
+
+    if (semanticAwareContainer.length) {
+      return semanticAwareContainer;
+    }
+  }
+
+  const ownedGrid =
+    ownership.grids.find(
+      grid =>
+        grid.elementId === getElementId(element)
     );
 
-if (
-  directSemanticReplacementChildren.length >
-  0
-) {
-  console.log(
-    "CONTAINER_HAS_SEMANTIC_REPLACEMENT_CHILDREN",
-    {
-      tag:
-        element.tagName,
-      className:
-        getElementClassName(
-          element
-        ),
-      path,
-      directChildCount:
-        getSafeChildren(
-          element
-        ).length,
-      replacementChildren:
-        directSemanticReplacementChildren.map(
-          entry => ({
-            index:
-              entry.index,
-            tag:
-              entry.child.tagName,
-            className:
-              getElementClassName(
-                entry.child
-              ),
-            emittedId:
-              entry.replacement
-                ?.id ||
-              null,
-            emittedType:
-              entry.replacement
-                ?.type ||
-              null,
-            semanticType:
-              (
-                entry.replacement as any
-              )?.meta
-                ?.semanticType ||
-              null,
-            semanticVariant:
-              (
-                entry.replacement as any
-              )?.meta
-                ?.semanticVariant ||
-              null
-          })
-        )
-    }
-  );
+  const ownedFlexGroup =
+    ownership.flexGroups?.find(
+      flex => flex.elementId === elementId
+    );
 
-  const semanticAwareContainer =
-    emitContainer(
+  const ownedNavbar =
+    ownership.navbars?.find(
+      navbar => navbar.elementId === elementId
+    );
+
+  const semanticMetadata = {
+    semanticIntent:
+      ownedNavbar?.metadata?.semanticIntent ||
+      ownedGrid?.metadata?.semanticIntent,
+
+    semanticRegions:
+      ownedNavbar?.metadata?.semanticRegions,
+
+    columnCount:
+      ownedGrid?.metadata?.columnCount
+  };
+
+  if (ownedGrid) {
+    return emitGridContainer(
       element,
       path,
       ownership,
       warnings,
       matcherHits,
-      false
+      extractLayoutStyles(element),
+      semanticMetadata
     );
+  }
+
+  if (ownedNavbar) {
+    return emitFlexContainer(
+      element,
+      path,
+      ownership,
+      warnings,
+      matcherHits,
+      extractLayoutStyles(element),
+      semanticMetadata,
+      COMPILER_BLOCK_TYPES.NAVBAR
+    );
+  }
 
   if (
-    semanticAwareContainer.length
+    ownedFlexGroup &&
+    ownership.flexGroups.some(
+      candidate => candidate.elementId === elementId
+    )
   ) {
-    return semanticAwareContainer;
-  }
-}
-
-  // =====================================
-// OWNERSHIP LOOKUP
-// =====================================
-const ownedGrid =
-
-  ownership.grids.find(
-    grid => {
-
-      const match =
-
-        grid.elementId ===
-        getElementId(
-          element
-        );
-
-      if (match) {
-
-        console.log(
-          "🔥 MATCHED GRID",
-          {
-            element:
-              element.tagName,
-
-            path,
-
-            grid
-          }
-        );
-      }
-
-      return match;
-    }
-  );
-
-
-const ownedFlexGroup =
-
-  ownership.flexGroups?.find(
-    flex =>
-
-      flex.elementId ===
-      elementId
-  );
-
-  const ownedNavbar = ownership.navbars?.find( navbar => navbar.elementId === elementId);
-if (ownedNavbar) {
-
-  console.log(
-    "🔥 NAVBAR PRESET",
-    ownedNavbar.metadata
-  );
-}
-
-// =========================================
-// SEMANTIC OWNERSHIP
-// =========================================
-
-const semanticMetadata = {
-
-  semanticIntent:
-
-    ownedNavbar
-      ?.metadata
-      ?.semanticIntent ||
-
-    ownedGrid
-      ?.metadata
-      ?.semanticIntent,
-
-  semanticRegions:
-
-    ownedNavbar
-      ?.metadata
-      ?.semanticRegions,
-
-  columnCount:
-
-    ownedGrid
-      ?.metadata
-      ?.columnCount
-};
-  // =====================================
-// GRID EMISSION
-// =====================================
-
-if (ownedGrid) {
-
-  return emitGridContainer(
-
-    element,
-
-    path,
-
-    ownership,
-
-    warnings,
-
-    matcherHits,
-
-    extractLayoutStyles(
-      element
-    ),
-
-    semanticMetadata
-  );
-}
-if (
-
-  ownedNavbar
-) {
-
-  return emitFlexContainer(
-
-    element,
-
-    path,
-
-    ownership,
-
-    warnings,
-
-    matcherHits,
-
-    extractLayoutStyles(
-      element
-    ),
-
-    semanticMetadata,
-
-    COMPILER_BLOCK_TYPES.NAVBAR
-  );
-}
-if (
-
-  ownedFlexGroup &&
-
-  ownership.flexGroups.some(
-    candidate =>
-
-      candidate.elementId ===
-      elementId
-  )
-) {
-
-  return emitFlexContainer(
-
-  element,
-
-  path,
-
-  ownership,
-
-  warnings,
-
-  matcherHits,
-
-  extractLayoutStyles(
-    element
-  ),
-
-  semanticMetadata
-);
-}
-
-// =========================================
-// TRANSPARENT CONTAINER FLATTENING
-// =========================================
-
-const children =
-  getSafeChildren(
-    element
-  );
-  if (element.tagName === "SECTION") {
-  console.log(
-    "🚨 SECTION ENTER",
-    {
+    return emitFlexContainer(
+      element,
       path,
-      children: children.map(c => ({
-        tag: c.tagName,
-        className:
-          getElementClassName(c)
-      }))
-    }
-  );
-}
-const hasTextContent =
+      ownership,
+      warnings,
+      matcherHits,
+      extractLayoutStyles(element),
+      semanticMetadata
+    );
+  }
 
-  (
-    element.textContent || ""
-  )
+  const children =
+    getSafeChildren(element);
 
-    .trim()
+  const hasTextContent =
+    (element.textContent || "").trim().length > 0;
 
-    .length > 0;
-
-const hasSemanticContent =
-
-  hasTextContent ||
-
-  children.some(
-    child =>
-
+  const hasSemanticContent =
+    hasTextContent ||
+    children.some(child =>
       [
         "IMG",
         "H1",
@@ -4726,248 +3930,150 @@ const hasSemanticContent =
         "P",
         "BUTTON",
         "A"
-      ].includes(
-        child.tagName
+      ].includes(child.tagName)
+    );
+
+  const computed =
+    getElementWindow(element).getComputedStyle(element);
+
+  const alreadyOwned =
+    ownedFlexGroup || ownedNavbar || ownedGrid;
+
+  const isFlex =
+    computed.display === "flex" ||
+    element.tagName === "NAV";
+
+  const isGrid =
+    computed.display === "grid";
+
+  const shouldPreserveFlex =
+    element.tagName === "NAV" ||
+    (
+      getSafeChildren(element).length >= 2 &&
+      isFlex
+    );
+
+  const isLayoutContainer =
+    isFlex || isGrid;
+
+  const className =
+    getElementClassName(element).toLowerCase();
+
+  const hasContainerRole =
+    /container|wrapper|wrap|inner|content|shell/.test(
+      className
+    );
+
+  const hasLayoutConstraint =
+    (
+      computed.maxWidth &&
+      computed.maxWidth !== "none"
+    ) ||
+    computed.marginLeft === "auto" ||
+    computed.marginRight === "auto" ||
+    parseFloat(computed.paddingLeft || "0") > 0 ||
+    parseFloat(computed.paddingRight || "0") > 0;
+
+  const viewportWidth =
+    getElementWindow(element).innerWidth;
+
+  const numericMaxWidth =
+    parseFloat(computed.maxWidth || "");
+
+  const hasConstrainedMaxWidth =
+    Number.isFinite(numericMaxWidth) &&
+    numericMaxWidth > 0 &&
+    viewportWidth > 0 &&
+    numericMaxWidth < viewportWidth;
+
+  const hasAutoSideMargins =
+    computed.marginLeft === "auto" ||
+    computed.marginRight === "auto";
+
+  const hasCenteredLayoutConstraint =
+    hasAutoSideMargins || hasConstrainedMaxWidth;
+
+  if (
+    !alreadyOwned &&
+    (
+      hasContainerRole ||
+      hasCenteredLayoutConstraint
+    )
+  ) {
+    const preservedContainer =
+      emitContainer(
+        element,
+        path,
+        ownership,
+        warnings,
+        matcherHits,
+        hasCenteredLayoutConstraint ||
+          (
+            hasContainerRole &&
+            !!computed.maxWidth &&
+            computed.maxWidth !== "none"
+          )
+      );
+
+    if (preservedContainer.length) {
+      return preservedContainer;
+    }
+  }
+
+  const isTransparentContainer =
+    element.tagName === "DIV" &&
+    !hasSemanticContent &&
+    !isLayoutContainer &&
+    !ownedGrid &&
+    !ownedFlexGroup &&
+    !hasContainerRole &&
+    !hasLayoutConstraint;
+
+  if (isTransparentContainer) {
+    return children.flatMap((child, index) =>
+      parseDomToBlocks(
+        child,
+        [...path, index],
+        ownership,
+        warnings,
+        matcherHits
       )
-  );
+    );
+  }
 
-const computed =
-
-  getElementWindow(element).getComputedStyle(
-    element
-  );
-
-const hasNavbarSemantics =
-
-  element.tagName === "NAV";
-
-const alreadyOwned =
-
-  ownedFlexGroup ||
-
-  ownedNavbar ||
-
-  ownedGrid;
-
-const isFlex =
-
-  computed.display ===
-    "flex" ||
-
-  element.tagName ===
-    "NAV";
-
-const isGrid =
-
-  computed.display ===
-    "grid";
-
-const shouldPreserveFlex =
-
-  element.tagName === "NAV" ||
-
-  (
-    getSafeChildren(element)
-      .length >= 2 &&
-
-    isFlex
-  );
-
-const isLayoutContainer =
-
-  isFlex || isGrid;
-
-const className =
-  getElementClassName(element).toLowerCase();
-
-const hasContainerRole =
-  /container|wrapper|wrap|inner|content|shell/.test(
-    className
-  );
-
-const hasLayoutConstraint =
-  (
-    computed.maxWidth &&
-    computed.maxWidth !== "none"
-  ) ||
-  computed.marginLeft === "auto" ||
-  computed.marginRight === "auto" ||
-  parseFloat(computed.paddingLeft || "0") > 0 ||
-  parseFloat(computed.paddingRight || "0") > 0;
-
-const viewportWidth =
-  getElementWindow(
-    element
-  ).innerWidth;
-
-const numericMaxWidth =
-  parseFloat(
-    computed.maxWidth || ""
-  );
-
-const hasConstrainedMaxWidth =
-  Number.isFinite(
-    numericMaxWidth
-  ) &&
-  numericMaxWidth > 0 &&
-  viewportWidth > 0 &&
-  numericMaxWidth < viewportWidth;
-
-const hasAutoSideMargins =
-  computed.marginLeft === "auto" ||
-  computed.marginRight === "auto";
-
-const hasCenteredLayoutConstraint =
-  hasAutoSideMargins ||
-  hasConstrainedMaxWidth;
-
-if (
-  !alreadyOwned &&
-  (
-    hasContainerRole ||
-    hasCenteredLayoutConstraint
-  )
-) {
-  const preservedContainer =
-    emitContainer(
+  if (
+    isFlex &&
+    !alreadyOwned &&
+    shouldPreserveFlex
+  ) {
+    return emitFlexContainer(
       element,
       path,
       ownership,
       warnings,
       matcherHits,
-      hasCenteredLayoutConstraint ||
-      (
-        hasContainerRole &&
-        !!computed.maxWidth &&
-        computed.maxWidth !== "none"
-      )
+      extractLayoutStyles(element)
     );
-
-  if (
-    preservedContainer.length
-  ) {
-    return preservedContainer;
   }
-}
 
-const isTransparentContainer =
-  element.tagName === "DIV" &&
-  !hasSemanticContent &&
-  !isLayoutContainer &&
-  !ownedGrid &&
-  !ownedFlexGroup &&
-  !hasContainerRole &&
-  !hasLayoutConstraint;
-  
-
-if (
-  isTransparentContainer
-) {
-
-  return children.flatMap(
-    (
-      child,
-      index
-    ) =>
-
-      parseDomToBlocks(
-
-        child,
-
-        [...path, index],
-
-        ownership,
-
-        warnings,
-
-        matcherHits
-      )
-  );
-}
-
-  // =========================================
-  // SEMANTIC MATCHING
-  // =========================================
-
-if (
-
-  isFlex &&
-
-  !alreadyOwned &&
-
-  shouldPreserveFlex
-)
-
-{
-  console.log(
-  "🚨 EMIT FLEX",
-  {
-    tag: element.tagName,
-    elementId,
-    path
-  }
-);
-console.log(
-  "🚨 EMIT FLEX",
-  {
-    tag: element.tagName,
-    elementId,
-    path
-  }
-);
-
-  return emitFlexContainer(
-
-    element,
-
-    path,
-
-    ownership,
-
-    warnings,
-
-    matcherHits,
-
-    extractLayoutStyles(
-      element
-    )
-  );
-}
   for (const matcher of semanticMatchers) {
-
     const score =
-      matcher.getScore(
-        element
-      );
+      matcher.getScore(element);
 
     if (
       score >= matcher.threshold &&
       score > highestScore
     ) {
-
-      highestScore =
-        score;
-
-      bestMatcher =
-        matcher;
+      highestScore = score;
+      bestMatcher = matcher;
     }
   }
 
-  // =========================================
-  // SEMANTIC MATCH FOUND
-  // =========================================
-
   if (bestMatcher) {
-
     matcherHits.push({
-      matcher:
-        bestMatcher.name,
-
-      score:
-        highestScore,
-
-      path:
-        path.join(".")
+      matcher: bestMatcher.name,
+      score: highestScore,
+      path: path.join(".")
     });
 
     const compiled =
@@ -4977,8 +4083,6 @@ console.log(
           child: HTMLElement,
           childIndex = 0
         ) =>
-
-          
           parseDomToBlocks(
             child,
             [...path, childIndex],
@@ -4991,19 +4095,13 @@ console.log(
     return [
       {
         ...compiled,
-
-        id:
-          generateNodeId(
-            compiled.type,
-            path
-          )
+        id: generateNodeId(
+          compiled.type,
+          path
+        )
       }
     ];
   }
-
-  // =========================================
-  // FALLBACK
-  // =========================================
 
   return fallbackCompileElement(
     element,
@@ -5091,21 +4189,6 @@ export async function importHtmlDocument(
         /<html[\s>]/i.test(normalized)
       );
 
-    console.log(
-      "HTML_NORMALIZE_CHECK",
-      {
-        hadTruncatedHead,
-        hasHtml:
-          /<html[\s>]/i.test(normalized),
-        hasHead:
-          /<head[\s>]/i.test(normalized),
-        hasBody:
-          /<body[\s>]/i.test(normalized),
-        isStillCorrupted,
-        startsWith:
-          normalized.slice(0, 80)
-      }
-    );
 
     if (
       isStillCorrupted
@@ -5361,33 +4444,6 @@ export async function importHtmlDocument(
       ) {
         css += `\n${bestCandidate.content}`;
         loaded = true;
-
-        console.log(
-          "IMPORT_CSS_FINAL_RESOLUTION",
-          {
-            href,
-            finalResolvedCssUrl:
-              bestCandidate.candidate,
-            status:
-              bestCandidate.status,
-            contentType:
-              bestCandidate.contentType,
-            bytes:
-              bestCandidate.bytes,
-            first300:
-              bestCandidate.first300,
-            containsPillar:
-              bestCandidate.containsPillar,
-            containsPillars:
-              bestCandidate.containsPillars,
-            containsHero:
-              bestCandidate.containsHero,
-            classHitCount:
-              bestCandidate.classHitCount,
-            matchedClasses:
-              bestCandidate.matchedClasses
-          }
-        );
       }
 
       if (!loaded) {
@@ -5397,40 +4453,8 @@ export async function importHtmlDocument(
           candidates
         });
 
-        console.warn(
-          "CSS LOAD FAILED",
-          href,
-          candidates
-        );
       }
     }
-
-  console.log(
-  "IMPORT_EXTERNAL_CSS_LOAD_REPORT",
-  {
-    linkCount: links.length,
-    links: links.map(link => ({
-      href: link.getAttribute("href"),
-      rel: link.getAttribute("rel")
-    })),
-    totalBytes: css.length,
-    loadReport
-  }
-);
-
-console.log(
-  "CSS RULE PRESENCE CHECK",
-  {
-    hasNavRule: css.includes(".nav"),
-    hasBtnRule: css.includes(".btn"),
-    hasBtnPrimaryRule: css.includes(".btn-primary"),
-    hasLogoRule: css.includes(".logo"),
-    hasContainerRule: css.includes(".container"),
-    hasRootVars: css.includes(":root"),
-    cssFirst1000: css.slice(0, 1000)
-  }
-);
-
 return css;
   };
 
@@ -5488,56 +4512,6 @@ return css;
           .getComputedStyle(card)
       : null;
 
-  console.log(
-    "IMPORT_SANDBOX_CSS_DIAGNOSTICS",
-    JSON.stringify(
-      {
-        importedCssBytes: importedCSS.length,
-        styleSheetsLength: iframeDocument.styleSheets.length,
-
-        headHasImportStyle:
-          !!iframeDocument.head.querySelector(
-            "style[data-html-import-css]"
-          ),
-
-        headContainsPillarRule:
-          iframeDocument.head.innerHTML.includes(".pillar"),
-
-        headContainsHeroRule:
-          iframeDocument.head.innerHTML.includes(".hero"),
-
-        headContainsSCardRule:
-          iframeDocument.head.innerHTML.includes(".s-card"),
-
-        headContainsOtherSvcRule:
-          iframeDocument.head.innerHTML.includes(".other-svc"),
-
-        matchingRuleCount:
-          matchingRules.length,
-
-        matchingRules,
-
-        sCardComputedStyle:
-          cardStyle
-            ? {
-                tag: card?.tagName,
-                className: getElementClassName(card),
-                display: cardStyle.display,
-                padding: cardStyle.padding,
-                border: cardStyle.border,
-                borderRadius: cardStyle.borderRadius,
-                background: cardStyle.background,
-                backgroundColor: cardStyle.backgroundColor,
-                color: cardStyle.color,
-                fontFamily: cardStyle.fontFamily,
-                boxShadow: cardStyle.boxShadow
-              }
-            : null
-      },
-      null,
-      2
-    )
-  );
 };
 
   const assertImportedCSSApplied = (
@@ -5630,22 +4604,6 @@ return css;
       /\.hero[^{]*\{[^}]*display\s*:\s*flex/i
         .test(css);
 
-    console.log(
-      "CSS_SCOPE_CHECK",
-      {
-        heroDisplay:
-          heroStyle.display,
-        heroMinHeight:
-          heroStyle.minHeight,
-        heroPadding:
-          heroStyle.padding,
-        heroTitleFontSize:
-          titleStyle?.fontSize,
-        cssDeclaresHeroFlex,
-        matchedRules:
-          getMatchedRules(hero)
-      }
-    );
 
     if (
       cssDeclaresHeroFlex &&
@@ -5683,7 +4641,6 @@ return css;
   let sandbox: HTMLElement | null = null;
 
   try {
-    console.log("🔥 RAW HTML", htmlString);
 
     activeSemanticReplacementMap =
       new WeakMap();
@@ -5751,48 +4708,12 @@ return css;
     sandbox.classList.add(
       IMPORT_SANDBOX_CLASS
     );
-
-    console.log(
-      "IFRAME_IMPORT_CHECK",
-      {
-        usesIframe:
-          true,
-        hasHeaderHero:
-          !!sandbox.querySelector("header.hero"),
-        headContainsHeroRule:
-          iframeDocument.head.innerHTML.includes(".hero"),
-        headPreview:
-          iframeDocument.head.innerHTML.slice(0, 1200)
-      }
-    );
-
     await waitForStyleApplication();
     logImportSandboxCssDiagnostics(
       iframeDocument,
       sandbox,
       importedCSS
     );
-    console.log("NAV CSS MATCH CHECK", {
-  cssHasNavRule:
-    importedCSS.includes(".nav"),
-  cssHasRootVars:
-    importedCSS.includes(":root"),
-  navComputed:
-    (() => {
-      const nav = sandbox.querySelector("nav") as HTMLElement | null;
-      const s = nav ? getElementWindow(nav).getComputedStyle(nav) : null;
-
-      return s
-        ? {
-            background: s.background,
-            backgroundColor: s.backgroundColor,
-            color: s.color,
-            display: s.display,
-            padding: s.padding
-          }
-        : null;
-    })()
-});
 
     assertImportedCSSApplied(
       sandbox,
@@ -5805,31 +4726,9 @@ return css;
         body
       );
 
-    console.log(
-      "IMPORT_TEXT_COVERAGE_ORIGINAL_DOM",
-      {
-        textNodeCount:
-          originalDomTextNodes.length,
-        textNodes:
-          originalDomTextNodes
-      }
-    );
+  
 
     const designTokens = extractDesignTokens(body);
-    console.log("🎨 EXTRACTED DESIGN TOKENS", designTokens);
-console.log(
-  "SOURCE_DOM_CTA",
-  body.innerText.includes(
-    "Échangeons sur votre projet"
-  )
-);
-
-console.log(
-  "SOURCE_DOM_OTHER_SERVICES",
-  body.innerText.includes(
-    "Explorer nos autres expertises"
-  )
-);
     const {
       ownership,
       semanticBlocks
@@ -5838,63 +4737,7 @@ console.log(
       getElementId,
       context
     );
-console.log(
-  "SEMANTIC CLAIMED",
-  semanticBlocks.map((b:any) => ({
-    semantic:
-      b.emitted?.meta?.semanticType,
-    resolver:
-      b.resolverName ||
-      b.emitted?.meta?.resolverName,
 
-    tag:
-      b.claimedNode?.element?.tagName,
-
-    className:
-      getElementClassName(
-        b.claimedNode?.element
-      )
-  }))
-);
-
-console.log(
-  "ACADEMY_TRAINING_SEMANTIC_CLAIMS",
-  semanticBlocks
-    .filter((entry: any) =>
-      textMatchesAcademyTraining(
-        entry.claimedNode?.element?.textContent || ""
-      ) ||
-      textMatchesAcademyTraining(
-        getElementClassName(
-          entry.claimedNode?.element
-        )
-      )
-    )
-    .map((entry: any) => ({
-      semantic:
-        entry.emitted?.meta?.semanticType,
-      resolver:
-        entry.resolverName ||
-        entry.emitted?.meta?.resolverName,
-      tag:
-        entry.claimedNode?.element?.tagName,
-      className:
-        getElementClassName(
-          entry.claimedNode?.element
-        ),
-      text:
-        normalizeDiagnosticText(
-          entry.claimedNode?.element?.textContent || ""
-        ).slice(
-          0,
-          500
-        ),
-      emittedTextProps:
-        collectTextProps(
-          [entry.emitted]
-        )
-    }))
-);
 
 logTrustSectionAnalysis(
   "after-semantic-pipeline",
@@ -5903,160 +4746,12 @@ logTrustSectionAnalysis(
 );
 
 getSafeChildren(body).forEach((child) => {
-  console.log(
-    "BODY ELEMENT",
-    child.tagName,
-    getElementClassName(
-      child
-    )
-  );
+
 });
 
-console.log(
-  "🚨 SEMANTIC TYPES JSON",
-  JSON.stringify(
-    semanticBlocks.map((b:any) => ({
-      semantic:
-        b.emitted?.meta?.semanticType,
-
-      tag:
-        b.claimedNode?.element?.tagName,
-
-      className:
-        getElementClassName(
-          b.claimedNode?.element
-        )
-    })),
-    null,
-    2
-  )
-);
-
-console.log(
-  JSON.stringify(
-    semanticBlocks.map((b: any) => ({
-      semantic: b.emitted?.meta?.semanticType
-    })),
-    null,
-    2
-  )
-);
-
-console.log(
-  "FEATURE_PILLARS EMITTED TREE",
-  JSON.stringify(
-    semanticBlocks
-      .filter(
-        (entry: any) =>
-          entry.emitted?.meta?.semanticType ===
-          "FEATURE_PILLARS"
-      )
-      .map((entry: any) => ({
-        semantic:
-          entry.emitted?.meta?.semanticType,
-        claimed:
-          describeClaimedElement(
-            entry.claimedNode?.element,
-            body
-          ),
-        tree:
-          summarizeImportBlockTree(
-            entry.emitted
-          ),
-        flexItems:
-          collectDescendantsByType(
-            [entry.emitted],
-            "flexItem"
-          ).map((block: any) => ({
-            id: block.id,
-            childTypes:
-              (block.children || []).map(
-                (child: any) => child.type
-              ),
-            desktop:
-              block.data?.style?.desktop || {}
-          }))
-      })),
-    null,
-    2
-  )
-);
-    console.log(
-  "SEMANTIC CLAIMED",
-  semanticBlocks.map((b: any) => ({
-    type:
-      b.emitted?.meta?.semanticType,
-    className:
-      getElementClassName(
-        b.claimedNode?.element
-      ),
-    emittedType:
-      b.emitted?.type,
-    hasStyle:
-      !!b.emitted?.data?.style?.desktop
-  }))
-);
     const ownershipBuckets = toOwnershipBuckets(ownership);
-    console.log("🔥 OWNERSHIP BUCKETS", ownershipBuckets);
     const finalBlocks: SerializedBlock[] = [];
-    console.log(
-      "SEMANTIC_BLOCKS_BEFORE_REPLACEMENT_MAP",
-      semanticBlocks.map(
-        (entry: any) => ({
-          semanticResultType:
-            entry?.semanticResult
-              ?.type ||
-            null,
-          emittedSemanticType:
-            entry?.emitted?.meta
-              ?.semanticType ||
-            null,
-          emittedId:
-            entry?.emitted?.id ||
-            null,
-          emittedType:
-            entry?.emitted?.type ||
-            null,
-          resolverName:
-            entry?.resolverName ||
-            entry?.emitted?.meta
-              ?.resolverName ||
-            null,
-          claimedNodeTag:
-            entry?.claimedNode
-              ?.element?.tagName ||
-            null,
-          claimedNodeClassName:
-            entry?.claimedNode
-              ?.element
-              ? getElementClassName(
-                  entry.claimedNode
-                    .element
-                )
-              : null,
-          claimedNodePath:
-            entry?.claimedNode
-              ?.path ||
-            null,
-          emittedText:
-            normalizeDiagnosticText(
-              collectTextProps(
-                entry?.emitted
-                  ? [
-                      entry.emitted
-                    ]
-                  : []
-              )
-                .map(
-                  textEntry =>
-                    textEntry.text
-                )
-                .join(
-                  " "
-                )
-            )
-        }))
-    );
+   
     activeSemanticReplacementMap =
       createSemanticReplacementMap(
         semanticBlocks,
@@ -6073,94 +4768,7 @@ console.log(
     ) {
       activeBodyChildTwoContainer =
         bodyChildTwoContainer;
-
-      console.log(
-        "BODY_CHILD_2_CONTAINER_DOM_ORDER",
-        {
-          detectedBy:
-            "closest-ancestor-containing-all-target-classes",
-          container:
-            describeClaimedElement(
-              bodyChildTwoContainer,
-              body
-            ),
-          directChildren:
-            getSafeChildren(
-              bodyChildTwoContainer
-            ).map(
-          (element, domIndex) => {
-            const exactClaims =
-              semanticBlocks.filter(
-                (entry: any) =>
-                  entry?.claimedNode
-                    ?.element ===
-                  element
-              );
-            const nestedClaims =
-              semanticBlocks.filter(
-                (entry: any) => {
-                  const claimed =
-                    entry?.claimedNode
-                      ?.element;
-
-                  return (
-                    claimed &&
-                    claimed !==
-                      element &&
-                    element.contains(
-                      claimed
-                    )
-                  );
-                }
-              );
-
-            return {
-              domIndex,
-              child:
-                getElementClassName(
-                  element
-                ) ||
-                element.tagName.toLowerCase(),
-              claimedBySemanticBlocks:
-                exactClaims.length >
-                  0 ||
-                nestedClaims.length >
-                  0,
-              exactSemanticClaims:
-                exactClaims.map(
-                  (entry: any) =>
-                    entry?.emitted
-                      ?.meta
-                      ?.semanticType ||
-                    null
-                ),
-              nestedSemanticClaims:
-                nestedClaims.map(
-                  (entry: any) =>
-                    entry?.emitted
-                      ?.meta
-                      ?.semanticType ||
-                    null
-                )
-            };
-          }
-        )
-        }
-      );
     }
-
-
-
-console.log(
-  "GRIDITEM FINALBLOCKS",
-  findGridItems(finalBlocks).map((b) => ({
-    style: b.data?.style?.desktop
-  }))
-);
-
-
-
-
     getSafeChildren(body).forEach((child, index) => {
       if (
         activeBodyChildTwoContainer &&
@@ -6192,47 +4800,6 @@ console.log(
         const claimed = b.claimedNode?.element;
         return claimed === child ;
       });
-console.log(
-  "BODY CHILD",
-  getElementClassName(
-    child
-  ) || child.tagName,
-  matchedSemantic?.emitted?.meta?.semanticType
-);
-console.log(
-  "BODY CHILD SEMANTIC MERGE CHECK",
-  {
-    index,
-    bodyChild:
-      describeClaimedElement(
-        child,
-        body
-      ),
-    directMatch:
-      matchedSemantic?.emitted?.meta?.semanticType || null,
-    nestedSemanticMatches:
-      semanticBlocks
-        .filter((entry: any) => {
-          const claimed =
-            entry.claimedNode?.element;
-
-          return (
-            claimed &&
-            claimed !== child &&
-            child.contains(claimed)
-          );
-        })
-        .map((entry: any) => ({
-          semantic:
-            entry.emitted?.meta?.semanticType,
-          claimed:
-            describeClaimedElement(
-              entry.claimedNode?.element,
-              body
-            )
-        }))
-  }
-);
   if (matchedSemantic) {
   finalBlocks.push(
     matchedSemantic.emitted
@@ -6285,15 +4852,7 @@ if (nestedSemanticMatches.length > 0) {
       compiled
     )
   );
-}
-    });
-console.log(
-  "CTA_BEFORE_RESTORE",
-  collectAllBlocks(finalBlocks).filter(
-    (b: any) =>
-      b?.meta?.semanticType === "CTA_SECTION"
-  )
-);
+} });
 preserveMissingSemanticBlocks(
   "finalBlocks",
   finalBlocks,
@@ -6307,22 +4866,6 @@ const orderedServiceSections =
         ?.semanticType ===
       "SERVICE_PAGE_SECTION"
   );
-
-console.log(
-  "SERVICE_PAGE_ORDERED_FINAL",
-  {
-    count:
-      orderedServiceSections.length,
-    variants:
-      orderedServiceSections.map(
-        (block: any) =>
-          block?.meta
-            ?.semanticVariant ||
-          null
-      )
-  }
-);
-
 assertNoSectionInsideLayout(
   "finalBlocks",
   finalBlocks
@@ -6342,44 +4885,6 @@ const semanticMergedBlocks =
 assertNoSectionInsideLayout(
   "semanticMergedBlocks",
   semanticMergedBlocks
-);
-console.log(
-  "FINAL BLOCKS TOP LEVEL SEMANTICS",
-  semanticMergedBlocks.map((b:any) => ({
-    type: b.type,
-    semantic: b.meta?.semanticType,
-    title:
-      b.children?.[0]?.data?.props?.text
-  }))
-);
-console.log(
-  "SECTION_2_FULL_TREE",
-  JSON.stringify(
-    finalBlocks[1],
-    null,
-    2
-  )
-);
-
-console.log(
-  "TWO_COLUMN_FULL_TREE",
-  JSON.stringify(
-    finalBlocks[2],
-    null,
-    2
-  )
-);
-console.log(
-  "ALL_TOP_LEVEL_BLOCKS",
-  finalBlocks.map((b:any,index:number)=>({
-    index,
-    id:b.id,
-    type:b.type,
-    semantic:b.meta?.semanticType,
-    firstText:
-      JSON.stringify(b)
-        .slice(0,300)
-  }))
 );
 logLargeLayoutBlocks(
   "semanticMergedBlocks",
@@ -6404,119 +4909,12 @@ assertNoNullChildren(
   "FINAL_BLOCKS_AFTER_SEMANTIC_MERGE"
 );
 
-console.log(
-  "FINAL BLOCKS",
-  semanticMergedBlocks.map((b: any) => ({
-    type: b.type,
-    semantic:
-      b.meta?.semanticType,
-    hasStyle:
-      !!b.data?.style?.desktop
-  }))
-);
-
-console.log(
-  "FINAL BLOCKS TOP LEVEL SEMANTICS",
-  {
-    beforePurge:
-      finalBlocks.map((b: any) => ({
-        id:
-          b.id,
-        type:
-          b.type,
-        semantic:
-          b.meta?.semanticType,
-        childTypes:
-          (b.children || []).map(
-            (child: any) => child?.type
-          )
-      })),
-    afterPurge:
-      semanticMergedBlocks.map((b: any) => ({
-        id:
-          b.id,
-        type:
-          b.type,
-        semantic:
-          b.meta?.semanticType,
-        childTypes:
-          (b.children || []).map(
-            (child: any) => child?.type
-          )
-      }))
-  }
-);
-
-console.log(
-  "FEATURE_PILLARS FINAL LOCATION CHECK",
-  JSON.stringify(
-    getFeaturePillarsLocationReport(
-      finalBlocks,
-      semanticMergedBlocks
-    ),
-    null,
-    2
-  )
-);
-
-console.log(
-  "FINAL BLOCKS TREE",
-  JSON.stringify(
-    semanticMergedBlocks.map(
-      summarizeImportBlockTree
-    ),
-    null,
-    2
-  )
-);
-
 logTrustSectionAnalysis(
   "after-final-blocks",
   body,
   semanticBlocks,
   semanticMergedBlocks
 );
-
-console.log(
-  "FEATURE_PILLARS FINAL PRESENCE",
-  JSON.stringify(
-    {
-      exists:
-        collectFeaturePillarsBlocks(
-          semanticMergedBlocks
-        ).length > 0,
-      sections:
-        collectFeaturePillarsBlocks(
-          semanticMergedBlocks
-        ).map((block: any) => ({
-          id: block.id,
-          type: block.type,
-          semantic:
-            block.meta?.semanticType,
-          childTypes:
-            (block.children || []).map(
-              (child: any) => child.type
-            ),
-          flexItems:
-            collectDescendantsByType(
-              [block],
-              "flexItem"
-            ).map((item: any) => ({
-              id: item.id,
-              childTypes:
-                (item.children || []).map(
-                  (child: any) => child.type
-                ),
-              desktop:
-                item.data?.style?.desktop || {}
-            }))
-        }))
-    },
-    null,
-    2
-  )
-);
-
 logFeatureFlexItemStyles(
   "FINALBLOCKS",
   semanticMergedBlocks
@@ -6553,10 +4951,7 @@ const kpiSectionAfterPurge =
     (child: any) =>
       child.children?.length >= 3
   );
-console.log(
-  "KPI AFTER PURGE",
-  kpiSectionAfterPurge?.children?.length
-);
+
 
 logFeaturePillarsStageTransition(
   "cleanedBlocks",
@@ -6576,20 +4971,10 @@ assertNoNullChildren(
   "CLEANED_BLOCKS"
 );
 
-
-console.log(
-  "GRIDITEM CLEANED",
-  findGridItems(cleanedBlocks).map((b) => ({
-    style: b.data?.style?.desktop
-  }))
-);
-
 logFeatureFlexItemStyles(
   "CLEANED",
   cleanedBlocks
 );
-// helper 
-
 const ROOT_ALLOWED_TYPES =
 
   new Set([
@@ -6681,32 +5066,11 @@ logLargeLayoutBlocks(
   normalized
 );
 
-console.log(
-  "BEFORE_NORMALIZE_TREE",
-  JSON.stringify(cleanedBlocks, null, 2)
-);
-
-
-console.log(
-  "AFTER_NORMALIZE_TREE",
-  JSON.stringify(normalized, null, 2)
-);
 logFeaturePillarsStageTransition(
   "normalizedBlocks",
   cleanedBlocks,
   normalized,
   "normalizeTree(cleanedBlocks)"
-);
-console.log(
-  "BEFORE_NORMALIZE_TREE",
-  JSON.stringify(cleanedBlocks, null, 2)
-);
-
-
-
-console.log(
-  "AFTER_NORMALIZE_TREE",
-  JSON.stringify(normalized, null, 2)
 );
 assertFeaturePillarsPreservedAfterMerge(
   "normalizedBlocks",
@@ -6720,35 +5084,10 @@ assertNoNullChildren(
 );
 
 
-console.log(
-  "GRIDITEM NORMALIZED",
-  JSON.stringify(
-    findGridItems(normalized).map((b) => ({
-      id: b.id,
-      style: b.data?.style?.desktop
-    })),
-    null,
-    2
-  )
-);
-
 logFeatureFlexItemStyles(
   "NORMALIZED",
   normalized
 );
-
-console.log(
-  "ROOT CHILDREN BEFORE INVARIANT",
-  normalized.map((child: any) => ({
-    id: child.id,
-    type: child.type,
-    semantic: child.meta?.semanticType,
-    childTypes: (child.children || []).map(
-      (c: any) => c.type
-    )
-  }))
-);
-
 
 assertTreeInvariants(
   normalized as any
@@ -6777,14 +5116,6 @@ assertNoNullChildren(
   normalizedWithTokens,
   "TOKENIZED_BLOCKS"
 );
-
-  console.log(
-  "GRIDITEM TOKENS",
-  findGridItems(normalizedWithTokens).map((b) => ({
-    style: b.data?.style?.desktop
-  }))
-);
-
 logFeatureFlexItemStyles(
   "TOKENS",
   normalizedWithTokens
@@ -6820,14 +5151,6 @@ assertNoNullChildren(
   "SECTION_PROFILED_BLOCKS"
 );
 
-
-  console.log(
-  "GRIDITEM PROFILED",
-  findGridItems(sectionProfiled).map((b) => ({
-    style: b.data?.style?.desktop
-  }))
-);
-
 logFeatureFlexItemStyles(
   "PROFILED",
   sectionProfiled
@@ -6847,37 +5170,6 @@ logLargeLayoutBlocks(
   "visualBlocks",
   visualBlocks as any
 );
-
-console.log(
-  "GLOBAL_SCALE_REPORT_REACHED"
-);
-
-console.log(
-  "GLOBAL_SCALE_REPORT",
-  {
-    visualBlocksCount:
-      visualBlocks?.length,
-    firstTypes:
-      visualBlocks
-        ?.slice(0, 5)
-        .map((block: any) => ({
-          type:
-            block.type,
-          semantic:
-            block.meta?.semanticType
-        }))
-  }
-);
-
-console.log(
-  "KPI ROW AFTER VISUAL",
-  JSON.stringify(
-    visualBlocks[0]?.children?.[0]?.children?.[0]?.children,
-    null,
-    2
-  )
-);
-
 const blockContainsText = (
   block: any,
   text: string
@@ -7024,39 +5316,6 @@ const collectTitleParentChains = (
 
   return chains;
 };
-
-console.log(
-  "TRUST_SECTION_TREE",
-  JSON.stringify(
-    collectSectionsContainingText(
-      visualBlocks as any,
-      "Ils nous font confiance"
-    ),
-    null,
-    2
-  )
-);
-
-console.log(
-  "CTA_SECTION_TREE",
-  JSON.stringify(
-    {
-      sections:
-        collectSectionsContainingText(
-          visualBlocks as any,
-          "Prêt à passer"
-        ),
-      titleParentChains:
-        collectTitleParentChains(
-          visualBlocks as any,
-          "Prêt à passer"
-        )
-    },
-    null,
-    2
-  )
-);
-
 logFeaturePillarsStageTransition(
   "visualBlocks",
   sectionProfiled,
@@ -7073,14 +5332,6 @@ assertFeaturePillarsPreservedAfterMerge(
 assertNoNullChildren(
   visualBlocks,
   "VISUAL_BLOCKS"
-);
-
-
-  console.log(
-  "GRIDITEM VISUAL",
-  findGridItems(visualBlocks).map((b) => ({
-    style: b.data?.style?.desktop
-  }))
 );
 
 logFeatureFlexItemStyles(
@@ -7101,22 +5352,6 @@ const finalDroppedDomTextNodes =
         finalTextProps
       )
   );
-
-console.log(
-  "IMPORT_TEXT_COVERAGE_FINAL_BLOCKS",
-  {
-    originalDomTextNodeCount:
-      originalDomTextNodes.length,
-    finalTextPropCount:
-      finalTextProps.length,
-    finalTextProps,
-    droppedDomTextNodeCount:
-      finalDroppedDomTextNodes.length,
-    droppedDomTextNodes:
-      finalDroppedDomTextNodes
-  }
-);
-
 if (
   sandboxFrame?.parentNode
 ) {
@@ -7139,66 +5374,6 @@ const serializableVisualBlocks =
     visualBlocks as any,
     "importHtmlDocument.finalBlocks"
   );
-
-console.log(
-  "FINAL_PAGE_BLOCKS",
-  {
-    topLevelCount:
-      serializableVisualBlocks.length,
-    topLevel:
-      serializableVisualBlocks.map(
-        (
-          block: any,
-          index: number
-        ) => ({
-          index,
-          id:
-            block?.id,
-          type:
-            block?.type,
-          semanticType:
-            block?.meta
-              ?.semanticType ||
-            null,
-          semanticVariant:
-            block?.meta
-              ?.semanticVariant ||
-            null,
-          childTypes:
-            (
-              block?.children ||
-              []
-            ).map(
-              (child: any) =>
-                child?.type
-            )
-        })
-      ),
-    serviceSections:
-      collectAllBlocks(
-        serializableVisualBlocks as any
-      )
-        .filter(
-          (block: any) =>
-            block?.meta
-              ?.semanticType ===
-            "SERVICE_PAGE_SECTION"
-        )
-        .map(
-          (block: any) => ({
-            id:
-              block.id,
-            type:
-              block.type,
-            semanticVariant:
-              block.meta
-                ?.semanticVariant ||
-              null
-          })
-        )
-  }
-);
-
 return {
   blocks:
     serializableVisualBlocks as any,
@@ -7308,15 +5483,6 @@ function logFeatureFlexItemStyles(
   };
 
   walk(blocks);
-
-  console.log(
-    `FEATURE_PILLARS FLEXITEM ${label}`,
-    JSON.stringify(
-      result,
-      null,
-      2
-    )
-  );
 }
 
 function collectDescendantsByType(
@@ -7363,21 +5529,19 @@ function createSemanticReplacementMap(
     )?.claimedNode?.element
       ?.ownerDocument?.body as HTMLElement | undefined;
 
-  const serviceSelectorByVariant:
-    Record<string, string> = {
-      SERVICE_INTRO_GRID:
-        ".svc-grid",
-      SERVICE_DELIVERABLES:
-        ".deliverables",
-      SERVICE_MARKETS:
-        ".markets",
-      SERVICE_CTA:
-        ".cta-svc",
-      SERVICE_HEADING:
-        ".sec-head",
-      SERVICE_CARDS:
-        ".other-svc"
-    };
+const serviceSelectorByVariant:
+  Record<string, string> = {
+  SERVICE_INTRO_GRID:
+    ".svc-grid",
+  SERVICE_DELIVERABLES:
+    ".deliverables",
+  SERVICE_MARKETS:
+    ".markets",
+  SERVICE_CTA:
+    ".cta-svc",
+  SERVICE_CARDS:
+    ".other-svc"
+};
 
   const resolveRegistrationElement = (
     entry: any
@@ -7463,69 +5627,10 @@ function createSemanticReplacementMap(
 
         const emitted =
           entry.emitted as SerializedBlock | undefined;
-
-        console.log(
-          "SEMANTIC_REGISTER_ATTEMPT",
-          {
-            semanticResultType:
-              entry?.semanticResult
-                ?.type ||
-              null,
-            variant:
-              entry?.semanticResult
-                ?.variant ||
-              null,
-            resolver:
-              entry?.resolverName ||
-              (emitted as any)?.meta
-                ?.resolverName ||
-              null,
-            hasClaimedElement:
-              !!element,
-            elementSource,
-            tag:
-              element?.tagName ||
-              null,
-            className:
-              element
-                ? getElementClassName(
-                    element
-                  )
-                : null,
-            hasEmitted:
-              !!emitted,
-            emittedId:
-              emitted?.id ||
-              null,
-            emittedType:
-              emitted?.type ||
-              null
-          }
-        );
-
         if (
           !element ||
           !emitted
         ) {
-          console.warn(
-            "SEMANTIC_REGISTER_SKIPPED",
-            {
-              semanticResultType:
-                entry?.semanticResult
-                  ?.type ||
-                null,
-              variant:
-                entry?.semanticResult
-                  ?.variant ||
-                null,
-              reason:
-                !element
-                  ? "missing-registration-element"
-                  : "missing-emitted-block",
-              elementSource
-            }
-          );
-
           return null;
         }
 
@@ -7543,63 +5648,9 @@ function createSemanticReplacementMap(
           registeredBlock !==
           emitted
         ) {
-          console.warn(
-            "SEMANTIC_REGISTER_SKIPPED",
-            {
-              semanticResultType:
-                entry?.semanticResult
-                  ?.type ||
-                null,
-              variant:
-                entry?.semanticResult
-                  ?.variant ||
-                null,
-              reason:
-                "weakmap-set-verification-failed",
-              tag:
-                element.tagName,
-              className:
-                getElementClassName(
-                  element
-                )
-            }
-          );
-
+      
           return null;
         }
-
-        console.log(
-          "SEMANTIC_REGISTER_DONE",
-          {
-            semanticResultType:
-              entry?.semanticResult
-                ?.type ||
-              null,
-            variant:
-              entry?.semanticResult
-                ?.variant ||
-              null,
-            resolver:
-              entry?.resolverName ||
-              (emitted as any).meta
-                ?.resolverName ||
-              null,
-            elementSource,
-            tag:
-              element.tagName,
-            className:
-              getElementClassName(
-                element
-              ),
-            emittedId:
-              emitted.id,
-            emittedType:
-              emitted.type,
-            verified:
-              true
-          }
-        );
-
         return {
           semantic:
             (emitted as any).meta?.semanticType,
@@ -7672,76 +5723,17 @@ function createSemanticReplacementMap(
             selector
           ) as HTMLElement | null;
 
-        console.log(
-          "SEMANTIC_REGISTER_ATTEMPT",
-          {
-            semanticResultType:
-              "SERVICE_PAGE_SECTION",
-            variant,
-            selector,
-            registrationPass:
-              "service-live-dom-guarantee",
-            hasLiveElement:
-              !!liveElement,
-            hasSemanticEntry:
-              !!entry,
-            hasEmitted:
-              !!emitted
-          }
-        );
-
         if (
           !liveElement ||
           !emitted
         ) {
-          console.warn(
-            "SEMANTIC_REGISTER_SKIPPED",
-            {
-              semanticResultType:
-                "SERVICE_PAGE_SECTION",
-              variant,
-              selector,
-              registrationPass:
-                "service-live-dom-guarantee",
-              reason:
-                !liveElement
-                  ? "live-service-element-not-found"
-                  : "service-emitted-block-not-found"
-            }
-          );
-
+        
           return;
         }
 
         map.set(
           liveElement,
           emitted
-        );
-
-        console.log(
-          "SEMANTIC_REGISTER_DONE",
-          {
-            semanticResultType:
-              "SERVICE_PAGE_SECTION",
-            variant,
-            selector,
-            registrationPass:
-              "service-live-dom-guarantee",
-            tag:
-              liveElement.tagName,
-            className:
-              getElementClassName(
-                liveElement
-              ),
-            emittedId:
-              emitted.id,
-            emittedType:
-              emitted.type,
-            verified:
-              map.get(
-                liveElement
-              ) === emitted
-          }
         );
       }
     );
@@ -7750,22 +5742,6 @@ function createSemanticReplacementMap(
   activeSemanticReplacementDiagnostics =
     registered as Array<Record<string, any>>;
 
-  console.log(
-    "SEMANTIC REPLACEMENT MAP",
-    {
-      size:
-        registered.length,
-      replacements:
-        registered
-    }
-  );
-console.log(
-  "CTA_REPLACEMENT_REGISTERED",
-  registered.filter((r: any) =>
-    r.semantic === "CTA_SECTION" ||
-    String(r.className || "").includes("cta")
-  )
-);
   return map;
 }
 
@@ -7916,17 +5892,7 @@ function preserveMissingSemanticBlocks(
         emitted.id
       );
       if (semanticType === "CTA_SECTION") {
-  console.log(
-    "CTA_RESTORE_SKIPPED_WAIT_FOR_DOM_PARSE",
-    {
-      stage,
-      id: emitted?.id,
-      claimedNodeClassName:
-        entry?.claimedNode?.element
-          ? getElementClassName(entry.claimedNode.element)
-          : null
-    }
-  );
+
 
   return;
 }
@@ -7936,42 +5902,7 @@ function preserveMissingSemanticBlocks(
       !semanticType ||
       alreadyExists
     ) {
-      console.log(
-        "SEMANTIC_RESTORE_DECISION",
-        {
-          stage,
-          semanticResultType:
-            semanticResultType ||
-            null,
-          emittedSemanticType:
-            semanticType ||
-            null,
-          id:
-            emitted?.id ||
-            null,
-          emittedType:
-            emitted?.type ||
-            null,
-          claimedNodeClassName:
-            entry?.claimedNode
-              ?.element
-              ? getElementClassName(
-                  entry.claimedNode
-                    .element
-                )
-              : null,
-          emittedText,
-          decision:
-            "skip",
-          reason:
-            !emitted
-              ? "missing-emitted-block"
-              : !semanticType
-                ? "missing-emitted-meta-semanticType"
-                : "emitted-id-already-present"
-        }
-      );
-
+  
       return;
     }
 
@@ -7983,44 +5914,9 @@ function preserveMissingSemanticBlocks(
         semanticType ===
         "SERVICE_PAGE_SECTION"
       ) {
-        console.log(
-          "SEMANTIC_RESTORE_DECISION",
-          {
-            stage,
-            semanticResultType,
-            emittedSemanticType:
-              semanticType,
-            id:
-              emitted.id,
-            decision:
-              "skip",
-            reason:
-              "service-sections-are-inserted-during-ordered-dom-compilation"
-          }
-        );
-
+    
         return;
       }
-
-      console.error(
-        "SEMANTIC_SECTION_MISSING_FROM_ORDERED_COMPILE",
-        {
-          stage,
-          semanticType,
-          id:
-            emitted.id,
-          claimedNodeClassName:
-            entry?.claimedNode
-              ?.element
-              ? getElementClassName(
-                  entry.claimedNode
-                    .element
-                )
-              : null,
-          reason:
-            "A semantic section cannot be restored by appending it after DOM compilation."
-        }
-      );
 
       return;
     }
@@ -8043,94 +5939,9 @@ function preserveMissingSemanticBlocks(
     if (
       overlappingIds.length
     ) {
-      console.log(
-        "SEMANTIC_RESTORE_DECISION",
-        {
-          stage,
-          semanticResultType:
-            semanticResultType ||
-            null,
-          emittedSemanticType:
-            semanticType,
-          id:
-            emitted.id,
-          emittedType:
-            emitted.type,
-          claimedNodeClassName:
-            entry?.claimedNode
-              ?.element
-              ? getElementClassName(
-                  entry.claimedNode
-                    .element
-                )
-              : null,
-          emittedText,
-          decision:
-            "skip",
-          reason:
-            "overlapping-subtree-ids",
-          overlappingIds
-        }
-      );
-      console.warn(
-        "SEMANTIC_RESTORE_SKIPPED_DUPLICATE_SUBTREE",
-        {
-          stage,
-          semanticType,
-          id:
-            emitted.id,
-          overlappingIds
-        }
-      );
-
+    
       return;
     }
-
-    
-
-    console.log(
-      "SEMANTIC_RESTORE_DECISION",
-      {
-        stage,
-        semanticResultType:
-          semanticResultType ||
-          null,
-        emittedSemanticType:
-          semanticType,
-        id:
-          emitted.id,
-        emittedType:
-          emitted.type,
-        claimedNodeClassName:
-          entry?.claimedNode
-            ?.element
-            ? getElementClassName(
-                entry.claimedNode
-                  .element
-              )
-            : null,
-        emittedText,
-        decision:
-          "restore",
-        reason:
-          "missing-without-overlap"
-      }
-    );
-
-    console.log(
-      "SEMANTIC_BLOCK_RESTORED_AFTER_MERGE",
-      {
-        stage,
-        semanticType,
-        id:
-          emitted.id,
-        type:
-          emitted.type,
-        childrenCount:
-          (emitted.children || []).length
-      }
-    );
-
     blocks.push(
       emitted
     );
@@ -8354,22 +6165,6 @@ function logFeaturePillarsStageTransition(
         (block: any) => block?.id
       )
     );
-
-  console.log(
-    "FEATURE_PILLARS_STAGE_DIAGNOSTIC",
-    {
-      stage,
-      before:
-        summarizeFeaturePillarsStage(
-          beforeBlocks || []
-        ),
-      after:
-        summarizeFeaturePillarsStage(
-          afterBlocks || []
-        )
-    }
-  );
-
   beforeFeatureBlocks
     .filter(
       (block: any) =>
@@ -8378,24 +6173,7 @@ function logFeaturePillarsStageTransition(
         )
     )
     .forEach((block: any) => {
-      console.log(
-        "BLOCK_REMOVED_FEATURE_PILLARS",
-        {
-          stage,
-          id:
-            block?.id,
-          type:
-            block?.type,
-          childrenCount:
-            (block?.children || []).length,
-          style:
-            block?.data?.style ||
-            block?.style ||
-            null,
-          reason:
-            reason || "unknown"
-        }
-      );
+     
     });
 }
 
@@ -8812,24 +6590,7 @@ function logGlobalScaleReport(
   blocks: any[],
   semanticBlocks: any[]
 ) {
-  console.log(
-    "GLOBAL_SCALE_REPORT",
-    JSON.stringify(
-      (blocks || [])
-        .filter(
-          block =>
-            block?.type === "section"
-        )
-        .map(block =>
-          summarizeGlobalScaleSection(
-            block,
-            semanticBlocks
-          )
-        ),
-      null,
-      2
-    )
-  );
+ 
 }
 
 function assertNoNullChildren(

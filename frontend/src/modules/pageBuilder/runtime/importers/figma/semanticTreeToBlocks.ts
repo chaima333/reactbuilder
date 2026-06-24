@@ -5,7 +5,10 @@ import type {
 import type {
   FigmaSemanticNode
 } from "./figmaToSemanticTree";
-import { figmaColorToHex } from "./mapFigmaStyles";
+
+import {
+  figmaColorToHex
+} from "./mapFigmaStyles";
 
 const responsive = (
   desktop: Record<string, any>,
@@ -34,6 +37,15 @@ const getWidth = (node: FigmaSemanticNode) =>
 const getHeight = (node: FigmaSemanticNode) =>
   node.source.absoluteBoundingBox?.height || 0;
 
+const getBackgroundColor = (
+  node: FigmaSemanticNode,
+  fallback = "transparent"
+) =>
+  node.source.fills?.[0]?.type === "SOLID" &&
+  node.source.fills[0].color
+    ? figmaColorToHex(node.source.fills[0].color)
+    : fallback;
+
 const makeTextBlock = (
   node: FigmaSemanticNode,
   contextMaxFontSize: number
@@ -54,24 +66,16 @@ const makeTextBlock = (
   const isTitle =
     contextMaxFontSize > 0 &&
     size >= contextMaxFontSize * 0.9 &&
-    words <= 6 &&
+    words <= 8 &&
     lines <= 2;
-console.log(
-  "TEXT BLOCK",
-  {
-    content: content.slice(0, 40),
-    fontSize: size,
-    width: getWidth(node),
-    height: getHeight(node),
-    isTitle
-  }
-);
+
   return {
     id: node.id,
     type: isTitle ? "title" : "text",
     data: {
       props: {
         content,
+        text: content,
         ...(isTitle ? { level: "h2" } : {})
       },
       style: responsive({
@@ -84,16 +88,17 @@ console.log(
     children: []
   };
 };
+
 const makeImagePlaceholder = (
   node: FigmaSemanticNode
 ): SerializedBlock => {
-const imageUrl =
-  node.source.imageUrl ||
-  (
-    node.source.imageBase64
-      ? `data:${node.source.imageMimeType || "image/png"};base64,${node.source.imageBase64}`
-      : ""
-  );
+  const imageUrl =
+    node.source.imageUrl ||
+    (
+      node.source.imageBase64
+        ? `data:${node.source.imageMimeType || "image/png"};base64,${node.source.imageBase64}`
+        : ""
+    );
 
   if (imageUrl) {
     return {
@@ -126,14 +131,7 @@ const imageUrl =
       children: []
     };
   }
-console.log(
-  "IMAGE BLOCK",
-  {
-    width: getWidth(node),
-    height: getHeight(node),
-    image: !!imageUrl
-  }
-);
+
   return {
     id: node.id,
     type: "flex",
@@ -165,6 +163,7 @@ console.log(
     children: []
   };
 };
+
 const wrapInFlexItem = (
   block: SerializedBlock
 ): SerializedBlock => ({
@@ -182,18 +181,184 @@ const wrapInFlexItem = (
 
 const getContextMaxFontSize = (
   node: FigmaSemanticNode
-): number =>
-  Math.max(
-    0,
-    ...node.children
-      .filter(child => child.type === "text")
-      .map(child => getFontSize(child))
+): number => {
+  const sizes: number[] = [];
+
+  const walk = (current: FigmaSemanticNode) => {
+    if (current.type === "text") {
+      sizes.push(getFontSize(current));
+    }
+
+    current.children?.forEach(walk);
+  };
+
+  walk(node);
+
+  return Math.max(0, ...sizes);
+};
+
+const collectText = (
+  node: FigmaSemanticNode
+): FigmaSemanticNode[] => {
+  const result: FigmaSemanticNode[] = [];
+
+  const walk = (current: FigmaSemanticNode) => {
+    if (current.type === "text") {
+      result.push(current);
+    }
+
+    current.children?.forEach(walk);
+  };
+
+  walk(node);
+
+  return result;
+};
+
+const buildChildren = (
+  node: FigmaSemanticNode,
+  maxFontSize = getContextMaxFontSize(node)
+): SerializedBlock[] =>
+  node.children
+    .map(child =>
+      buildNode(child, maxFontSize)
+    )
+    .filter((block): block is SerializedBlock => block !== null)
+    .map(block =>
+      primitiveTypes.has(block.type)
+        ? wrapInFlexItem(block)
+        : block
+    );
+
+const buildSemanticSection = (
+  node: FigmaSemanticNode,
+  role: string,
+  desktopStyle: Record<string, any> = {}
+): SerializedBlock => ({
+  id: node.id,
+  type: "section",
+  data: {
+    props: {
+      semantic: {
+        source: "figma",
+        role
+      }
+    },
+    style: responsive(
+      {
+        padding: "56px 48px",
+        backgroundColor: getBackgroundColor(node),
+        ...desktopStyle
+      },
+      {
+        padding: "36px 32px",
+        backgroundColor: getBackgroundColor(node)
+      },
+      {
+        padding: "24px 20px",
+        backgroundColor: getBackgroundColor(node)
+      }
+    )
+  },
+  children: [
+    {
+      id: `${node.id}-${role}-container`,
+      type: "flex",
+      data: {
+        props: {},
+        style: responsive(
+          {
+            display: "flex",
+            flexDirection: "column",
+            gap: "24px",
+            width: "100%"
+          },
+          {
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px",
+            width: "100%"
+          },
+          {
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+            width: "100%"
+          }
+        )
+      },
+      children: buildChildren(node)
+    }
+  ]
+});
+
+const buildHeroSection = (
+  node: FigmaSemanticNode
+): SerializedBlock =>
+  buildSemanticSection(
+    node,
+    "hero",
+    {
+      padding: "72px 48px"
+    }
+  );
+
+const buildCtaSection = (
+  node: FigmaSemanticNode
+): SerializedBlock =>
+  buildSemanticSection(
+    node,
+    "cta",
+    {
+      padding: "64px 48px",
+      textAlign: "center"
+    }
+  );
+
+const buildNavbarSection = (
+  node: FigmaSemanticNode
+): SerializedBlock =>
+  buildSemanticSection(
+    node,
+    "navbar",
+    {
+      padding: "16px 48px",
+      backgroundColor: getBackgroundColor(node, "#ffffff")
+    }
+  );
+
+const buildFooterSection = (
+  node: FigmaSemanticNode
+): SerializedBlock =>
+  buildSemanticSection(
+    node,
+    "footer",
+    {
+      padding: "48px",
+      backgroundColor: getBackgroundColor(node, "#111827")
+    }
   );
 
 const buildNode = (
   node: FigmaSemanticNode,
   contextMaxFontSize = 0
 ): SerializedBlock | null => {
+  if (node.semanticRole === "HERO_SECTION") {
+    return buildHeroSection(node);
+  }
+
+  if (node.semanticRole === "CTA_SECTION") {
+    return buildCtaSection(node);
+  }
+
+  if (node.semanticRole === "NAVBAR") {
+    return buildNavbarSection(node);
+  }
+
+  if (node.semanticRole === "FOOTER") {
+    return buildFooterSection(node);
+  }
+
   if (node.type === "text") {
     return makeTextBlock(
       node,
@@ -206,19 +371,7 @@ const buildNode = (
   }
 
   if (node.type === "card") {
-    const maxFontSize =
-      getContextMaxFontSize(node);
-
-    const children = node.children
-      .map(child =>
-        buildNode(child, maxFontSize)
-      )
-      .filter((block): block is SerializedBlock => block !== null)
-      .map(block =>
-        primitiveTypes.has(block.type)
-          ? wrapInFlexItem(block)
-          : block
-      );
+    const children = buildChildren(node);
 
     return {
       id: node.id,
@@ -235,13 +388,9 @@ const buildNode = (
           flexDirection: "column",
           gap: "12px",
           padding: "20px",
-          backgroundColor:
-  node.source.fills?.[0]?.type === "SOLID" &&
-  node.source.fills[0].color
-    ? figmaColorToHex(node.source.fills[0].color)
-    : "#d9d9d9",
+          backgroundColor: getBackgroundColor(node, "#d9d9d9"),
           width: "100%",
-maxWidth: `${Math.max(getWidth(node), 80)}px`,
+          maxWidth: `${Math.max(getWidth(node), 80)}px`
         })
       },
       children
@@ -250,18 +399,7 @@ maxWidth: `${Math.max(getWidth(node), 80)}px`,
 
   if (node.type === "column" || node.type === "row") {
     const isRow = node.type === "row";
-    const maxFontSize = getContextMaxFontSize(node);
-
-    const children = node.children
-      .map(child =>
-        buildNode(child, maxFontSize)
-      )
-      .filter((block): block is SerializedBlock => block !== null)
-      .map(block =>
-        primitiveTypes.has(block.type)
-          ? wrapInFlexItem(block)
-          : block
-      );
+    const children = buildChildren(node);
 
     return {
       id: node.id,
@@ -294,13 +432,12 @@ maxWidth: `${Math.max(getWidth(node), 80)}px`,
   }
 
   if (node.type === "section") {
-    const maxFontSize = getContextMaxFontSize(node);
-
-    const builtChildren = node.children
-      .map(child =>
-        buildNode(child, maxFontSize)
-      )
-      .filter((block): block is SerializedBlock => block !== null);
+    const builtChildren =
+      node.children
+        .map(child =>
+          buildNode(child, getContextMaxFontSize(node))
+        )
+        .filter((block): block is SerializedBlock => block !== null);
 
     const columns =
       node.children.filter(child => child.type === "column");
@@ -330,18 +467,8 @@ maxWidth: `${Math.max(getWidth(node), 80)}px`,
     }
 
     const backgroundColor =
-      node.source.fills?.[0]?.type === "SOLID" &&
-      node.source.fills[0].color
-        ? figmaColorToHex(node.source.fills[0].color)
-        : "transparent";
-console.log(
-  "SECTION FILL",
-  node.source.fills
-);
-console.log(
-  "SECTION BG",
-  backgroundColor
-);
+      getBackgroundColor(node);
+
     return {
       id: node.id,
       type: "section",
@@ -405,18 +532,7 @@ console.log(
       ]
     };
   }
-console.log(
-  "BUILD SECTION",
-  {
-    name: node.name,
-    children: node.children.map(child => ({
-      name: child.name,
-      type: child.type,
-      width: child.source.absoluteBoundingBox?.width,
-      height: child.source.absoluteBoundingBox?.height
-    }))
-  }
-);
+
   return null;
 };
 

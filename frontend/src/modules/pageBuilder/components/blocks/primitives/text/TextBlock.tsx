@@ -95,9 +95,8 @@ const finalStyle: CSSProperties = {
 
   wordBreak:
     "break-word",
-
-  whiteSpace:
-    "normal",
+ 
+    whiteSpace: "pre-line",
 
   boxSizing:
     "border-box",

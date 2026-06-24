@@ -159,7 +159,7 @@ const getDraggedType = (
 };
 
 const isPrimitiveBlock = (type: BlockType) =>
-  ["button", "image", "text", "title"].includes(type);
+  ["button", "image", "text", "title", "link"].includes(type);
 
 
 
@@ -674,11 +674,7 @@ if (
     draggedType
   ) &&
   targetBlock!.type === "grid"
-) {
-
-  wrapperType =
-    "gridItem";
-}
+) { wrapperType = "gridItem";}
 
 if (
   !isPresetDrop &&
@@ -688,10 +684,16 @@ if (
     draggedType
   ) &&
   targetBlock!.type === "flex"
-) {
+) { wrapperType ="flexItem";}
 
-  wrapperType =
-    "flexItem";
+if (
+  !isPresetDrop &&
+  !wrapperType &&
+  !isRootDrop &&
+  isPrimitiveBlock(draggedType) &&
+  targetBlock!.type === "navbar"
+) {
+  wrapperType = "flexItem";
 }
 
 
@@ -700,17 +702,13 @@ if (
   draggedType === "flexItem"
 ) {
 
-  wrapperType =
-    undefined;
+  wrapperType = undefined;
 }
 
 // =========================
 // MOVE EXISTING BLOCK
 // =========================
-console.log(
-  "ACTIVE PAYLOAD",
-  activePayload
-);
+
 if (
   activePayload?.isNew === false
 ) {
@@ -779,7 +777,84 @@ actions.addBlockTree(
 
   return;
 }
+// primitive dropped on section
+if (
+  !isPresetDrop &&
+  !isRootDrop &&
+  isPrimitiveBlock(draggedType) &&
+  targetBlock!.type === "section"
+) {
+  const existingFlex = targetBlock!.children?.find(
+    (child) => child.type === "flex"
+  );
 
+  if (existingFlex) {
+    actions.addBlock(
+      draggedType,
+      existingFlex.id,
+      "inside",
+      null,
+      existingFlex.children?.length || 0
+    );
+
+    resetDragState();
+    return;
+  }
+
+  const childConfig = blockRegistry[draggedType];
+
+  actions.addBlockTree(
+    {
+      id: uuidv4(),
+      type: "flex",
+      data: {
+        props: {},
+        style: {
+          desktop: {
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+            width: "100%"
+          }
+        }
+      },
+      children: [
+        {
+          id: uuidv4(),
+          type: "flexItem",
+          data: {
+            props: {},
+            style: {
+              desktop: {
+                width: "100%"
+              }
+            }
+          },
+          children: [
+            {
+              id: uuidv4(),
+              type: draggedType,
+              data: {
+                props: structuredClone(childConfig?.defaultData?.props || {}),
+                style: structuredClone(
+                  childConfig?.defaultData?.style || { desktop: {} }
+                )
+              },
+              children: []
+            }
+          ]
+        }
+      ]
+    },
+    finalTargetId,
+    "inside",
+    finalIndex
+  );
+
+  resetDragState();
+  return;
+}
+////////////
 
 if (wrapperType) {
 const childConfig =  blockRegistry[  draggedType];

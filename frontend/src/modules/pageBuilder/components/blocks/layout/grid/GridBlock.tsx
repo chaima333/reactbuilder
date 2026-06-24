@@ -246,17 +246,13 @@ const templateColumns =
     overflow:
       resolved.overflow || "visible",
 
-   gridTemplateColumns:
-  templateColumns,
+   gridTemplateColumns: templateColumns,
  gridAutoRows:"auto",
-alignItems:
-  resolved.alignItems || "center",
+alignItems: resolved.alignItems || "center",
 
-justifyItems:
-  resolved.justifyItems || "center",
+justifyItems: resolved.justifyItems || "stretch",
 
-justifyContent:
-  resolved.justifyContent || "center",
+justifyContent:resolved.justifyContent || "stretch",
 
 gap:
   resolved.gap || "24px",
@@ -265,11 +261,10 @@ width:
   "100%",
    
 
-    maxWidth:
-  resolved.maxWidth &&
-  resolved.maxWidth !== "none"
+  maxWidth:
+  resolved.maxWidth && resolved.maxWidth !== "none"
     ? resolved.maxWidth
-    : "1200px",
+    : "100%",
 
 margin:
   resolved.margin || "0 auto",

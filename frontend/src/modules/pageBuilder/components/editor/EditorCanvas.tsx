@@ -352,7 +352,7 @@ const canvasMaxWidth =
           "flex-start",
 
         overflowX:
-          "auto",
+          "hidden",
 
         overflowY:
           "auto",
@@ -435,15 +435,18 @@ const canvasMaxWidth =
   data-block-id={VIRTUAL_ROOT_ID}
   data-block-type="root"
  
-  sx={{
-    width: "100%",
+   sx={{
+  width:
+    device === "desktop"
+      ? "100%"
+      : canvasWidth,
 
-    minWidth: 0,
+  minWidth: 0,
 
-    maxWidth:
-      device === "desktop"
-        ? "1200px"
-        : canvasWidth,
+  maxWidth:
+    device === "desktop"
+      ? "100%"
+      : canvasWidth,
 
             minHeight:
               "100vh",
@@ -451,8 +454,9 @@ const canvasMaxWidth =
             flexShrink:
               0,
 
-            overflow:
-              "visible",
+            overflowX: "hidden",
+
+            overflowY:"visible",
 
             boxSizing:
               "border-box",

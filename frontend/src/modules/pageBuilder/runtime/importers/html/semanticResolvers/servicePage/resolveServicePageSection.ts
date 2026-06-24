@@ -90,14 +90,6 @@ const getVariant = (
 
   if (
     element.matches(
-      ".sec-head"
-    )
-  ) {
-    return "SERVICE_HEADING";
-  }
-
-  if (
-    element.matches(
       ".other-svc"
     )
   ) {
@@ -164,10 +156,6 @@ const validateVariantStructure = (
         ).length >= 2
       );
 
-    case "SERVICE_HEADING":
-      return !!element.querySelector(
-        "h1,h2,h3"
-      );
 
     case "SERVICE_CARDS":
       return (

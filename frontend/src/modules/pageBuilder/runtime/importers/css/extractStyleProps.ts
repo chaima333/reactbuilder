@@ -1,7 +1,9 @@
 import { sanitizeExtractedStyles } from "./sanitizeExtractedStyles";
 
 export interface ExtractedStyle {
-  desktop: Record<string, string>;
+  desktop: Record<string, any>;
+  tablet: Record<string, any>;
+  mobile: Record<string, any>;
 }
 
 const VISUAL_STYLE_KEYS = [
@@ -191,8 +193,10 @@ export const extractStyleProps = (
   }
 
   return {
-    desktop: styles as Record<string, string>
-  };
+  desktop: styles as Record<string, string>,
+  tablet: {},
+  mobile: {}
+};
 };
 
 export const extractLayoutStyles = (
@@ -200,13 +204,14 @@ export const extractLayoutStyles = (
 ): ExtractedStyle => {
   const styles =
     extractStyleProps(element).desktop;
-
-  return {
-    desktop:
-      sanitizeExtractedStyles(
-        pickStyles(styles, VISUAL_STYLE_KEYS)
-      )
-  };
+    return {
+  desktop:
+    sanitizeExtractedStyles(
+      pickStyles(styles, VISUAL_STYLE_KEYS)
+    ),
+  tablet: {},
+  mobile: {}
+};
 };
 
 export const extractTypographyStyles = (
@@ -215,10 +220,12 @@ export const extractTypographyStyles = (
   const styles =
     extractStyleProps(element).desktop;
 
-  return {
-    desktop:
-      sanitizeExtractedStyles(
-        pickStyles(styles, VISUAL_STYLE_KEYS)
-      )
-  };
+return {
+  desktop:
+    sanitizeExtractedStyles(
+      pickStyles(styles, VISUAL_STYLE_KEYS)
+    ),
+  tablet: {},
+  mobile: {}
+};
 };

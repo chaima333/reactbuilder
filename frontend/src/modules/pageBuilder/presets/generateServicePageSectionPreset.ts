@@ -268,45 +268,39 @@ const section = (
   children: Block[],
   semanticVariant: string
 ): Block => {
-  const sourceStyle =
-    layoutStyle(
-      source
-    );
-  const {
-    display: _display,
-    flexDirection: _flexDirection,
-    flexWrap: _flexWrap,
-    justifyContent: _justifyContent,
-    alignItems: _alignItems,
-    gridTemplateColumns: _gridTemplateColumns,
-    gap: _gap,
-    width: _width,
-    ...sectionDesktop
-  } =
-    sourceStyle.desktop ||
-    {};
+  const sourceStyle = layoutStyle(source);
+
+  const keepOwnStyle =
+    semanticVariant === "SERVICE_DELIVERABLES" ||
+    semanticVariant === "SERVICE_MARKETS" ||
+    semanticVariant === "SERVICE_CTA";
 
   return {
-    id:
-      uuidv4(),
-    type:
-      "section",
+    id: uuidv4(),
+    type: "section",
     meta: {
-      semanticType:
-        "SERVICE_PAGE_SECTION",
-      semanticVariant
+      semanticType: "SERVICE_PAGE_SECTION",
+      semanticVariant,
     } as any,
     data: {
       props: {},
-      style: {
-        ...sourceStyle,
-        desktop: {
-          ...sectionDesktop,
-          width: "100%"
-        }
-      }
+      style: keepOwnStyle
+        ? {
+            ...sourceStyle,
+            desktop: {
+              ...sourceStyle.desktop,
+              width: "100%",
+            },
+          }
+        : responsive({
+            width: "100%",
+            margin: "0",
+            padding: "0",
+            background: "transparent",
+            backgroundColor: "transparent",
+          }),
     },
-    children
+    children,
   };
 };
 
@@ -725,102 +719,115 @@ const emitHeading = (
 const emitCards = (
   source: HTMLElement
 ) => {
+  const heading =
+    source.previousElementSibling instanceof HTMLElement &&
+    source.previousElementSibling.matches(".sec-head")
+      ? source.previousElementSibling
+      : null;
+
   const cards =
-    Array.from(
-      source.children
-    ).filter(
-      (
-        element
-      ): element is HTMLElement =>
+    Array.from(source.children).filter(
+      (element): element is HTMLElement =>
         element.nodeType === 1
     );
 
+  const headingBlock: Block[] = heading
+    ? [
+        {
+          id: uuidv4(),
+          type: "flex",
+          data: {
+            props: {},
+            style: layoutStyle(heading),
+          },
+          children: [
+            flexItem([
+              ...Array.from(
+                heading.querySelectorAll(".section-tag")
+              ).map((el) =>
+                createText(
+                  text(el),
+                  el as HTMLElement
+                )
+              ),
+              createTitle(
+                heading.querySelector(
+                  "h1,h2,h3"
+                ) as HTMLElement | null
+              ),
+            ]),
+          ],
+        },
+      ]
+    : [];
+
+  const grid: Block = {
+    id: uuidv4(),
+    type: "grid",
+    data: {
+      props: {},
+      style: {
+        ...layoutStyle(source),
+        desktop: {
+          ...layoutStyle(source).desktop,
+          display: "grid",
+          gridTemplateColumns:
+            computedStyle(source)?.gridTemplateColumns ||
+            "repeat(3, minmax(0, 1fr))",
+        },
+        mobile: {
+          gridTemplateColumns: "1fr",
+        },
+      },
+    },
+    children: cards.map((card) => {
+      const number =
+        card.querySelector(".s-num") as HTMLElement | null;
+
+      const title =
+        card.querySelector("h2,h3") as HTMLElement | null;
+
+      const paragraph =
+        card.querySelector("p") as HTMLElement | null;
+
+      const linkLabel =
+        card.querySelector(".more") as HTMLElement | null;
+
+      return gridItem(
+        [
+          ...(number
+            ? [
+                createText(
+                  text(number),
+                  number
+                ),
+              ]
+            : []),
+
+          createTitle(title),
+
+          ...(paragraph
+            ? [
+                createText(
+                  text(paragraph),
+                  paragraph
+                ),
+              ]
+            : []),
+
+          createLink(
+            card,
+            text(linkLabel) || "Découvrir"
+          ),
+        ],
+        card
+      );
+    }),
+  };
+
   return section(
     source,
-    [
-      {
-        id:
-          uuidv4(),
-        type:
-          "grid",
-        data: {
-          props: {},
-          style: {
-            ...layoutStyle(
-              source
-            ),
-            desktop: {
-              ...layoutStyle(
-                source
-              ).desktop,
-              display: "grid",
-              gridTemplateColumns:
-                computedStyle(
-                  source
-                )?.gridTemplateColumns ||
-                "repeat(3, minmax(0, 1fr))"
-            },
-            mobile: {
-              gridTemplateColumns:
-                "1fr"
-            }
-          }
-        },
-        children:
-          cards.map(card => {
-            const number =
-              card.querySelector(
-                ".s-num"
-              ) as HTMLElement | null;
-            const title =
-              card.querySelector(
-                "h2,h3"
-              ) as HTMLElement | null;
-            const paragraph =
-              card.querySelector(
-                "p"
-              ) as HTMLElement | null;
-            const linkLabel =
-              card.querySelector(
-                ".more"
-              ) as HTMLElement | null;
-
-            return gridItem(
-              [
-                ...(number
-                  ? [
-                      createText(
-                        text(number),
-                        number
-                      )
-                    ]
-                  : []),
-                createTitle(
-                  title
-                ),
-                ...(paragraph
-                  ? [
-                      createText(
-                        text(
-                          paragraph
-                        ),
-                        paragraph
-                      )
-                    ]
-                  : []),
-                createLink(
-                  card,
-                  text(
-                    linkLabel
-                  ) ||
-                  "Découvrir"
-                )
-              ],
-              card
-            );
-          })
-      }
-    ],
+    [...headingBlock, grid],
     "SERVICE_CARDS"
   );
 };
@@ -853,11 +860,13 @@ export const generateServicePageSectionPreset = (
             ? emitCta(
                 source
               )
-            : payload.variant ===
-                "SERVICE_HEADING"
-              ? emitHeading(
-                  source
-                )
+           : payload.variant ===
+    "SERVICE_HEADING"
+  ? section(
+      source,
+      [],
+      "SERVICE_HEADING"
+    )
               : emitCards(
                   source
                 );

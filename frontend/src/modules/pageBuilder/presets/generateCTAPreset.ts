@@ -816,29 +816,20 @@ const titleElement =
         )
       : undefined;
 
-  const mergedSectionStyle =
-    mergePresetDesktopStyle(
-      {
-        paddingTop: "0px",
-        paddingBottom: "0px",
-        paddingLeft: "0px",
-        paddingRight: "0px",
-        backgroundColor: "#111827",
-        width: "100%"
-      },
+ const mergedSectionStyle =
+  mergePresetDesktopStyle(
+    {
+      paddingTop: "80px",
+      paddingBottom: "80px",
+      paddingLeft: "40px",
+      paddingRight: "40px",
+      backgroundColor: "#111827",
+      width: "100%"
+    },
       rawSectionStyle,
       filterCtaSectionStyle
     );
 
-    console.log(
-  "CTA_MERGED_SECTION_STYLE",
-  mergedSectionStyle
-);
-
-console.log(
-  "CTA_RAW_SECTION_STYLE",
-  rawSectionStyle
-);
 
   const mergedContainerStyle =
     mergePresetDesktopStyle(
@@ -865,7 +856,9 @@ console.log(
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        gap: "32px"
+        gap: "32px",
+        padding: "48px",
+borderRadius: "20px",
       },
       panelStyle,
       filterCtaPanelStyle

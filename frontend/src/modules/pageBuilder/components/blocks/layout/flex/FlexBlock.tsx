@@ -267,29 +267,17 @@ border:
         
   };
   
+  const isFeatureCard =
+  String(block?.id || "").startsWith("feature-");
 
-  console.log(
-    "FLEX_RUNTIME_LAYOUT",
-    {
-      id:
-        block?.id,
-      resolvedStyle:
-        resolved,
-      finalDomStyle:
-        flexStyle,
-      flexDirection:
-        flexStyle.flexDirection,
-      flexWrap:
-        flexStyle.flexWrap,
-      gap:
-        flexStyle.gap,
-      justifyContent:
-        flexStyle.justifyContent,
-      alignItems:
-        flexStyle.alignItems
-    }
-  );
+const enhancedFlexStyle: React.CSSProperties = {
+  ...flexStyle,
+  transition: isFeatureCard
+    ? "transform 0.25s ease, box-shadow 0.25s ease"
+    : flexStyle.transition,
+};
 
+  
   if (
     device === "mobile"
   ) {
@@ -410,13 +398,24 @@ if (isNavbarSubmenu) {
 }
   return (
 
-    <div
+  <div
   {...rootProps}
   className={[
     rootProps.className,
     isNavbarSubmenu ? "navbar-submenu" : ""
   ].filter(Boolean).join(" ")}
-  style={flexStyle}
+  style={enhancedFlexStyle}
+  onMouseEnter={(e) => {
+    if (!isFeatureCard) return;
+    e.currentTarget.style.transform = "translateY(-6px)";
+    e.currentTarget.style.boxShadow = "0 16px 35px rgba(0,0,0,0.14)";
+  }}
+  onMouseLeave={(e) => {
+    if (!isFeatureCard) return;
+    e.currentTarget.style.transform = "";
+    e.currentTarget.style.boxShadow =
+      String(enhancedFlexStyle.boxShadow || "");
+  }}
 >
 
       {children}
@@ -429,7 +428,7 @@ if (isNavbarSubmenu) {
             width: "100%",
             padding: "20px",
             textAlign: "center",
-            color: "#6b7280"
+            color: "#6b7280",
           }}
         >
           {isOver

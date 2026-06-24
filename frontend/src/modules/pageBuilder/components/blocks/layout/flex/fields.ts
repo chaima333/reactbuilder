@@ -53,5 +53,33 @@ export const flexFields: BlockField[] = [
       { label: "Center", value: "center" },
       { label: "Start", value: "flex-start" }
     ]
-  }
+  },
+  {
+  key: "backgroundColor",
+  label: "Background Color",
+  type: "color",
+  target: "style",
+  responsive: true
+},
+{
+  key: "color",
+  label: "Text Color",
+  type: "color",
+  target: "style",
+  responsive: true
+},
+{
+  key: "paddingTop",
+  label: "Padding Top",
+  type: "text",
+  target: "style",
+  responsive: true
+},
+{
+  key: "paddingBottom",
+  label: "Padding Bottom",
+  type: "text",
+  target: "style",
+  responsive: true
+}
 ];
