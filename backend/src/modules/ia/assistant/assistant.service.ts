@@ -380,7 +380,15 @@ if (!analysis.hasServices) {
 }
 
   // ===== HERO IMPROVEMENT =====
-  if (text.includes("improve") || text.includes("hero") || text.includes("design") || suggestions.length === 0) {
+  const wantsHeroImprovement =
+  text.includes("improve") ||
+  text.includes("hero") ||
+  text.includes("design");
+
+if (
+  wantsHeroImprovement &&
+  analysis.hasHero
+) {
     const heroStyle = getHeroStyleForCategory(category);
     const heroTitle = getHeroTitleForCategory(category);
     const heroText = getHeroTextForCategory(category);
@@ -419,27 +427,6 @@ if (!analysis.hasServices) {
       action: "ADD_FAQ"
     });
   }
-
-  // ===== CTA =====
-// ===== CTA =====
-if (!analysis.hasCTA) {
-  suggestions.push({
-    id: `${category}-add-cta`,
-    title: "Add Call-to-Action",
-    description: "Encourage visitors to take the next step with a clear CTA.",
-    action: "ADD_CTA",
-    payload: {
-      title: "Ready to grow your business?",
-      text: "Contact our team today and take the next step.",
-      actions: [
-        {
-          label: "Contact Us",
-          href: "#contact",
-        },
-      ],
-    },
-  });
-}
 
   // ===== TESTIMONIALS =====
   if (text.includes("testimonial") || text.includes("review") || text.includes("social proof")) {
