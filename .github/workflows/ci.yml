@@ -77,3 +77,14 @@ jobs:
 
       - name: Validate ML service
         run: python -m py_compile app.py
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [frontend, backend, ml-service]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker images
+        run: docker compose build
