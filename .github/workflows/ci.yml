@@ -56,7 +56,7 @@ jobs:
       - name: Build Backend
         run: npm run build
 
-    ml-service:
+  ml-service:
     runs-on: ubuntu-latest
 
     defaults:
