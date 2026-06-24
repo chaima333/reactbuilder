@@ -318,7 +318,7 @@ export const askAssistant = async (
   if (!analysis.hasFAQ) {
   suggestions.push({
     id: "missing-faq",
-    title: "❓ Add FAQ Section",
+    title: " Add FAQ Section",
     description: "Your page is missing a FAQ section.",
     action: "ADD_FAQ",
   });
@@ -326,7 +326,7 @@ export const askAssistant = async (
 if (!analysis.hasCTA) {
   suggestions.push({
     id: "missing-cta",
-    title: "🚀 Add CTA",
+    title: "Add CTA",
     description: "Your page needs a clear call-to-action.",
     action: "ADD_CTA",
     payload: {
@@ -345,7 +345,7 @@ if (!analysis.hasCTA) {
 if (!analysis.hasServices) {
   suggestions.push({
     id: "missing-services",
-    title: "📋 Add Services Section",
+    title: " Add Services Section",
     description: "Your page should explain the main services clearly.",
     action: "ADD_SERVICES",
   });
@@ -360,7 +360,7 @@ if (!analysis.hasServices) {
     
     suggestions.push({
       id: `${category}-hero-improve`,
-      title: "🎨 Improve Hero Section",
+      title: " Improve Hero Section",
       description: `Apply a professional ${category} style with a compelling headline.`,
       action: "IMPROVE_HERO",
       payload: {
@@ -376,7 +376,7 @@ if (!analysis.hasServices) {
   if (text.includes("services") || text.includes("offer") || text.includes("provide")) {
     suggestions.push({
       id: `${category}-add-services`,
-      title: "📋 Add Services Section",
+      title: " Add Services Section",
       description: `Showcase key ${category} services to highlight your expertise.`,
       action: "ADD_SERVICES"
     });
@@ -386,35 +386,38 @@ if (!analysis.hasServices) {
   if (text.includes("faq") || text.includes("question") || text.includes("help")) {
     suggestions.push({
       id: `${category}-add-faq`,
-      title: "❓ Add FAQ Section",
+      title: " Add FAQ Section",
       description: "Answer common customer questions and build trust.",
       action: "ADD_FAQ"
     });
   }
 
   // ===== CTA =====
+// ===== CTA =====
+if (!analysis.hasCTA) {
   suggestions.push({
-  id: `${category}-add-cta`,
-  title: "🚀 Add Call-to-Action",
-  description: "Encourage visitors to take the next step with a clear CTA.",
-  action: "ADD_CTA",
-  payload: {
-    title: "Ready to grow your business?",
-    text: "Contact our team today and take the next step.",
-    actions: [
-      {
-        label: "Contact Us",
-        href: "#contact",
-      },
-    ],
-  },
-});
+    id: `${category}-add-cta`,
+    title: "Add Call-to-Action",
+    description: "Encourage visitors to take the next step with a clear CTA.",
+    action: "ADD_CTA",
+    payload: {
+      title: "Ready to grow your business?",
+      text: "Contact our team today and take the next step.",
+      actions: [
+        {
+          label: "Contact Us",
+          href: "#contact",
+        },
+      ],
+    },
+  });
+}
 
   // ===== TESTIMONIALS =====
   if (text.includes("testimonial") || text.includes("review") || text.includes("social proof")) {
     suggestions.push({
       id: `${category}-add-testimonials`,
-      title: "⭐ Add Testimonials",
+      title: " Add Testimonials",
       description: "Build credibility with client reviews and success stories.",
       action: "ADD_TESTIMONIALS"
     });
@@ -435,22 +438,16 @@ if (!analysis.hasServices) {
     suggestions.push(
       {
         id: `${category}-services`,
-        title: "📋 Add Services Section",
+        title: " Add Services Section",
         description: `Showcase your ${category} services and expertise.`,
         action: "ADD_SERVICES"
       },
       {
         id: `${category}-faq`,
-        title: "❓ Add FAQ Section",
+        title: " Add FAQ Section",
         description: "Add frequently asked questions to build trust.",
         action: "ADD_FAQ"
       },
-      {
-        id: `${category}-cta`,
-        title: "🚀 Add Call-to-Action",
-        description: "Add a conversion-focused CTA to drive action.",
-        action: "ADD_CTA"
-      }
     );
   }
 
