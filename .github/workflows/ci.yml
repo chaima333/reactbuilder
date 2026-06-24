@@ -55,3 +55,25 @@ jobs:
 
       - name: Build Backend
         run: npm run build
+
+    ml-service:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ml-service
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Validate ML service
+        run: python -m py_compile app.py
