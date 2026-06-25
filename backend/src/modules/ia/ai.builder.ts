@@ -895,19 +895,19 @@ const buildTimeline = (config: SectionConfig): PageBlock => {
 const buildMap = (config: SectionConfig): PageBlock => {
   const location = config.items?.[0] || "Tunis, Tunisia";
   const address = config.items?.[1] || "Immeuble Molka, Rue de la Bourse";
-  
+
   return sectionBlock(
     [
-      titleBlock(config.title || "Our Location", {
+      titleBlock(config.title || "Find Us", {
         fontSize: "38px",
         marginBottom: "16px"
       }),
-      textBlock(config.text || "Find us at our main office", {
+      textBlock(config.text || "Visit our main location.", {
         fontSize: "18px",
-        marginBottom: "24px"
+        marginBottom: "32px"
       }),
       {
-        id: makeId("map-container"),
+        id: makeId("location-card"),
         type: "flex",
         data: {
           props: {},
@@ -915,46 +915,40 @@ const buildMap = (config: SectionConfig): PageBlock => {
             width: "100%",
             maxWidth: "800px",
             margin: "0 auto",
-            borderRadius: "16px",
-            overflow: "hidden",
-            boxShadow: "0 12px 30px rgba(0,0,0,0.1)"
-          })
-        },
-        children: [
-          {
-            id: makeId("map-iframe"),
-            type: "iframe",
-            data: {
-              props: {
-                src: `https://www.openstreetmap.org/export/embed.html?bbox=10.1657%2C36.8028%2C10.1857%2C36.8228&layer=mapnik&marker=36.8128%2C10.1757`,
-                title: "Map",
-                width: "100%",
-                height: "400px",
-                style: { border: "none" }
-              },
-              style: responsiveStyle({
-                width: "100%",
-                height: "400px",
-                border: "none"
-              })
-            },
-            children: []
-          }
-        ]
-      },
-      {
-        id: makeId("map-address"),
-        type: "text",
-        data: {
-          props: { text: `📍 ${address}, ${location}` },
-          style: responsiveStyle({
-            fontSize: "16px",
-            color: "#64748b",
-            marginTop: "16px",
+            padding: "40px",
+            borderRadius: "18px",
+            backgroundColor: "#f8fafc",
+            border: "1px solid #e5e7eb",
+            boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
             textAlign: "center"
           })
         },
-        children: []
+        children: [
+          textBlock("📍 Location", {
+            fontSize: "24px",
+            fontWeight: "800",
+            color: "#0f172a",
+            marginBottom: "0"
+          }),
+          textBlock(address, {
+            fontSize: "18px",
+            color: "#334155",
+            marginBottom: "0"
+          }),
+          textBlock(location, {
+            fontSize: "18px",
+            color: "#334155",
+            marginBottom: "0"
+          }),
+          textBlock("Open Monday to Friday · 9:00 AM - 6:00 PM", {
+            fontSize: "15px",
+            color: "#64748b",
+            marginBottom: "0"
+          })
+        ]
       }
     ],
     {
@@ -963,7 +957,6 @@ const buildMap = (config: SectionConfig): PageBlock => {
     }
   );
 };
-
 // ============================================
 // BUILDERS EXISTANTS (CONSERVÉS)
 // ============================================
@@ -2562,9 +2555,11 @@ const generateSpecializedBlocks = (
         )
     )
   ];
-
-  return mergedSections
-    .filter((section) => kinds.includes(section.kind))
+return kinds
+  .map((kind) =>
+    mergedSections.find((section) => section.kind === kind)
+  )
+  .filter((section): section is SectionConfig => Boolean(section))
     .map((section) =>
       enrichSection(section, aiContent, heroImageUrl, navigationItems)
     )
