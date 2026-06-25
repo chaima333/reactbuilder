@@ -50,7 +50,8 @@ const flexBlock = (children: PageBlock[]): PageBlock => ({
       alignItems: "center",
       justifyContent: "center",
       gap: "16px",
-      width: "100%"
+      width: "100%",
+      maxWidth: "100%"
     })
   },
   children
@@ -123,14 +124,18 @@ const sectionBlock = (
     style: responsiveStyle({
       padding: "80px 40px",
       backgroundColor: "#ffffff",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",     // ← CENTRAGE
+      justifyContent: "center", // ← CENTRAGE
+      width: "100%",
       ...style
     })
   },
   children: [
-  flexBlock(children.map((child) => flexItemBlock([child])))
+    flexBlock(children.map((child) => flexItemBlock([child])))
   ]
 });
-
 const gridItemBlock = (children: PageBlock[]): PageBlock => ({
   id: makeId("grid-item"),
   type: "gridItem",
@@ -1838,6 +1843,8 @@ const buildFAQ = (config: SectionConfig): PageBlock => {
           flexDirection: "column",
           gap: "10px",
           width: "100%",
+          maxWidth: "820px", // ← IMPORTANT: largeur fixe
+          margin: "0 auto",   // ← IMPORTANT: centrage
           padding: "22px 26px",
           backgroundColor: "#ffffff",
           border: "1px solid #e5e7eb",
@@ -1874,11 +1881,11 @@ const buildFAQ = (config: SectionConfig): PageBlock => {
       style: responsiveStyle({
         display: "flex",
         flexDirection: "column",
-        alignItems: "stretch",
+        alignItems: "center", // ← CENTRAGE
         gap: "16px",
         width: "100%",
-        maxWidth: "820px",
-        margin: "0 auto",
+        maxWidth: "900px",
+        margin: "0 auto",     // ← CENTRAGE
         boxSizing: "border-box"
       })
     },
@@ -2652,14 +2659,30 @@ export const generateContactBlocks = (
 
   const navbar = buildTemplateSection("navbar");
   const footer = buildTemplateSection("footer");
-  const faq = buildTemplateSection("faq");
+  
+  // FAQ من التمبليت مع enrich
+  const faqSection = getSection("faq");
+  const faq = faqSection
+    ? buildSectionFromConfig(
+        enrichSection(faqSection, aiContent, heroImageUrl, navigationItems)
+      )
+    : undefined;
 
-  return [
-    navbar,
-    buildContactLayout(),
-    faq,
-    footer
-  ].filter((block): block is PageBlock => Boolean(block));
+  // نرجعوهم بالترتيب الصحيح
+  const blocks: PageBlock[] = [];
+
+  if (navbar) blocks.push(navbar);
+  
+  // Contact Layout مباشرة
+  blocks.push(buildContactLayout());
+  
+  // FAQ بعد Contact Layout
+  if (faq) blocks.push(faq);
+  
+  // Footer في آخر
+  if (footer) blocks.push(footer);
+
+  return blocks;
 };
 
 export const generateSolutionsBlocks = (
