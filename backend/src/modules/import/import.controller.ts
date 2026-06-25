@@ -50,6 +50,271 @@ const normalizeHrefPath = (
     .replace(/^\.\//, "")
     .replace(/^\//, "");
 
+const isExternalUrl = (
+  value: string
+) =>
+  /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(
+    value.trim()
+  );
+
+const stripUrlMeta = (
+  value: string
+) =>
+  value
+    .split("#")[0]
+    .split("?")[0];
+
+const getMimeType = (
+  filePath: string
+) => {
+  const ext =
+    path
+      .extname(filePath)
+      .toLowerCase();
+
+  const mimeByExt:
+    Record<string, string> = {
+      ".css": "text/css",
+      ".gif": "image/gif",
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".png": "image/png",
+      ".svg": "image/svg+xml",
+      ".webp": "image/webp",
+      ".avif": "image/avif",
+      ".ico": "image/x-icon",
+      ".woff": "font/woff",
+      ".woff2": "font/woff2",
+      ".ttf": "font/ttf",
+      ".otf": "font/otf"
+    };
+
+  return (
+    mimeByExt[ext] ||
+    "application/octet-stream"
+  );
+};
+
+const toDataUrl = (
+  filePath: string
+) => {
+  const buffer =
+    fs.readFileSync(filePath);
+
+  return `data:${getMimeType(filePath)};base64,${buffer.toString("base64")}`;
+};
+
+const getAttribute = (
+  tag: string,
+  name: string
+) => {
+  const match =
+    tag.match(
+      new RegExp(
+        `\\s${name}\\s*=\\s*(["'])(.*?)\\1`,
+        "i"
+      )
+    );
+
+  return match?.[2] || "";
+};
+
+const hasStylesheetRel = (
+  tag: string
+) =>
+  /\srel\s*=\s*(["'])[^"']*\bstylesheet\b[^"']*\1/i.test(
+    tag
+  );
+
+const resolveZipAssetPath = (
+  extractDir: string,
+  fromFile: string,
+  assetHref: string,
+  fileByRelativePath: Map<string, string>
+) => {
+  if (
+    !assetHref ||
+    isExternalUrl(assetHref)
+  ) {
+    return null;
+  }
+
+  const cleanHref =
+    stripUrlMeta(assetHref);
+
+  const candidates = [
+    normalizeHrefPath(cleanHref),
+    path
+      .relative(
+        extractDir,
+        path.resolve(
+          path.dirname(fromFile),
+          cleanHref
+        )
+      )
+      .replace(/\\/g, "/")
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    const normalized =
+      normalizeHrefPath(candidate);
+
+    const exact =
+      fileByRelativePath.get(
+        normalized
+      );
+
+    if (exact) {
+      return exact;
+    }
+
+    const insensitive =
+      fileByRelativePath.get(
+        normalized.toLowerCase()
+      );
+
+    if (insensitive) {
+      return insensitive;
+    }
+  }
+
+  return null;
+};
+
+const rewriteCssUrlsToDataUrls = (
+  css: string,
+  cssPath: string,
+  extractDir: string,
+  fileByRelativePath: Map<string, string>
+) =>
+  css.replace(
+    /url\(\s*(["']?)([^"')]+)\1\s*\)/gi,
+    (
+      match,
+      _quote,
+      rawUrl
+    ) => {
+      const assetPath =
+        resolveZipAssetPath(
+          extractDir,
+          cssPath,
+          rawUrl,
+          fileByRelativePath
+        );
+
+      if (!assetPath) {
+        return match;
+      }
+
+      return `url("${toDataUrl(assetPath)}")`;
+    }
+  );
+
+const inlineZipStylesheets = (
+  html: string,
+  htmlPath: string,
+  extractDir: string,
+  fileByRelativePath: Map<string, string>
+) =>
+  html.replace(
+    /<link\b[^>]*>/gi,
+    tag => {
+      if (!hasStylesheetRel(tag)) {
+        return tag;
+      }
+
+      const href =
+        getAttribute(
+          tag,
+          "href"
+        );
+
+      const cssPath =
+        resolveZipAssetPath(
+          extractDir,
+          htmlPath,
+          href,
+          fileByRelativePath
+        );
+
+      if (!cssPath) {
+        return tag;
+      }
+
+      const css =
+        fs.readFileSync(
+          cssPath,
+          "utf-8"
+        );
+
+      const inlinedCss =
+        rewriteCssUrlsToDataUrls(
+          css,
+          cssPath,
+          extractDir,
+          fileByRelativePath
+        );
+
+      return `<style data-inlined-from="${normalizeHrefPath(href)}">\n${inlinedCss}\n</style>`;
+    }
+  );
+
+const rewriteImgSrcToDataUrls = (
+  html: string,
+  htmlPath: string,
+  extractDir: string,
+  fileByRelativePath: Map<string, string>
+) =>
+  html.replace(
+    /<img\b[^>]*>/gi,
+    tag => {
+      const src =
+        getAttribute(
+          tag,
+          "src"
+        );
+
+      const imagePath =
+        resolveZipAssetPath(
+          extractDir,
+          htmlPath,
+          src,
+          fileByRelativePath
+        );
+
+      if (!imagePath) {
+        return tag;
+      }
+
+      return tag.replace(
+        /(\ssrc\s*=\s*)(["'])(.*?)\2/i,
+        `$1$2${toDataUrl(imagePath)}$2`
+      );
+    }
+  );
+
+const createSelfContainedHtml = (
+  html: string,
+  htmlPath: string,
+  extractDir: string,
+  fileByRelativePath: Map<string, string>
+) => {
+  const withStyles =
+    inlineZipStylesheets(
+      html,
+      htmlPath,
+      extractDir,
+      fileByRelativePath
+    );
+
+  return rewriteImgSrcToDataUrls(
+    withStyles,
+    htmlPath,
+    extractDir,
+    fileByRelativePath
+  );
+};
+
 export const importHtmlZip = async (
   req: any,
   res: any
@@ -104,6 +369,34 @@ export const importHtmlZip = async (
     };
 
     walk(extractDir);
+
+    const fileByRelativePath =
+      new Map<string, string>();
+
+    for (const file of files) {
+      const relativePath =
+        path
+          .relative(
+            extractDir,
+            file
+          )
+          .replace(/\\/g, "/");
+
+      const normalized =
+        normalizeHrefPath(
+          relativePath
+        );
+
+      fileByRelativePath.set(
+        normalized,
+        file
+      );
+
+      fileByRelativePath.set(
+        normalized.toLowerCase(),
+        file
+      );
+    }
 
     const htmlFiles =
       files.filter(file =>
@@ -188,6 +481,14 @@ export const importHtmlZip = async (
           fs.readFileSync(
             htmlPath,
             "utf-8"
+          );
+
+        processedHtml =
+          createSelfContainedHtml(
+            processedHtml,
+            htmlPath,
+            extractDir,
+            fileByRelativePath
           );
 
         processedHtml =
