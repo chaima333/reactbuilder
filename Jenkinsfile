@@ -2,37 +2,9 @@ pipeline {
     agent any
 
     stages {
-
-        stage('Clone') {
+        stage('Checkout') {
             steps {
                 checkout scm
-            }
-        }
-
-        stage('Frontend Build') {
-            steps {
-                dir('frontend') {
-                    sh 'npm ci'
-                    sh 'npm run build'
-                }
-            }
-        }
-
-        stage('Backend Build') {
-            steps {
-                dir('backend') {
-                    sh 'npm ci'
-                    sh 'npm run build'
-                }
-            }
-        }
-
-        stage('ML Validation') {
-            steps {
-                dir('ml-service') {
-                    sh 'pip install -r requirements.txt'
-                    sh 'python -m py_compile app.py'
-                }
             }
         }
 
@@ -45,11 +17,11 @@ pipeline {
 
     post {
         success {
-            echo 'ReactBuilder Build Success ✅'
+            echo 'ReactBuilder Docker Build Success ✅'
         }
 
         failure {
-            echo 'Build Failed ❌'
+            echo 'ReactBuilder Docker Build Failed ❌'
         }
     }
 }
