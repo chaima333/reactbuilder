@@ -2,7 +2,7 @@
 
 // ==================== HELPERS ====================
 
-import { SiteContext } from "./ai.types";
+import { AiGeneratedContent, SiteContext } from "./ai.types";
 import { BusinessProfile } from "./business.profile";
 
 /**
@@ -622,7 +622,7 @@ const FAQ_BY_CATEGORY: Record<string, string[]> = {
 export const generateAiContent = (
   siteContext: SiteContext,
   prompt: string
-)=> {
+): AiGeneratedContent => {
   const cleanPrompt = prompt.trim().replace(/\s+/g, " ");
   const {category,companyName,audience,services} = siteContext;
   

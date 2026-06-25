@@ -24,5 +24,17 @@ export class SitePlugin extends Model {
 
   @BelongsTo(() => Site)
   site!: Site;
+
+  @Column({
+  type: DataType.DATE,
+  field: "installed_at",
+})
+installedAt?: Date;
+
+@Column({
+  type: DataType.STRING,
+  field: "installed_version",
+})
+installedVersion?: string;
 }
 export default SitePlugin;

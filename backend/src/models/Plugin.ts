@@ -12,7 +12,6 @@ import { SitePlugin } from "./SitePlugin";
 @Table({
   tableName: "plugins",
   timestamps: true,
-  updatedAt: false,
 })
 export class Plugin extends Model {
   @Column({
@@ -39,6 +38,33 @@ export class Plugin extends Model {
     field: "is_active",
   })
   isActive!: boolean;
+
+  @Column({
+    type: DataType.STRING,
+    defaultValue: "1.0.0",
+  })
+  version!: string;
+
+  @Column(DataType.STRING)
+  author?: string;
+
+  @Column(DataType.STRING)
+  category?: string;
+
+  @Column(DataType.STRING)
+  icon?: string;
+
+  @Column(DataType.STRING)
+  documentation?: string;
+
+  @Column(DataType.STRING)
+  repository?: string;
+
+  @Column({
+    type: DataType.ENUM("draft", "published", "deprecated"),
+    defaultValue: "published",
+  })
+  status!: "draft" | "published" | "deprecated";
 
   @CreatedAt
   @Column({

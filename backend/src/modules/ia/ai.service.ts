@@ -111,6 +111,28 @@ if (
 ) {
   return "Education";
 }
+      if (
+  [
+    "software",
+    "technology",
+    "tech",
+    "ai",
+    "cloud",
+    "saas",
+    "application",
+    "platform",
+    "automation",
+    "machine learning",
+    "api",
+    "apis",
+    "devops",
+    "infrastructure",
+    "workflow",
+    "workflows"
+  ].some((keyword) => text.includes(keyword))
+) {
+  return "Technology";
+}
     if (
       [
         "portfolio",
@@ -147,29 +169,6 @@ if (
     ) {
       return "Consulting";
     }
-
-       if (
-  [
-    "software",
-    "technology",
-    "tech",
-    "ai",
-    "cloud",
-    "saas",
-    "application",
-    "platform",
-    "automation",
-    "machine learning",
-    "api",
-    "apis",
-    "devops",
-    "infrastructure",
-    "workflow",
-    "workflows"
-  ].some((keyword) => text.includes(keyword))
-) {
-  return "Technology";
-}
 
     return "Corporate";
   }
