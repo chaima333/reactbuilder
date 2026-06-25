@@ -248,12 +248,14 @@ console.log(
   siteContext
 );
 
-const sitePlan =
-  generateSitePlan(
-    category,
-    prompt,
-    businessProfile
-  );
+const sitePlan = siteContext.pages.map((page) => ({
+  type: page,
+  title:
+    page === "home"
+      ? "Home"
+      : page.charAt(0).toUpperCase() + page.slice(1),
+  slug: page
+}));
 
 const aiContent =
   generateAiContent(
