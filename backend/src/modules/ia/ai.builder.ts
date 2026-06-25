@@ -2,7 +2,6 @@
 
 import { PageBlock } from "../pages/types/page.types";
 import { CATEGORY_TEMPLATES, SectionConfig, SectionKind, TemplateConfig } from "./ai.templates";
-import { GeneratedPage } from "./ai.types";
 
 const makeId = (prefix: string) =>
   `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
@@ -81,7 +80,7 @@ const buttonBlock = (label: string): PageBlock => ({
       display: "block",
       margin: "0 auto",
       padding: "12px 32px",
-      backgroundColor: "#2563eb",
+      backgroundColor: "#667189",
       color: "#ffffff",
       border: "none",
       borderRadius: "8px",
@@ -891,72 +890,6 @@ const buildTimeline = (config: SectionConfig): PageBlock => {
   );
 };
 
-// 8. MAP BUILDER
-const buildMap = (config: SectionConfig): PageBlock => {
-  const location = config.items?.[0] || "Tunis, Tunisia";
-  const address = config.items?.[1] || "Immeuble Molka, Rue de la Bourse";
-
-  return sectionBlock(
-    [
-      titleBlock(config.title || "Find Us", {
-        fontSize: "38px",
-        marginBottom: "16px"
-      }),
-      textBlock(config.text || "Visit our main location.", {
-        fontSize: "18px",
-        marginBottom: "32px"
-      }),
-      {
-        id: makeId("location-card"),
-        type: "flex",
-        data: {
-          props: {},
-          style: responsiveStyle({
-            width: "100%",
-            maxWidth: "800px",
-            margin: "0 auto",
-            padding: "40px",
-            borderRadius: "18px",
-            backgroundColor: "#f8fafc",
-            border: "1px solid #e5e7eb",
-            boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-            textAlign: "center"
-          })
-        },
-        children: [
-          textBlock("📍 Location", {
-            fontSize: "24px",
-            fontWeight: "800",
-            color: "#0f172a",
-            marginBottom: "0"
-          }),
-          textBlock(address, {
-            fontSize: "18px",
-            color: "#334155",
-            marginBottom: "0"
-          }),
-          textBlock(location, {
-            fontSize: "18px",
-            color: "#334155",
-            marginBottom: "0"
-          }),
-          textBlock("Open Monday to Friday · 9:00 AM - 6:00 PM", {
-            fontSize: "15px",
-            color: "#64748b",
-            marginBottom: "0"
-          })
-        ]
-      }
-    ],
-    {
-      backgroundColor: config.style?.backgroundColor || "#ffffff",
-      padding: "80px 40px"
-    }
-  );
-};
 // ============================================
 // BUILDERS EXISTANTS (CONSERVÉS)
 // ============================================
@@ -1891,64 +1824,44 @@ const buildFooter = (config: SectionConfig): PageBlock => {
 
 const buildFAQ = (config: SectionConfig): PageBlock => {
   const items = config.items || [];
-  
+
   const faqBlocks: PageBlock[] = items.map((item) => {
     const [question, answer] = item.split("|");
-    
+
     return {
       id: makeId("faq-item"),
       type: "flex",
       data: {
         props: {},
         style: responsiveStyle({
-          padding: "24px",
-          borderBottom: "1px solid #e5e7eb",
-          backgroundColor: "#ffffff",
-          borderRadius: "12px",
-          marginBottom: "12px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
           display: "flex",
           flexDirection: "column",
-          gap: "8px",
+          gap: "10px",
           width: "100%",
-          maxWidth: "900px",
-          margin: "0 auto",
-          marginLeft: "auto",
-          marginRight: "auto",
+          padding: "22px 26px",
+          backgroundColor: "#ffffff",
+          border: "1px solid #e5e7eb",
+          borderRadius: "14px",
+          boxShadow: "0 8px 24px rgba(15,23,42,0.06)",
+          boxSizing: "border-box"
         })
       },
       children: [
-        {
-          id: makeId("faq-question"),
-          type: "text",
-          data: {
-            props: { text: `❓ ${question || item}` },
-            style: responsiveStyle({
-              fontSize: "18px",
-              fontWeight: "700",
-              color: "#0f172a",
-              textAlign: "left",
-              marginBottom: "4px"
-            })
-          },
-          children: []
-        },
-        {
-          id: makeId("faq-answer"),
-          type: "text",
-          data: {
-            props: { text: answer || "" },
-            style: responsiveStyle({
-              fontSize: "16px",
-              color: "#64748b",
-              textAlign: "left",
-              lineHeight: "1.6",
-              marginBottom: "0",
-              paddingLeft: "4px"
-            })
-          },
-          children: []
-        }
+        textBlock(question || item, {
+          fontSize: "18px",
+          fontWeight: "800",
+          color: "#0f172a",
+          textAlign: "left",
+          marginBottom: "0"
+        }),
+
+        textBlock(answer || "", {
+          fontSize: "15px",
+          color: "#64748b",
+          textAlign: "left",
+          lineHeight: "1.7",
+          marginBottom: "0"
+        })
       ]
     };
   });
@@ -1961,12 +1874,12 @@ const buildFAQ = (config: SectionConfig): PageBlock => {
       style: responsiveStyle({
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
-        gap: "8px",
-        maxWidth: "900px",
-        margin: "0 auto",
+        alignItems: "stretch",
+        gap: "16px",
         width: "100%",
-        alignSelf: "center",
+        maxWidth: "820px",
+        margin: "0 auto",
+        boxSizing: "border-box"
       })
     },
     children: faqBlocks
@@ -1974,19 +1887,25 @@ const buildFAQ = (config: SectionConfig): PageBlock => {
 
   return sectionBlock(
     [
-      titleBlock(config.title, {
+      titleBlock(config.title || "Frequently Asked Questions", {
         fontSize: "38px",
-        marginBottom: "16px"
+        fontWeight: "900",
+        marginBottom: "12px",
+        textAlign: "center"
       }),
-      textBlock(config.text, {
-        fontSize: "18px",
-        marginBottom: "40px"
+
+      textBlock(config.text || "Find answers to common questions.", {
+        fontSize: "16px",
+        color: "#64748b",
+        marginBottom: "42px",
+        textAlign: "center"
       }),
+
       faqContainer
     ],
     {
       backgroundColor: config.style?.backgroundColor || "#f8fafc",
-      padding: "80px 40px",
+      padding: "90px 40px",
       textAlign: "center"
     }
   );
@@ -2323,8 +2242,6 @@ export function buildSectionFromConfig(
       return buildIntegrations(config);
     case "timeline":
       return buildTimeline(config);
-    case "map":
-      return buildMap(config);
     default:
       return buildMission(config);
   }
@@ -2750,15 +2667,6 @@ export const generateContactBlocks = (
   return [
     navbar,
     buildContactLayout(),
-    buildMap({
-      kind: "map",
-      title: "Find Us",
-      text: "Visit our main location.",
-      items: [
-        "Tunis, Tunisia",
-        "Immeuble Molka, Rue de la Bourse"
-      ]
-    }),
     faq,
     footer
   ].filter((block): block is PageBlock => Boolean(block));
@@ -2966,7 +2874,6 @@ export {
   buildReservation,
   buildIntegrations,
   buildTimeline,
-  buildMap,
   featureCard,
   enrichSection,
   HOME_KINDS,
