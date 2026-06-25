@@ -8,7 +8,6 @@ export const rebuildDashboardProjection = async (siteId: number) => {
   try {
     console.log(`🛠️ Rebuilding projection for site: ${siteId}`);
 
-    // جلب البيانات مع ضمان عدم رجوع undefined
     const stats = (await DashboardService.fetchStats(siteId)) || { 
       siteName: "New Project", totalPages: 0, totalViews: 0 
     };

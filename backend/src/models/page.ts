@@ -12,7 +12,6 @@ import {
 import { User } from "./User";
 import { Site } from "./site";
 import { Seo } from "./Seo";
-import { fi } from "zod/v4/locales";
 
 // Type pour les blocs de l'éditeur
 export type Block = { type: string; content: string };
@@ -51,7 +50,6 @@ export class Page extends Model {
   status!: PageStatus;
 
   // 🛡️ الربط مع المستخدم
-  @ForeignKey(() => User)
   @Column({
   type: DataType.BOOLEAN,
   allowNull:false,
@@ -59,6 +57,8 @@ export class Page extends Model {
   field: "is_homepage"
 })
 isHomepage!: boolean;
+
+  @ForeignKey(() => User)
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
@@ -66,7 +66,7 @@ isHomepage!: boolean;
   })
   userId!: number;
 
-  @BelongsTo(() => User, 'user_id')
+  @BelongsTo(() => User, 'userId')
   author!: User;
 
   @ForeignKey(() => Site)
@@ -77,7 +77,7 @@ isHomepage!: boolean;
   })
   siteId!: number; 
   
-  @BelongsTo(() => Site, 'site_id')
+  @BelongsTo(() => Site, 'siteId')
   site!: Site;
 
   @HasOne(() => Seo)
