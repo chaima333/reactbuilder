@@ -245,6 +245,8 @@ export const buildBusinessProfile = (
       ? "trustworthy"
       : category === "Technology"
         ? "innovative"
+         : category === "Cybersecurity"
+          ? "secure"
         : category === "RealEstate"
           ? "premium"
           : "modern",
