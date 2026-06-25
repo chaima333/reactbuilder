@@ -18,7 +18,6 @@ export type SectionKind =
   | "reservation"
   | "integrations"
   | "timeline"
-  | "map";
 
 export interface SectionConfig {
   kind: SectionKind;

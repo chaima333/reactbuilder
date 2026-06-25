@@ -126,7 +126,9 @@ const sectionBlock = (
       ...style
     })
   },
-  children: []
+  children: [
+  flexBlock(children.map((child) => flexItemBlock([child])))
+  ]
 });
 
 const gridItemBlock = (children: PageBlock[]): PageBlock => ({
@@ -2442,7 +2444,6 @@ const SOLUTIONS_KINDS: SectionKind[] = [
 // CONTACT - sans Hero ni CTA, avec Map et FAQ
 const CONTACT_KINDS: SectionKind[] = [
   "navbar",
-  "map",
   "faq",
   "footer"
 ];
@@ -2545,15 +2546,6 @@ const generateSpecializedBlocks = (
         "Developer API|Build custom connections.|🔌"
       ]
     },
-    {
-      kind: "map",
-      title: "Find Us",
-      text: "Visit our main location.",
-      items: [
-        "Tunis, Tunisia",
-        "Immeuble Molka, Rue de la Bourse"
-      ]
-    }
   ];
 
   const mergedSections = [
