@@ -2,6 +2,7 @@
 
 // ==================== HELPERS ====================
 
+import { SiteContext } from "./ai.types";
 import { BusinessProfile } from "./business.profile";
 
 /**
@@ -618,25 +619,18 @@ const FAQ_BY_CATEGORY: Record<string, string[]> = {
     "Do you have analytics?|Yes, we provide detailed analytics and insights."
   ]
 };
-
 export const generateAiContent = (
-  category: string,
-  prompt: string,
-  profile?: BusinessProfile
-) => {
+  siteContext: SiteContext,
+  prompt: string
+)=> {
   const cleanPrompt = prompt.trim().replace(/\s+/g, " ");
+  const {category,companyName,audience,services} = siteContext;
   
   // 1. Extraire les mots-clés du prompt
-  const keywords = extractKeywordsFromPrompt(cleanPrompt);
-  const profileServices =
-    profile?.services?.length
-      ? profile.services
-      : generateServicesFromKeywords(keywords);
-
-  const profileAudience = profile?.audience?.length ? profile.audience : ["businesses", "professionals"];
-
-  const profileBrand = profile?.companyName || generateBrandFromKeywords(keywords);
-  
+  const keywords = siteContext.keywords.length ? siteContext.keywords: extractKeywordsFromPrompt(cleanPrompt);
+  const profileServices = services.length ? services : generateServicesFromKeywords(keywords);
+  const profileAudience = audience.length ? audience : ["businesses", "professionals"];
+  const profileBrand = companyName || generateBrandFromKeywords(keywords);  
   // 2. Générer les contenus dynamiques
   const dynamicBrand = profileBrand;
   const dynamicServices = CATEGORY_SERVICES[category] || profileServices;

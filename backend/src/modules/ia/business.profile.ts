@@ -1,3 +1,5 @@
+import { AiPageType, SiteContext } from "./ai.types";
+
 export interface BusinessProfile {
   industry: string;
   companyName: string;
@@ -196,5 +198,56 @@ export const buildBusinessProfile = (
     needsPricing,
     needsIntegrations,
     needsBooking
+  };
+};
+export const buildSiteContext = (
+  category: string,
+  prompt: string,
+  businessProfile: BusinessProfile
+): SiteContext => {
+  const pages: AiPageType[] = [
+    "home",
+    "about",
+    "services",
+    "contact"
+  ];
+
+  if (businessProfile.needsPricing) {
+    pages.push("pricing");
+  }
+
+  if (businessProfile.needsIntegrations) {
+    pages.push("integrations");
+  }
+
+  if (businessProfile.needsBooking) {
+    pages.push("reservation");
+  }
+
+  if (
+    category === "Technology" ||
+    category === "Finance" ||
+    category === "Corporate"
+  ) {
+    pages.push("solutions");
+  }
+
+  return {
+    companyName: businessProfile.companyName,
+    category,
+    audience: businessProfile.audience,
+    tone: businessProfile.tone,
+    services: businessProfile.services,
+    cta: businessProfile.needsBooking
+      ? "Book Now"
+      : category === "Finance"
+        ? "Request a Consultation"
+        : category === "Medical"
+          ? "Book an Appointment"
+          : category === "Technology"
+            ? "Start Your Project"
+            : "Get a Consultation",
+    pages: Array.from(new Set(pages)),
+    keywords: businessProfile.keywords
   };
 };

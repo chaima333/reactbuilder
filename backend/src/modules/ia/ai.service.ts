@@ -6,7 +6,7 @@ import { MediaService } from "../media/media.service";
 import { PageService } from "../pages/services/page.service";
 import { generatePageBlocksByType, generateHomeBlocks} from "./ai.builder";
 import { CATEGORY_TEMPLATES } from "./ai.templates";
-import { buildBusinessProfile } from "./business.profile";
+import { buildBusinessProfile, buildSiteContext } from "./business.profile";
 import { generateAiContent } from "./content.generator";
 import { generateSeo } from "./seo.generator";
 import { generateSitePlan } from "./site.plan";
@@ -224,28 +224,42 @@ if (
   }
 
 const category = await this.predictCategory(prompt);
-console.log("FINAL_CATEGORY", category);
-console.log("FINAL_PROMPT", prompt);
 
-const businessProfile = buildBusinessProfile(category, prompt);
+const businessProfile =
+  buildBusinessProfile(
+    category,
+    prompt
+  );
 
-console.log("BUSINESS_PROFILE", businessProfile);
+const siteContext =
+  buildSiteContext(
+    category,
+    prompt,
+    businessProfile
+  );
 
-const sitePlan = generateSitePlan(category, prompt, businessProfile);
-console.log( "SITE_PLAN_CATEGORY", category, sitePlan.map((p) => p.slug));
-  
-const aiContent = generateAiContent(category,prompt,businessProfile);
-console.log("AI_CONTENT_TITLE", aiContent.title);
-console.log("FINAL_CATEGORY", category);
 console.log(
-  "TEMPLATE_FOUND",
-  Object.keys(CATEGORY_TEMPLATES)
+  "BUSINESS_PROFILE",
+  businessProfile
 );
 
 console.log(
-  "CURRENT_TEMPLATE",
-  CATEGORY_TEMPLATES[category]?.defaultTitle
+  "SITE_CONTEXT",
+  siteContext
 );
+
+const sitePlan =
+  generateSitePlan(
+    category,
+    prompt,
+    businessProfile
+  );
+
+const aiContent =
+  generateAiContent(
+    siteContext,
+    prompt
+  );
   const template =
     CATEGORY_TEMPLATES[category] ??
     CATEGORY_TEMPLATES["Corporate"];
