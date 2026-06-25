@@ -2168,23 +2168,44 @@ const buildContactLayout = (): PageBlock => ({
         style: responsiveStyle({
           display: "flex",
           flexDirection: "row",
-          gap: "40px",
+          gap: "32px",
           alignItems: "stretch",
           justifyContent: "center",
           maxWidth: "1200px",
           margin: "0 auto",
           width: "100%",
-          flexWrap: "wrap"
+          flexWrap: "nowrap"
         })
       },
       children: [
-        flexItemBlock([buildContactInfo()]),
-        flexItemBlock([buildContactForm()])
+        {
+          id: makeId("contact-info-item"),
+          type: "flexItem",
+          data: {
+            props: {},
+            style: responsiveStyle({
+              flex: "1 1 0",
+              minWidth: "0"
+            })
+          },
+          children: [buildContactInfo()]
+        },
+        {
+          id: makeId("contact-form-item"),
+          type: "flexItem",
+          data: {
+            props: {},
+            style: responsiveStyle({
+              flex: "1 1 0",
+              minWidth: "0"
+            })
+          },
+          children: [buildContactForm()]
+        }
       ]
     }
   ]
 });
-
 // ============================================
 // MAIN BUILDER (SWITCH AVEC NOUVEAUX BUILDERS)
 // ============================================
@@ -2630,10 +2651,16 @@ export const generateContactBlocks = (
   heroImageUrl?: string,
   navigationItems: Array<{ label: string; href: string }> = []
 ): PageBlock[] => {
-  const template = CATEGORY_TEMPLATES[category] ?? CATEGORY_TEMPLATES["Corporate"];
+  const template =
+    CATEGORY_TEMPLATES[category] ??
+    CATEGORY_TEMPLATES["Corporate"];
+
+  const getSection = (kind: SectionKind): SectionConfig | undefined => {
+    return template.sections.find((item) => item.kind === kind);
+  };
 
   const buildTemplateSection = (kind: SectionKind): PageBlock | undefined => {
-    const section = template.sections.find((item) => item.kind === kind);
+    const section = getSection(kind);
 
     return section
       ? buildSectionFromConfig(
@@ -2644,19 +2671,23 @@ export const generateContactBlocks = (
 
   const navbar = buildTemplateSection("navbar");
   const footer = buildTemplateSection("footer");
+  const faq = buildTemplateSection("faq");
 
-  const orderedBlocks = [
-    { label: "navbar", block: navbar },
-    { label: "contact-layout", block: buildContactLayout() },
-    { label: "map", block: buildMap({ kind: "map", title: "Find Us",  text: "Visit our main location.", items: ["Tunis, Tunisia", "Immeuble Molka, Rue de la Bourse"] }) },
-    { label: "faq", block: buildTemplateSection("faq") },
-    { label: "footer", block: footer }
-  ].filter(
-    (item): item is { label: string; block: PageBlock } =>
-      Boolean(item.block)
-  );
-
-  return orderedBlocks.map((item) => item.block);
+  return [
+    navbar,
+    buildContactLayout(),
+    buildMap({
+      kind: "map",
+      title: "Find Us",
+      text: "Visit our main location.",
+      items: [
+        "Tunis, Tunisia",
+        "Immeuble Molka, Rue de la Bourse"
+      ]
+    }),
+    faq,
+    footer
+  ].filter((block): block is PageBlock => Boolean(block));
 };
 
 export const generateSolutionsBlocks = (
