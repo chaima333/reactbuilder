@@ -10,8 +10,15 @@ export type SectionKind =
   | "stats"
   | "cta"
   | "faq"
+  | "footer"
+  | "team"
+  | "values"
+  | "story"
   | "pricing"
-  | "footer";
+  | "reservation"
+  | "integrations"
+  | "timeline"
+  | "map";
 
 export interface SectionConfig {
   kind: SectionKind;
