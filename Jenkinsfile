@@ -8,20 +8,22 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
+        stage('CI already handled by GitHub Actions') {
             steps {
-                sh 'docker compose build'
+                echo 'GitHub Actions handles frontend, backend, ML and Docker builds.'
+            }
+        }
+
+        stage('Delivery placeholder') {
+            steps {
+                echo 'Jenkins is configured as the delivery orchestrator.'
             }
         }
     }
 
     post {
         success {
-            echo 'ReactBuilder Docker Build Success ✅'
-        }
-
-        failure {
-            echo 'ReactBuilder Docker Build Failed ❌'
+            echo 'Jenkins Pipeline Success ✅'
         }
     }
 }
