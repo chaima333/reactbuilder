@@ -199,6 +199,46 @@ const shouldUseDarkFallback = (
   );
 };
 
+const findContainerElement = (
+  claimedElement?: HTMLElement,
+  sourceElement?: HTMLElement
+) =>
+  (
+    sourceElement?.closest(
+      ".container, [class~='container']"
+    ) ||
+    claimedElement?.querySelector(
+      ".container, [class~='container']"
+    ) ||
+    claimedElement?.closest(
+      ".container, [class~='container']"
+    )
+  ) as HTMLElement | null;
+
+const createContainerStyle = (
+  containerElement?: HTMLElement | null
+) => {
+  const extracted =
+    containerElement
+      ? extractLayoutStyles(
+          containerElement
+        )
+      : undefined;
+
+  return {
+    ...(extracted || {}),
+   desktop: {
+  ...(extracted?.desktop || {})
+},
+    tablet: {
+      ...(extracted?.tablet || {})
+    },
+    mobile: {
+      ...(extracted?.mobile || {})
+    }
+  };
+};
+
 const summarizeBlockTree = (
   block: Block | null,
   depth = 0
@@ -439,9 +479,6 @@ const createSectionIntro = (
                               ...applySectionTitleScale(
                                 mergePresetDesktopStyle(
                                   {
-                                    fontSize: "42px",
-                                    fontWeight: "700",
-                                    lineHeight: "1.12",
                                     textAlign: "left"
                                   },
                                   titleElement
@@ -493,15 +530,7 @@ const createSectionIntro = (
                       ...applySectionTitleScale(
                         mergePresetDesktopStyle(
                           {
-                            fontSize: "42px",
-                            fontWeight: "700",
-                            lineHeight: "1.12",
-                            textAlign: "left",
-                            background: "linear-gradient(90deg, #1f9bff 0%, #f7b731 100%)",
-                            backgroundClip: "text",
-                            WebkitBackgroundClip: "text",
-                            WebkitTextFillColor: "transparent",
-                            color: "#1f9bff"
+                            textAlign: "left"
                           },
                           titleAccentElement
                             ? extractTypographyStyles(
@@ -550,9 +579,6 @@ const createSectionIntro = (
                 ...applySectionTitleScale(
                   mergePresetDesktopStyle(
                     {
-                      fontSize: "42px",
-                      fontWeight: "700",
-                      lineHeight: "1.12",
                       textAlign: "left"
                     },
                     titleElement
@@ -588,20 +614,13 @@ const createSectionIntro = (
             style: {
               ...mergePresetDesktopStyle(
                 {
-                  fontSize: "12px",
-                  fontWeight: "700",
-                  letterSpacing: "0.18em",
                   textAlign: "left",
                   display: "inline-flex",
                   width: "fit-content",
                   paddingTop: "8px",
                   paddingBottom: "8px",
                   paddingLeft: "14px",
-                  paddingRight: "14px",
-                  border: "1px solid rgba(247, 127, 0, 0.45)",
-                  borderRadius: "999px",
-                  backgroundColor: "rgba(247, 127, 0, 0.08)",
-                  color: "#f7b731"
+                  paddingRight: "14px"
                 },
                 eyebrowElement
                   ? {
@@ -638,9 +657,6 @@ const createSectionIntro = (
             style: {
               ...mergePresetDesktopStyle(
                 {
-                  fontSize: "16px",
-                  fontWeight: "400",
-                  lineHeight: "1.7",
                   textAlign: "left"
                 },
                 descriptionElement
@@ -781,10 +797,7 @@ const createChipList = (
                 },
                 style: {
                   ...mergePresetDesktopStyle(
-                    {
-                      fontSize: "12px",
-                      fontWeight: "600"
-                    },
+                    {},
                     {
                       desktop: {
                         ...extractLayoutStyles(
@@ -911,45 +924,11 @@ const createFeatureItem = (
       extractedCardStyle
     );
 
-  const fallbackCardStyle = {
-    flex: "1 1 calc(33.333% - 24px)",
-    maxWidth: "calc(33.333% - 24px)",
-    paddingTop:
-      useDarkCardFallback
-        ? "34px"
-        : "24px",
-    paddingBottom:
-      useDarkCardFallback
-        ? "34px"
-        : "24px",
-    paddingLeft:
-      useDarkCardFallback
-        ? "30px"
-        : "24px",
-    paddingRight:
-      useDarkCardFallback
-        ? "30px"
-        : "24px",
-    border:
-      useDarkCardFallback
-        ? "1px solid rgba(122, 158, 192, 0.16)"
-        : "1px solid rgba(17, 24, 39, 0.08)",
-    borderRadius:
-      useDarkCardFallback
-        ? "22px"
-        : "18px",
-    backgroundColor:
-      useDarkCardFallback
-        ? "rgba(6, 32, 61, 0.7)"
-        : "#f9fafb",
-    color:
-      useDarkCardFallback
-        ? "#eef7ff"
-        : "#111827",
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px"
-  };
+const fallbackCardStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "12px"
+};
 
   const filteredCardStyle =
     filterCardStyle(
@@ -962,179 +941,6 @@ const createFeatureItem = (
       extractedCardStyle,
       filterCardStyle
     );
-
-  console.log(
-    "FEATURE_PILLARS CARD STYLE COMPARE",
-    JSON.stringify(
-      {
-        title:
-          item.title,
-        sourceTag:
-          cardElement?.tagName || "",
-        sourceClassName:
-          cardElement?.getAttribute("class") || "",
-        extractedCardStyle,
-        filteredCardStyle,
-        emittedDesktopStyle:
-          emittedCardStyle.desktop
-      },
-      null,
-      2
-    )
-  );
-
-  console.log(
-    "FEATURE_PILLARS TEXT SOURCE",
-    JSON.stringify(
-      {
-        itemTitle:
-          item.title || "",
-        extractedTitle:
-          titleContent,
-        itemDescription:
-          item.description ||
-          item.text ||
-          "",
-        extractedSubtitle:
-          subtitleContent,
-        extractedDescription:
-          descriptionContent,
-        card: cardElement
-          ? {
-              tag:
-                cardElement.tagName,
-              className:
-                cardElement.getAttribute(
-                  "class"
-                ) || "",
-              textContent:
-                cardElement.textContent
-                  ?.trim() || "",
-              outerHTML:
-                cardElement.outerHTML
-                  .slice(0, 1200)
-            }
-          : null,
-        selectedTitleNode: titleElement
-          ? {
-              tag:
-                titleElement.tagName,
-              className:
-                titleElement.getAttribute(
-                  "class"
-                ) || "",
-              textContent:
-                getText(
-                  titleElement
-                ),
-              directText:
-                getDirectText(
-                  titleElement
-                ),
-              outerHTML:
-                titleElement.outerHTML
-                  .slice(0, 800)
-            }
-          : null,
-        selectedSubtitleNode: textElement
-          ? {
-              tag:
-                textElement.tagName,
-              className:
-                textElement.getAttribute(
-                  "class"
-                ) || "",
-              textContent:
-                getText(
-                  textElement
-                ),
-              directText:
-                getDirectText(
-                  textElement
-                ),
-              outerHTML:
-                textElement.outerHTML
-                  .slice(0, 800)
-            }
-          : null
-      },
-      null,
-      2
-    )
-  );
-
-  console.log(
-    "FEATURE_CARD_EXTRACTION_TRACE",
-    JSON.stringify(
-      {
-        selectedCardNode: cardElement
-          ? {
-              tag:
-                cardElement.tagName,
-              className:
-                cardElement.getAttribute("class") || "",
-              textContent:
-                getText(cardElement),
-              directText:
-                getDirectText(cardElement),
-              outerHTML:
-                cardElement.outerHTML.slice(0, 1200)
-            }
-          : null,
-        selectedTitleNode: titleElement
-          ? {
-              tag:
-                titleElement.tagName,
-              className:
-                titleElement.getAttribute("class") || "",
-              textContent:
-                getText(titleElement),
-              directText:
-                getDirectText(titleElement),
-              outerHTML:
-                titleElement.outerHTML.slice(0, 800)
-            }
-          : null,
-        selectedSubtitleNode: textElement
-          ? {
-              tag:
-                textElement.tagName,
-              className:
-                textElement.getAttribute("class") || "",
-              textContent:
-                getText(textElement),
-              directText:
-                getDirectText(textElement),
-              outerHTML:
-                textElement.outerHTML.slice(0, 800)
-            }
-          : null,
-        selectedSubNode: subElement
-          ? {
-              tag:
-                subElement.tagName,
-              className:
-                subElement.getAttribute("class") || "",
-              textContent:
-                getText(subElement),
-              directText:
-                getDirectText(subElement),
-              outerHTML:
-                subElement.outerHTML.slice(0, 800)
-            }
-          : null,
-        extractedTitle:
-          titleContent,
-        extractedSubtitle:
-          subtitleContent,
-        extractedDescription:
-          descriptionContent,
-        extractedTags
-      },
-      null,
-      2
-    )
-  );
 
   return {
     id: uuidv4(),
@@ -1158,11 +964,7 @@ const createFeatureItem = (
               style: {
                 ...mergePresetDesktopStyle(
                   {
-                    fontSize: "12px",
-                    fontWeight: "800",
-                    letterSpacing: "0.24em",
-                    textAlign: "left",
-                    color: "#f77f00"
+                    textAlign: "left"
                   },
                   eyebrowElement
                     ? extractTypographyStyles(
@@ -1189,9 +991,6 @@ const createFeatureItem = (
           style: {
             ...mergePresetDesktopStyle(
               {
-                fontSize: "20px",
-                fontWeight: "700",
-                lineHeight: "1.3",
                 textAlign: "left"
               },
               titleElement
@@ -1217,11 +1016,7 @@ const createFeatureItem = (
               style: {
                 ...mergePresetDesktopStyle(
                   {
-                    fontSize: "15px",
-                    fontWeight: "400",
-                    lineHeight: "1.7",
-                    textAlign: "left",
-                    color: "#4b5563"
+                    textAlign: "left"
                   },
                   subElement
                     ? extractTypographyStyles(
@@ -1247,11 +1042,7 @@ const createFeatureItem = (
               style: {
                 ...mergePresetDesktopStyle(
                   {
-                    fontSize: "15px",
-                    fontWeight: "400",
-                    lineHeight: "1.7",
-                    textAlign: "left",
-                    color: "#4b5563"
+                    textAlign: "left"
                   },
                   textElement
                     ? extractTypographyStyles(
@@ -1275,7 +1066,10 @@ const createFeatureItem = (
 
 export const generateFeaturePillarsPreset = (
   payload?: FeaturesPresetPayload
+  
 ): Block => {
+    console.log("🚀 generateFeaturePillarsPreset");
+
   const items =
     payload?.items?.length
       ? payload.items
@@ -1293,35 +1087,6 @@ export const generateFeaturePillarsPreset = (
     getFeatureCardElements(
       cardSourceElement
     );
-
-  console.log(
-    "FEATURE_PILLARS PAYLOAD",
-    {
-      claimedTag:
-        claimedElement?.tagName || "",
-      claimedClassName:
-        claimedElement?.getAttribute("class") || "",
-      cardSourceTag:
-        cardSourceElement?.tagName || "",
-      cardSourceClassName:
-        cardSourceElement?.getAttribute("class") || "",
-      itemCount:
-        items.length,
-      rawItems:
-        items
-    }
-  );
-
-  console.log(
-    "FEATURE_PILLARS ITEM COUNT",
-    {
-      itemCount:
-        items.length,
-      cardElementCount:
-        cardElements.length
-    }
-  );
-
   items.forEach(
     (
       item,
@@ -1330,55 +1095,6 @@ export const generateFeaturePillarsPreset = (
       const cardElement =
         cardElements[index];
 
-      console.log(
-        "FEATURE_PILLARS ITEM DOM ELEMENT",
-        {
-          index,
-          title:
-            item.title,
-          description:
-            item.description || item.text || "",
-          sourceTag:
-            cardElement?.tagName || "",
-          sourceClassName:
-            cardElement?.getAttribute("class") || "",
-          sourceText:
-            cardElement?.textContent
-              ?.trim()
-              .slice(0, 120) || ""
-        }
-      );
-
-      console.log(
-        "FEATURE_PILLARS CARD STYLE SOURCE",
-        JSON.stringify(
-          {
-            index,
-            title:
-              item.title,
-            keysRequested: [
-              "background",
-              "backgroundColor",
-              "padding",
-              "border",
-              "borderRadius",
-              "display",
-              "gap",
-              "color",
-              "width",
-              "height"
-            ],
-            extractedCardStyle:
-              cardElement
-                ? extractLayoutStyles(
-                    cardElement
-                  )
-                : null
-          },
-          null,
-          2
-        )
-      );
     }
   );
 
@@ -1389,11 +1105,7 @@ export const generateFeaturePillarsPreset = (
         )
       : undefined;
 
-  const useDarkSectionFallback =
-    shouldUseDarkFallback(
-      claimedElement,
-      sectionStyle
-    );
+ const useDarkSectionFallback = false;
 
   const featureCards =
     items.map(
@@ -1413,96 +1125,52 @@ export const generateFeaturePillarsPreset = (
       cardSourceElement
     );
 
-  console.log(
-    "FEATURE_CARD_STRUCTURE_REPORT",
+  const containerElement =
+    findContainerElement(
+      claimedElement,
+      cardSourceElement
+    );
+
+  const gridStyle =
+  cardSourceElement
+    ? extractLayoutStyles(cardSourceElement)
+    : null;
+
+console.log(
+  "🔥 FEATURE GRID SOURCE",
+  {
+    tag: cardSourceElement?.tagName,
+    className: cardSourceElement?.className,
+    style: gridStyle
+  }
+);
+
+const contentChildren =
+  [
+    sectionIntro,
     {
-      cardCount:
-        featureCards.length,
-      cards:
-        featureCards.map(
-          (
-            card,
-            index
-          ) => {
-            const cardElement =
-              cardElements[index];
-            const titleElement =
-              cardElement?.querySelector(
-                "h1,h2,h3,h4,h5,h6"
-              ) as HTMLElement | null;
-            const subElement =
-              titleElement?.querySelector(
-                ".sub"
-              ) as HTMLElement | null;
-            const textElement =
-              cardElement?.querySelector(
-                "p"
-              ) as HTMLElement | null;
-            const chipElements =
-              getChipElements(
-                cardElement
-              );
-
-            return {
-              index,
-              source:
-                cardElement
-                  ? {
-                      tag:
-                        cardElement.tagName,
-                      className:
-                        cardElement.getAttribute(
-                          "class"
-                        ) || ""
-                    }
-                  : null,
-              extracted:
-                {
-                  title:
-                    getDirectText(
-                      titleElement
-                    ) ||
-                    getText(
-                      titleElement
-                    ) ||
-                    items[index]?.title ||
-                    "",
-                  chips:
-                    chipElements
-                      .map(element =>
-                        getDirectText(
-                          element
-                        ) ||
-                        getText(
-                          element
-                        )
-                      )
-                      .filter(Boolean),
-                  subtitle:
-                    getText(
-                      subElement
-                    ),
-                  description:
-                    getDirectText(
-                      textElement
-                    ) ||
-                    getText(
-                      textElement
-                    ) ||
-                    items[index]?.description ||
-                    items[index]?.text ||
-                    ""
-                },
-              generatedBlockTree:
-                summarizeBlockTree(
-                  card
-                )
-            };
+      id: uuidv4(),
+      type: "grid" as const,
+      data: {
+        props: {},
+        style:
+          gridStyle || {
+            desktop: {
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(3,minmax(0,1fr))",
+              gap: "22px"
+            },
+            tablet: {},
+            mobile: {}
           }
-        )
+      },
+      children: featureCards
     }
+  ].filter(
+    (child): child is Block =>
+      child !== null
   );
-
   return {
     id: uuidv4(),
     type: "section" as const,
@@ -1511,58 +1179,30 @@ export const generateFeaturePillarsPreset = (
     },
     data: {
       props: {},
-      style: {
-        ...mergePresetDesktopStyle(
-          {
-            paddingTop: "100px",
-            paddingBottom: "100px",
-            paddingLeft: "24px",
-            paddingRight: "24px",
-            backgroundColor:
-              useDarkSectionFallback
-                ? "#020b14"
-                : "transparent",
-            color:
-              useDarkSectionFallback
-                ? "#eef7ff"
-                : "#111827"
-          },
-          sectionStyle,
-          filterSectionStyle
-        )
-      }
+     style:
+  sectionStyle || {
+    desktop: {
+      paddingTop: "100px",
+      paddingBottom: "100px"
+    },
+    tablet: {},
+    mobile: {}
+  }
     },
     children: [
-      sectionIntro,
       {
         id: uuidv4(),
         type: "flex" as const,
         data: {
-          props: {
-            direction: "row"
-          },
-          style: {
-            desktop: {
-              flexDirection: "row",
-              flexWrap: "wrap",
-              justifyContent: "center",
-              gap: "24px"
-            },
-            tablet: {
-              flexDirection: "row",
-              flexWrap: "wrap"
-            },
-            mobile: {
-              flexDirection: "column"
-            }
-          }
+          props: {},
+          style:
+            createContainerStyle(
+              containerElement
+            )
         },
         children:
-          featureCards
+          contentChildren
       }
-    ].filter(
-      (child): child is Block =>
-        child !== null
-    )
+    ]
   };
 };

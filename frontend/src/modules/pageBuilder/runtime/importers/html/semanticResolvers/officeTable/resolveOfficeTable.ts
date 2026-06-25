@@ -1,4 +1,5 @@
 import { OfficeTablePayload } from "../../semanticContracts/OfficeTablePayload";
+
 import type {
   StructuralNode
 } from "../../structure/buildStructuralGraph";
@@ -15,67 +16,75 @@ import {
   validateOfficeTable
 } from "./validateOfficeTable";
 
+const findSectionOwner = (
+  node: StructuralNode
+): StructuralNode => {
+  let current: StructuralNode | undefined = node;
+
+  while (current) {
+    const tag =
+      current.element.tagName.toLowerCase();
+
+    if (tag === "section") {
+      return current;
+    }
+
+    if (tag === "body" || tag === "html") {
+      break;
+    }
+
+    current = current.parent;
+  }
+
+  return node;
+};
+
 export const resolveOfficeTable = (
   node: StructuralNode
 ): OfficeTablePayload | null => {
-
-  // =====================================
-  // DETECT
-  // =====================================
-
-  const detected =
-
-    detectOfficeTable(
-      node
-    );
-
-  if (
-    !detected
-  ) {
-
+  if (!detectOfficeTable(node)) {
     return null;
   }
 
-  // =====================================
-  // EXTRACT
-  // =====================================
-
-  const items =
-
-    extractOfficeTable(
-      node
-    );
-
-  // =====================================
-  // VALIDATE
-  // =====================================
+  const extracted =
+    extractOfficeTable(node);
+    console.log("OFFICE ROOT", {
+  tag: node.element.tagName,
+  className: node.element.className,
+  badge: extracted.badge,
+  title: extracted.title,
+  description: extracted.description
+});
 
   const valid =
-
     validateOfficeTable(
-      items
+      extracted.items
     );
 
-  if (
-    !valid
-  ) {
-
+  if (!valid) {
     return null;
   }
 
-  console.log(
-    "🏢 OFFICE TABLE DETECTED",
-    items
-  );
+const claimedNode =
+  findSectionOwner(node);
 
 return {
+  type: "OFFICES_TABLE",
 
-  type:
-    "OFFICES_TABLE",
+  badge: extracted.badge,
+  title: extracted.title,
+  description: extracted.description,
 
-  items,
+  sectionStyle: extracted.sectionStyle,
+  containerStyle: extracted.containerStyle,
+  headerStyle: extracted.headerStyle,
+  badgeStyle: extracted.badgeStyle,
+  titleStyle: extracted.titleStyle,
+  descriptionStyle: extracted.descriptionStyle,
+  tableStyle: extracted.tableStyle,
 
-  claimedNode:
-    node
+  items: extracted.items,
+
+  claimedNode
 };
 };

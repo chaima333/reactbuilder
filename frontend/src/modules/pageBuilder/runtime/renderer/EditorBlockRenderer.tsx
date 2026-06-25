@@ -225,6 +225,8 @@ return (
 
     className="editor-wrapper"
 
+    data-editor-block-type={block.type}
+
    style={{
   pointerEvents: "auto",
   position: "relative",

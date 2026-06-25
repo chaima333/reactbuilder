@@ -5,95 +5,56 @@ import type {
 export const detectOfficeTable = (
   node: StructuralNode
 ): boolean => {
+  const tag =
+    node.element.tagName.toLowerCase();
+
+  if (
+    tag === "body" ||
+    tag === "html"
+  ) {
+    return false;
+  }
 
   const className =
-
     node.element.className
       ?.toString()
       ?.toLowerCase() || "";
 
-  // =====================================
-  // STRICT CLASS MATCH
-  // =====================================
+  const isOfficeTableNode =
+    className.includes("offices-table") ||
+    className.includes("office-table");
 
-  const semanticClassMatch =
-
-    className.includes(
-      "office"
-    )
-
-    ||
-
-    className.includes(
-      "offices"
-    )
-
-    ||
-
-    className.includes(
-      "branch"
-    )
-
-    ||
-
-    className.includes(
-      "location"
+  const isOfficeSection =
+    tag === "section" &&
+    !!node.element.querySelector(
+      ".offices-table, .office-row"
     );
 
-  // =====================================
-  // STRICT ROW MATCH
-  // =====================================
+  if (
+    !isOfficeTableNode &&
+    !isOfficeSection
+  ) {
+    return false;
+  }
 
   const officeRows =
-
     node.element.querySelectorAll(
       ".office-row"
     );
 
-  const hasStructuredRows =
-
-    officeRows.length >= 2;
-
-  // =====================================
-  // VALID OFFICE CONTENT
-  // =====================================
-
   const validRows =
+    Array.from(officeRows).filter(row => {
+      const city =
+        row.querySelector(".city");
 
-    Array.from(
-      officeRows
-    ).filter(
-      row => {
+      const role =
+        row.querySelector(".role");
 
-        const city =
-
-          row.querySelector(
-            ".city"
-          );
-
-        const role =
-
-          row.querySelector(
-            ".role"
-          );
-
-        return (
-          city &&
-          role
-        );
-      }
-    );
-
-  // =====================================
-  // FINAL DECISION
-  // =====================================
+      return city && role;
+    });
 
   return (
-
-    semanticClassMatch &&
-
-    hasStructuredRows &&
-
+    officeRows.length >= 2 &&
     validRows.length >= 2
   );
 };

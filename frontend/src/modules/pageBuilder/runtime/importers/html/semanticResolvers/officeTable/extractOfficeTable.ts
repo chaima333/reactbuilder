@@ -2,91 +2,152 @@ import type {
   StructuralNode
 } from "../../structure/buildStructuralGraph";
 
+import {
+  extractLayoutStyles,
+  extractTypographyStyles
+} from "../../../css/extractStyleProps";
+
+const cleanStyle = (
+  style: Record<string, any> = {}
+) =>
+  Object.fromEntries(
+    Object.entries(style).filter(
+      ([, value]) =>
+        value !== undefined &&
+        value !== null &&
+        value !== ""
+    )
+  );
+
+const desktopStyle = (
+  style: any
+) =>
+  cleanStyle(
+    style?.desktop || style || {}
+  );
+
+const layoutStyle = (
+  element?: HTMLElement | null
+) =>
+  element
+    ? desktopStyle(
+        extractLayoutStyles(element)
+      )
+    : {};
+
+const typographyStyle = (
+  element?: HTMLElement | null
+) =>
+  element
+    ? desktopStyle(
+        extractTypographyStyles(element)
+      )
+    : {};
+
 export const extractOfficeTable = (
   node: StructuralNode
 ) => {
+  const root =
+    node.element;
 
-  // =====================================
-  // GET OFFICE ROWS
-  // =====================================
+  const container =
+    (
+      root.querySelector(
+        ".container, [class~='container']"
+      ) ||
+      root.closest(
+        ".container, [class~='container']"
+      )
+    ) as HTMLElement | null;
+
+  const header =
+    root.querySelector(".sec-head") as HTMLElement | null;
+
+  const badgeEl =
+    root.querySelector(".section-tag") as HTMLElement | null;
+
+  const titleEl =
+    root.querySelector(".sec-head h1, .sec-head h2, h1, h2") as HTMLElement | null;
+
+  const descriptionEl =
+    root.querySelector(".sec-head p") as HTMLElement | null;
+
+  const tableEl =
+    root.querySelector(".offices-table") as HTMLElement | null;
+
+  const badge =
+    badgeEl?.textContent?.trim();
+
+  const title =
+    titleEl?.textContent?.trim();
+
+  const description =
+    descriptionEl?.textContent?.trim();
 
   const rows =
-
     Array.from(
-      node.element.querySelectorAll(
-        ".office-row"
-      )
-    );
+      root.querySelectorAll(".office-row")
+    ) as HTMLElement[];
 
-  // =====================================
-  // EXTRACT
-  // =====================================
+  const items =
+    rows
+      .map((row, index) => {
+        const cityEl =
+          row.querySelector(".city") as HTMLElement | null;
 
-  return rows
+        const countryEl =
+          row.querySelector(".country") as HTMLElement | null;
 
-    .map(
-      (
-        row,
-        index
-      ) => {
+        const roleEl =
+          row.querySelector(".role") as HTMLElement | null;
+
+        const nameEl =
+          row.querySelector(".name") as HTMLElement | null;
 
         const city =
-
-          row.querySelector(
-            ".city"
-          )
-          ?.textContent
-          ?.trim();
+          cityEl?.textContent?.trim();
 
         const country =
-
-          row.querySelector(
-            ".country"
-          )
-          ?.textContent
-          ?.trim();
+          countryEl?.textContent?.trim();
 
         const role =
+          roleEl?.textContent?.trim();
 
-          row.querySelector(
-            ".role"
-          )
-          ?.textContent
-          ?.trim();
-
-        // =====================================
-        // HARD FILTER
-        // =====================================
-
-        if (
-          !city ||
-          !role
-        ) {
-
+        if (!city || !role) {
           return null;
         }
 
         return {
+          id: `office-item-${index}`,
+          title: city,
+          subtitle: country,
+          description: role,
 
-          id:
-            `office-item-${index}`,
-
-          title:
-            country
-              ? `${city} — ${country}`
-              : city,
-
-          description:
-            role
+          rowStyle: layoutStyle(row),
+          nameStyle: layoutStyle(nameEl),
+          titleStyle: typographyStyle(cityEl),
+          subtitleStyle: typographyStyle(countryEl),
+          descriptionStyle: typographyStyle(roleEl)
         };
-      }
-    )
+      })
+      .filter(
+        (item): item is any =>
+          item !== null
+      );
 
-    .filter(
-      (
-        item
-      ): item is any =>
+  return {
+    badge,
+    title,
+    description,
 
-        item !== null
-    );
+    sectionStyle: layoutStyle(root),
+    containerStyle: layoutStyle(container),
+    headerStyle: layoutStyle(header),
+    badgeStyle: typographyStyle(badgeEl),
+    titleStyle: typographyStyle(titleEl),
+    descriptionStyle: typographyStyle(descriptionEl),
+    tableStyle: layoutStyle(tableEl),
+
+    items
+  };
 };

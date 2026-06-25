@@ -1,24 +1,8 @@
-
-
-
-
 export const generateValuesGridPreset = (payload: any) => {
   const uid = crypto.randomUUID();
 
-  console.log(
-  "VALUES_GRID_PAYLOAD_FIRST_ITEM",
-  payload.items?.[0]
-);
-
-
   const items = (payload.items || [])
     .map((item: any, index: number) => {
-
-      console.log(
-  "VALUES_GRID_ITEM_STYLE",
-  item.cardStyle
-);
-
       if (!item.title) return null;
 
       return {
@@ -27,118 +11,106 @@ export const generateValuesGridPreset = (payload: any) => {
         data: {
           props: {},
           style: {
-            desktop: item.cardStyle || {}
+            ...(item.cardStyle || { desktop: {} })
           }
         },
         children: [
-          item.eyebrow
-            ? {
-                id: `value-eyebrow-${uid}-${index}`,
-                type: "text",
-                data: {
-                  props: { content: item.eyebrow },
-                  style: { desktop: item.eyebrowStyle || {} }
-                },
-                children: []
-              }
-            : null,
+          item.eyebrow && {
+            id: `value-eyebrow-${uid}-${index}`,
+            type: "text",
+            data: {
+              props: { content: item.eyebrow },
+              style: item.eyebrowStyle || { desktop: {} }
+            },
+            children: []
+          },
           {
             id: `value-title-${uid}-${index}`,
             type: "text",
             data: {
               props: { content: item.title },
-              style: { desktop: item.titleStyle || {} }
+              style: item.titleStyle || { desktop: {} }
             },
             children: []
           },
-          item.description
-            ? {
-                id: `value-description-${uid}-${index}`,
-                type: "text",
-                data: {
-                  props: { content: item.description },
-                  style: { desktop: item.descriptionStyle || {} }
-                },
-                children: []
-              }
-            : null,
-          item.cta
-            ? {
-                id: `value-cta-${uid}-${index}`,
-                type: "text",
-                data: {
-                  props: { content: item.cta },
-                  style: { desktop: item.ctaStyle || {} }
-                },
-                children: []
-              }
-            : null
-        ].filter((child: any) => child !== null)
+          item.description && {
+            id: `value-description-${uid}-${index}`,
+            type: "text",
+            data: {
+              props: { content: item.description },
+              style: item.descriptionStyle || { desktop: {} }
+            },
+            children: []
+          }
+        ].filter(Boolean)
       };
     })
-    .filter((item: any) => item !== null);
- console.log(
-  "HEADER_STYLE",
-  payload.headerStyle
-);
-  const headerBlock =
-    payload.title
-      ? {
-          id: `values-grid-header-${uid}`,
-          type: "flex",
-          data: {
-            props: {},
-            style: payload.headerStyle || {
-               desktop: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "flex-start",
-    textAlign: "left",
-    gap: "12px",
-    marginBottom: "64px"
-  }
-            }
-          },
-         children: [
-  ...(payload.eyebrow
-    ? [
-        {
-          id: `values-grid-eyebrow-${uid}`,
-          type: "text",
-          data: {
-            props: { content: payload.eyebrow },
-            style: { desktop: payload.eyebrowStyle || {} }
-          },
-          children: []
-        }
-      ]
-    : []),
-  {
-    id: `values-grid-title-${uid}`,
-    type: "title",
-    data: {
-      props: { content: payload.title },
-      style: { desktop: payload.titleStyle || {} }
+    .filter(Boolean);
+
+  const headerChildren = [
+    payload.eyebrow && {
+      id: `values-grid-eyebrow-${uid}`,
+      type: "text",
+      data: {
+        props: { content: payload.eyebrow },
+        style: payload.eyebrowStyle || { desktop: {} }
+      },
+      children: []
     },
-    children: []
-  },
-  ...(payload.description
-    ? [
-        {
-          id: `values-grid-description-${uid}`,
-          type: "text",
-          data: {
-            props: { content: payload.description },
-           style: {
-           desktop: payload.descriptionStyle || {}}
-          },
-          children: []
-        }
-      ]
-    : [])
-]
-        }
-      : null;
+    payload.title && {
+      id: `values-grid-title-${uid}`,
+      type: "title",
+      data: {
+        props: { content: payload.title },
+        style: payload.titleStyle || { desktop: {} }
+      },
+      children: []
+    },
+    payload.description && {
+      id: `values-grid-description-${uid}`,
+      type: "text",
+      data: {
+        props: { content: payload.description },
+        style: payload.descriptionStyle || { desktop: {} }
+      },
+      children: []
+    }
+  ].filter(Boolean);
+
+  const headerBlock = headerChildren.length
+    ? {
+        id: `values-grid-header-${uid}`,
+        type: "flex",
+        data: {
+          props: {},
+          style: payload.headerStyle || {
+            desktop: {
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              textAlign: "left",
+              gap: "12px",
+              marginBottom: "64px"
+            }
+          }
+        },
+        children: [
+          {
+            id: `values-grid-header-inner-${uid}`,
+            type: "flexItem",
+            data: {
+              props: {},
+              style: {
+                desktop: {
+                  width: "100%"
+                }
+              }
+            },
+            children: headerChildren
+          }
+        ]
+      }
+    : null;
 
   const gridBlock = {
     id: `values-grid-${uid}`,
@@ -147,60 +119,64 @@ export const generateValuesGridPreset = (payload: any) => {
       props: {},
       style: {
         ...payload.gridStyle,
-       desktop: {
-  ...payload.gridStyle?.desktop,
-  display: "grid",
-  width: "100%",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))"
-},
-        tablet: {
+        desktop: {
+          ...payload.gridStyle?.desktop,
           display: "grid",
-          gridTemplateColumns: "repeat(2, minmax(0,1fr))",
-          ...payload.gridStyle?.tablet
+          width: "100%",
+          gridTemplateColumns:
+            payload.gridStyle?.desktop?.gridTemplateColumns ||
+            "repeat(auto-fit, minmax(0, 1fr))",
+          gap:
+            payload.gridStyle?.desktop?.gap ||
+            payload.gridStyle?.gap ||
+            "16px"
+        },
+        tablet: {
+          ...payload.gridStyle?.tablet,
+          display: "grid",
+          gridTemplateColumns:
+            payload.gridStyle?.tablet?.gridTemplateColumns ||
+            payload.gridStyle?.desktop?.gridTemplateColumns ||
+            "repeat(auto-fit, minmax(0, 1fr))",
+          width: "100%"
         },
         mobile: {
+          ...payload.gridStyle?.mobile,
           display: "grid",
-          gridTemplateColumns: "repeat(1, minmax(0,1fr))",
-          ...payload.gridStyle?.mobile
+          gridTemplateColumns:
+            payload.gridStyle?.mobile?.gridTemplateColumns ||
+            "1fr",
+          width: "100%"
         }
       }
     },
     children: items
   };
-console.log(
-  "VALUES_GRID_GRID_STYLE",
-  gridBlock.data.style
-);
+
   const containerStyle = {
     ...(payload.containerStyle || {}),
-   desktop: {
-  display: "flex",
-  flexDirection: "column",
-  width: "100%",
-  marginLeft: "auto",
-  marginRight: "auto",
-  ...(payload.containerStyle?.desktop || {}),
-  maxWidth:
-    payload.containerStyle?.desktop?.maxWidth === "none"
-      ? "1480px"
-      : payload.containerStyle?.desktop?.maxWidth || "1480px"
-},
+    desktop: {
+      display: "flex",
+      flexDirection: "column",
+      width: "100%",
+      marginLeft: "auto",
+      marginRight: "auto",
+      ...(payload.containerStyle?.desktop || {})
+    },
     tablet: {
-      ...(payload.containerStyle?.tablet || {})
+      ...(payload.containerStyle?.tablet || {}),
+      width: "100%",
+      maxWidth: "100%"
     },
     mobile: {
-      ...(payload.containerStyle?.mobile || {})
+      ...(payload.containerStyle?.mobile || {}),
+      width: "100%",
+      maxWidth: "100%"
     }
   };
-console.log("VALUES_GRID_FINAL_STYLES", {
-  sectionStyle: payload.sectionStyle,
-  containerStyle,
-  gridStyle: gridBlock.data.style,
-  firstItem: payload.items?.[0]
-});
+
   return {
     id: `values-grid-section-${uid}`,
-    
     type: "section",
     meta: {
       semanticType: "VALUES_GRID"
@@ -220,8 +196,28 @@ console.log("VALUES_GRID_FINAL_STYLES", {
           style: containerStyle
         },
         children: [
-          headerBlock,
-          gridBlock
+          headerBlock && {
+            id: `values-grid-header-item-${uid}`,
+            type: "flexItem",
+            data: {
+              props: {},
+              style: {
+                desktop: { width: "100%" }
+              }
+            },
+            children: [headerBlock]
+          },
+          {
+            id: `values-grid-content-item-${uid}`,
+            type: "flexItem",
+            data: {
+              props: {},
+              style: {
+                desktop: { width: "100%" }
+              }
+            },
+            children: [gridBlock]
+          }
         ].filter(Boolean)
       }
     ]

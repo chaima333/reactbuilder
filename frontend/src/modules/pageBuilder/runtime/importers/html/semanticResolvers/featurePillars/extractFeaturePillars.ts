@@ -20,13 +20,49 @@ export const extractFeaturePillars = (
         index
       ) => {
 
-        const title =
-
+        const heading =
           child.querySelector(
             "h1,h2,h3,h4,h5,h6"
-          )
-          ?.textContent
-          ?.trim();
+          );
+
+        const subtitleElement =
+          heading?.querySelector(
+            ".sub, .subtitle, small"
+          );
+
+        const directTitle =
+          heading
+            ? Array.from(
+                heading.childNodes
+              )
+                .filter(
+                  childNode =>
+                    childNode.nodeType ===
+                    Node.TEXT_NODE
+                )
+                .map(
+                  childNode =>
+                    childNode.textContent || ""
+                )
+                .join(" ")
+                .replace(/\s+/g, " ")
+                .trim()
+            : "";
+
+        const title =
+          directTitle ||
+          heading?.textContent
+            ?.replace(
+              subtitleElement?.textContent || "",
+              ""
+            )
+            .replace(/\s+/g, " ")
+            .trim();
+
+        const subtitle =
+          subtitleElement?.textContent
+            ?.replace(/\s+/g, " ")
+            .trim();
 
         const description =
 
@@ -51,7 +87,12 @@ export const extractFeaturePillars = (
           title,
 
           description:
-            description || ""
+            [
+              subtitle,
+              description
+            ]
+              .filter(Boolean)
+              .join("\n")
         };
       }
     )

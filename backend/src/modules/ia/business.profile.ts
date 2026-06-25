@@ -17,6 +17,41 @@ const unique = (items: string[]) =>
 
 const includesAny = (text: string, words: string[]) =>
   words.some((word) => text.includes(word));
+const extractCompanyName = (
+  prompt: string
+): string | null => {
+  const patterns = [
+    /\bcalled\s+([A-Z][A-Za-z0-9&.-]*(?:\s+[A-Z][A-Za-z0-9&.-]*){0,2})/,
+    /\bnamed\s+([A-Z][A-Za-z0-9&.-]*(?:\s+[A-Z][A-Za-z0-9&.-]*){0,2})/,
+    /\bfor\s+([A-Z][A-Za-z0-9&.-]*(?:\s+[A-Z][A-Za-z0-9&.-]*){0,2})/,
+    /\bcompany\s+([A-Z][A-Za-z0-9&.-]*(?:\s+[A-Z][A-Za-z0-9&.-]*){0,2})/
+  ];
+
+  for (const pattern of patterns) {
+    const match = prompt.match(pattern);
+
+    if (match?.[1]) {
+      return match[1].trim();
+    }
+  }
+
+  return null;
+};
+
+const fallbackCompanyName = (
+  category: string
+): string =>
+  category === "Finance"
+    ? "GlobalFinance"
+    : category === "Medical"
+      ? "MediCare"
+      : category === "Technology"
+        ? "TechNova"
+        : category === "Cybersecurity"
+          ? "SecureShield"
+          : category === "RealEstate"
+            ? "HomeHaven"
+            : "SmartBusiness";
 
 export const buildBusinessProfile = (
   category: string,
@@ -85,6 +120,31 @@ export const buildBusinessProfile = (
       services.push("SaaS Platform");
     }
   }
+  if (category === "Cybersecurity") {
+  if (includesAny(text, ["penetration", "pentest", "testing"])) {
+    services.push("Penetration Testing");
+  }
+
+  if (includesAny(text, ["soc", "monitoring", "siem"])) {
+    services.push("SOC Monitoring");
+  }
+
+  if (includesAny(text, ["cloud"])) {
+    services.push("Cloud Security");
+  }
+
+  if (includesAny(text, ["network", "protection"])) {
+    services.push("Network Protection");
+  }
+
+  if (includesAny(text, ["compliance", "audit"])) {
+    services.push("Compliance Audits");
+  }
+
+  if (includesAny(text, ["incident", "response"])) {
+    services.push("Incident Response");
+  }
+}
   if (category === "RealEstate") {
   if (includesAny(text, ["property", "properties", "listing", "listings"])) {
     services.push("Property Listings");
@@ -167,15 +227,8 @@ export const buildBusinessProfile = (
   return {
     industry: category,
     companyName:
-    category === "Finance"
-    ? "GlobalFinance"
-    : category === "Medical"
-      ? "MediCare"
-      : category === "Technology"
-        ? "TechNova"
-        : category === "RealEstate"
-          ? "HomeHaven"
-          : "SmartBusiness",
+  extractCompanyName(prompt) ??
+  fallbackCompanyName(category),
     services:
       unique(services).length > 0
         ? unique(services)
@@ -224,13 +277,14 @@ export const buildSiteContext = (
     pages.push("reservation");
   }
 
-  if (
-    category === "Technology" ||
-    category === "Finance" ||
-    category === "Corporate"
-  ) {
-    pages.push("solutions");
-  }
+ if (
+  category === "Technology" ||
+  category === "Finance" ||
+  category === "Corporate" ||
+  category === "Cybersecurity"
+) {
+  pages.push("solutions");
+}
 
   return {
     companyName: businessProfile.companyName,

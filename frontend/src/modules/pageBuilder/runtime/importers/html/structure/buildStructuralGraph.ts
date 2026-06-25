@@ -19,6 +19,9 @@ export type StructuralNode = {
 
   children: StructuralNode[];
 
+  parent?: StructuralNode;
+
+
   claimed?: boolean;
 };
 
@@ -176,7 +179,8 @@ const isSemanticLeaf = (
 export const buildStructuralGraph = (
   element: HTMLElement,
   path: (string | number)[],
-  candidates: StructuralCandidate[]
+  candidates: StructuralCandidate[],
+  parent?: StructuralNode
 ): StructuralNode | null => {
 
   if (
@@ -235,11 +239,6 @@ export const buildStructuralGraph = (
     )
   ) {
 
-    console.log(
-      "🚫 SKIPPED DECORATIVE NODE",
-      element
-    );
-
     return null;
   }
 
@@ -253,112 +252,38 @@ export const buildStructuralGraph = (
       element
     );
 
-  // =====================================
-  // CHILDREN
-  // =====================================
 
-  const children =
+ const graph: StructuralNode = {
+  element,
+  path,
+  computedStyle,
+  candidates: candidates.filter(
+    candidate =>
+      JSON.stringify(candidate.path) === JSON.stringify(path)
+  ),
+  children: [],
+  parent
+};
 
-    isSemanticLeaf(
-      element
-    )
-
-      ? []
-
-      : Array.from(
-          element.children
+graph.children =
+  isSemanticLeaf(element)
+    ? []
+    : Array.from(element.children)
+        .map((child, index) =>
+          buildStructuralGraph(
+            child as HTMLElement,
+            [...path, index],
+            candidates,
+            graph
+          )
         )
-
-        .map(
-          (
-            child,
-            index
-          ) =>
-
-            buildStructuralGraph(
-              child as HTMLElement,
-              [...path, index],
-              candidates
-            )
-        )
-
-        .filter(
-          Boolean
-        ) as StructuralNode[];
-
-  // =====================================
-  // GRAPH NODE
-  // =====================================
-console.log(
-  "🔍 MATCH TEST",
-  {
-    className: element.className,
-    path,
-    candidatesFound:
-      candidates.filter(
-        candidate =>
-          JSON.stringify(candidate.path)
-          ===
-          JSON.stringify(path)
-      )
-  }
-);
-  const graph: StructuralNode = {
-
-    element,
-
-    path,
-
-    computedStyle,
-
-    candidates:
-
-      candidates.filter(
-        candidate =>
-
-          JSON.stringify(
-            candidate.path
-          )
-
-          ===
-
-          JSON.stringify(
-            path
-          )
-      ),
-
-    children
-  };
-
-  // =====================================
-  // DEBUG
-  // =====================================
-
-  console.log(
-    "🌳 STRUCTURAL GRAPH",
-    {
-
-      element:
-
-        `${element.tagName.toLowerCase()}${
-          getElementClassName(
-            element
-          )
-            ? "." + getElementClassName(
-                element
-              )
-            : ""
-        }`,
-
-      path,
-
-      candidates:
-        graph.candidates,
-
-      children:
-        graph.children.length
-    }
-  );
-
+        .filter(Boolean) as StructuralNode[];
+        console.log("GRAPH_NODE", {
+  tag: element.tagName,
+  className: getElementClassName(element),
+  path,
+  hasParent: Boolean(parent),
+  parentTag: parent?.element.tagName
+});
   return graph;
 };

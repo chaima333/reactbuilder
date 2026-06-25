@@ -248,7 +248,7 @@ const templateColumns =
 
    gridTemplateColumns: templateColumns,
  gridAutoRows:"auto",
-alignItems: resolved.alignItems || "center",
+alignItems: resolved.alignItems || "stretch",
 
 justifyItems: resolved.justifyItems || "stretch",
 

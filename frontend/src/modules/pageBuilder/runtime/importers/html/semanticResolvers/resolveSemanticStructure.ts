@@ -166,13 +166,6 @@ for (const resolver of semanticResolverRegistry) {
 
    break;
  }
-
- console.log(
-    "🧪 TRY RESOLVER",
-    resolver.name,
-    node.element.tagName,
-    getElementClassName(node.element)
-  );
   const result = resolver(node);
 
   if (result) {
@@ -183,38 +176,9 @@ for (const resolver of semanticResolverRegistry) {
         result.type === "CTA_GROUP" ||
         result.type === "CTA_CARD"
       )
-    ) {
-      console.log(
-        "FOOTER_CONTEXT_SEMANTIC_REJECTED",
-        {
-          resolver:
-            resolver.name,
-          type:
-            result.type,
-          tag:
-            node.element.tagName,
-          className:
-            getElementClassName(
-              node.element
-            )
-        }
-      );
-
-      continue;
-    }
-
-    result.resolverName =
-      resolver.name || "anonymousResolver";
-
-    console.log(
-      "🧠 MATCHED BY",
-      resolver.name,
-      result.type
-    );
-     console.log(
-      "🚨 CLAIM BEFORE",
-      result.claimedNode
-    );
+    ) { continue;}
+(result as any).resolverName =
+  resolver.name || "anonymousResolver";
 
 
     claimSubtree(
@@ -260,23 +224,5 @@ for (const resolver of semanticResolverRegistry) {
       ...childResults
     );
   }
-
-  // =====================================
-  // RETURN
-  // =====================================
-console.log(
-  "🚨 SEMANTIC RESULTS RETURN",
-  semanticResults.map(
-    result => ({
-      type: result.type,
-      claimed:
-        !!result.claimedNode,
-      className:
-        getElementClassName(
-          result.claimedNode?.element
-        )
-    })
-  )
-);
   return semanticResults;
 };

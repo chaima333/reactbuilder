@@ -998,10 +998,6 @@ const createKpiBlock = (
           index > 0
             ? "28px"
             : "0",
-        borderLeft:
-          index > 0
-            ? "1px solid rgba(148, 163, 184, 0.22)"
-            : undefined,
         minWidth: "0"
       },
       tablet: {},
@@ -1027,11 +1023,7 @@ const createKpiBlock = (
                 item.number,
                 mergeElementStyle(
                   item.numberElement,
-                  {
-                    fontSize: "28px",
-                    fontWeight: "800",
-                    lineHeight: "1"
-                  },
+                  {},
                   filterTextStyle
                 ),
                 {
@@ -1061,12 +1053,7 @@ const createKpiBlock = (
                 item.label,
                 mergeElementStyle(
                   item.labelElement,
-                  {
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    lineHeight: "1.35",
-                    opacity: 0.74
-                  },
+                  {},
                   filterTextStyle
                 ),
                 {
@@ -1540,13 +1527,7 @@ export const generateHeroPreset = (
           ),
           mergeElementStyle(
             eyebrowElement,
-            {
-              fontSize: "13px",
-              fontWeight: "700",
-              lineHeight: "1.2",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase"
-            },
+            {},
             filterTextStyle
           ),
           {
@@ -1561,10 +1542,7 @@ export const generateHeroPreset = (
       {
         width: "100%",
         maxWidth: "980px",
-        textAlign: "left",
-        lineHeight: "1.05",
-        fontSize: "64px",
-        fontWeight: "700"
+        textAlign: "left"
       },
       titleStyle,
       filterHeroTitleStyle
@@ -1674,8 +1652,6 @@ export const generateHeroPreset = (
       mergePresetDesktopStyle(
         {
           textAlign: "left",
-          fontSize: "20px",
-          lineHeight: "1.6",
           maxWidth: "720px"
         },
         subtitleStyle,
@@ -1700,19 +1676,6 @@ export const generateHeroPreset = (
 
           const isAnchor =
             actionElement?.tagName === "A";
-
-          const fallbackActionStyle =
-            index === 0
-              ? {
-                  backgroundColor: "#111827",
-                  color: "#ffffff",
-                  border: "1px solid #111827"
-                }
-              : {
-                  backgroundColor: "transparent",
-                  color: "inherit",
-                  border: "1px solid currentColor"
-                };
 
           return {
             id: uuidv4(),
@@ -1742,12 +1705,7 @@ export const generateHeroPreset = (
                     paddingTop: "14px",
                     paddingBottom: "14px",
                     paddingLeft: "22px",
-                    paddingRight: "22px",
-                    borderRadius: "999px",
-                    fontWeight: "700",
-                    lineHeight: "1",
-                    textDecoration: "none",
-                    ...fallbackActionStyle
+                    paddingRight: "22px"
                   },
                   style => ({
                     ...filterCardStyle(
@@ -1845,12 +1803,7 @@ export const generateHeroPreset = (
             item,
             mergeElementStyle(
               fallbackPartnerElements[index],
-              {
-                fontSize: "13px",
-                fontWeight: "600",
-                lineHeight: "1.3",
-                opacity: 0.72
-              },
+              {},
               filterTextStyle
             ),
             {
@@ -1911,49 +1864,11 @@ export const generateHeroPreset = (
         paddingTop: "120px",
         paddingBottom: "120px",
         paddingLeft: "24px",
-        paddingRight: "24px",
-        backgroundColor: "#020B18"
+        paddingRight: "24px"
       },
       sectionStyle,
       filterHeroSectionStyle
     );
-
-  const heroDesktopStyle =
-    mergedHeroSectionStyle.desktop || {};
-
-  const hasUsableHeroBackground =
-    !!heroDesktopStyle.backgroundImage &&
-    heroDesktopStyle.backgroundImage !== "none" ||
-    (
-      !!heroDesktopStyle.backgroundColor &&
-      ![
-        "transparent",
-        "rgba(0, 0, 0, 0)",
-        "rgba(0,0,0,0)"
-      ].includes(
-        String(
-          heroDesktopStyle.backgroundColor
-        )
-      )
-    ) ||
-    (
-      !!heroDesktopStyle.background &&
-      ![
-        "transparent",
-        "rgba(0, 0, 0, 0)",
-        "rgba(0,0,0,0)",
-        "none"
-      ].includes(
-        String(
-          heroDesktopStyle.background
-        )
-      )
-    );
-
-  if (!hasUsableHeroBackground) {
-    heroDesktopStyle.backgroundColor =
-      "#020B18";
-  }
 
   const heroBlock: Block = {
 
@@ -2220,9 +2135,6 @@ justifyContent:
 
                             width:
                               "100%",
-
-                            borderRadius:
-                              "20px",
 
                             objectFit:
                               "cover"

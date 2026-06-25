@@ -31,6 +31,7 @@ export const GridItemBlock = ({
 
   const {
     isOver,
+    context,
     rootProps
   } = runtime;
 
@@ -88,14 +89,17 @@ export const GridItemBlock = ({
   // INNER STYLE
   // =====================================
 
-const isImportedLayout =
-  resolved.display === "grid" ||
-  resolved.display === "flex" ||
-  !!resolved.gridTemplateColumns;
-
   const shouldPreserveImportedLayout =
   resolved.display === "grid" ||
   resolved.display === "flex";
+
+const shouldFlowEditorCardContent =
+  context.mode === "editor" &&
+  !shouldPreserveImportedLayout;
+
+const flowGap =
+  resolved.rowGap ||
+  resolved.gap;
 
 const innerStyle: React.CSSProperties = {
   minWidth: 0,
@@ -105,11 +109,15 @@ const innerStyle: React.CSSProperties = {
   display:
     shouldPreserveImportedLayout
       ? resolved.display
-      : "block",
+      : shouldFlowEditorCardContent
+        ? "flex"
+        : "block",
 
   flexDirection:
     shouldPreserveImportedLayout
       ? resolved.flexDirection
+      : shouldFlowEditorCardContent
+        ? "column"
       : undefined,
 
   gridTemplateColumns:
@@ -120,14 +128,24 @@ const innerStyle: React.CSSProperties = {
   gap:
     shouldPreserveImportedLayout
       ? resolved.gap
+      : shouldFlowEditorCardContent
+        ? flowGap
       : undefined,
 
   width: "100%",
+  height:
+    shouldFlowEditorCardContent
+      ? "100%"
+      : resolved.height,
+  minHeight:
+    resolved.minHeight,
   overflow: "hidden",
 
   alignItems:
     shouldPreserveImportedLayout
       ? resolved.alignItems
+      : shouldFlowEditorCardContent
+        ? "stretch"
       : undefined,
 
   justifyContent:
@@ -139,7 +157,19 @@ const innerStyle: React.CSSProperties = {
   paddingTop: resolved.paddingTop,
   paddingRight: resolved.paddingRight,
   paddingBottom: resolved.paddingBottom,
-  paddingLeft: resolved.paddingLeft
+  paddingLeft: resolved.paddingLeft,
+
+  background:
+    resolved.background ||
+    resolved.backgroundColor,
+  border:
+    resolved.border,
+  borderRadius:
+    resolved.borderRadius,
+  boxShadow:
+    resolved.boxShadow,
+  color:
+    resolved.color
 };
  
   return (
@@ -150,7 +180,47 @@ const innerStyle: React.CSSProperties = {
       style={outerStyle}
     >
 
-      <div style={innerStyle}>
+      <div
+        className={
+          shouldFlowEditorCardContent
+            ? "pb-grid-item-flow"
+            : undefined
+        }
+        style={innerStyle}
+      >
+
+        {shouldFlowEditorCardContent && (
+
+          <style>
+            {`
+              .pb-gridItem > .pb-grid-item-flow .editor-wrapper {
+                min-width: 0 !important;
+              }
+
+              .pb-gridItem > .pb-grid-item-flow .editor-wrapper[data-editor-block-type="title"],
+              .pb-gridItem > .pb-grid-item-flow .editor-wrapper[data-editor-block-type="text"] {
+                display: block !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
+                flex: 0 0 auto !important;
+              }
+
+              .pb-gridItem > .pb-grid-item-flow .editor-wrapper[data-editor-block-type="title"] > *,
+              .pb-gridItem > .pb-grid-item-flow .editor-wrapper[data-editor-block-type="text"] > * {
+                position: static !important;
+                top: auto !important;
+                right: auto !important;
+                bottom: auto !important;
+                left: auto !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                transform: none !important;
+              }
+            `}
+          </style>
+        )}
 
         {children}
 

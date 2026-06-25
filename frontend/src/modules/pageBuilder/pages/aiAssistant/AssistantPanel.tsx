@@ -371,14 +371,19 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
 
   try {
     setAiLoading(true);
-
+console.log("ASK_ASSISTANT_BLOCKS", {
+  blocksLength: blocks?.length,
+  firstBlock: blocks?.[0],
+  pageTitle,
+  slug,
+});
     const result = await askAssistant({
       prompt,
       blocks,
       pageTitle,
       slug,
     }).unwrap();
-
+console.log("ASSISTANT_RESULT", result);
     setAssistantReply(result.data);
 
     showSnackbar(

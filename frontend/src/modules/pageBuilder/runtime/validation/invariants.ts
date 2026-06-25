@@ -1,8 +1,5 @@
 import type { Block, BlockType } from "../../types/page.types";
-import {
-  canAcceptChild,
-  getWrapperRule
-} from "../../core/schema/canonicalSchema";
+import { canAcceptChild} from "../../core/schema/canonicalSchema";
 
 export type InvariantSeverity = "error" | "warning";
 
@@ -120,23 +117,7 @@ const logEmptyTextBlocks = (
 
 !block.data.props.content
   .trim()
-    ) {
-
-      console.log(
-        "🚨 EMPTY TEXT BEFORE INVARIANTS",
-        {
-          id:
-            block.id,
-          type:
-            block.type,
-          content:
-            block.data?.props?.content,
-          path:
-            blockPath,
-          parentType
-        }
-      );
-    }
+    )
 
     logEmptyTextBlocks(
       block.children || [],
@@ -217,20 +198,6 @@ export const validateTreeInvariants = (
       parentType === "section" &&
       primitiveBlockTypes.includes(block.type)
     ) {
-      console.error(
-        "INVALID_BLOCK_TREE",
-        {
-          sectionId:
-            parentId,
-          sectionType:
-            parentType,
-          primitiveChildType:
-            block.type,
-          primitiveChildId:
-            block.id,
-          path
-        }
-      );
 
       addViolation(violations, {
         severity: "error",
@@ -243,27 +210,40 @@ export const validateTreeInvariants = (
       });
     }
 
-    if (
-      (block.type === "gridItem" || block.type === "flexItem") &&
-      !getWrapperRule(parentType, block.children?.[0]?.type as BlockType)
-    ) {
-      const legalParent =
-        block.type === "gridItem"
-          ? parentType === "grid"
-          : parentType === "flex" ||
-            parentType === "navbar";
+    if (block.type === "gridItem") {
+  const legalParent =
+    parentType === "grid";
 
-      if (!legalParent) {
-        addViolation(violations, {
-          severity: "error",
-          code: "ILLEGAL_WRAPPER",
-          blockId: block.id,
-          parentId,
-          path,
-          message: `${block.type} must be owned by its matching layout parent.`
-        });
-      }
-    }
+  if (!legalParent) {
+    addViolation(violations, {
+      severity: "error",
+      code: "ILLEGAL_WRAPPER",
+      blockId: block.id,
+      parentId,
+      path,
+      message:
+        "gridItem must be owned by grid."
+    });
+  }
+}
+
+if (block.type === "flexItem") {
+  const legalParent =
+    parentType === "flex" ||
+    parentType === "navbar";
+
+  if (!legalParent) {
+    addViolation(violations, {
+      severity: "error",
+      code: "ILLEGAL_WRAPPER",
+      blockId: block.id,
+      parentId,
+      path,
+      message:
+        "flexItem must be owned by flex/navbar."
+    });
+  }
+}
 
     block.children?.forEach((child, index) => {
       visit(
@@ -306,10 +286,7 @@ export const assertTreeInvariants = (blocks: Block[]) => {
   const report = validateTreeInvariants(blocks);
 
   if (!report.valid) {
-    console.log(
-      "🚨 TREE INVARIANT VIOLATIONS",
-      report.violations
-    );
+
 
     throw new InvariantViolationException(report.violations);
   }

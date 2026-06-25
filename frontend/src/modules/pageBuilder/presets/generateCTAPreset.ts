@@ -823,7 +823,6 @@ const titleElement =
       paddingBottom: "80px",
       paddingLeft: "40px",
       paddingRight: "40px",
-      backgroundColor: "#111827",
       width: "100%"
     },
       rawSectionStyle,
@@ -857,8 +856,7 @@ const titleElement =
         alignItems: "center",
         justifyContent: "space-between",
         gap: "32px",
-        padding: "48px",
-borderRadius: "20px",
+        padding: "48px"
       },
       panelStyle,
       filterCtaPanelStyle
@@ -918,11 +916,8 @@ borderRadius: "20px",
     }
   );
 
-  const titleFallbackStyle = {
-    fontSize: "48px",
-    fontWeight: "800",
-    maxWidth: "820px",
-    color: "#ffffff"
+  const titleFallbackStyle: Record<string, any> = {
+    maxWidth: "820px"
   };
 
   const mergedTitleStyle =
@@ -935,27 +930,13 @@ borderRadius: "20px",
   const titleFontSizeBefore =
     mergedTitleStyle.desktop?.fontSize;
 
-  const titleFontSizeBeforePx =
-    parsePx(
-      titleFontSizeBefore
-    );
-
-  const shouldClampTitleFontSize =
-    titleFontSizeBeforePx !== null &&
-    titleFontSizeBeforePx > 60;
-
-  const ctaTitleStyle = {
+  const ctaTitleStyle: any = {
     ...mergedTitleStyle,
     desktop: {
       ...mergedTitleStyle.desktop,
       maxWidth:
         mergedTitleStyle.desktop?.maxWidth ||
-        "820px",
-      fontSize:
-        shouldClampTitleFontSize
-          ? "60px"
-          : mergedTitleStyle.desktop?.fontSize ||
-            "48px"
+        "820px"
     }
   };
 
@@ -963,10 +944,7 @@ borderRadius: "20px",
     mergePresetDesktopStyle(
       {
         textAlign: "center",
-        fontSize: "18px",
-        color: "#d1d5db",
-        maxWidth: "680px",
-        lineHeight: "1.7"
+        maxWidth: "680px"
       },
       textStyle,
       filterTextStyle
@@ -989,6 +967,15 @@ borderRadius: "20px",
       filterActionRowStyle
     );
 
+  const mergedPanelTablet =
+    (mergedPanelStyle.tablet || {}) as Record<string, any>;
+  const mergedPanelMobile =
+    (mergedPanelStyle.mobile || {}) as Record<string, any>;
+  const mergedActionRowTablet =
+    (mergedActionRowStyle.tablet || {}) as Record<string, any>;
+  const mergedActionRowMobile =
+    (mergedActionRowStyle.mobile || {}) as Record<string, any>;
+
   console.log(
     "CTA_TITLE_SCALE_CLAMPED",
     {
@@ -999,11 +986,9 @@ borderRadius: "20px",
       maxWidth:
         ctaTitleStyle.desktop?.maxWidth,
       reason:
-        shouldClampTitleFontSize
-          ? "desktop-title-max-60"
-          : titleFontSizeBefore
-            ? "source-within-limit"
-            : "fallback-font-size"
+        titleFontSizeBefore
+          ? "source-font-size"
+          : "no-font-size-fallback"
     }
   );
 
@@ -1133,16 +1118,10 @@ borderRadius: "20px",
 
                 style: {
 
-                  ...mergePresetDesktopStyle(
-                    {
-                      backgroundColor:
-                        "#10b981",
-                      color:
-                        "#ffffff",
-                      borderRadius:
-                        "14px",
-                      paddingTop:
-                        "14px",
+                    ...mergePresetDesktopStyle(
+                      {
+                        paddingTop:
+                          "14px",
                       paddingBottom:
                         "14px",
                       paddingLeft:
@@ -1234,6 +1213,36 @@ borderRadius: "20px",
                     sourcePanelDesktop.rowGap ||
                     mergedPanelStyle.desktop?.gap ||
                     "32px"
+                },
+                tablet: {
+                  ...mergedPanelTablet,
+                  flexDirection:
+                    mergedPanelTablet.flexDirection ||
+                    "column",
+                  alignItems:
+                    mergedPanelTablet.alignItems ||
+                    "flex-start",
+                  flexWrap:
+                    mergedPanelTablet.flexWrap ||
+                    "wrap",
+                  width:
+                    mergedPanelTablet.width ||
+                    "100%"
+                },
+                mobile: {
+                  ...mergedPanelMobile,
+                  flexDirection:
+                    mergedPanelMobile.flexDirection ||
+                    "column",
+                  alignItems:
+                    mergedPanelMobile.alignItems ||
+                    "stretch",
+                  flexWrap:
+                    mergedPanelMobile.flexWrap ||
+                    "wrap",
+                  width:
+                    mergedPanelMobile.width ||
+                    "100%"
                 }
               }
             },
@@ -1263,7 +1272,9 @@ borderRadius: "20px",
 
                 tablet: {},
 
-                mobile: {}
+                mobile: {
+                  width: "100%"
+                }
               }
             },
 
@@ -1343,7 +1354,10 @@ borderRadius: "20px",
 
                 tablet: {},
 
-                mobile: {}
+                mobile: {
+                  width: "100%",
+                  alignSelf: "stretch"
+                }
               }
             },
 
@@ -1361,9 +1375,31 @@ borderRadius: "20px",
 
                   style: {
 
-                    ...mergedActionRowStyle.desktop,
-                    alignItems: "center",
-                    justifyContent: "center"
+                    ...mergedActionRowStyle,
+                    desktop: {
+                      ...(mergedActionRowStyle.desktop || {}),
+                      alignItems:
+                        mergedActionRowStyle.desktop?.alignItems ||
+                        "center",
+                      justifyContent:
+                        mergedActionRowStyle.desktop?.justifyContent ||
+                        "center"
+                    },
+                    tablet: {
+                      ...mergedActionRowTablet,
+                      width:
+                        mergedActionRowTablet.width ||
+                        "100%"
+                    },
+                    mobile: {
+                      ...mergedActionRowMobile,
+                      width:
+                        mergedActionRowMobile.width ||
+                        "100%",
+                      flexDirection:
+                        mergedActionRowMobile.flexDirection ||
+                        "column"
+                    }
                   }
                 },
 

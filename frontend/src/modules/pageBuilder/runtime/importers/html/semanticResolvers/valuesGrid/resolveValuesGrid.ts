@@ -315,20 +315,6 @@ const eyebrowElement =
     getComputedValuesContainerStyle(
       containerElement
     );
-    sectionStyle.desktop.width = "100%";
-sectionStyle.desktop.maxWidth = "none";
-sectionStyle.desktop.marginLeft = "0";
-sectionStyle.desktop.marginRight = "0";
-
-containerStyle.desktop.width = "100%";
-containerStyle.desktop.maxWidth =
-  containerStyle.desktop.maxWidth &&
-  containerStyle.desktop.maxWidth !== "none"
-    ? containerStyle.desktop.maxWidth
-    : "1480px";
-containerStyle.desktop.marginLeft = "auto";
-containerStyle.desktop.marginRight = "auto";
-
   const gridStyle =
     extractLayoutStyles(
       node.element
@@ -413,7 +399,7 @@ titleStyle: {
     sourceElement:
       node.element,
 
-    claimedNode:
-      node
+   claimedNode:
+  node.parent?.parent || node
   };
 };

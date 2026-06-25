@@ -99,6 +99,9 @@ let activeSemanticReplacementMap =
     SerializedBlock
   >();
 
+let activeSemanticClaimRoots =
+  new WeakSet<HTMLElement>();
+
 let activeSemanticReplacementDiagnostics:
   Array<Record<string, any>> = [];
 
@@ -118,6 +121,29 @@ let activeContainerChildCompileTraces =
     HTMLElement,
     ContainerChildCompileTrace
   >();
+
+const isInsideClaimedSemanticSubtree = (
+  element: HTMLElement
+) => {
+  let current:
+    HTMLElement | null =
+      element;
+
+  while (current) {
+    if (
+      activeSemanticClaimRoots.has(
+        current
+      )
+    ) {
+      return current !== element;
+    }
+
+    current =
+      current.parentElement;
+  }
+
+  return false;
+};
 
 const TARGET_CONTAINER_CHILD_CLASSES =
   new Set([
@@ -2201,6 +2227,19 @@ function fallbackCompileElement(
     return [];
   }
 
+  if (
+    isInsideClaimedSemanticSubtree(
+      element
+    )
+  ) {
+    recordTrackedFallbackBranch(
+      element,
+      "skipped:insideClaimedSemanticSubtree"
+    );
+
+    return [];
+  }
+
   totalImportedNodes++;
 
   if (
@@ -3754,6 +3793,14 @@ function parseDomToBlocks(
     }
   }
 
+  if (
+    isInsideClaimedSemanticSubtree(
+      element
+    )
+  ) {
+    return [];
+  }
+
   if (shouldSkipImportedElement(element)) {
     return [];
   }
@@ -4644,6 +4691,8 @@ return css;
 
     activeSemanticReplacementMap =
       new WeakMap();
+    activeSemanticClaimRoots =
+      new WeakSet<HTMLElement>();
     activeSemanticReplacementDiagnostics =
       [];
 
@@ -4752,6 +4801,9 @@ getSafeChildren(body).forEach((child) => {
     const ownershipBuckets = toOwnershipBuckets(ownership);
     const finalBlocks: SerializedBlock[] = [];
    
+    activeSemanticClaimRoots =
+      new WeakSet<HTMLElement>();
+
     activeSemanticReplacementMap =
       createSemanticReplacementMap(
         semanticBlocks,
@@ -5362,6 +5414,8 @@ if (
 
 activeSemanticReplacementMap =
   new WeakMap();
+activeSemanticClaimRoots =
+  new WeakSet<HTMLElement>();
 activeSemanticReplacementDiagnostics =
   [];
 
@@ -5390,6 +5444,8 @@ return {
   } catch (error) {
     activeSemanticReplacementMap =
       new WeakMap();
+    activeSemanticClaimRoots =
+      new WeakSet<HTMLElement>();
     activeSemanticReplacementDiagnostics =
       [];
 
@@ -5639,6 +5695,10 @@ const serviceSelectorByVariant:
           emitted
         );
 
+        activeSemanticClaimRoots.add(
+          element
+        );
+
         const registeredBlock =
           map.get(
             element
@@ -5734,6 +5794,10 @@ const serviceSelectorByVariant:
         map.set(
           liveElement,
           emitted
+        );
+
+        activeSemanticClaimRoots.add(
+          liveElement
         );
       }
     );

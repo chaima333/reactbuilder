@@ -90,31 +90,22 @@ const finalStyle: CSSProperties = {
 
   minWidth: 0,
 
-  overflowWrap:
-    "break-word",
+  height: "auto",
 
-  wordBreak:
-    "break-word",
- 
-    whiteSpace: "pre-line",
+  overflowWrap: "break-word",
 
-  boxSizing:
-    "border-box",
+  wordBreak: "normal",
+
+  whiteSpace: "normal",
+
+  lineHeight:
+    resolvedStyle.lineHeight || "1.55",
+
+  boxSizing: "border-box",
 
   cursor:
     resolvedStyle.cursor
 };
-
-console.log(
-  "RUNTIME TEXT STYLE TRACE",
-  {
-    content,
-    rawStyle:
-      data?.style,
-    resolvedStyle,
-    finalStyle
-  }
-);
 
   // =====================================
   // RENDER
