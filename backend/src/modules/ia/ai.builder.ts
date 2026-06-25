@@ -126,9 +126,7 @@ const sectionBlock = (
       ...style
     })
   },
-  children: [
-    flexBlock(children.map((child) => flexItemBlock([child])))
-  ]
+  children: []
 });
 
 const gridItemBlock = (children: PageBlock[]): PageBlock => ({
@@ -2149,7 +2147,7 @@ const buildContactLayout = (): PageBlock => ({
     props: {},
     style: responsiveStyle({
       backgroundColor: "#f8fafc",
-      padding: "80px 40px"
+      padding: "90px 40px"
     })
   },
   children: [
@@ -2161,13 +2159,13 @@ const buildContactLayout = (): PageBlock => ({
         style: responsiveStyle({
           display: "flex",
           flexDirection: "row",
-          gap: "32px",
-          alignItems: "stretch",
+          gap: "56px",
+          alignItems: "flex-start",
           justifyContent: "center",
           maxWidth: "1200px",
           margin: "0 auto",
           width: "100%",
-          flexWrap: "nowrap"
+          flexWrap: "wrap"
         })
       },
       children: [
@@ -2177,8 +2175,8 @@ const buildContactLayout = (): PageBlock => ({
           data: {
             props: {},
             style: responsiveStyle({
-              flex: "1 1 0",
-              minWidth: "0"
+              flex: "1.1 1 480px",
+              maxWidth: "620px"
             })
           },
           children: [buildContactInfo()]
@@ -2189,8 +2187,8 @@ const buildContactLayout = (): PageBlock => ({
           data: {
             props: {},
             style: responsiveStyle({
-              flex: "1 1 0",
-              minWidth: "0"
+              flex: "0.9 1 420px",
+              maxWidth: "560px"
             })
           },
           children: [buildContactForm()]
