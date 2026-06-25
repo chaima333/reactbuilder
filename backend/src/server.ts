@@ -43,6 +43,7 @@ import notificationRoutes from "./modules/notifications/notification.routes";
 import iaRoutes from "./modules/ia/ai.routes";
 import exportRoutes from "./modules/export/export.routes";
 import assistantRoutes from "./modules/ia/assistant/assistant.routes";
+import pluginMarketplaceRoutes from "./modules/plugin/plugin.marketplace.routes";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 
@@ -104,7 +105,7 @@ app.use("/api/export", exportRoutes);
 
 registerCommands();
 app.use("/api/sites/:siteId/commands", authenticateJWT, maintenanceMode, commandRoutes);
-
+app.use( "/api/sites/:siteId/plugins", tenantStack,pluginMarketplaceRoutes);
 /* ========================
    404 HANDLER
 ======================== */
