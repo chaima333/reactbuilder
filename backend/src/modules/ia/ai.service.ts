@@ -4,10 +4,7 @@ import { Page } from "../../models/page";
 import { Seo } from "../../models/Seo";
 import { MediaService } from "../media/media.service";
 import { PageService } from "../pages/services/page.service";
-import {
-  generateTemplate,
-  generatePageBlocksByType
-} from "./ai.builder";
+import { generatePageBlocksByType, generateHomeBlocks} from "./ai.builder";
 import { CATEGORY_TEMPLATES } from "./ai.templates";
 import { buildBusinessProfile } from "./business.profile";
 import { generateAiContent } from "./content.generator";
@@ -302,13 +299,15 @@ const navigationItems = plannedPages.map((page) => ({
       : `/site/${siteId}/${page.finalSlug}`
 }));
 
-const generated = generateTemplate(
-  category,
-  prompt,
-  aiContent,
-  heroImageUrl,
-  navigationItems
-);
+const generated = {
+  title: aiContent.title,
+  blocks: generateHomeBlocks(
+    category,
+    aiContent,
+    heroImageUrl,
+    navigationItems
+  )
+};
 
 console.log("AI_GENERATED_TITLE", generated.title);
 console.log(
