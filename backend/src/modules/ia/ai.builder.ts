@@ -2077,53 +2077,106 @@ const buildContactForm = (): PageBlock => {
 };
 
 const buildContactInfo = (): PageBlock => {
-  const contactGroups = [
+  const contactCards = [
     {
-      label: "EMAIL",
+      icon: "📧",
+      title: "Email",
       lines: ["contact@example.com", "partners@example.com"]
     },
     {
-      label: "PHONE",
+      icon: "📞",
+      title: "Phone",
       lines: ["+216 XX XXX XXX", "+33 X XX XX XX XX"]
     },
     {
-      label: "OFFICES",
-      lines: [
-        "TN HQ — Tunis",
-        "Immeuble Molka, Rue de la Bourse",
-        "FR Paris",
-        "20 Rue du Bas Boulards",
-        "MA Casablanca",
-        "Twin Center, Boulevard Zerktouni"
-      ]
+      icon: "📍",
+      title: "Main Office",
+      lines: ["TN HQ — Tunis", "Immeuble Molka, Rue de la Bourse"]
     },
     {
-      label: "SOCIAL",
+      icon: "🕒",
+      title: "Working Hours",
+      lines: ["Monday to Friday", "9:00 AM - 6:00 PM"]
+    },
+    {
+      icon: "🌐",
+      title: "Social",
       lines: ["LinkedIn — /company/example", "X / Twitter — @example"]
     }
   ];
 
-  const groupBlocks: PageBlock[] = contactGroups.map((group) =>
+  const cardBlocks: PageBlock[] = contactCards.map((card) =>
     flexItemBlock([
-      flexBlock([
-        textBlock(group.label, {
-          fontSize: "13px",
-          fontWeight: "800",
-          color: "#2563eb",
-          letterSpacing: "0.22em",
-          textAlign: "left",
-          marginBottom: "14px"
-        }),
-        ...group.lines.map((line) =>
-          textBlock(line, {
-            fontSize: "16px",
-            color: "#334155",
-            textAlign: "left",
-            marginBottom: "6px",
-            lineHeight: "1.6"
+      {
+        id: makeId("contact-info-item-card"),
+        type: "flex",
+        data: {
+          props: {},
+          style: responsiveStyle({
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "flex-start",
+            gap: "16px",
+            width: "100%",
+            padding: "20px",
+            backgroundColor: "#ffffff",
+            border: "1px solid #e5e7eb",
+            borderRadius: "14px",
+            boxShadow: "0 8px 24px rgba(15, 23, 42, 0.06)",
+            boxSizing: "border-box"
           })
-        )
-      ])
+        },
+        children: [
+          {
+            id: makeId("contact-info-icon"),
+            type: "text",
+            data: {
+              props: {
+                text: card.icon,
+                content: card.icon
+              },
+              style: responsiveStyle({
+                fontSize: "24px",
+                marginBottom: "0",
+                lineHeight: "1"
+              })
+            },
+            children: []
+          },
+          {
+            id: makeId("contact-info-content"),
+            type: "flex",
+            data: {
+              props: {},
+              style: responsiveStyle({
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+                flex: "1",
+                minWidth: "0"
+              })
+            },
+            children: [
+              textBlock(card.title, {
+                fontSize: "17px",
+                fontWeight: "800",
+                color: "#0f172a",
+                textAlign: "left",
+                marginBottom: "2px"
+              }),
+              ...card.lines.map((line) =>
+                textBlock(line, {
+                  fontSize: "15px",
+                  color: "#475569",
+                  textAlign: "left",
+                  marginBottom: "0",
+                  lineHeight: "1.6"
+                })
+              )
+            ]
+          }
+        ]
+      }
     ])
   );
 
@@ -2135,17 +2188,33 @@ const buildContactInfo = (): PageBlock => {
       style: responsiveStyle({
         display: "flex",
         flexDirection: "column",
-        gap: "28px",
+        gap: "16px",
         width: "100%",
         maxWidth: "620px",
         margin: "0 auto",
         backgroundColor: "#f8fafc",
-        padding: "60px 40px",
-        borderRadius: "16px",
+        padding: "40px",
+        borderRadius: "20px",
         boxSizing: "border-box"
       })
     },
-    children: groupBlocks
+    children: [
+      textBlock("Get in Touch", {
+        fontSize: "32px",
+        fontWeight: "900",
+        color: "#0f172a",
+        textAlign: "left",
+        marginBottom: "6px"
+      }),
+      textBlock("Reach out to our team for questions, partnerships, or support.", {
+        fontSize: "16px",
+        color: "#64748b",
+        textAlign: "left",
+        lineHeight: "1.7",
+        marginBottom: "18px"
+      }),
+      ...cardBlocks
+    ]
   };
 };
 
