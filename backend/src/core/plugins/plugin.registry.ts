@@ -78,8 +78,30 @@ public getAllPlugins() {
     console.log("📊 EVENT SUMMARY:", results);
     return results;
   }
+  public getRegisteredPlugins() {
+  return Array.from(this.plugins.values()).map(
+    ({ instance, priority, enabled }) => ({
+      instance,
+      name: instance.name,
+      mode: instance.mode,
+      priority,
+      enabled,
+      events: instance.events,
+      meta: instance.meta
+    })
+  );
+}
 
- 
+ public getMarketplacePlugins() {
+  return Array.from(this.plugins.values()).map(
+    ({ instance, enabled, priority }) => ({
+      name: instance.name,
+      events: instance.events,
+      priority,
+      runtimeEnabled: enabled
+    })
+  );
+}
 
   // ======================
   // DEBUG HELPERS
@@ -97,6 +119,8 @@ public getAllPlugins() {
     .filter(p => p.enabled && p.instance.events.includes(event))
     .map(p => p.instance.name);
 }
+
+
 }
 
 export const cmsRegistry = PluginRegistry.getInstance();

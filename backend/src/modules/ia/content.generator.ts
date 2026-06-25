@@ -4,6 +4,8 @@
 
 import { AiGeneratedContent, SiteContext } from "./ai.types";
 import { BusinessProfile } from "./business.profile";
+import { generateText } from "./llm/llm.client";
+import { buildAiContentPrompt } from "./llm/llm.prompt";
 
 /**
  * Extract keywords from prompt
@@ -619,10 +621,10 @@ const FAQ_BY_CATEGORY: Record<string, string[]> = {
     "Do you have analytics?|Yes, we provide detailed analytics and insights."
   ]
 };
-export const generateAiContent = (
+export const generateAiContent = async (
   siteContext: SiteContext,
   prompt: string
-): AiGeneratedContent => {
+): Promise<AiGeneratedContent> => {
   const cleanPrompt = prompt.trim().replace(/\s+/g, " ");
   const {category,companyName,audience,services} = siteContext;
   
@@ -877,6 +879,18 @@ const faqs =
     ? dynamicFaqs
     : FAQ_BY_CATEGORY[category];
 
+    try {
+  const promptText =
+    buildAiContentPrompt(siteContext);
+
+  const response =
+    await generateText(promptText);
+
+  console.log("LLM_RESPONSE:", response);
+} catch (error) {
+  console.error("LLM_ERROR:", error);
+}
+
   // ===== RETOUR =====
   return {
     title: brandName,
@@ -887,28 +901,21 @@ const faqs =
           .join(", ")
           .toLowerCase()}.`
       : `A modern ${category.toLowerCase()} solution designed for professional digital experiences.`,
-    // Mission / Vision (NOUVEAU)
     missionTitle: missionTitle,
     missionText: missionText,
     
-    // Services dynamiques
     services: dynamicServices,
     
-    // Features dynamiques (TOUTES les catégories ont "Title|Description|Button")
     features: dynamicFeatures,
     
-    // Stats category-aware (TOUTES les catégories ont 4 stats)
     stats: categoryStats,
     
-    // Testimonials (fallback par catégorie)
     testimonials: testimonialsByCategory[category] || [
       "Professional service and strong results|Client"
     ],
     
-    // FAQs (TOUTES les catégories ont des FAQs)
     faqs: faqs,
     
-    // CTA (fallback par catégorie)
     ctaTitle: keywords.length > 0
       ? `Ready to Launch Your ${dynamicServices[0]} Platform?`
       : ctaTitleByCategory[category] || `Ready to Build Your ${category} Platform?`,

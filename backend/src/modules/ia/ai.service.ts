@@ -257,7 +257,7 @@ const sitePlan = siteContext.pages.map((page) => ({
 }));
 
 const aiContent =
-  generateAiContent(
+  await generateAiContent(
     siteContext,
     prompt
   );
@@ -324,21 +324,6 @@ const generated = {
   )
 };
 
-console.log("AI_GENERATED_TITLE", generated.title);
-console.log(
-  "AI_GENERATED_BLOCKS_COUNT",
-  generated.blocks?.length || 0
-);
-console.log("HOME_BLOCKS_COUNT", generated.blocks?.length || 0);
-
-console.log(
-  "AI_WILL_CREATE_PAGES",
-  plannedPages.map((page) => ({
-    title: page.title,
-    slug: page.finalSlug,
-    type: page.type
-  }))
-);
 const createdPages: any[] = [];
 let homepagePageId: number | undefined;
 

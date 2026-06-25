@@ -12,6 +12,8 @@ import { SitePlugin } from "./SitePlugin";
 @Table({
   tableName: "plugins",
   timestamps: true,
+  createdAt: "created_at",
+  updatedAt: "updated_at",
 })
 export class Plugin extends Model {
   @Column({
