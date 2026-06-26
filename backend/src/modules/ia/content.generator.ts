@@ -6,6 +6,7 @@ import { AiGeneratedContent, SiteContext } from "./ai.types";
 import { BusinessProfile } from "./business.profile";
 import { generateText } from "./llm/llm.client";
 import { buildAiContentPrompt } from "./llm/llm.prompt";
+import { sanitizeAiContent } from "./sanitizeAiContent";
 
 /**
  * Extract keywords from prompt
@@ -878,52 +879,68 @@ const faqs =
   dynamicFaqs.length > 0
     ? dynamicFaqs
     : FAQ_BY_CATEGORY[category];
-//LLM
 
-    try {
+// ===== FALLBACK CONTENT =====
+const fallbackContent: AiGeneratedContent = {
+  title: brandName,
+  heroTitle,
+  heroText: keywords.length > 0
+    ? `Helping ${profileAudience.join(", ")} succeed through ${dynamicServices
+        .slice(0, 3)
+        .join(", ")
+        .toLowerCase()}.`
+    : `A modern ${category.toLowerCase()} solution designed for professional digital experiences.`,
+
+  missionTitle,
+  missionText,
+
+  services: dynamicServices,
+  features: dynamicFeatures,
+  stats: categoryStats,
+
+  testimonials: testimonialsByCategory[category] || [
+    "Professional service and strong results|Client"
+  ],
+
+  faqs,
+
+  ctaTitle: keywords.length > 0
+    ? `Ready to Launch Your ${dynamicServices[0]} Platform?`
+    : ctaTitleByCategory[category] || `Ready to Build Your ${category} Platform?`,
+
+  ctaText: keywords.length > 0
+    ? `Turn your ${dynamicServices[0].toLowerCase()} vision into a scalable digital experience.`
+    : ctaTextByCategory[category] || "Create a modern digital presence with AI."
+};
+let llmContent: Partial<AiGeneratedContent> | undefined;
+
+try {
+
   const promptText =
-    buildAiContentPrompt(siteContext);
+    buildAiContentPrompt(
+      siteContext
+    );
 
-  const response =
-    await generateText(promptText);
+  const response = await generateText( promptText);
 
-  console.log("LLM_RESPONSE:", response);
+ try { llmContent = JSON.parse(response);
+
+  console.log("LLM RESPONSE:");
+console.log(response);
+} catch { console.warn( "LLM returned invalid JSON. Using fallback.");
+
+  llmContent =undefined;}
+
 } catch (error) {
-  console.error("LLM_ERROR:", error);
+
+  console.error(
+    "LLM_ERROR:",
+    error
+  );
+
 }
-
-
-
-  // ===== RETOUR =====
-  return {
-    title: brandName,
-    heroTitle: heroTitle,
-    heroText: keywords.length > 0
-      ? `Helping ${profileAudience.join(", ")} succeed through ${dynamicServices
-          .slice(0, 3)
-          .join(", ")
-          .toLowerCase()}.`
-      : `A modern ${category.toLowerCase()} solution designed for professional digital experiences.`,
-    missionTitle: missionTitle,
-    missionText: missionText,
-    
-    services: dynamicServices,
-    
-    features: dynamicFeatures,
-    
-    stats: categoryStats,
-    
-    testimonials: testimonialsByCategory[category] || [
-      "Professional service and strong results|Client"
-    ],
-    
-    faqs: faqs,
-    
-    ctaTitle: keywords.length > 0
-      ? `Ready to Launch Your ${dynamicServices[0]} Platform?`
-      : ctaTitleByCategory[category] || `Ready to Build Your ${category} Platform?`,
-    ctaText: keywords.length > 0
-      ? `Turn your ${dynamicServices[0].toLowerCase()} vision into a scalable digital experience.`
-      : ctaTextByCategory[category] || "Create a modern digital presence with AI.",
-  };
+return sanitizeAiContent(
+  fallbackContent,
+  llmContent
+);
 };

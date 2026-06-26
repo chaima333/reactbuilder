@@ -4,6 +4,18 @@ import {
 } from "../../modules/dashboard/dashboard.dto";
 
 
+export type PluginPermission =
+  | "pages.read"
+  | "pages.write"
+  | "pages.delete"
+  | "media.read"
+  | "media.write"
+  | "seo.read"
+  | "seo.write"
+  | "users.read"
+  | "users.write"
+  | "dashboard.read";
+
 
 export interface ICmsPlugin {
   name: string;
@@ -12,6 +24,7 @@ export interface ICmsPlugin {
   isCritical?: boolean;
   events: string[];
   enabled: boolean;
+  permissions?: PluginPermission[];
 
   register?(context: any): void;
 

@@ -16,6 +16,12 @@ export const NotificationPlugin: ICmsPlugin = {
     "site.updated",
   ],
   enabled: true,
+
+  permissions: [
+  "dashboard.read",
+  "pages.read"
+],
+
   meta: {
     dashboard: {
       type: "notifications",

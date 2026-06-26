@@ -9,6 +9,10 @@ export const AiHistoryPlugin: ICmsPlugin = {
   events: ["site.created"],
   enabled: true,
 
+  permissions: [
+  "dashboard.read"
+],
+
   meta: {
     dashboard: {
       type: "widget.ai.history",

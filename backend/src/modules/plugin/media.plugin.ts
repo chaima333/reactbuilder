@@ -14,6 +14,12 @@ export const MediaPlugin: ICmsPlugin = {
 
   enabled: true,
 
+  permissions: [
+  "media.read",
+  "media.write",
+  "dashboard.read"
+],
+
   meta: {
     dashboard: {
       type: "widget.media.summary",

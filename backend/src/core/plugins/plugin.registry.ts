@@ -1,9 +1,9 @@
+import { getRequiredPermissionForEvent } from "../../modules/plugin/plugin.permission.map";
 import { UnifiedEvent } from "./events/contracts/unified.contract";
 import { ICmsPlugin } from "./plugin.types";
 
 export class PluginRegistry {
 
-  // core/plugins/plugin.registry.ts
 
 public getAllPlugins() {
   return Array.from(this.plugins.values())
@@ -45,7 +45,6 @@ public getAllPlugins() {
   // ======================
 
   async emit(event: UnifiedEvent) {
-    // 1. تصفية الـ Plugins بناءً على الحدث الموحد
     const activePlugins = Array.from(this.plugins.values())
       .filter(p => p.enabled && p.instance.events.includes(event.type))
       .sort((a, b) => b.priority - a.priority);
@@ -56,16 +55,26 @@ public getAllPlugins() {
       const start = Date.now();
 
       try {
-        // ✅ التعديل الجذري: نمرر كائن الـ event كاملاً
-        await instance.execute(event); 
+  const requiredPermission =
+    getRequiredPermissionForEvent(event.type);
 
-        results.push({
-          plugin: instance.name,
-          success: true,
-          duration: Date.now() - start
-        });
+  if (
+    requiredPermission &&
+    !instance.permissions?.includes(requiredPermission)
+  ) {
+    throw new Error(
+      `Missing permission "${requiredPermission}" for event "${event.type}"`
+    );
+  }
 
-      } catch (err: any) {
+  await instance.execute(event);
+
+  results.push({
+    plugin: instance.name,
+    success: true,
+    duration: Date.now() - start
+  });
+} catch (err: any) {
         console.error(`❌ Plugin [${instance.name}] failed:`, err.message);
         results.push({
           plugin: instance.name,
@@ -87,6 +96,7 @@ public getAllPlugins() {
       priority,
       enabled,
       events: instance.events,
+      permissions: instance.permissions ?? [],
       meta: instance.meta
     })
   );

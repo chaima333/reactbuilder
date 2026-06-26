@@ -9,6 +9,11 @@ export const VersionPlugin: ICmsPlugin = {
   events: ["page.updated"],
   enabled: true,
 
+    permissions: [
+    "pages.read",
+    "dashboard.read"
+  ],
+
   meta: {
     dashboard: {
       type: "widget.version.summary",

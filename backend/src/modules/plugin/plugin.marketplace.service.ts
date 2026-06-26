@@ -39,6 +39,7 @@ export class PluginMarketplaceService {
         runtimeEnabled: runtimePlugin?.enabled ?? false,
         priority: runtimePlugin?.priority ?? 0,
         events: runtimePlugin?.events ?? [],
+        permissions: runtimePlugin?.permissions ?? [],
 
         installed: !!sitePlugin,
         enabled: sitePlugin?.isEnabled ?? false,

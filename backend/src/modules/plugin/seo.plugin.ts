@@ -4,6 +4,7 @@ import { Op } from "sequelize";
 
 import { Page }
 from "../../models";
+import { requirePermission } from "./plugin.permissions";
 
 export const SEOPlugin: ICmsPlugin = {
   name: "seo-plugin",
@@ -13,8 +14,13 @@ export const SEOPlugin: ICmsPlugin = {
   events: ["page.updated", "page.restored"],
   enabled: true,
 
+  permissions: [
+  "pages.read",
+  "seo.read",
+  "seo.write",
+  "dashboard.read"
+],
 
-   // 🔥 UI definition للـ dashboard
   meta: {
     dashboard: {
       type: "widget.seo.score",
@@ -46,17 +52,15 @@ async getDashboardData(
 },
 
   async execute(event: UnifiedEvent) {
-    // 🎯 اقتناص البيانات من العقد الجديد
+    requirePermission(SEOPlugin,"seo.write");
     const { data, context, id } = event;
     const { current, flags } = data;
 
-    // 🛑 التثبت من الـ ID (الآن هو event.id)
     if (!id) {
       console.error("🚨 SEOPlugin: Identifiant d'événement manquant");
       return;
     }
 
-    // 🚦 التثبت من الـ Flags
     if (!flags?.shouldSEO) {
       return;
     }
