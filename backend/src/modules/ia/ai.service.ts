@@ -464,11 +464,10 @@ const createdPages: any[] = [];
 let homepagePageId: number | undefined;
 
 for (const planPage of plannedPages) {
-
-  const pageTitle =
-    planPage.type === "home"
-      ? `${generated.title || category} Home ${generationId}`
-      : `${generated.title || category} ${planPage.title} ${generationId}`;
+const pageTitle =
+  planPage.type === "home"
+    ? `${generated.title || category} Home`
+    : `${generated.title || category} ${planPage.title}`;
 
   const pageSlug = planPage.finalSlug;
   const pageBlocks = generatePageBlocksByType(
