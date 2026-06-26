@@ -33,6 +33,23 @@ export const VersionPlugin: ICmsPlugin = {
     };
   },
 
+  async onInstall(siteId: number) {
+    console.log(`📦 Version Plugin installed for site ${siteId}`);
+  },
+
+  async onEnable(siteId: number) {
+    console.log(`✅ Version Plugin enabled for site ${siteId}`);
+  },
+
+  async onDisable(siteId: number) {
+    console.log(`⛔ Version Plugin disabled for site ${siteId}`);
+  },
+
+  async onUninstall(siteId: number) {
+    console.log(`🗑️ Version Plugin removed from site ${siteId}`);
+  },
+
+
   async execute(_event: any) {
     // Update snapshots are persisted transactionally by updatePageHandler.
     // The plugin remains available for dashboard version metadata.

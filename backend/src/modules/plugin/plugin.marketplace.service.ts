@@ -54,7 +54,7 @@ export class PluginMarketplaceService {
       throw new Error("Plugin not found");
     }
 
-    const [sitePlugin] = await SitePlugin.findOrCreate({
+    const [sitePlugin, created] = await SitePlugin.findOrCreate({
       where: {
         siteId,
         pluginId,
@@ -68,10 +68,36 @@ export class PluginMarketplaceService {
       },
     });
 
+    if (!created) {
+      sitePlugin.isEnabled = true;
+
+      if (!sitePlugin.installedAt) {
+        sitePlugin.installedAt = new Date();
+      }
+
+      if (!sitePlugin.installedVersion) {
+        sitePlugin.installedVersion = plugin.version;
+      }
+
+      await sitePlugin.save();
+    }
+
+    const runtimePlugin = cmsRegistry.getPlugin(plugin.slug);
+
+    if (runtimePlugin?.onInstall) {
+      await runtimePlugin.onInstall(siteId);
+    }
+
     return sitePlugin;
   }
 
   static async enablePlugin(siteId: number, pluginId: number) {
+    const plugin = await Plugin.findByPk(pluginId);
+
+    if (!plugin) {
+      throw new Error("Plugin not found");
+    }
+
     const sitePlugin = await SitePlugin.findOne({
       where: {
         siteId,
@@ -86,10 +112,22 @@ export class PluginMarketplaceService {
     sitePlugin.isEnabled = true;
     await sitePlugin.save();
 
+    const runtimePlugin = cmsRegistry.getPlugin(plugin.slug);
+
+    if (runtimePlugin?.onEnable) {
+      await runtimePlugin.onEnable(siteId);
+    }
+
     return sitePlugin;
   }
 
   static async disablePlugin(siteId: number, pluginId: number) {
+    const plugin = await Plugin.findByPk(pluginId);
+
+    if (!plugin) {
+      throw new Error("Plugin not found");
+    }
+
     const sitePlugin = await SitePlugin.findOne({
       where: {
         siteId,
@@ -104,20 +142,40 @@ export class PluginMarketplaceService {
     sitePlugin.isEnabled = false;
     await sitePlugin.save();
 
+    const runtimePlugin = cmsRegistry.getPlugin(plugin.slug);
+
+    if (runtimePlugin?.onDisable) {
+      await runtimePlugin.onDisable(siteId);
+    }
+
     return sitePlugin;
   }
 
   static async uninstallPlugin(siteId: number, pluginId: number) {
-    const deleted = await SitePlugin.destroy({
+    const plugin = await Plugin.findByPk(pluginId);
+
+    if (!plugin) {
+      throw new Error("Plugin not found");
+    }
+
+    const sitePlugin = await SitePlugin.findOne({
       where: {
         siteId,
         pluginId,
       },
     });
 
-    if (!deleted) {
+    if (!sitePlugin) {
       throw new Error("Plugin is not installed");
     }
+
+    const runtimePlugin = cmsRegistry.getPlugin(plugin.slug);
+
+    if (runtimePlugin?.onUninstall) {
+      await runtimePlugin.onUninstall(siteId);
+    }
+
+    await sitePlugin.destroy();
 
     return true;
   }

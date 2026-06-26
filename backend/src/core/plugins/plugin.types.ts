@@ -17,6 +17,24 @@ export interface ICmsPlugin {
 
   execute(event: UnifiedEvent): Promise<void>;
 
+  // =========================
+  // LIFECYCLE
+  // =========================
+
+  onInstall?(siteId: number): Promise<void>;
+
+  onEnable?(siteId: number): Promise<void>;
+
+  onDisable?(siteId: number): Promise<void>;
+
+  onUninstall?(siteId: number): Promise<void>;
+
+  onUpdate?(
+    siteId: number,
+    fromVersion: string,
+    toVersion: string
+  ): Promise<void>;
+
   meta?: {
     dashboard?: {
       type: DashboardBlockType;
@@ -26,7 +44,6 @@ export interface ICmsPlugin {
     };
   };
 
-  // 🔥 FIXED: site-level not user-level
   getDashboardData?(
     siteId: number,
     context?: { userId?: number }
