@@ -878,6 +878,7 @@ const faqs =
   dynamicFaqs.length > 0
     ? dynamicFaqs
     : FAQ_BY_CATEGORY[category];
+//LLM
 
     try {
   const promptText =
@@ -890,6 +891,8 @@ const faqs =
 } catch (error) {
   console.error("LLM_ERROR:", error);
 }
+
+
 
   // ===== RETOUR =====
   return {
