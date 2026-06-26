@@ -139,12 +139,17 @@ export const updateGlobalLayout = async (
 // =========================
 // GET SITES
 // =========================
-export const getSites = async (req: AuthRequest, res: Response) => {
+export const getSites = async (
+  req: AuthRequest,
+  res: Response
+) => {
   try {
     const userId = req.user.id;
 
     const memberships = await SiteMember.findAll({
-      where: { userId },
+      where: {
+        userId
+      },
       include: [
         {
           model: Site,
@@ -157,40 +162,51 @@ export const getSites = async (req: AuthRequest, res: Response) => {
             {
               model: Page,
               as: "pages",
-              attributes: ["id", "title"]
+              attributes: [
+                "id",
+                "title"
+              ]
             }
           ]
         }
+      ],
+      order: [
+        ["createdAt", "DESC"]
       ]
     });
 
-    const sites = memberships.map((m: any) => ({
-      id: m.site.id,
-      name: m.site.name,
-      subdomain: m.site.subdomain,
-      status: m.site.status,
-      createdAt: m.site.createdAt,
-      pages: m.site.pages || [],
-      pagesCount: m.site.pages ? m.site.pages.length : 0
-    }));
+    const sites = memberships
+      .filter((m: any) => m.site)
+      .map((m: any) => ({
+        id: m.site.id,
+        name: m.site.name,
+        subdomain: m.site.subdomain,
+        status: m.site.status,
+        createdAt: m.site.createdAt,
+
+        // مهم للـ frontend RBAC
+        memberRole: m.role,
+        role: m.role,
+
+        pages: m.site.pages || [],
+        pagesCount: m.site.pages
+          ? m.site.pages.length
+          : 0,
+
+        totalViews: m.site.totalViews || 0,
+        description: m.site.description || null
+      }));
 
     return res.json({
       success: true,
       data: sites
     });
 
-  } catch (error) {
-    console.error("GET_SITES_ERROR:", error);
-    if (
-  error.message ===
-  "MAX_SITES_LIMIT_REACHED"
-) {
-  return res.status(403).json({
-    success: false,
-    message:
-      "Maximum sites limit reached",
-  });
-}
+  } catch (error: any) {
+    console.error(
+      "GET_SITES_ERROR:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -305,23 +321,67 @@ export const deleteSite = async (req: AuthRequest, res: Response) => {
     });
   }
 };
-export const getDefaultSite = async (req: AuthRequest, res: Response) => {
-  const userId = req.user.id;
+export const getDefaultSite = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const userId = req.user.id;
 
-  const membership = await SiteMember.findOne({
-    where: { userId },
-    include: [{ model: Site }],
-    order: [["createdAt", "ASC"]],
-  });
+    const membership = await SiteMember.findOne({
+      where: {
+        userId
+      },
+      include: [
+        {
+          model: Site,
+          where: {
+            status: {
+              [Op.ne]: "deleted"
+            }
+          }
+        }
+      ],
+      order: [
+        ["createdAt", "ASC"]
+      ]
+    });
 
-  if (!membership) {
-    return res.json({ success: true, data: null });
+    if (!membership || !(membership as any).site) {
+      return res.json({
+        success: true,
+        data: null
+      });
+    }
+
+    const site =
+      (membership as any).site;
+
+    return res.json({
+      success: true,
+      data: {
+        id: site.id,
+        name: site.name,
+        subdomain: site.subdomain,
+        status: site.status,
+        createdAt: site.createdAt,
+
+        memberRole: membership.role,
+        role: membership.role
+      }
+    });
+
+  } catch (error: any) {
+    console.error(
+      "GET_DEFAULT_SITE_ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
   }
-
-  return res.json({
-    success: true,
-    data: membership.site,
-  });
 };
 
 

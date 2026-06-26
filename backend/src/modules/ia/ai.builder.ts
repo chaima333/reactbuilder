@@ -1792,7 +1792,7 @@ const buildFooter = (config: SectionConfig): PageBlock => {
 
   return {
     id: makeId("footer-section"),
-    type: "section",
+    type: "footer",
     data: {
       props: {},
       style: responsiveStyle({

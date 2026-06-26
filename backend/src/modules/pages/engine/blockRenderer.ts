@@ -53,6 +53,31 @@ const renderSectionBlock = (data: any, childrenHTML: string) => `
     ${childrenHTML}
   </section>`;
 
+const renderFooterBlock = (data: any, childrenHTML: string) => {
+  const style =
+    data.style?.desktop || {};
+
+  return `
+    <footer
+      class="pb-footer"
+      style="
+        display:flex;
+        flex-direction:${style.flexDirection || "column"};
+        justify-content:${style.justifyContent || "flex-start"};
+        align-items:${style.alignItems || "stretch"};
+        gap:${style.gap || "32px"};
+        flex-wrap:${style.flexWrap || "wrap"};
+        width:100%;
+        box-sizing:border-box;
+        background:${style.background || style.backgroundColor || "#020617"};
+        color:${style.color || "#ffffff"};
+        padding:${style.padding || "70px 40px 35px"};
+      "
+    >
+      ${childrenHTML}
+    </footer>`;
+};
+
 const renderFlexBlock = (
   data: any,
   childrenHTML: string
@@ -186,6 +211,7 @@ const BLOCK_RENDERERS: Record<string, (data: any, childrenHTML: string) => strin
   textarea: (data) => renderTextareaBlock(data),
   select: (data) => renderSelectBlock(data),
   navbar: renderFlexBlock,
+  footer: renderFooterBlock,
 };
 
 /**

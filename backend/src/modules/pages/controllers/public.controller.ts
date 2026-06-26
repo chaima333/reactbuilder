@@ -53,12 +53,23 @@ export const getPublicPage = async (req: Request, res: Response) => {
 
     const pageBlocks =
       Array.isArray(page.blocks) ? page.blocks : [];
+    const isFooterBlock = (block: any) => {
+      const semanticType =
+        block?.meta?.semanticType ||
+        block?.data?.meta?.semanticType;
+
+      return (
+        block?.type === "footer" ||
+        block?.id?.startsWith("footer-section-") ||
+        semanticType === "FOOTER" ||
+        semanticType === "FOOTER_SECTION"
+      );
+    };
+
     const pageOwnsNavbar =
       pageBlocks.some((block: any) => block?.type === "navbar");
     const pageOwnsFooter =
-      pageBlocks.some((block: any) =>
-        block?.id?.startsWith("footer-section-")
-      );
+      pageBlocks.some(isFooterBlock);
 
     const allBlocks = [
       ...(globalLayout.navbar && !pageOwnsNavbar

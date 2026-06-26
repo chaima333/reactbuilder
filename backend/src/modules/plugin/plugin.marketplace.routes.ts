@@ -8,16 +8,39 @@ import {
   uninstallPlugin,
 } from "./plugin.marketplace.controller";
 
-const router = Router();
+import { requirePermission } from "../../core/middleware/role.middleware";
+import { PERMISSIONS } from "../../core/constants/permissions";
 
-router.get("/", getMarketplace);
+const router = Router({ mergeParams: true });
 
-router.post("/:pluginId/install", installPlugin);
+router.get(
+  "/",
+  requirePermission(PERMISSIONS.PLUGIN_READ),
+  getMarketplace
+);
 
-router.patch("/:pluginId/enable", enablePlugin);
+router.post(
+  "/:pluginId/install",
+  requirePermission(PERMISSIONS.PLUGIN_INSTALL),
+  installPlugin
+);
 
-router.patch("/:pluginId/disable", disablePlugin);
+router.patch(
+  "/:pluginId/enable",
+  requirePermission(PERMISSIONS.PLUGIN_ENABLE),
+  enablePlugin
+);
 
-router.delete("/:pluginId/uninstall", uninstallPlugin);
+router.patch(
+  "/:pluginId/disable",
+  requirePermission(PERMISSIONS.PLUGIN_DISABLE),
+  disablePlugin
+);
+
+router.delete(
+  "/:pluginId/uninstall",
+  requirePermission(PERMISSIONS.PLUGIN_UNINSTALL),
+  uninstallPlugin
+);
 
 export default router;
