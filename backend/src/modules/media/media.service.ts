@@ -122,11 +122,27 @@ if (!contentType.startsWith("image/")) {
 }
 
 
-  static async removeMedia(id: string, userId: string) {
-    const media = await Media.findOne({ where: { id, userId } });
-    if (!media) throw new Error("Media asset not found or unauthorized");
+static async removeMedia(
+  id: string,
+  siteId: string
+) {
+  const media = await Media.findOne({
+    where: {
+      id,
+      siteId
+    }
+  });
 
-    await deleteFromCloudinary(media.filename);
-    await media.destroy();
+  if (!media) {
+    throw new Error(
+      "Media asset not found"
+    );
   }
+
+  await deleteFromCloudinary(
+    media.filename
+  );
+
+  await media.destroy();
+}
 }
