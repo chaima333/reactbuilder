@@ -1,26 +1,132 @@
-import { PERMISSIONS } from "./permissions";
-import { Role } from "../../modules/auth/role";
+import {
+  PERMISSIONS,
+  Permission
+} from "./permissions";
 
-export const ROLE_PERMISSIONS: Record<Role, readonly string[]> = {
+import {
+  Role
+} from "../../modules/auth/role";
+
+export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   OWNER: [
+    // Site
     PERMISSIONS.SITE_READ,
     PERMISSIONS.SITE_UPDATE,
     PERMISSIONS.SITE_DELETE,
+
+    // Dashboard
+    PERMISSIONS.DASHBOARD_READ,
+
+    // Pages
+    PERMISSIONS.PAGE_READ,
     PERMISSIONS.PAGE_CREATE,
     PERMISSIONS.PAGE_UPDATE,
     PERMISSIONS.PAGE_DELETE,
+    PERMISSIONS.PAGE_PUBLISH,
+    PERMISSIONS.PAGE_RESTORE,
+
+    // Media
+    PERMISSIONS.MEDIA_READ,
+    PERMISSIONS.MEDIA_UPLOAD,
+    PERMISSIONS.MEDIA_UPDATE,
+    PERMISSIONS.MEDIA_DELETE,
+
+    // Plugins
+    PERMISSIONS.PLUGIN_READ,
+    PERMISSIONS.PLUGIN_INSTALL,
+    PERMISSIONS.PLUGIN_ENABLE,
+    PERMISSIONS.PLUGIN_DISABLE,
+    PERMISSIONS.PLUGIN_UNINSTALL,
+
+    // Members
+    PERMISSIONS.MEMBER_READ,
+    PERMISSIONS.MEMBER_INVITE,
+    PERMISSIONS.MEMBER_UPDATE_ROLE,
+    PERMISSIONS.MEMBER_REMOVE,
   ],
+
   ADMIN: [
+    // Site
     PERMISSIONS.SITE_READ,
     PERMISSIONS.SITE_UPDATE,
+
+    // Dashboard
+    PERMISSIONS.DASHBOARD_READ,
+
+    // Pages
+    PERMISSIONS.PAGE_READ,
     PERMISSIONS.PAGE_CREATE,
     PERMISSIONS.PAGE_UPDATE,
+    PERMISSIONS.PAGE_DELETE,
+    PERMISSIONS.PAGE_PUBLISH,
+    PERMISSIONS.PAGE_RESTORE,
+
+    // Media
+    PERMISSIONS.MEDIA_READ,
+    PERMISSIONS.MEDIA_UPLOAD,
+    PERMISSIONS.MEDIA_UPDATE,
+    PERMISSIONS.MEDIA_DELETE,
+
+    // Plugins
+    PERMISSIONS.PLUGIN_READ,
+    PERMISSIONS.PLUGIN_INSTALL,
+    PERMISSIONS.PLUGIN_ENABLE,
+    PERMISSIONS.PLUGIN_DISABLE,
+    PERMISSIONS.PLUGIN_UNINSTALL,
+
+    // Members
+    PERMISSIONS.MEMBER_READ,
+    PERMISSIONS.MEMBER_INVITE,
   ],
+
   EDITOR: [
+    // Site
+    PERMISSIONS.SITE_READ,
+
+    // Dashboard
+    PERMISSIONS.DASHBOARD_READ,
+
+    // Pages
+    PERMISSIONS.PAGE_READ,
     PERMISSIONS.PAGE_CREATE,
     PERMISSIONS.PAGE_UPDATE,
+
+    // Media
+    PERMISSIONS.MEDIA_READ,
+    PERMISSIONS.MEDIA_UPLOAD,
+    PERMISSIONS.MEDIA_UPDATE,
+
+    // Plugins
+    PERMISSIONS.PLUGIN_READ,
+
+    // Members
+    PERMISSIONS.MEMBER_READ,
   ],
+
   VIEWER: [
+    // Site
     PERMISSIONS.SITE_READ,
+
+    // Dashboard
+    PERMISSIONS.DASHBOARD_READ,
+
+    // Pages
+    PERMISSIONS.PAGE_READ,
+
+    // Media
+    PERMISSIONS.MEDIA_READ,
+
+    // Plugins
+    PERMISSIONS.PLUGIN_READ,
+
+    // Members
+    PERMISSIONS.MEMBER_READ,
   ],
+};
+
+export const hasPermission = (
+  role: Role,
+  permission: Permission
+): boolean => {
+  return ROLE_PERMISSIONS[role]?.includes(permission) ?? false;
 };

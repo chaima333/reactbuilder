@@ -1,16 +1,23 @@
 import { Router } from "express";
-import { authenticateJWT } from "../../shared/auth.util";
+
 import { getDashboardFull } from "./controllers/dashboard.controller";
 import { getLiveEvents } from "./controllers/monitor.controller";
 
+import { requirePermission } from "../../core/constants/requirePermission";
+import { PERMISSIONS } from "../../core/constants/permissions";
+
 const router = Router({ mergeParams: true });
 
-router.use(authenticateJWT);
+router.get(
+  "/full",
+  requirePermission(PERMISSIONS.DASHBOARD_READ),
+  getDashboardFull
+);
 
-// ✅ dashboard (clean)
-router.get("/full", getDashboardFull);
-
-// 🔥 monitoring (separate)
-router.get("/internal/monitor/events", getLiveEvents);
+router.get(
+  "/internal/monitor/events",
+  requirePermission(PERMISSIONS.SITE_UPDATE),
+  getLiveEvents
+);
 
 export default router;

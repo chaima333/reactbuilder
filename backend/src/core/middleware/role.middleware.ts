@@ -1,6 +1,7 @@
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "../../shared/auth.util";
 import { ROLE_PERMISSIONS } from "../constants/rolePermissions";
+import { Permission } from "../constants/permissions";
 
 /**
  * 🔥 Normalize role (IMPORTANT - single source of truth)
@@ -25,7 +26,7 @@ export const normalizeRole = (role?: string): SiteRole => {
 /**
  * 🔐 Permission middleware
  */
-export const requirePermission = (permission: string) => {
+export const requirePermission = (permission: Permission) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       if (!req.siteContext || !req.siteContext.siteId) {

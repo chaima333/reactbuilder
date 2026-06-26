@@ -209,7 +209,142 @@ if (
       return this.fallbackCategory(prompt);
     }
   }
+private static resolveFinalCategory(
+  mlCategory: string,
+  prompt: string
+): string {
+  const text =
+    prompt.toLowerCase();
 
+  const scores: Record<string, number> = {
+    Technology: 0,
+    RealEstate: 0,
+    Education: 0,
+    Medical: 0,
+    Finance: 0,
+    Ecommerce: 0,
+    Restaurant: 0,
+    Cybersecurity: 0
+  };
+
+  const addScore = (
+    category: string,
+    keywords: string[],
+    points = 1
+  ) => {
+    for (const keyword of keywords) {
+      if (text.includes(keyword)) {
+        scores[category] += points;
+      }
+    }
+  };
+
+  addScore("Technology", [
+    "saas",
+    "software",
+    "workflow",
+    "automation",
+    "api",
+    "apis",
+    "integration",
+    "integrations",
+    "analytics",
+    "dashboard",
+    "cloud",
+    "platform",
+    "real-time",
+    "productivity"
+  ]);
+
+  addScore("RealEstate", [
+    "real estate",
+    "property",
+    "properties",
+    "rent",
+    "rental",
+    "buying",
+    "selling",
+    "homes",
+    "agents",
+    "valuation"
+  ]);
+
+  addScore("Cybersecurity", [
+    "cybersecurity",
+    "cyber security",
+    "threat",
+    "penetration testing",
+    "soc",
+    "siem",
+    "compliance",
+    "incident response"
+  ]);
+
+  addScore("Education", [
+    "school",
+    "academy",
+    "course",
+    "training",
+    "student",
+    "learning",
+    "certification"
+  ]);
+
+  addScore("Medical", [
+    "clinic",
+    "doctor",
+    "medical",
+    "healthcare",
+    "hospital",
+    "appointment"
+  ]);
+
+  addScore("Finance", [
+    "finance",
+    "bank",
+    "investment",
+    "loan",
+    "trading",
+    "wealth"
+  ]);
+
+  addScore("Ecommerce", [
+    "shop",
+    "store",
+    "ecommerce",
+    "product",
+    "cart",
+    "checkout"
+  ]);
+
+  addScore("Restaurant", [
+    "restaurant",
+    "menu",
+    "reservation",
+    "food",
+    "table"
+  ]);
+
+  const bestCategory =
+    Object.entries(scores)
+      .sort((a, b) => b[1] - a[1])[0];
+
+  if (
+    bestCategory &&
+    bestCategory[1] >= 2 &&
+    bestCategory[0] !== mlCategory
+  ) {
+    console.warn("AI_CATEGORY_RULE_OVERRIDE", {
+      from: mlCategory,
+      to: bestCategory[0],
+      score: bestCategory[1]
+    });
+
+    return bestCategory[0];
+  }
+
+  return mlCategory;
+}
  static async generatePage(
   siteId: number,
   userId: number,
@@ -222,8 +357,9 @@ if (
     throw new Error("PROMPT_REQUIRED");
   }
 
-const category = await this.predictCategory(prompt);
+const mlCategory =await this.predictCategory(prompt);
 
+const category = this.resolveFinalCategory(mlCategory,prompt);
 const businessProfile =
   buildBusinessProfile(
     category,
@@ -369,7 +505,27 @@ for (const planPage of plannedPages) {
     "NAVBAR_BLOCK_COUNT",
     pageBlocks.filter((block) => block.type === "navbar").length
   );
+const existingPage =
+  await Page.findOne({
+    where: {
+      siteId,
+      slug: pageSlug
+    }
+  });
 
+if (existingPage) {
+  console.warn("AI_PAGE_ALREADY_EXISTS_SKIPPING", {
+    siteId,
+    slug: pageSlug,
+    pageId: existingPage.id
+  });
+
+  if (planPage.type === "home") {
+    homepagePageId = existingPage.id;
+  }
+
+  continue;
+}
   const result = await PageService.createPage(
     siteId,
     userId,
@@ -446,8 +602,19 @@ console.log("PUBLISHED_HOMEPAGE_ID", {
   blocksCount: publishedHomepage?.blocks?.length || 0
 });
 
-if (!publishedHomepage || publishedHomepage.id !== homepagePageId) {
-  throw new Error("PUBLISHED_HOMEPAGE_MISMATCH");
+
+if (!publishedHomepage) {
+  throw new Error("PUBLISHED_HOMEPAGE_NOT_FOUND");
+}
+
+if (
+  homepagePageId &&
+  publishedHomepage.id !== homepagePageId
+) {
+  console.warn("PUBLISHED_HOMEPAGE_DIFFERENT", {
+    expectedId: homepagePageId,
+    publishedId: publishedHomepage.id
+  });
 }
 
 console.log("AI_HISTORY_WILL_SAVE", {

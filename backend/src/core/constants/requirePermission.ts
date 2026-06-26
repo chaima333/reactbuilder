@@ -1,43 +1,62 @@
-import { Response, NextFunction } from "express";
-import { AuthRequest } from "../../shared/auth.util";
-import { ROLE_PERMISSIONS } from "./rolePermissions";
+import {
+  Response,
+  NextFunction
+} from "express";
 
-export const requirePermission = (permission: string) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      const siteContext = req.siteContext;
+import {
+  AuthRequest
+} from "../../shared/auth.util";
 
-      if (!siteContext?.siteId) {
-        return res.status(500).json({
-          success: false,
-          message: "Missing site context"
-        });
-      }
+import {
+  Permission
+} from "./permissions";
 
-      const role = siteContext.role;
+import {
+  hasPermission
+} from "./rolePermissions";
 
-      if (!role) {
-        return res.status(403).json({
-          success: false,
-          message: "Role missing"
-        });
-      }
+import {
+  Role
+} from "../../modules/auth/role";
 
-      const permissions = ROLE_PERMISSIONS[role] || [];
+export const requirePermission = (
+  permission: Permission
+) => {
+  return (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ) => {
+    const siteContext =
+      req.siteContext;
 
-      if (!permissions.includes(permission)) {
-        return res.status(403).json({
-          success: false,
-          message: "Permission denied"
-        });
-      }
-
-      next();
-    } catch (e) {
-      return res.status(500).json({
+    if (
+      !siteContext ||
+      !siteContext.siteId ||
+      !siteContext.role
+    ) {
+      return res.status(403).json({
         success: false,
-        message: "Auth error"
+        message: "Site membership is required"
       });
     }
+
+    const role =
+      siteContext.role as Role;
+
+    const allowed =
+      hasPermission(
+        role,
+        permission
+      );
+
+    if (!allowed) {
+      return res.status(403).json({
+        success: false,
+        message: "Insufficient permissions"
+      });
+    }
+
+    return next();
   };
 };

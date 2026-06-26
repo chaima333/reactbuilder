@@ -44,6 +44,7 @@ import iaRoutes from "./modules/ia/ai.routes";
 import exportRoutes from "./modules/export/export.routes";
 import assistantRoutes from "./modules/ia/assistant/assistant.routes";
 import pluginMarketplaceRoutes from "./modules/plugin/plugin.marketplace.routes";
+import { requireSiteAccess } from "./core/middleware/siteGuard";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 
@@ -83,8 +84,8 @@ app.use("/api/sites", authStack, siteRoutes);
 /* ========================
    TENANT ROUTES (SaaS CORE)
 ======================== */
-const tenantStack = [authenticateJWT, maintenanceMode, tenantResolver];
-app.use("/api/sites/:siteId/dashboard", authenticateJWT, maintenanceMode, dashboardRoutes);
+const tenantStack = [authenticateJWT, maintenanceMode, tenantResolver,requireSiteAccess];
+app.use("/api/sites/:siteId/dashboard",tenantStack , dashboardRoutes);
 app.use("/api/sites/:siteId/pages", tenantStack, pageRoutes);
 app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
 app.use("/api/sites/:siteId/import",tenantStack,importRoutes);
@@ -104,7 +105,7 @@ app.use("/api/export", exportRoutes);
 ======================== */
 
 registerCommands();
-app.use("/api/sites/:siteId/commands", authenticateJWT, maintenanceMode, commandRoutes);
+app.use("/api/sites/:siteId/commands", tenantStack, commandRoutes);
 app.use( "/api/sites/:siteId/plugins", tenantStack,pluginMarketplaceRoutes);
 /* ========================
    404 HANDLER
