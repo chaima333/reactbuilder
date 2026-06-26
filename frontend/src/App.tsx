@@ -61,6 +61,7 @@ import AdminDashboard from "./modules/admin/pages/AdminDashboard";
 import { FigmaImportBridge } from "./modules/pageBuilder/pages/figma/FigmaImportBridge";
 import AdminPlugins from "./modules/admin/pages/AdminPlugins";
 import AdminAIAnalytics from "./modules/admin/pages/ai-analytics";
+import SitePluginMarketplacePage from "./modules/pageBuilder/plugins/SitePluginMarketplacePage";
 
 
 // ======================================================
@@ -329,6 +330,10 @@ const AppContent: React.FC = () => {
                     path="/sites/:siteId/media"
                      element={<Media />}
                      />
+                     <Route
+                     path="/sites/:siteId/plugins"
+                     element={<SitePluginMarketplacePage />}
+                    />
 
                     <Route
                       path="/settings"

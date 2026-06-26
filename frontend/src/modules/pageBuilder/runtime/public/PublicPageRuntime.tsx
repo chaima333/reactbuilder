@@ -33,6 +33,19 @@ const globalLayout =
   const pageBlocks: any[] =
     page?.blocks || [];
 
+  const isFooterBlock = (block: any) => {
+    const semanticType =
+      block?.meta?.semanticType ||
+      block?.data?.meta?.semanticType;
+
+    return (
+      block?.type === "footer" ||
+      block?.id?.startsWith("footer-section-") ||
+      semanticType === "FOOTER" ||
+      semanticType === "FOOTER_SECTION"
+    );
+  };
+
   const pageOwnsNavbar =
     pageBlocks.some(
       (block: any) => block?.type === "navbar"
@@ -40,8 +53,7 @@ const globalLayout =
 
   const pageOwnsFooter =
     pageBlocks.some(
-      (block: any) =>
-        block?.id?.startsWith("footer-section-")
+      isFooterBlock
     );
 
 const navbarBlocks: any[] =

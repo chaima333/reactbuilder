@@ -9,6 +9,12 @@ from "@mui/icons-material/Campaign";
 import GridViewIcon
 from "@mui/icons-material/GridView";
 
+import HelpOutlineIcon
+from "@mui/icons-material/HelpOutline";
+
+import VerticalAlignBottomIcon
+from "@mui/icons-material/VerticalAlignBottom";
+
 
 export const presetPalette = [
 
@@ -46,5 +52,28 @@ export const presetPalette = [
         fontSize="small"
       />
     )
-  }
+  },
+  {
+  type: "faq",
+
+  label: "FAQ Section",
+
+  icon: (
+    <HelpOutlineIcon
+      fontSize="small"
+    />
+  )
+},
+
+{
+  type: "footer",
+
+  label: "Footer Section",
+
+  icon: (
+    <VerticalAlignBottomIcon
+      fontSize="small"
+    />
+  )
+}
 ];

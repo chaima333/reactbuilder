@@ -1,4 +1,5 @@
 import React from "react";
+
 import {
   Drawer,
   List,
@@ -20,13 +21,22 @@ import {
   Settings as SettingsIcon,
   People as UsersIcon,
   AdminPanelSettings as AdminIcon,
-  Extension as PluginIcon,
   AutoAwesome as AIIcon,
+  Extension as ExtensionIcon,
 } from "@mui/icons-material";
 
-import { useNavigate, useLocation } from "react-router-dom";
-import { useSelector } from "react-redux";
-import { RootState } from "../../redux/store";
+import {
+  useNavigate,
+  useLocation
+} from "react-router-dom";
+
+import {
+  useSelector
+} from "react-redux";
+
+import {
+  RootState
+} from "../../redux/store";
 
 import {
   useGetPlatformSettingsQuery,
@@ -48,8 +58,9 @@ type SidebarItem = {
   text: string;
   icon: React.ReactNode;
   path: string;
-  adminOnly: boolean;
+  adminOnly?: boolean;
   pluginKey?: PluginKey;
+  siteAdminOnly?: boolean;
 };
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -57,105 +68,178 @@ const Sidebar: React.FC<SidebarProps> = ({
   onDrawerToggle,
   isCollapsed,
 }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate =
+    useNavigate();
 
-  const userRole = useSelector(
-    (state: RootState) => state.auth.user?.role
-  );
+  const location =
+    useLocation();
 
-  const currentSite = useSelector(
-    (state: RootState) => state.site.currentSite
-  );
+  const userRole =
+    useSelector(
+      (state: RootState) =>
+        state.auth.user?.role
+    );
 
-  const { data: platformSettings, isLoading } =
+  const currentSite =
+    useSelector(
+      (state: RootState) =>
+        state.site.currentSite
+    );
+
+  const {
+    data: platformSettings,
+    isLoading
+  } =
     useGetPlatformSettingsQuery();
 
-  const isAdmin = userRole === "ADMIN";
-  const currentSiteId = currentSite?.id;
-  const drawerWidth = isCollapsed ? 70 : 260;
+  const isGlobalAdmin =
+    userRole === "ADMIN";
+
+  const currentSiteId =
+    currentSite?.id;
+
+  const drawerWidth =
+    isCollapsed ? 70 : 260;
+
+  // =========================
+  // SITE ROLE
+  // =========================
+
+ const getCurrentSiteRole = () => {
+  const site =
+    currentSite as any;
+
+  return (
+    site?.role ||
+    site?.memberRole ||
+    site?.siteRole ||
+    site?.membership?.role ||
+    "VIEWER"
+  );
+};
+
+  const currentSiteRole =
+    getCurrentSiteRole();
+
+  const canSeeSiteSettings =
+  !!currentSiteId &&
+  (
+    isGlobalAdmin ||
+    currentSiteRole === "OWNER" ||
+    currentSiteRole === "ADMIN"
+  );
+
+  // =========================
+  // ITEMS
+  // =========================
 
   const coreItems: SidebarItem[] = [
     {
       text: "Dashboard",
       icon: <DashboardIcon />,
       path: "/dashboard",
-      adminOnly: false,
     },
     {
       text: "Mes Sites",
       icon: <SitesIcon />,
       path: "/sites",
-      adminOnly: false,
-    },
-    {
-      text: "Paramètres",
-      icon: <SettingsIcon />,
-      path: "/settings",
-      adminOnly: false,
     },
   ];
 
-  const workspaceItems: SidebarItem[] = [
-    {
-      text: "Médiathèque",
-      icon: <MediaIcon />,
-      path: currentSiteId
-        ? `/sites/${currentSiteId}/media`
-        : "/sites",
-      adminOnly: false,
-      pluginKey: "mediaPlugin",
-    },
-  ];
 
-  const adminItems: SidebarItem[] = [
-    {
-      text: "Super Admin",
-      icon: <AdminIcon />,
-      path: "/admin",
-      adminOnly: true,
-    },
-    {
-      text: "AI Analytics",
-      icon: <AIIcon />,
-      path: "/admin/ai-analytics",
-      adminOnly: true,
-    },
-    {
-      text: "Utilisateurs",
-      icon: <UsersIcon />,
-      path: "/users",
-      adminOnly: true,
-    },
-    {
-      text: "Paramètres admin",
-      icon: <SettingsIcon />,
-      path: "/admin/settings",
-      adminOnly: true,
-    },
-  ];
 
-  const canShowItem = (item: SidebarItem): boolean => {
-    if (item.adminOnly && !isAdmin) {
-      return false;
-    }
+ const workspaceItems: SidebarItem[] = [
+  {
+    text: "Médiathèque",
+    icon: <MediaIcon />,
+    path: currentSiteId
+      ? `/sites/${currentSiteId}/media`
+      : "/sites",
+    pluginKey: "mediaPlugin",
+  },
+  {
+    text: "Marketplace",
+    icon: <ExtensionIcon />,
+    path: currentSiteId
+      ? `/sites/${currentSiteId}/plugins`
+      : "/sites",
+  },
+];
 
-    if (isLoading && item.pluginKey) {
-      return false;
-    }
+const bottomItems: SidebarItem[] = [
+  {
+    text: "Paramètres",
+    icon: <SettingsIcon />,
+    path: "/settings",
+    siteAdminOnly: true,
+  },
+];
 
-    if (
-      item.pluginKey &&
-      platformSettings &&
-      platformSettings[item.pluginKey] === false
-    ) {
-      return false;
-    }
+const adminItems: SidebarItem[] = [
+  {
+    text: "Super Admin",
+    icon: <AdminIcon />,
+    path: "/admin",
+    adminOnly: true,
+  },
+  {
+    text: "AI Analytics",
+    icon: <AIIcon />,
+    path: "/admin/ai-analytics",
+    adminOnly: true,
+  },
+  {
+    text: "Utilisateurs",
+    icon: <UsersIcon />,
+    path: "/users",
+    adminOnly: true,
+  },
+  {
+    text: "Paramètres admin",
+    icon: <SettingsIcon />,
+    path: "/admin/settings",
+    adminOnly: true,
+  },
+];
 
-    return true;
-  };
+const canShowItem = (
+  item: SidebarItem
+): boolean => {
+  if (
+    item.adminOnly &&
+    !isGlobalAdmin
+  ) {
+    return false;
+  }
 
-  const isActive = (path: string): boolean => {
+  if (
+    item.siteAdminOnly &&
+    !canSeeSiteSettings
+  ) {
+    return false;
+  }
+
+  if (
+    isLoading &&
+    item.pluginKey
+  ) {
+    return false;
+  }
+
+  if (
+    item.pluginKey &&
+    platformSettings &&
+    platformSettings[item.pluginKey] === false
+  ) {
+    return false;
+  }
+
+  return true;
+};
+
+  const isActive = (
+    path: string
+  ): boolean => {
     if (path === "/admin") {
       return location.pathname === "/admin";
     }
@@ -163,8 +247,16 @@ const Sidebar: React.FC<SidebarProps> = ({
     return location.pathname === path;
   };
 
-  const renderSectionTitle = (title: string) => {
-    if (isCollapsed) return null;
+  // =========================
+  // RENDER HELPERS
+  // =========================
+
+  const renderSectionTitle = (
+    title: string
+  ) => {
+    if (isCollapsed) {
+      return null;
+    }
 
     return (
       <Typography
@@ -184,66 +276,93 @@ const Sidebar: React.FC<SidebarProps> = ({
     );
   };
 
-  const renderItems = (items: SidebarItem[]) =>
-    items.filter(canShowItem).map((item) => (
-      <ListItem
-        key={item.text}
-        disablePadding
-        sx={{ display: "block", mb: 0.5 }}
-      >
-        <Tooltip
-          title={isCollapsed ? item.text : ""}
-          placement="right"
+  const renderItems = (
+    items: SidebarItem[]
+  ) =>
+    items
+      .filter(canShowItem)
+      .map((item) => (
+        <ListItem
+          key={item.text}
+          disablePadding
+          sx={{
+            display: "block",
+            mb: 0.5
+          }}
         >
-          <ListItemButton
-            selected={isActive(item.path)}
-            onClick={() => navigate(item.path)}
-            sx={{
-              minHeight: 48,
-              justifyContent: isCollapsed ? "center" : "initial",
-              px: 2,
-              mx: 1,
-              borderRadius: 3,
-              color: "text.primary",
-              "&.Mui-selected": {
-                backgroundColor: "rgba(0,196,154,0.14)",
-                color: "primary.main",
-                fontWeight: 800,
-                "& .MuiListItemIcon-root": {
-                  color: "primary.main",
-                },
-              },
-              "&:hover": {
-                backgroundColor: "rgba(0,196,154,0.08)",
-              },
-            }}
+          <Tooltip
+            title={
+              isCollapsed
+                ? item.text
+                : ""
+            }
+            placement="right"
           >
-            <ListItemIcon
+            <ListItemButton
+              selected={isActive(item.path)}
+              onClick={() =>
+                navigate(item.path)
+              }
               sx={{
-                minWidth: 0,
-                mr: isCollapsed ? 0 : 2,
-                justifyContent: "center",
-                color: "text.secondary",
+                minHeight: 48,
+                justifyContent: isCollapsed
+                  ? "center"
+                  : "initial",
+                px: 2,
+                mx: 1,
+                borderRadius: 3,
+                color: "text.primary",
+
+                "&.Mui-selected": {
+                  backgroundColor:
+                    "rgba(0,196,154,0.14)",
+                  color: "primary.main",
+                  fontWeight: 800,
+
+                  "& .MuiListItemIcon-root": {
+                    color: "primary.main",
+                  },
+                },
+
+                "&:hover": {
+                  backgroundColor:
+                    "rgba(0,196,154,0.08)",
+                },
               }}
             >
-              {item.icon}
-            </ListItemIcon>
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  mr: isCollapsed ? 0 : 2,
+                  justifyContent: "center",
+                  color: "text.secondary",
+                }}
+              >
+                {item.icon}
+              </ListItemIcon>
 
-            <ListItemText
-              primary={item.text}
-              primaryTypographyProps={{
-                fontWeight: isActive(item.path) ? 800 : 600,
-              }}
-              sx={{
-                opacity: isCollapsed ? 0 : 1,
-                transition: "opacity 0.2s ease",
-                whiteSpace: "nowrap",
-              }}
-            />
-          </ListItemButton>
-        </Tooltip>
-      </ListItem>
-    ));
+              <ListItemText
+                primary={item.text}
+                primaryTypographyProps={{
+                  fontWeight: isActive(item.path)
+                    ? 800
+                    : 600,
+                }}
+                sx={{
+                  opacity: isCollapsed ? 0 : 1,
+                  transition:
+                    "opacity 0.2s ease",
+                  whiteSpace: "nowrap",
+                }}
+              />
+            </ListItemButton>
+          </Tooltip>
+        </ListItem>
+      ));
+
+  // =========================
+  // DRAWER CONTENT
+  // =========================
 
   const drawerContent = (
     <Box
@@ -251,22 +370,19 @@ const Sidebar: React.FC<SidebarProps> = ({
         height: "100%",
         overflow: "hidden",
         bgcolor: "background.paper",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       <Toolbar
         sx={{
-          justifyContent: isCollapsed ? "center" : "flex-start",
+          justifyContent: isCollapsed
+            ? "center"
+            : "flex-start",
           px: 2,
         }}
       >
-        {isCollapsed ? (
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 900, color: "primary.main" }}
-          >
-            RB
-          </Typography>
-        ) : (
+        {!isCollapsed && (
           <Box>
             <Typography
               variant="h6"
@@ -284,7 +400,9 @@ const Sidebar: React.FC<SidebarProps> = ({
               color="text.secondary"
               fontWeight={600}
             >
-              {isAdmin ? "Super Admin" : "Workspace"}
+              {isGlobalAdmin
+                ? "Super Admin"
+                : "Workspace"}
             </Typography>
           </Box>
         )}
@@ -292,29 +410,59 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       <Divider />
 
-      <List sx={{ px: 0, pt: 2 }}>
-        {renderSectionTitle("Workspace")}
-        {renderItems(coreItems)}
-        {renderItems(workspaceItems)}
+      <Box
+        sx={{
+          flex: 1,
+          overflowY: "auto",
+        }}
+      >
+        <List
+          sx={{
+            px: 0,
+            pt: 2
+          }}
+        >
+          {renderSectionTitle("Workspace")}
+          {renderItems(coreItems)}
+          {renderItems(workspaceItems)}
 
-        {isAdmin && (
-          <>
-            <Divider sx={{ my: 2 }} />
-            {renderSectionTitle("Administration")}
-            {renderItems(adminItems)}
-            <Divider sx={{ my: 2 }} />
-          </>
-        )}
+          {isGlobalAdmin && (
+            <>
+              <Divider sx={{ my: 2 }} />
+              {renderSectionTitle("Administration")}
+              {renderItems(adminItems)}
+            </>
+          )}
+        </List>
+      </Box>
+
+      <Divider />
+
+      <List
+        sx={{
+          px: 0,
+          py: 1,
+        }}
+      >
+        {renderItems(bottomItems)}
       </List>
     </Box>
   );
+
+  // =========================
+  // RETURN
+  // =========================
 
   return (
     <Box
       component="nav"
       sx={{
-        width: { sm: drawerWidth },
-        flexShrink: { sm: 0 },
+        width: {
+          sm: drawerWidth
+        },
+        flexShrink: {
+          sm: 0
+        },
         transition: "width 0.3s ease",
       }}
     >
@@ -322,9 +470,14 @@ const Sidebar: React.FC<SidebarProps> = ({
         variant="temporary"
         open={mobileOpen}
         onClose={onDrawerToggle}
-        ModalProps={{ keepMounted: true }}
+        ModalProps={{
+          keepMounted: true
+        }}
         sx={{
-          display: { xs: "block", sm: "none" },
+          display: {
+            xs: "block",
+            sm: "none"
+          },
           "& .MuiDrawer-paper": {
             boxSizing: "border-box",
             width: 260,
@@ -338,13 +491,17 @@ const Sidebar: React.FC<SidebarProps> = ({
         variant="permanent"
         open
         sx={{
-          display: { xs: "none", sm: "block" },
+          display: {
+            xs: "none",
+            sm: "block"
+          },
           "& .MuiDrawer-paper": {
             boxSizing: "border-box",
             width: drawerWidth,
             transition: "width 0.3s ease",
             overflowX: "hidden",
-            borderRight: "1px solid rgba(0,0,0,0.08)",
+            borderRight:
+              "1px solid rgba(0,0,0,0.08)",
           },
         }}
       >

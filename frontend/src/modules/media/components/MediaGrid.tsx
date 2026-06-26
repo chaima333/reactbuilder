@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 import {
   IconButton,
@@ -6,7 +6,8 @@ import {
   CircularProgress,
   Typography,
   Chip,
-} from '@mui/material';
+  Tooltip,
+} from "@mui/material";
 
 import {
   Delete as DeleteIcon,
@@ -14,35 +15,35 @@ import {
   PictureAsPdf as PdfIcon,
   VideoFile as VideoIcon,
   InsertDriveFile as FileIcon,
-} from '@mui/icons-material';
+} from "@mui/icons-material";
 
 interface MediaGridProps {
   media: any[];
   isLoading: boolean;
   onDelete: (id: number) => void;
   onEditAlt: (id: number, alt: string) => void;
+
+  canUpdateMedia: boolean;
+  canDeleteMedia: boolean;
 }
 
 const getFileIcon = (
   type: string,
   url: string
 ) => {
-
-  if (type === 'image') {
-
+  if (type === "image") {
     return (
       <img
         src={url}
         alt=""
         loading="lazy"
         style={{
-          width: '100%',
-          height: '100px',
-          objectFit: 'cover',
-          display: 'block'
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          display: "block",
         }}
         onError={(e) => {
-
           console.error(
             "❌ IMAGE LOAD ERROR:",
             url
@@ -56,44 +57,43 @@ const getFileIcon = (
   }
 
   const ext =
-    url.split('.').pop()?.toLowerCase();
+    url.split(".").pop()?.toLowerCase();
 
   switch (ext) {
-
-    case 'pdf':
+    case "pdf":
       return (
         <Box
           sx={{
             height: 220,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           <PdfIcon
             sx={{
               fontSize: 70,
-              color: '#f40f02'
+              color: "#f40f02",
             }}
           />
         </Box>
       );
 
-    case 'mp4':
-    case 'webm':
+    case "mp4":
+    case "webm":
       return (
         <Box
           sx={{
             height: 220,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           <VideoIcon
             sx={{
               fontSize: 70,
-              color: '#ff0000'
+              color: "#ff0000",
             }}
           />
         </Box>
@@ -104,15 +104,15 @@ const getFileIcon = (
         <Box
           sx={{
             height: 220,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           <FileIcon
             sx={{
               fontSize: 70,
-              color: '#666'
+              color: "#666",
             }}
           />
         </Box>
@@ -123,56 +123,51 @@ const getFileIcon = (
 const getFileBadge = (
   type: string
 ) => {
-
   const badges: Record<
     string,
-    { label: string; color: any }
+    {
+      label: string;
+      color: any;
+    }
   > = {
-
     image: {
-      label: 'Image',
-      color: 'primary'
+      label: "Image",
+      color: "primary",
     },
 
     video: {
-      label: 'Vidéo',
-      color: 'error'
+      label: "Vidéo",
+      color: "error",
     },
 
     audio: {
-      label: 'Audio',
-      color: 'success'
+      label: "Audio",
+      color: "success",
     },
 
     file: {
-      label: 'Fichier',
-      color: 'default'
+      label: "Fichier",
+      color: "default",
     },
   };
 
   return (
     badges[type] || {
-      label: 'Fichier',
-      color: 'default'
+      label: "Fichier",
+      color: "default",
     }
   );
 };
 
-export const MediaGrid:
-React.FC<MediaGridProps> = ({
+export const MediaGrid: React.FC<MediaGridProps> = ({
   media,
   isLoading,
   onDelete,
-  onEditAlt
+  onEditAlt,
+  canUpdateMedia,
+  canDeleteMedia,
 }) => {
-
-  console.log(
-    "📦 MEDIA DATA:",
-    media
-  );
-
   if (isLoading) {
-
     return (
       <Box
         display="flex"
@@ -186,7 +181,6 @@ React.FC<MediaGridProps> = ({
   }
 
   if (!media || media.length === 0) {
-
     return (
       <Box
         textAlign="center"
@@ -203,227 +197,179 @@ React.FC<MediaGridProps> = ({
   }
 
   return (
-
     <Box
       sx={{
-        display: 'grid',
-
+        display: "grid",
         gridTemplateColumns:
-          'repeat(auto-fill, minmax(280px, 1fr))',
-
+          "repeat(auto-fill, minmax(280px, 1fr))",
         gap: 3,
-
-        width: '100%'
+        width: "100%",
       }}
     >
-
       {media.map((item) => {
-
-        console.log(
-          "🖼️ ITEM:",
-          item
-        );
-
         const badge =
           getFileBadge(item.type);
 
+        const canShowActions =
+          canUpdateMedia ||
+          canDeleteMedia;
+
         return (
-
           <Box
-  key={item.id}
-  sx={{
-    border: '1px solid #eee',
-
-    borderRadius: 3,
-
-    overflow: 'hidden',
-
-    backgroundColor: '#fff',
-
-    boxShadow:
-      '0 2px 10px rgba(0,0,0,0.05)',
-
-    transition:
-      'all 0.2s ease',
-
-    display: 'flex',
-    flexDirection: 'column',
-
-    '&:hover': {
-      transform:
-        'translateY(-4px)',
-
-      boxShadow:
-        '0 8px 25px rgba(0,0,0,0.12)'
-    }
-  }}
->
-
-  {/* PREVIEW */}
-
-  <Box
-    sx={{
-      width: '100%',
-
-      height: 220,
-
-      overflow: 'hidden',
-
-      backgroundColor:
-        '#f5f5f5',
-
-      cursor: 'pointer',
-
-      position: 'relative',
-
-      display: 'flex',
-
-      alignItems: 'center',
-
-      justifyContent: 'center',
-
-      '& img': {
-        width: '100%',
-        height: '100%',
-        objectFit: 'cover',
-        objectPosition: 'center',
-        display: 'block'
-      }
-    }}
-
-    onClick={() =>
-      window.open(
-        item.url,
-        '_blank'
-      )
-    }
-  >
-
-    {getFileIcon(
-      item.type,
-      item.url
-    )}
-
-  </Box>
-
-  {/* FOOTER */}
-
-  <Box
-    sx={{
-      p: 2,
-
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 1,
-
-      flexGrow: 1
-    }}
-  >
-
-    <Typography
-      variant="subtitle2"
-
-      sx={{
-        fontWeight: 600,
-
-        overflow: 'hidden',
-
-        textOverflow: 'ellipsis',
-
-        whiteSpace: 'nowrap'
-      }}
-    >
-      {
-        item.originalName ||
-        "Fichier sans nom"
-      }
-    </Typography>
-
-    <Box
-      display="flex"
-      alignItems="center"
-      justifyContent="space-between"
-    >
-
-      <Box
-        display="flex"
-        alignItems="center"
-        gap={1}
-      >
-
-        <Chip
-          label={badge.label}
-
-          size="small"
-
-          color={badge.color}
-
-          sx={{
-            fontSize:
-              '0.65rem'
-          }}
-        />
-
-        <Typography
-          variant="caption"
-
-          color="text.secondary"
-        >
-          {Math.round(
-            item.size / 1024
-          )} KB
-        </Typography>
-
-      </Box>
-
-      <Box
-        display="flex"
-        gap={0.5}
-      >
-
-        <IconButton
-          size="small"
-
-          onClick={(e) => {
-
-            e.stopPropagation();
-
-            onEditAlt(
-              item.id,
-              item.alt || ''
-            );
-          }}
-        >
-          <EditIcon
-            fontSize="small"
-          />
-        </IconButton>
-
-        <IconButton
-          size="small"
-
-          onClick={(e) => {
-
-            e.stopPropagation();
-
-            onDelete(item.id);
-          }}
-        >
-          <DeleteIcon
-            fontSize="small"
+            key={item.id}
             sx={{
-              color: '#ff5252'
+              border: "1px solid #eee",
+              borderRadius: 3,
+              overflow: "hidden",
+              backgroundColor: "#fff",
+              boxShadow:
+                "0 2px 10px rgba(0,0,0,0.05)",
+              transition: "all 0.2s ease",
+              display: "flex",
+              flexDirection: "column",
+
+              "&:hover": {
+                transform:
+                  "translateY(-4px)",
+                boxShadow:
+                  "0 8px 25px rgba(0,0,0,0.12)",
+              },
             }}
-          />
-        </IconButton>
+          >
+            {/* PREVIEW */}
+            <Box
+              sx={{
+                width: "100%",
+                height: 220,
+                overflow: "hidden",
+                backgroundColor: "#f5f5f5",
+                cursor: "pointer",
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
 
-      </Box>
+                "& img": {
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  objectPosition: "center",
+                  display: "block",
+                },
+              }}
+              onClick={() =>
+                window.open(
+                  item.url,
+                  "_blank"
+                )
+              }
+            >
+              {getFileIcon(
+                item.type,
+                item.url
+              )}
+            </Box>
 
-    </Box>
+            {/* FOOTER */}
+            <Box
+              sx={{
+                p: 2,
+                display: "flex",
+                flexDirection: "column",
+                gap: 1,
+                flexGrow: 1,
+              }}
+            >
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 600,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {item.originalName ||
+                  "Fichier sans nom"}
+              </Typography>
 
-  </Box>
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="space-between"
+              >
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  gap={1}
+                >
+                  <Chip
+                    label={badge.label}
+                    size="small"
+                    color={badge.color}
+                    sx={{
+                      fontSize: "0.65rem",
+                    }}
+                  />
 
-</Box>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
+                    {Math.round(
+                      item.size / 1024
+                    )}{" "}
+                    KB
+                  </Typography>
+                </Box>
+
+                {canShowActions && (
+                  <Box
+                    display="flex"
+                    gap={0.5}
+                  >
+                    {canUpdateMedia && (
+                      <Tooltip title="Modifier alt">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+
+                            onEditAlt(
+                              item.id,
+                              item.alt || ""
+                            );
+                          }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+
+                    {canDeleteMedia && (
+                      <Tooltip title="Supprimer">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+
+                            onDelete(item.id);
+                          }}
+                        >
+                          <DeleteIcon
+                            fontSize="small"
+                            sx={{
+                              color: "#ff5252",
+                            }}
+                          />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </Box>
+                )}
+              </Box>
+            </Box>
+          </Box>
         );
       })}
     </Box>

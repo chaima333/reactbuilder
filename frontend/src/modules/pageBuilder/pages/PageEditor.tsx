@@ -42,6 +42,7 @@ import { useGetPlatformSettingsQuery } from "../../../redux/services/platform.ap
 import { figmaToSemanticTree } from "../runtime/importers/figma/figmaToSemanticTree";
 import { semanticTreeToBlocks } from "../runtime/importers/figma/semanticTreeToBlocks";
 import AssistantPanel from "./aiAssistant/AssistantPanel";
+import { selectImportedFooterBlock } from "../runtime/importers/html/semanticResolvers/footer/footerImportSelector";
 
 const generateUniqueId = () => Math.random().toString(36).substring(2, 9);
 const hydrateBlocks = (blocks: any[]): any[] => {
@@ -342,6 +343,7 @@ const handleZipImportExecute = async () => {
       console.log(
         "ZIP_GLOBAL_LAYOUT_TRANSFORMER_CALLED",
         {
+          layout,
           hasHtml:
             !!html?.trim(),
           html
@@ -351,11 +353,6 @@ const handleZipImportExecute = async () => {
       if (!html?.trim()) {
         return null;
       }
-
-      console.log(
-        "ZIP_GLOBAL_LAYOUT_IMPORT_HTML_DOCUMENT_IN",
-        html
-      );
 
       const imported =
         await importHtmlDocument(
@@ -413,10 +410,14 @@ const handleZipImportExecute = async () => {
       console.log(
         "ZIP_GLOBAL_LAYOUT_IMPORT_HTML_DOCUMENT_OUT",
         {
+          layout,
           blockCount:
             imported.blocks?.length || 0,
           blockTypes:
-            imported.blocks?.map((block: any) => block?.type),
+            imported.blocks?.map(
+              (block: any) =>
+                block?.type
+            ),
           firstBlock:
             imported.blocks?.[0]
         }
@@ -424,20 +425,45 @@ const handleZipImportExecute = async () => {
 
       const hydrated =
         hydrateBlocks(
-          imported.blocks.map((block: any) => ({
-            ...block,
-            props:
-              block.data?.props || {},
-            style:
-              block.data?.style || {},
-            children:
-              block.children || []
-          }))
+          imported.blocks.map(
+            (block: any) => ({
+              ...block,
+              props:
+                block.data?.props || {},
+              style:
+                block.data?.style || {},
+              children:
+                block.children || []
+            })
+          )
         );
 
-     
-
       return hydrated[0] || null;
+    };
+
+    const hasUsefulBlockContent = (
+      block: any
+    ): boolean => {
+      if (!block) {
+        return false;
+      }
+
+      const propsText =
+        JSON.stringify(
+          block.data?.props || {}
+        );
+
+      if (
+        propsText.replace(/\s+/g, "").length > 2
+      ) {
+        return true;
+      }
+
+      return (
+        block.children || []
+      ).some(
+        hasUsefulBlockContent
+      );
     };
 
     console.log(
@@ -454,54 +480,70 @@ const handleZipImportExecute = async () => {
     const footerHtml =
       result.globalLayout?.footerHtml || "";
 
-   const hasUsefulBlockContent = (block: any): boolean => {
-  if (!block) return false;
+    const genericFooterBlock =
+      await importGlobalLayoutBlock(
+        footerHtml,
+        "footer"
+      );
 
-  const propsText =
-    JSON.stringify(block.data?.props || {});
+    const legacyFooterBlock =
+      footerHtmlToBlock(
+        footerHtml
+      );
+console.log(
+  "ZIP_FOOTER_SELECTION_DEBUG",
+  {
+    hasGenericFooter:
+      !!genericFooterBlock,
 
-  if (
-    propsText.replace(/\s+/g, "").length > 2
-  ) {
-    return true;
+    genericFooterUseful:
+      hasUsefulBlockContent(
+        genericFooterBlock
+      ),
+
+    genericFooterType:
+      genericFooterBlock?.type,
+
+    genericFooterMeta:
+      genericFooterBlock?.meta,
+
+    genericFooterChildren:
+      genericFooterBlock?.children?.length,
+
+    hasLegacyFooter:
+      !!legacyFooterBlock,
+
+    legacyFooterUseful:
+      hasUsefulBlockContent(
+        legacyFooterBlock
+      )
   }
-
-  return (block.children || []).some(hasUsefulBlockContent);
-};
-
-const genericFooterBlock =
-  await importGlobalLayoutBlock(
-    footerHtml,
-    "footer"
-  );
-
-const legacyFooterBlock =
-  footerHtmlToBlock(
-    footerHtml
-  );
-
-const footerBlock =
-  genericFooterBlock &&
-  hasUsefulBlockContent(genericFooterBlock)
-    ? genericFooterBlock
-    : legacyFooterBlock;
+);
+    const footerBlock =
+      selectImportedFooterBlock({
+        genericFooterBlock,
+        legacyFooterBlock,
+        hasUsefulBlockContent
+      });
 
     console.log(
       "ZIP_FOOTER_IMPORT_TRACE",
       {
         usedGenericImporter:
-          !!footerBlock &&
-          !String(
-            footerBlock.id || ""
-          ).startsWith(
-            "footer-section-"
-          ),
+          footerBlock !== legacyFooterBlock,
+
+        usedLegacyImporter:
+          footerBlock === legacyFooterBlock,
+
         footerType:
           footerBlock?.type,
+
         footerMeta:
           footerBlock?.meta,
+
         footerDesktopStyle:
           footerBlock?.data?.style?.desktop,
+
         firstChildDesktopStyle:
           footerBlock?.children?.[0]
             ?.data?.style?.desktop
@@ -511,12 +553,12 @@ const footerBlock =
     console.log(
       "ZIP_NAVBAR_IMPORT_TRACE",
       {
-        navHtml:
-          result.globalLayout?.navHtml || "",
         navbarType:
           navbarBlock?.type,
+
         navbarMeta:
           navbarBlock?.meta,
+
         navbarDesktopStyle:
           navbarBlock?.data?.style?.desktop
       }
@@ -535,8 +577,10 @@ const footerBlock =
     await updateGlobalLayout({
       siteId: Number(siteId),
       globalLayout: {
-        navbar: navbarBlock,
-        footer: footerBlock
+        navbar:
+          navbarBlock,
+        footer:
+          footerBlock
       }
     }).unwrap();
 
@@ -548,15 +592,17 @@ const footerBlock =
 
       const hydrated =
         hydrateBlocks(
-          imported.blocks.map((block: any) => ({
-            ...block,
-            props:
-              block.data?.props || {},
-            style:
-              block.data?.style || {},
-            children:
-              block.children || []
-          }))
+          imported.blocks.map(
+            (block: any) => ({
+              ...block,
+              props:
+                block.data?.props || {},
+              style:
+                block.data?.style || {},
+              children:
+                block.children || []
+            })
+          )
         );
 
       try {
@@ -570,7 +616,8 @@ const footerBlock =
           }).unwrap();
 
         const createdPage =
-          (createdResponse as any).data || createdResponse;
+          (createdResponse as any).data ||
+          createdResponse;
 
         await publishPage({
           siteId: Number(siteId),
@@ -578,10 +625,15 @@ const footerBlock =
         }).unwrap();
 
       } catch (error) {
-        console.error("FAILED PAGE", page.title, page.slug, error);
+        console.error(
+          "FAILED PAGE",
+          page.title,
+          page.slug,
+          error
+        );
+
         continue;
       }
-
     }
 
     setIsModalOpen(false);

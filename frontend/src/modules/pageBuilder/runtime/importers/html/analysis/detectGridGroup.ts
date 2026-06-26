@@ -54,7 +54,6 @@ export const detectGridGroup = (
   "values-grid",
 
   "office-row",
-  "mission-grid",
 
   "vision-pillars",
   "feature-grid",
@@ -242,7 +241,19 @@ if (isSmallInnerGrid) {
 
   return [];
 }
+if (
+  classTokens.includes("mission-grid")
+) {
+  console.log(
+    "MISSION_GRID_REJECT_GENERIC_GRID",
+    {
+      className,
+      path
+    }
+  );
 
+  return [];
+}
  const isGrid =
 
   !tagPenalty &&

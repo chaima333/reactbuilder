@@ -69,34 +69,45 @@ export const extractComputedStyles = (
     boxSizing:
       computed.boxSizing,
 
-    // =====================
-    // VISUAL
-    // =====================
+ // =====================
+// VISUAL
+// =====================
 
-    color:
-      computed.color,
+color:
+  computed.color,
 
-    backgroundColor:
-      computed.backgroundColor,
+backgroundColor:
+  computed.backgroundColor,
 
-    background:
-      computed.background,
+background:
+  computed.background,
 
-    border:
-      computed.border,
+backgroundImage:
+  computed.backgroundImage,
 
-    borderRadius:
-      computed.borderRadius,
+backgroundSize:
+  computed.backgroundSize,
 
-    boxShadow:
-      computed.boxShadow,
+backgroundPosition:
+  computed.backgroundPosition,
 
-    backdropFilter:
-      computed.backdropFilter,
+backgroundRepeat:
+  computed.backgroundRepeat,
 
-    opacity:
-      computed.opacity,
+border:
+  computed.border,
 
+borderRadius:
+  computed.borderRadius,
+
+boxShadow:
+  computed.boxShadow,
+
+backdropFilter:
+  computed.backdropFilter,
+
+opacity:
+  computed.opacity,
     // =====================
     // TYPOGRAPHY
     // =====================

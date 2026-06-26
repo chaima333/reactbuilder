@@ -34,6 +34,16 @@ export const generateTwoColumnIntroPreset = (
   const sourceElement =
     semanticResult?.claimedNode?.element as HTMLElement | undefined;
 
+    console.log(
+  "TWO_COLUMN_PRESET_INPUT",
+  {
+    payload,
+    sourceTag: sourceElement?.tagName,
+    sourceClass: sourceElement?.className,
+    html: sourceElement?.outerHTML?.slice(0, 1500)
+  }
+);
+
   const columns =
     Array.isArray(payload.columns)
       ? payload.columns

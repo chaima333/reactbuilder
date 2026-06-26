@@ -24,6 +24,31 @@ import { usePagePersistence } from "./usePagePersistence";
 import { useVersionActions } from "./useVersionActions";
 import { hydrateTree } from "../runtime/hydrate/hydrateTree";
 
+const isFooterBlock = (block: Block): boolean => {
+  const semanticType =
+    (block as any)?.meta?.semanticType ||
+    (block as any)?.data?.meta?.semanticType;
+
+  return (
+    block.type === "footer" ||
+    block.id?.startsWith("footer-section-") ||
+    semanticType === "FOOTER" ||
+    semanticType === "FOOTER_SECTION"
+  );
+};
+
+const footerInsertIndex = (blocks: Block[]): number => {
+  const index = blocks.findIndex(isFooterBlock);
+  return index >= 0 ? index : blocks.length;
+};
+
+const treeHasFooter = (blocks: Block[]): boolean =>
+  blocks.some(
+    (block) =>
+      isFooterBlock(block) ||
+      treeHasFooter(block.children || [])
+  );
+
 export const usePageEditor = (mode: "create" | "edit") => {
   const { siteId, pageId } = useParams<{ siteId: string; pageId: string }>();
 
@@ -277,6 +302,9 @@ const errors = useMemo(() => {
   }
 
   setBlocks((currentBlocks) => {
+    if (isFooterBlock(newBlock) && treeHasFooter(currentBlocks)) {
+      return currentBlocks;
+    }
     
     if (
       !targetId ||
@@ -286,7 +314,18 @@ const errors = useMemo(() => {
       targetId === "pb-runtime-root"
     ) {
       const updatedRoot = [...currentBlocks];
-      const targetIndex = insertIndex !== undefined ? insertIndex : updatedRoot.length;
+      const requestedIndex =
+        insertIndex !== undefined
+          ? insertIndex
+          : isFooterBlock(newBlock)
+            ? updatedRoot.length
+            : footerInsertIndex(updatedRoot);
+
+      const targetIndex =
+        !isFooterBlock(newBlock) &&
+        updatedRoot.some(isFooterBlock)
+          ? Math.min(requestedIndex, footerInsertIndex(updatedRoot))
+          : requestedIndex;
       updatedRoot.splice(targetIndex, 0, newBlock);
       return updatedRoot;
     }

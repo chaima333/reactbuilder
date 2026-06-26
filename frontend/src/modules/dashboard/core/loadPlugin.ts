@@ -13,7 +13,6 @@ export const loadPlugin = async (type: string) => {
 
   try {
     const module = await loader();
-    // نلوجو على الـ Named Export (مثلا StatsCards) داخل الملف
     const componentName = Object.keys(module).find(key => key !== "default");
     return componentName ? module[componentName] : module.default;
   } catch (error) {

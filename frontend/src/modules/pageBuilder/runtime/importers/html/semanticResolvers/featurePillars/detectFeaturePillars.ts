@@ -35,12 +35,22 @@ export const detectFeaturePillars = (
   const element =
     node.element;
 
-  const isPillarsRoot =
-    hasClassToken(
-      element,
-      "pillars"
-    );
+  const className =
+  element.className
+    ?.toString()
+    .toLowerCase() || "";
 
+const isPillarsRoot =
+  hasClassToken(
+    element,
+    "pillars"
+  ) ||
+  className.includes(
+    "pillars"
+  ) ||
+  className.includes(
+    "pillar"
+  );
   if (!isPillarsRoot) {
     return false;
   }

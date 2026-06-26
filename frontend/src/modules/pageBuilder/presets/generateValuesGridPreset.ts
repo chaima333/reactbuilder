@@ -2,50 +2,103 @@ export const generateValuesGridPreset = (payload: any) => {
   const uid = crypto.randomUUID();
 
   const items = (payload.items || [])
-    .map((item: any, index: number) => {
-      if (!item.title) return null;
+  .map((item: any, index: number) => {
+    if (!item.title) return null;
 
-      return {
-        id: `value-item-${uid}-${index}`,
-        type: "gridItem",
-        data: {
-          props: {},
-          style: {
-            ...(item.cardStyle || { desktop: {} })
+    return {
+      id: `value-item-${uid}-${index}`,
+      type: "gridItem",
+      data: {
+        props: {},
+        style: {
+          desktop: {
+            ...(item.cardStyle?.desktop || item.cardStyle || {}),
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center"
+          },
+          tablet: {
+            ...(item.cardStyle?.tablet || {})
+          },
+          mobile: {
+            ...(item.cardStyle?.mobile || {})
           }
+        }
+      },
+      children: [
+        item.eyebrow && {
+          id: `value-eyebrow-${uid}-${index}`,
+          type: "text",
+          data: {
+            props: {
+              content: item.eyebrow
+            },
+            style: {
+              desktop: {
+                ...(item.eyebrowStyle?.desktop ||
+                  item.eyebrowStyle ||
+                  {}),
+                width: "100%",
+                textAlign: "center"
+              },
+              tablet: {},
+              mobile: {}
+            }
+          },
+          children: []
         },
-        children: [
-          item.eyebrow && {
-            id: `value-eyebrow-${uid}-${index}`,
-            type: "text",
-            data: {
-              props: { content: item.eyebrow },
-              style: item.eyebrowStyle || { desktop: {} }
+
+        {
+          id: `value-title-${uid}-${index}`,
+          type: "text",
+          data: {
+            props: {
+              content: item.title
             },
-            children: []
+            style: {
+              desktop: {
+                ...(item.titleStyle?.desktop ||
+                  item.titleStyle ||
+                  {}),
+                width: "100%",
+                textAlign: "center"
+              },
+              tablet: {},
+              mobile: {}
+            }
           },
-          {
-            id: `value-title-${uid}-${index}`,
-            type: "text",
-            data: {
-              props: { content: item.title },
-              style: item.titleStyle || { desktop: {} }
+          children: []
+        },
+
+        item.description && {
+          id: `value-description-${uid}-${index}`,
+          type: "text",
+          data: {
+            props: {
+              content: item.description
             },
-            children: []
+            style: {
+              desktop: {
+                ...(item.descriptionStyle?.desktop ||
+                  item.descriptionStyle ||
+                  {}),
+                width: "100%",
+                textAlign: "center"
+              },
+              tablet: {},
+              mobile: {}
+            }
           },
-          item.description && {
-            id: `value-description-${uid}-${index}`,
-            type: "text",
-            data: {
-              props: { content: item.description },
-              style: item.descriptionStyle || { desktop: {} }
-            },
-            children: []
-          }
-        ].filter(Boolean)
-      };
-    })
-    .filter(Boolean);
+          children: []
+        }
+      ].filter(Boolean)
+    };
+  })
+  .filter(Boolean);
 
   const headerChildren = [
     payload.eyebrow && {
@@ -113,67 +166,85 @@ export const generateValuesGridPreset = (payload: any) => {
     : null;
 
   const gridBlock = {
-    id: `values-grid-${uid}`,
-    type: "grid",
-    data: {
-      props: {},
-      style: {
-        ...payload.gridStyle,
-        desktop: {
-          ...payload.gridStyle?.desktop,
-          display: "grid",
-          width: "100%",
-          gridTemplateColumns:
-            payload.gridStyle?.desktop?.gridTemplateColumns ||
-            "repeat(auto-fit, minmax(0, 1fr))",
-          gap:
-            payload.gridStyle?.desktop?.gap ||
-            payload.gridStyle?.gap ||
-            "16px"
-        },
-        tablet: {
-          ...payload.gridStyle?.tablet,
-          display: "grid",
-          gridTemplateColumns:
-            payload.gridStyle?.tablet?.gridTemplateColumns ||
-            payload.gridStyle?.desktop?.gridTemplateColumns ||
-            "repeat(auto-fit, minmax(0, 1fr))",
-          width: "100%"
-        },
-        mobile: {
-          ...payload.gridStyle?.mobile,
-          display: "grid",
-          gridTemplateColumns:
-            payload.gridStyle?.mobile?.gridTemplateColumns ||
-            "1fr",
-          width: "100%"
-        }
-      }
-    },
-    children: items
-  };
+  id: `values-grid-${uid}`,
+  type: "grid",
+  data: {
+    props: {},
+    style: {
+      desktop: {
+        display: "grid",
+        width: "100%",
+        gridTemplateColumns:
+          payload.gridStyle?.desktop?.gridTemplateColumns ||
+          "repeat(auto-fit, minmax(220px, 1fr))",
 
-  const containerStyle = {
-    ...(payload.containerStyle || {}),
-    desktop: {
-      display: "flex",
-      flexDirection: "column",
-      width: "100%",
-      marginLeft: "auto",
-      marginRight: "auto",
-      ...(payload.containerStyle?.desktop || {})
-    },
-    tablet: {
-      ...(payload.containerStyle?.tablet || {}),
-      width: "100%",
-      maxWidth: "100%"
-    },
-    mobile: {
-      ...(payload.containerStyle?.mobile || {}),
-      width: "100%",
-      maxWidth: "100%"
+        gap:
+          payload.gridStyle?.desktop?.gap ||
+          payload.gridStyle?.gap ||
+          "16px",
+
+        justifyItems: "stretch",
+        alignItems: "stretch"
+      },
+
+      tablet: {
+        display: "grid",
+        width: "100%",
+        gridTemplateColumns:
+          payload.gridStyle?.tablet?.gridTemplateColumns ||
+          "repeat(2, minmax(220px,1fr))",
+
+        gap:
+          payload.gridStyle?.tablet?.gap ||
+          payload.gridStyle?.desktop?.gap ||
+          "16px",
+
+        justifyItems: "stretch",
+        alignItems: "stretch"
+      },
+
+      mobile: {
+        display: "grid",
+        width: "100%",
+        gridTemplateColumns: "1fr",
+
+        gap:
+          payload.gridStyle?.mobile?.gap ||
+          payload.gridStyle?.desktop?.gap ||
+          "16px",
+
+        justifyItems: "stretch",
+        alignItems: "stretch"
+      }
     }
-  };
+  },
+
+  children: items
+};
+
+ const containerDesktop = {
+  ...(payload.containerStyle?.desktop || {})
+};
+
+delete containerDesktop.margin;
+delete containerDesktop.marginTop;
+delete containerDesktop.marginBottom;
+delete containerDesktop.marginLeft;
+delete containerDesktop.marginRight;
+
+const containerStyle = {
+  ...(payload.containerStyle || {}),
+  desktop: {
+    ...containerDesktop,
+    display: "flex",
+    flexDirection: "column",
+    width: "100%",
+    maxWidth:
+      containerDesktop.maxWidth || "1180px",
+    marginLeft: "auto",
+    marginRight: "auto"
+  },
+}
 
   return {
     id: `values-grid-section-${uid}`,

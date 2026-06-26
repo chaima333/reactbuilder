@@ -66,21 +66,48 @@ export const GridItemBlock = ({
   // OUTER STYLE
   // =====================================
 
-  const outerStyle: React.CSSProperties = {
-  width: "100%",
+ const outerStyle: React.CSSProperties = {
+  width: resolved.width || "100%",
   minWidth: 0,
-  maxWidth: "100%",
-  minHeight: 0,
+  maxWidth: resolved.maxWidth || "100%",
+  height: resolved.height,
+  minHeight: resolved.minHeight || 0,
+
   alignSelf: resolved.alignSelf || "stretch",
   justifySelf: resolved.justifySelf || "stretch",
+
   overflow: "visible",
   boxSizing: "border-box",
-  display: "block",
+
+  display:
+    resolved.display === "grid" || resolved.display === "flex"
+      ? resolved.display
+      : "block",
+
+  flexDirection: resolved.flexDirection,
+  alignItems: resolved.alignItems,
+  justifyContent: resolved.justifyContent,
+  gap: resolved.gap,
+
   gridColumn:
     device === "mobile" || device === "tablet"
       ? "span 1"
       : resolved.gridColumn || "auto",
   gridRow: resolved.gridRow || "auto",
+
+  padding: resolved.padding,
+  paddingTop: resolved.paddingTop,
+  paddingRight: resolved.paddingRight,
+  paddingBottom: resolved.paddingBottom,
+  paddingLeft: resolved.paddingLeft,
+
+  background: resolved.background || resolved.backgroundColor,
+  border: resolved.border,
+  borderRadius: resolved.borderRadius,
+  boxShadow: resolved.boxShadow,
+  color: resolved.color,
+  textAlign: resolved.textAlign,
+
   position: "relative",
   transition: "all 0.15s ease-in-out"
 };
@@ -106,70 +133,12 @@ const innerStyle: React.CSSProperties = {
   maxWidth: "100%",
   boxSizing: "border-box",
 
-  display:
-    shouldPreserveImportedLayout
-      ? resolved.display
-      : shouldFlowEditorCardContent
-        ? "flex"
-        : "block",
-
-  flexDirection:
-    shouldPreserveImportedLayout
-      ? resolved.flexDirection
-      : shouldFlowEditorCardContent
-        ? "column"
-      : undefined,
-
-  gridTemplateColumns:
-    shouldPreserveImportedLayout
-      ? resolved.gridTemplateColumns
-      : undefined,
-
-  gap:
-    shouldPreserveImportedLayout
-      ? resolved.gap
-      : shouldFlowEditorCardContent
-        ? flowGap
-      : undefined,
+  display: "contents",
 
   width: "100%",
-  height:
-    shouldFlowEditorCardContent
-      ? "100%"
-      : resolved.height,
-  minHeight:
-    resolved.minHeight,
-  overflow: "hidden",
+  height: "100%",
 
-  alignItems:
-    shouldPreserveImportedLayout
-      ? resolved.alignItems
-      : shouldFlowEditorCardContent
-        ? "stretch"
-      : undefined,
-
-  justifyContent:
-    shouldPreserveImportedLayout
-      ? resolved.justifyContent
-      : undefined,
-
-  padding: resolved.padding,
-  paddingTop: resolved.paddingTop,
-  paddingRight: resolved.paddingRight,
-  paddingBottom: resolved.paddingBottom,
-  paddingLeft: resolved.paddingLeft,
-
-  background:
-    resolved.background ||
-    resolved.backgroundColor,
-  border:
-    resolved.border,
-  borderRadius:
-    resolved.borderRadius,
-  boxShadow:
-    resolved.boxShadow,
-  color:
-    resolved.color
+  overflow: "visible"
 };
  
   return (

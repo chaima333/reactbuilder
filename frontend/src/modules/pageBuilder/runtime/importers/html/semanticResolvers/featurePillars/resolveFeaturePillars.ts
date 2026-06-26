@@ -33,12 +33,17 @@ const hasClassToken = (
 const findExpandedClaimElement = (
   element: HTMLElement
 ) => {
-  if (
-    !hasClassToken(
-      element,
-      "pillars"
-    )
-  ) {
+  const className =
+    element.className
+      ?.toString()
+      .toLowerCase() || "";
+
+  const isPillarsElement =
+    element.classList.contains("pillars") ||
+    className.includes("pillars") ||
+    className.includes("pillar");
+
+  if (!isPillarsElement) {
     return element;
   }
 
@@ -49,8 +54,10 @@ const findExpandedClaimElement = (
 
   if (
     section &&
-    section.querySelector(
-      ".pillars"
+    (
+      section.querySelector(".pillars") ||
+      section.querySelector("[class*='pillars']") ||
+      section.querySelector("[class*='pillar']")
     ) &&
     section.querySelector(
       ".sec-head, h1, h2, h3, p"
@@ -70,7 +77,6 @@ const findExpandedClaimElement = (
     element
   );
 };
-
 const createExpandedClaimNode = (
   node: StructuralNode
 ): StructuralNode => {
@@ -104,7 +110,10 @@ const createExpandedClaimNode = (
 export const resolveFeaturePillars = (
   node: StructuralNode
 ): FeaturePillarsPayload | null => {
-
+ console.log(
+    "🚀 resolveFeaturePillars CALLED",
+    node.element.className
+  );
   // =====================================
   // DETECT
   // =====================================
@@ -149,26 +158,6 @@ export const resolveFeaturePillars = (
     createExpandedClaimNode(
       node
     );
-
-  console.log(
-    "FEATURE_PILLARS_CLAIM_EXPANDED",
-    {
-      originalClassName:
-        getElementClassName(
-          node.element
-        ),
-      originalPath:
-        node.path,
-      claimedClassName:
-        getElementClassName(
-          claimedNode.element
-        ),
-      claimedTag:
-        claimedNode.element.tagName,
-      claimedPath:
-        claimedNode.path
-    }
-  );
 
   // =====================================
   // RESULT

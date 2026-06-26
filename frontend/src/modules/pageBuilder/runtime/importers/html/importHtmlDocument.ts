@@ -1826,52 +1826,152 @@ const makeGridTracksShrinkSafe = (
     )
     .join(" ");
 };
+const normalizeCssPaint = (
+  value?: string
+) =>
+  (value || "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
+
+const isTransparentColor = (
+  value?: string
+) => {
+  const normalized =
+    normalizeCssPaint(value);
+
+  return (
+    !normalized ||
+    normalized === "transparent" ||
+    normalized === "none" ||
+    normalized === "rgba(0,0,0,0)" ||
+    normalized.includes("rgba(0,0,0,0)")
+  );
+};
+
+const hasRealPaint = (
+  styles: ReturnType<typeof extractComputedStyles>
+) => {
+  const background =
+    styles.background || "";
+
+  const backgroundColor =
+    styles.backgroundColor || "";
+
+  return (
+    !isTransparentColor(backgroundColor) ||
+    (
+      !isTransparentColor(background) &&
+      (
+        background.includes("rgb") ||
+        background.includes("#") ||
+        background.includes("gradient") ||
+        background.includes("url(")
+      )
+    )
+  );
+};
+
+const findNearestPaintSource = (
+  start: HTMLElement | null
+) => {
+  let current =
+    start;
+
+  while (
+    current &&
+    current.tagName.toLowerCase() !== "html"
+  ) {
+    const styles =
+      extractComputedStyles(current);
+
+    if (
+      hasRealPaint(styles)
+    ) {
+      return styles;
+    }
+
+    current =
+      current.parentElement;
+  }
+
+  return null;
+};
+
+const resolvePaintSource = (
+  element: HTMLElement,
+  computed: ReturnType<typeof extractComputedStyles>
+) =>
+  hasRealPaint(computed)
+    ? computed
+    : findNearestPaintSource(
+        element.parentElement
+      );
 
 const getPreservedWrapperDesktopStyle = (
-  computed: ReturnType<
-    typeof extractComputedStyles
-  >,
-  layoutDesktop:
-    Record<string, any> = {}
-) => ({
-  ...layoutDesktop,
-  background:
-    computed.background ||
-    layoutDesktop.background,
-  backgroundColor:
-    computed.backgroundColor ||
-    layoutDesktop.backgroundColor,
-  border:
-    computed.border ||
-    layoutDesktop.border,
-  borderRadius:
-    computed.borderRadius ||
-    layoutDesktop.borderRadius,
-  color:
-    computed.color ||
-    layoutDesktop.color,
-  padding:
-    computed.padding ||
-    layoutDesktop.padding,
-  gap:
-    computed.gap ||
-    layoutDesktop.gap,
-  alignItems:
-    computed.alignItems ||
-    layoutDesktop.alignItems,
-  boxShadow:
-    computed.boxShadow ||
-    layoutDesktop.boxShadow,
-  width:
-    computed.width ||
-    layoutDesktop.width,
-  maxWidth:
-    computed.maxWidth &&
-    computed.maxWidth !== "none"
-      ? computed.maxWidth
-      : layoutDesktop.maxWidth
-});
+  computed: ReturnType<typeof extractComputedStyles>,
+  layoutDesktop: Record<string, any> = {},
+  element?: HTMLElement
+) => {
+  const paintSource =
+    element
+      ? resolvePaintSource(
+          element,
+          computed
+        )
+      : hasRealPaint(computed)
+        ? computed
+        : null;
 
+  return {
+    ...layoutDesktop,
+
+    background:
+      paintSource?.background ||
+      layoutDesktop.background,
+
+    backgroundColor:
+      paintSource?.backgroundColor ||
+      layoutDesktop.backgroundColor,
+
+    border:
+      computed.border ||
+      layoutDesktop.border,
+
+    borderRadius:
+      computed.borderRadius ||
+      layoutDesktop.borderRadius,
+
+    color:
+      computed.color ||
+      layoutDesktop.color,
+
+    padding:
+      computed.padding ||
+      layoutDesktop.padding,
+
+    gap:
+      computed.gap ||
+      layoutDesktop.gap,
+
+    alignItems:
+      computed.alignItems ||
+      layoutDesktop.alignItems,
+
+    boxShadow:
+      computed.boxShadow ||
+      layoutDesktop.boxShadow,
+
+    width:
+      computed.width ||
+      layoutDesktop.width,
+
+    maxWidth:
+      computed.maxWidth &&
+      computed.maxWidth !== "none"
+        ? computed.maxWidth
+        : layoutDesktop.maxWidth
+  };
+};
 const compileDirectChildNodes = (
   element: HTMLElement,
   path: (string | number)[],
@@ -1939,14 +2039,18 @@ const emitFallbackStructuredContainer = (
   matcherHits: ImportMatcherHit[]
 ): SerializedBlock[] => {
   const computed =
-    extractComputedStyles(
-      element
-    );
+    extractComputedStyles(element);
 
   const layoutStyle =
-    extractLayoutStyles(
-      element
-    );
+    extractLayoutStyles(element);
+
+  const className =
+    getElementClassName(element).toLowerCase();
+
+  const isMissionGrid =
+    className
+      .split(/\s+/)
+      .includes("mission-grid");
 
   const sourceGridColumns =
     computed.gridTemplateColumns &&
@@ -1963,56 +2067,138 @@ const emitFallbackStructuredContainer = (
       : "100%";
 
   const preservedWrapperStyle =
-    getPreservedWrapperDesktopStyle(
-      computed,
-      layoutStyle.desktop || {}
-    );
+  getPreservedWrapperDesktopStyle(
+    computed,
+    layoutStyle.desktop || {},
+    element
+  );
+
+  const getNearestSectionBackground = () => {
+    const section =
+      element.closest(
+        "section, main, article"
+      ) as HTMLElement | null;
+
+    if (!section) {
+      return {};
+    }
+
+    const sectionComputed =
+      extractComputedStyles(section);
+
+    return {
+      background:
+        sectionComputed.background,
+
+      backgroundColor:
+        sectionComputed.backgroundColor,
+
+      color:
+        sectionComputed.color
+    };
+  };
+
+  const missionSectionVisual =
+    isMissionGrid
+      ? getNearestSectionBackground()
+      : {};
 
   if (
     computed.display === "grid" &&
     sourceGridColumns
   ) {
     const gridChildren =
-      getSafeChildren(
-        element
-      )
-        .filter(
-          hasMeaningfulElementContent
-        )
-        .map(
-          (child, index) => ({
-            id:
-              generateNodeId(
-                COMPILER_BLOCK_TYPES.GRID_ITEM,
-                [...path, index]
-              ),
+      getSafeChildren(element)
+        .filter(hasMeaningfulElementContent)
+        .map((child, index) => {
+          const childStyle =
+            extractLayoutStyles(child);
+
+          /**
+           * مهم:
+           * نقصّو الارتفاعات فقط في mission-grid left column
+           * أما quote/card نخليو minHeight متاعها كان موجود.
+           */
+          const childClassName =
+            getElementClassName(child).toLowerCase();
+
+          const isQuoteLikeChild =
+            isMissionGrid &&
+            (
+              childClassName.includes("quote") ||
+              childClassName.includes("card") ||
+              child.textContent
+                ?.toLowerCase()
+                .includes("founder")
+            );
+
+          if (!isQuoteLikeChild) {
+            delete childStyle.desktop.height;
+            delete childStyle.desktop.minHeight;
+            delete childStyle.desktop.maxHeight;
+          }
+
+          const childBlocks =
+            parseDomToBlocks(
+              child,
+              [...path, index],
+              ownership,
+              warnings,
+              matcherHits
+            ).map((block: any) => {
+              const desktop =
+                block.data?.style?.desktop;
+
+              if (
+                desktop &&
+                !isQuoteLikeChild
+              ) {
+                delete desktop.height;
+                delete desktop.minHeight;
+                delete desktop.maxHeight;
+              }
+
+              return block;
+            });
+
+          return {
+            id: generateNodeId(
+              COMPILER_BLOCK_TYPES.GRID_ITEM,
+              [...path, index]
+            ),
+
             type:
               COMPILER_BLOCK_TYPES.GRID_ITEM,
+
             data: {
               props: {},
-              style:
-                withDesktopFallback(
-                  extractLayoutStyles(
-                    child
-                  ),
-                  {
-                    width: "100%",
-                    maxWidth: "100%",
-                    minWidth: "0",
-                    overflow: "visible"
-                  }
-                )
-            },
-            children:
-              parseDomToBlocks(
-                child,
-                [...path, index],
-                ownership,
-                warnings,
-                matcherHits
+
+              style: withDesktopFallback(
+                childStyle,
+                {
+                  width: "100%",
+                  maxWidth: "100%",
+                  minWidth: "0",
+                  overflow: "visible",
+                  boxSizing: "border-box",
+
+                  ...(isMissionGrid
+                    ? {
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: isQuoteLikeChild
+                          ? "stretch"
+                          : "center"
+                      }
+                    : {})
+                }
               )
-          })
-        )
+            },
+
+            children:
+              childBlocks
+          };
+        })
         .filter(
           item =>
             item.children.length > 0
@@ -2023,78 +2209,144 @@ const emitFallbackStructuredContainer = (
     ) {
       const containerDesktopStyle = {
         ...preservedWrapperStyle,
+
         display: "grid",
+
         gridTemplateColumns:
-          sourceGridColumns,
+          isMissionGrid
+            ? "minmax(0, 1fr) minmax(0, 1fr)"
+            : sourceGridColumns,
+
         gap:
           computed.gap ||
           layoutStyle.desktop?.gap ||
-          "0px",
+          (
+            isMissionGrid
+              ? "64px"
+              : "0px"
+          ),
+
         padding:
           computed.padding ||
           layoutStyle.desktop?.padding,
+
         border:
           computed.border ||
           layoutStyle.desktop?.border,
+
         borderRadius:
           computed.borderRadius ||
           layoutStyle.desktop?.borderRadius,
+
         background:
-          computed.background ||
-          layoutStyle.desktop?.background,
+          isMissionGrid
+            ? missionSectionVisual.background ||
+              computed.background ||
+              layoutStyle.desktop?.background
+            : computed.background ||
+              layoutStyle.desktop?.background,
+
         backgroundColor:
-          computed.backgroundColor ||
-          layoutStyle.desktop?.backgroundColor,
+          isMissionGrid
+            ? missionSectionVisual.backgroundColor ||
+              computed.backgroundColor ||
+              layoutStyle.desktop?.backgroundColor
+            : computed.backgroundColor ||
+              layoutStyle.desktop?.backgroundColor,
+
         color:
-          computed.color ||
-          layoutStyle.desktop?.color,
+          isMissionGrid
+            ? missionSectionVisual.color ||
+              computed.color ||
+              layoutStyle.desktop?.color
+            : computed.color ||
+              layoutStyle.desktop?.color,
+
         alignItems:
           computed.alignItems ||
           layoutStyle.desktop?.alignItems ||
           "stretch",
+
         boxShadow:
           computed.boxShadow ||
           layoutStyle.desktop?.boxShadow,
+
         width: "100%",
+
         maxWidth:
-          sourceMaxWidth,
+          isMissionGrid
+            ? "1180px"
+            : sourceMaxWidth,
+
+        marginLeft:
+          isMissionGrid
+            ? "auto"
+            : (preservedWrapperStyle as any).marginLeft,
+
+        marginRight:
+          isMissionGrid
+            ? "auto"
+            : (preservedWrapperStyle as any).marginRight,
+
         minWidth: "0",
-        boxSizing:
-          "border-box",
+        boxSizing: "border-box",
         overflow: "visible"
       };
+
       return [
         {
-          id:
-            generateNodeId(
-              COMPILER_BLOCK_TYPES.GRID,
-              path
-            ),
+          id: generateNodeId(
+            COMPILER_BLOCK_TYPES.GRID,
+            path
+          ),
+
           type:
             COMPILER_BLOCK_TYPES.GRID,
+
           data: {
-            props: {},
+            props: {
+              ...(isMissionGrid
+                ? {
+                    semantic: {
+                      semanticIntent:
+                        "MISSION_GRID"
+                    }
+                  }
+                : {})
+            },
+
             style: {
               ...layoutStyle,
+
               desktop:
                 containerDesktopStyle,
+
               tablet: {
                 ...(layoutStyle.tablet || {}),
+                display: "grid",
+                gridTemplateColumns:
+                  "minmax(0, 1fr)",
+                gap: "32px",
                 width: "100%",
                 maxWidth: "100%",
-                minWidth: "0"
+                minWidth: "0",
+                boxSizing: "border-box"
               },
+
               mobile: {
                 ...(layoutStyle.mobile || {}),
                 display: "grid",
                 gridTemplateColumns:
                   "minmax(0, 1fr)",
+                gap: "24px",
                 width: "100%",
                 maxWidth: "100%",
-                minWidth: "0"
+                minWidth: "0",
+                boxSizing: "border-box"
               }
             }
           },
+
           children:
             gridChildren
         }
@@ -2110,43 +2362,37 @@ const emitFallbackStructuredContainer = (
   } = layoutStyle.desktop || {};
 
   const children =
-    getSafeChildren(
-      element
-    )
-      .filter(
-        hasMeaningfulElementContent
-      )
-      .map(
-        (child, index) => ({
-          id:
-            generateNodeId(
-              COMPILER_BLOCK_TYPES.FLEX_ITEM,
-              [...path, index]
-            ),
-          type:
-            COMPILER_BLOCK_TYPES.FLEX_ITEM,
-          data: {
-            props: {},
-            style:
-              withDesktopFallback(
-                extractLayoutStyles(
-                  child
-                ),
-                {
-                  minWidth: "0"
-                }
-              )
-          },
-          children:
-            parseDomToBlocks(
-              child,
-              [...path, index],
-              ownership,
-              warnings,
-              matcherHits
-            )
-        })
-      )
+    getSafeChildren(element)
+      .filter(hasMeaningfulElementContent)
+      .map((child, index) => ({
+        id: generateNodeId(
+          COMPILER_BLOCK_TYPES.FLEX_ITEM,
+          [...path, index]
+        ),
+
+        type:
+          COMPILER_BLOCK_TYPES.FLEX_ITEM,
+
+        data: {
+          props: {},
+
+          style: withDesktopFallback(
+            extractLayoutStyles(child),
+            {
+              minWidth: "0",
+              boxSizing: "border-box"
+            }
+          )
+        },
+
+        children: parseDomToBlocks(
+          child,
+          [...path, index],
+          ownership,
+          warnings,
+          matcherHits
+        )
+      }))
       .filter(
         item =>
           item.children.length > 0
@@ -2157,46 +2403,65 @@ const emitFallbackStructuredContainer = (
   ) {
     return [];
   }
+
   return [
     {
-      id:
-        generateNodeId(
-          COMPILER_BLOCK_TYPES.FLEX,
-          path
-        ),
+      id: generateNodeId(
+        COMPILER_BLOCK_TYPES.FLEX,
+        path
+      ),
+
       type:
         COMPILER_BLOCK_TYPES.FLEX,
+
       data: {
         props: {},
+
         style: {
           ...layoutStyle,
-desktop: {
-  ...desktopStyle,
-  display: "flex",
-  flexDirection:
-    computed.display === "flex"
-      ? computed.flexDirection
-      : "column",
-  flexWrap: "nowrap",
-  alignItems:
-    computed.alignItems || "stretch",
-  gap:
-    computed.gap || "12px"
-},
-          tablet: {
-            ...(layoutStyle.tablet || {})
+
+          desktop: {
+            ...desktopStyle,
+
+            display: "flex",
+
+            flexDirection:
+              computed.display === "flex"
+                ? computed.flexDirection
+                : "column",
+
+            flexWrap: "nowrap",
+
+            alignItems:
+              computed.alignItems || "stretch",
+
+            gap:
+              computed.gap || "12px",
+
+            minWidth: "0",
+            boxSizing: "border-box",
+            overflow: "visible"
           },
+
+          tablet: {
+            ...(layoutStyle.tablet || {}),
+            minWidth: "0",
+            boxSizing: "border-box"
+          },
+
           mobile: {
             ...(layoutStyle.mobile || {}),
-            flexWrap: "wrap"
+            flexWrap: "wrap",
+            minWidth: "0",
+            boxSizing: "border-box"
           }
         }
       },
+
       children
     }
   ];
 };
-
 // =====================================================
 // FALLBACK COMPILER
 // =====================================================
@@ -2311,7 +2576,6 @@ function fallbackCompileElement(
   // =========================================
   // SECTION
   // =========================================
-
 if (
   [
     "section",
@@ -2348,20 +2612,28 @@ if (
     ...(sectionStyle.desktop || {}),
 
     background:
-      computedSection.background ||
-      sectionStyle.desktop?.background,
+      computedSection.background &&
+      computedSection.background !== "rgba(0, 0, 0, 0)" &&
+      computedSection.background !== "transparent"
+        ? computedSection.background
+        : sectionStyle.desktop?.background,
 
     backgroundColor:
-      computedSection.backgroundColor ||
-      sectionStyle.desktop?.backgroundColor,
+      computedSection.backgroundColor &&
+      computedSection.backgroundColor !== "rgba(0, 0, 0, 0)" &&
+      computedSection.backgroundColor !== "transparent"
+        ? computedSection.backgroundColor
+        : sectionStyle.desktop?.backgroundColor,
 
     color:
       computedSection.color ||
       sectionStyle.desktop?.color,
 
     padding:
-      computedSection.padding ||
-      sectionStyle.desktop?.padding,
+      computedSection.padding &&
+      computedSection.padding !== "0px"
+        ? computedSection.padding
+        : sectionStyle.desktop?.padding,
 
     width: "100%",
     maxWidth: "100%",
@@ -2383,105 +2655,6 @@ if (
     }
   ];
 }
-
-  // =========================================
-  // TITLES
-  // =========================================
-
- if (
-  [
-    "h1",
-    "h2",
-    "h3",
-    "h4",
-    "h5",
-    "h6"
-  ].includes(tagName)
-) {
-
-  const titleBlock = {
-
-    id:
-      generateNodeId(
-        COMPILER_BLOCK_TYPES.TITLE,
-        path
-      ),
-
-    type:
-      COMPILER_BLOCK_TYPES.TITLE,
-
-    data: {
-
-      props: {
-
-        content:
-          element.textContent
-            ?.trim() || "",
-
-        level:
-          tagName,
-
-        segments: []
-      },
-
-      style:
-        extractTypographyStyles(
-          element
-        )
-    },
-
-    children: []
-  };
-
-  // =====================================
-  // ROOT NORMALIZATION
-  // =====================================
-
-  if (
-    path.length === 0
-  ) {
-
-    return [
-
-      {
-
-        id:
-          "auto-section",
-
-        type:
-          COMPILER_BLOCK_TYPES.SECTION,
-
-        data: {
-
-          props: {},
-
-          style: {
-            desktop: {},
-            tablet: {},
-            mobile: {}
-          }
-        },
-
-        children: [
-          createFallbackFlexWrapper(
-            [
-              ...path,
-              "rootTitle"
-            ],
-            [
-              titleBlock
-            ]
-          )
-        ]
-      }
-    ];
-  }
-
-  return [
-    titleBlock
-  ];
-}
-
   // =========================================
   // TEXT
   // =========================================

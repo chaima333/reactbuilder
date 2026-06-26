@@ -23,6 +23,7 @@ import {
   ViewCarousel, 
   ViewStream,   
   WebAsset,
+  VerticalAlignBottom,
 } from "@mui/icons-material";
 import { Block, BlockType } from "../../types/page.types";
 
@@ -44,6 +45,7 @@ const blockConfig: Partial<Record<BlockType, { icon: React.ReactNode; color: str
   hero: { icon: <LocalOffer fontSize="small" />, color: "#ef4444", label: "Hero" },
   root: { icon: <WebAsset fontSize="small" />, color: "#14b8a6", label: "Root" },
   navbar: { icon: <ViewStream fontSize="small" />, color: "#06b6d4", label: "Navigation" },
+  footer: { icon: <VerticalAlignBottom fontSize="small" />, color: "#0f766e", label: "Footer" },
   cta: { icon: <SmartButton fontSize="small" />, color: "#ec4899", label: "CTA Section" },
   features: { icon: <ViewCarousel fontSize="small" />, color: "#8b5cf6", label: "Features" },
 };

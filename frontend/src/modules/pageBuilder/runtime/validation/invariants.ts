@@ -59,6 +59,8 @@ const isKnownType = (
 
     "navbar",
 
+    "footer",
+
     // =====================
     // PRIMITIVES
     // =====================
@@ -210,9 +212,10 @@ export const validateTreeInvariants = (
       });
     }
 
-    if (block.type === "gridItem") {
+if (block.type === "gridItem") {
   const legalParent =
-    parentType === "grid";
+    parentType === "grid" ||
+    parentType === "footer";
 
   if (!legalParent) {
     addViolation(violations, {
@@ -230,7 +233,8 @@ export const validateTreeInvariants = (
 if (block.type === "flexItem") {
   const legalParent =
     parentType === "flex" ||
-    parentType === "navbar";
+    parentType === "navbar" ||
+    parentType === "footer";
 
   if (!legalParent) {
     addViolation(violations, {
@@ -240,7 +244,7 @@ if (block.type === "flexItem") {
       parentId,
       path,
       message:
-        "flexItem must be owned by flex/navbar."
+        "flexItem must be owned by flex/navbar/footer."
     });
   }
 }

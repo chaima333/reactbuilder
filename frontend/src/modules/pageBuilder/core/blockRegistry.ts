@@ -38,6 +38,10 @@ import {
   navbarDefinition
 } from "../components/blocks/layout/navbar";
 
+import {
+  footerDefinition
+} from "../components/blocks/layout/footer";
+
 // =========================
 // PRIMITIVES
 // =========================
@@ -127,6 +131,9 @@ Record<string, BlockConfig> = {
 
   navbar:
     navbarDefinition,
+
+  footer:
+    footerDefinition,
 
   // =====================
   // PRIMITIVES

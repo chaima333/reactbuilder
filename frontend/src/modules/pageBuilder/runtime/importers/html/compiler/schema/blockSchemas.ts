@@ -44,6 +44,12 @@ export const BLOCK_SCHEMA = {
       true
   },
 
+  [COMPILER_BLOCK_TYPES.FOOTER]: {
+
+    canHaveChildren:
+      true
+  },
+
   // =====================
   // PRIMITIVES
   // =====================

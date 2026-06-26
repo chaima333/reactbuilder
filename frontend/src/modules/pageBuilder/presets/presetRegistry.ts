@@ -15,6 +15,8 @@ import { generateTrustLogoPreset } from "./generateTrustLogoPreset";
 import { generateContentListPreset } from "./generateContentListPreset";
 import { generateInfoBannerPreset } from "./generateInfoBannerPreset";
 import { generateTwoColumnIntroPreset } from "./generateTwoColumnIntroPreset";
+import { generateFAQPreset } from "./generateFAQPreset";
+import { generateFooterPreset } from "./generateFooterPreset";
 
 export const presetRegistry = {
 
@@ -50,4 +52,10 @@ export const presetRegistry = {
 
   twoColumnIntro:
   generateTwoColumnIntroPreset,
+
+  faq:
+  generateFAQPreset,
+
+footer:
+  generateFooterPreset,
 };

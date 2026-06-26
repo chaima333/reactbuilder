@@ -44,6 +44,8 @@ resolveNavbar,
 
   resolveServicePageSection,
 
+  resolveTwoColumnIntro,
+
   resolveAuthHero,
 
   resolveContactLayout,
@@ -61,8 +63,6 @@ resolveNavbar,
   resolveCtaCard,
 
   resolveCtaSection,
-
-   resolveTwoColumnIntro,
 
   resolveContentListSection,
 

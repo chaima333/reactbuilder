@@ -691,7 +691,10 @@ if (
   !wrapperType &&
   !isRootDrop &&
   isPrimitiveBlock(draggedType) &&
-  targetBlock!.type === "navbar"
+  (
+    targetBlock!.type === "navbar" ||
+    targetBlock!.type === "footer"
+  )
 ) {
   wrapperType = "flexItem";
 }

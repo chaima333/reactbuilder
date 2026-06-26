@@ -220,16 +220,26 @@ const createContainerStyle = (
 ) => {
   const extracted =
     containerElement
-      ? extractLayoutStyles(
-          containerElement
-        )
+      ? extractLayoutStyles(containerElement)
       : undefined;
+
+  const desktop = {
+    ...(extracted?.desktop || {})
+  };
+
+  delete desktop.height;
+  delete desktop.minHeight;
 
   return {
     ...(extracted || {}),
-   desktop: {
-  ...(extracted?.desktop || {})
-},
+    desktop: {
+      ...desktop,
+      display: "flex",
+      flexDirection: "column",
+      width: desktop.width || "100%",
+      marginLeft: desktop.marginLeft || "auto",
+      marginRight: desktop.marginRight || "auto"
+    },
     tablet: {
       ...(extracted?.tablet || {})
     },
@@ -927,7 +937,8 @@ const createFeatureItem = (
 const fallbackCardStyle = {
   display: "flex",
   flexDirection: "column",
-  gap: "12px"
+  gap: "12px",
+  height: "100%"
 };
 
   const filteredCardStyle =
@@ -944,7 +955,7 @@ const fallbackCardStyle = {
 
   return {
     id: uuidv4(),
-    type: "flexItem" as const,
+    type: "gridItem" as const,
     data: {
       props: {},
       style: {
@@ -1068,8 +1079,6 @@ export const generateFeaturePillarsPreset = (
   payload?: FeaturesPresetPayload
   
 ): Block => {
-    console.log("🚀 generateFeaturePillarsPreset");
-
   const items =
     payload?.items?.length
       ? payload.items
@@ -1105,8 +1114,6 @@ export const generateFeaturePillarsPreset = (
         )
       : undefined;
 
- const useDarkSectionFallback = false;
-
   const featureCards =
     items.map(
       (
@@ -1130,43 +1137,54 @@ export const generateFeaturePillarsPreset = (
       claimedElement,
       cardSourceElement
     );
+    const containerStyle =
+  createContainerStyle(
+    containerElement
+  );
 
-  const gridStyle =
+ const gridStyle =
   cardSourceElement
     ? extractLayoutStyles(cardSourceElement)
     : null;
 
-console.log(
-  "🔥 FEATURE GRID SOURCE",
-  {
-    tag: cardSourceElement?.tagName,
-    className: cardSourceElement?.className,
-    style: gridStyle
-  }
-);
-
 const contentChildren =
   [
     sectionIntro,
-    {
-      id: uuidv4(),
-      type: "grid" as const,
-      data: {
-        props: {},
-        style:
-          gridStyle || {
-            desktop: {
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(3,minmax(0,1fr))",
-              gap: "22px"
-            },
-            tablet: {},
-            mobile: {}
-          }
+   {
+  id: uuidv4(),
+  type: "grid" as const,
+  data: {
+    props: {},
+    style: {
+      desktop: {
+        ...(gridStyle?.desktop || {}),
+        display: "grid",
+        gridTemplateColumns:
+          gridStyle?.desktop?.gridTemplateColumns &&
+          gridStyle.desktop.gridTemplateColumns !== "none"
+            ? gridStyle.desktop.gridTemplateColumns
+            : "repeat(3, minmax(0, 1fr))",
+        gap:
+          gridStyle?.desktop?.gap || "22px",
+        width: "100%",
+        alignItems: "stretch"
       },
-      children: featureCards
+      tablet: {
+        ...(gridStyle?.tablet || {}),
+        display: "grid",
+        gridTemplateColumns: "1fr",
+        width: "100%"
+      },
+      mobile: {
+        ...(gridStyle?.mobile || {}),
+        display: "grid",
+        gridTemplateColumns: "1fr",
+        width: "100%"
+      }
     }
+  },
+  children: featureCards
+}
   ].filter(
     (child): child is Block =>
       child !== null
@@ -1179,15 +1197,18 @@ const contentChildren =
     },
     data: {
       props: {},
-     style:
-  sectionStyle || {
-    desktop: {
-      paddingTop: "100px",
-      paddingBottom: "100px"
-    },
-    tablet: {},
-    mobile: {}
+style: {
+  desktop: {
+    ...(sectionStyle?.desktop || {}),
+    overflow: "visible"
+  },
+  tablet: {
+    ...(sectionStyle?.tablet || {})
+  },
+  mobile: {
+    ...(sectionStyle?.mobile || {})
   }
+}
     },
     children: [
       {
@@ -1195,10 +1216,7 @@ const contentChildren =
         type: "flex" as const,
         data: {
           props: {},
-          style:
-            createContainerStyle(
-              containerElement
-            )
+          style: containerStyle
         },
         children:
           contentChildren

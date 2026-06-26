@@ -44,6 +44,7 @@ const containers: BlockType[] = [
   "section",
   "flex",
   "navbar",
+  "footer",
   "grid",
   "flexItem",
   "gridItem"
@@ -105,7 +106,8 @@ export const canonicalBlockSchemas: Record<
     "root",
     [
       "section",
-      "navbar"
+      "navbar",
+      "footer"
     ]
   ),
 
@@ -124,6 +126,7 @@ export const canonicalBlockSchemas: Record<
       "link",
 
       "navbar",
+      "footer",
       "flex",
       "grid",
 
@@ -182,6 +185,32 @@ flex: schema(
 
         child,
 
+        wrapper:
+          "flexItem"
+      })
+    )
+  ),
+
+  // =====================================
+  // FOOTER
+  // =====================================
+
+  footer: schema(
+    "footer",
+    [
+      "flex",
+      "flexItem",
+      "grid",
+      "gridItem",
+      "title",
+      "text",
+      "image",
+      "button",
+      "link"
+    ],
+    primitives.map(
+      (child) => ({
+        child,
         wrapper:
           "flexItem"
       })

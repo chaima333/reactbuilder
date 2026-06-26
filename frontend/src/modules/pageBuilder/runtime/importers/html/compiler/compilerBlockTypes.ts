@@ -18,6 +18,9 @@ export const COMPILER_BLOCK_TYPES = {
   NAVBAR:
     "navbar",
 
+  FOOTER:
+    "footer",
+
   TITLE:
     "title",
 

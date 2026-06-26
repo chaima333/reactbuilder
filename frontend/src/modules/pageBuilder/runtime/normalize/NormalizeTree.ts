@@ -124,7 +124,9 @@ const normalizeBlock = (
 
     block.type === "flex" ||
 
-    block.type === "navbar"
+    block.type === "navbar" ||
+
+    block.type === "footer"
   ) {
 
     children =

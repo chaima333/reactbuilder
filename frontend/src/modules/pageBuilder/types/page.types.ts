@@ -45,6 +45,7 @@ export type BlockType =
   | "image"
   | "button"
   | "navbar"
+  | "footer"
   | "title"
   | "cta"
   | "hero"

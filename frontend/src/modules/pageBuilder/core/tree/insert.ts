@@ -1,6 +1,31 @@
 import { Block } from "../../types/page.types";
 import { canDrop } from "../../adapters/pageAdapter"; // جيب الـ validator اللي عملناه
 
+const isFooterBlock = (block: Block): boolean => {
+  const semanticType =
+    (block as any)?.meta?.semanticType ||
+    (block as any)?.data?.meta?.semanticType;
+
+  return (
+    block.type === "footer" ||
+    block.id?.startsWith("footer-section-") ||
+    semanticType === "FOOTER" ||
+    semanticType === "FOOTER_SECTION"
+  );
+};
+
+const footerInsertIndex = (blocks: Block[]): number => {
+  const index = blocks.findIndex(isFooterBlock);
+  return index >= 0 ? index : blocks.length;
+};
+
+const treeHasFooter = (blocks: Block[]): boolean =>
+  blocks.some(
+    (block) =>
+      isFooterBlock(block) ||
+      treeHasFooter(block.children || [])
+  );
+
 /**
  * 🔥 Clean tree insert (With Validation & Safety)
  */
@@ -9,18 +34,25 @@ export const insertBlock = (
   drop: any,
   newBlock: Block
 ): Block[] => {
+  if (isFooterBlock(newBlock) && treeHasFooter(blocks)) {
+    return blocks;
+  }
+
   if (
   drop.targetId === "ROOT"
 ) {
+  const rootInsertIndex =
+    isFooterBlock(newBlock)
+      ? blocks.length
+      : footerInsertIndex(blocks);
 
   if (
     drop.type === "inside"
   ) {
 
-    return [
-      ...blocks,
-      newBlock
-    ];
+    const next = [...blocks];
+    next.splice(rootInsertIndex, 0, newBlock);
+    return next;
   }
 
   if (
@@ -37,10 +69,9 @@ export const insertBlock = (
     drop.type === "after"
   ) {
 
-    return [
-      ...blocks,
-      newBlock
-    ];
+    const next = [...blocks];
+    next.splice(rootInsertIndex, 0, newBlock);
+    return next;
   }
 }
   const result: Block[] = [];

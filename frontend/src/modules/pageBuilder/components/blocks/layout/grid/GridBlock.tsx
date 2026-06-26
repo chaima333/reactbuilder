@@ -413,10 +413,7 @@ margin:
   // =====================================
   // RENDER
   // =====================================
-console.log(
-  "GRID CHILDREN JSX",
-  children
-);
+
   return (
 
     <div

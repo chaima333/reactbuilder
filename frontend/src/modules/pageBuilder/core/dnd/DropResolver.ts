@@ -49,12 +49,12 @@ export const resolveDropBehavior = ({
   const defaultIndex = targetChildrenCount;
 
   const effectiveDraggedType =
-    ["hero", "cta", "features"].includes(draggedType)
+    ["hero", "cta",  "faq", "features"].includes(draggedType)
       ? "section"
       : draggedType;
 
   if (
-    targetType === "navbar" &&
+    (targetType === "navbar" || targetType === "footer") &&
     ["image", "text", "link", "button", "title", "flexItem"].includes(
       effectiveDraggedType
     )

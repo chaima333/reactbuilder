@@ -230,11 +230,14 @@ export const resolveValuesGrid = (
     extractValuesGrid(
       node
     );
-console.log(
-  "VALUES_GRID_ITEMS",
-  node.element.className,
-  items
+    console.log(
+  "VALUES ITEMS",
+  items.map(item => ({
+    title: item.title,
+    cardStyle: item.cardStyle
+  }))
 );
+
   const valid =
     validateValuesGrid(
       items
@@ -243,11 +246,7 @@ console.log(
   if (!valid) {
     return null;
   }
-console.log(
-  "VALUES_GRID_VALID",
-  node.element.className,
-  valid
-);
+
   const computed =
     getOwnerComputedStyle(
       node.element
@@ -328,37 +327,6 @@ const eyebrowElement =
   delete gridStyle.desktop.margin;
   delete gridStyle.desktop.marginTop;
   delete gridStyle.desktop.marginBottom;
-
-  console.log(
-    "VALUES_GRID_HEADER",
-    {
-      eyebrow,
-      title,
-      description,
-      sectionRoot:
-        {
-          tag:
-            sectionRoot.tagName,
-          className:
-            sectionRoot.getAttribute(
-              "class"
-            ) || "",
-          style:
-            sectionStyle
-        },
-      container:
-        {
-          tag:
-            containerElement.tagName,
-          className:
-            containerElement.getAttribute(
-              "class"
-            ) || "",
-          style:
-            containerStyle
-        }
-    }
-  );
 
   return {
     type:
