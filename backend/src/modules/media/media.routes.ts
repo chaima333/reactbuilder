@@ -1,32 +1,47 @@
-import { Router } from 'express';
-import multer from 'multer';
-import { authenticateJWT } from '../../shared/auth.util';
-import * as MediaController from './media.controller';
+import { Router } from "express";
+import multer from "multer";
 
-const router = Router();
+import * as MediaController from "./media.controller";
+
+import { requirePermission } from "../../core/middleware/role.middleware";
+import { PERMISSIONS } from "../../core/constants/permissions";
+
+const router = Router({ mergeParams: true });
 
 const upload = multer({
-  storage: multer.memoryStorage(), 
-  
-  fileFilter: (req, file, cb) => {
-  console.log("🔥 FILE OBJECT:", file);
-  console.log("🔥 MIME RECEIVED:", file.mimetype);
-  cb(null, true); // نخلي كل شيء يعدي
-}
+  storage: multer.memoryStorage(),
+
+  fileFilter: (_req, file, cb) => {
+    console.log("🔥 FILE OBJECT:", file);
+    console.log("🔥 MIME RECEIVED:", file.mimetype);
+
+    cb(null, true);
+  }
 });
 
-router.use(authenticateJWT);
+router.get(
+  "/",
+  requirePermission(PERMISSIONS.MEDIA_READ),
+  MediaController.handleGetAll
+);
 
 router.post(
-  '/upload', 
-  upload.single('file'), 
+  "/upload",
+  requirePermission(PERMISSIONS.MEDIA_UPLOAD),
+  upload.single("file"),
   MediaController.handleUpload
 );
 
-router.get('/', MediaController.handleGetAll);
+router.delete(
+  "/:id",
+  requirePermission(PERMISSIONS.MEDIA_DELETE),
+  MediaController.handleDelete
+);
 
-router.delete('/:id', MediaController.handleDelete);
-
-router.put('/:id/alt', MediaController.handleUpdateAlt);
+router.put(
+  "/:id/alt",
+  requirePermission(PERMISSIONS.MEDIA_UPDATE),
+  MediaController.handleUpdateAlt
+);
 
 export default router;

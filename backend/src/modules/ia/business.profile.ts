@@ -17,27 +17,46 @@ const unique = (items: string[]) =>
 
 const includesAny = (text: string, words: string[]) =>
   words.some((word) => text.includes(word));
+const cleanCompanyName = (
+  name: string
+): string => {
+  return name
+    .replace(/\s+/g, " ")
+    .replace(/[.。،,;:!?]+$/g, "")
+    .trim()
+    .split(" ")
+    .filter((word, index, arr) => {
+      return (
+        index === 0 ||
+        word.toLowerCase() !== arr[index - 1].toLowerCase()
+      );
+    })
+    .join(" ");
+};
+
 const extractCompanyName = (
   prompt: string
 ): string | null => {
   const patterns = [
-    /\bcalled\s+([A-Z][A-Za-z0-9&.-]*(?:\s+[A-Z][A-Za-z0-9&.-]*){0,2})/,
-    /\bnamed\s+([A-Z][A-Za-z0-9&.-]*(?:\s+[A-Z][A-Za-z0-9&.-]*){0,2})/,
-    /\bfor\s+([A-Z][A-Za-z0-9&.-]*(?:\s+[A-Z][A-Za-z0-9&.-]*){0,2})/,
-    /\bcompany\s+([A-Z][A-Za-z0-9&.-]*(?:\s+[A-Z][A-Za-z0-9&.-]*){0,2})/
+    /\bcalled\s+([A-Z][A-Za-z0-9&-]*(?:\s+[A-Z][A-Za-z0-9&-]*){0,2})/,
+    /\bnamed\s+([A-Z][A-Za-z0-9&-]*(?:\s+[A-Z][A-Za-z0-9&-]*){0,2})/,
+    /\bfor\s+([A-Z][A-Za-z0-9&-]*(?:\s+[A-Z][A-Za-z0-9&-]*){0,2})/,
+    /\bcompany\s+called\s+([A-Z][A-Za-z0-9&-]*(?:\s+[A-Z][A-Za-z0-9&-]*){0,2})/,
+    /\bcompany\s+named\s+([A-Z][A-Za-z0-9&-]*(?:\s+[A-Z][A-Za-z0-9&-]*){0,2})/
   ];
 
   for (const pattern of patterns) {
     const match = prompt.match(pattern);
 
     if (match?.[1]) {
-      return match[1].trim();
+      return cleanCompanyName(
+        match[1]
+      );
     }
   }
 
   return null;
 };
-
 const fallbackCompanyName = (
   category: string
 ): string =>

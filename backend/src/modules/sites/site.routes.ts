@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authenticateJWT } from "../../shared/auth.util";
+
 import {
   createSite,
   updateSite,
@@ -11,18 +11,59 @@ import {
   getDefaultSite
 } from "./site.controller";
 
-const router = Router();
+import { tenantResolver } from "../../core/middleware/tenantResolver";
+import { requireSiteAccess } from "../../core/middleware/siteGuard";
+import { requirePermission } from "../../core/middleware/role.middleware";
+import { PERMISSIONS } from "../../core/constants/permissions";
 
-router.use(authenticateJWT);
+const router = Router({ mergeParams: true });
 
-// GLOBAL ONLY
+const siteAccessStack = [
+  tenantResolver,
+  requireSiteAccess
+];
+
+// GLOBAL ROUTES
 router.post("/", createSite);
 router.get("/", getSites);
 
-router.get("/:siteId/access", getSiteAccess);
-router.put("/:siteId/global-layout", updateGlobalLayout);
-router.get("/:siteId", getSiteById);
-router.put("/:siteId", updateSite);
-router.delete("/:siteId", deleteSite);
-router.get("/default", authenticateJWT, getDefaultSite);
+// مهم: لازم قبل /:siteId
+router.get("/default", getDefaultSite);
+
+// SITE ACCESS
+router.get(
+  "/:siteId/access",
+  siteAccessStack,
+  requirePermission(PERMISSIONS.SITE_READ),
+  getSiteAccess
+);
+
+router.get(
+  "/:siteId",
+  siteAccessStack,
+  requirePermission(PERMISSIONS.SITE_READ),
+  getSiteById
+);
+
+router.put(
+  "/:siteId",
+  siteAccessStack,
+  requirePermission(PERMISSIONS.SITE_UPDATE),
+  updateSite
+);
+
+router.put(
+  "/:siteId/global-layout",
+  siteAccessStack,
+  requirePermission(PERMISSIONS.SITE_UPDATE),
+  updateGlobalLayout
+);
+
+router.delete(
+  "/:siteId",
+  siteAccessStack,
+  requirePermission(PERMISSIONS.SITE_DELETE),
+  deleteSite
+);
+
 export default router;
