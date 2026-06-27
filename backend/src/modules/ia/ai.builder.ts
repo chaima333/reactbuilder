@@ -902,8 +902,8 @@ const buildTimeline = (config: SectionConfig): PageBlock => {
 const buildNavbar = (config: SectionConfig): PageBlock => {
   const id = makeId("navbar");
   
-  const color = config.style?.color || "#111827";
-  const bgColor = config.style?.backgroundColor || "#111010";
+const color = "#0f172a";
+const bgColor = "#ffffff";
 
   const links =
     config.navigationItems?.length

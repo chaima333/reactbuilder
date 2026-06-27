@@ -434,13 +434,12 @@ console.log("MEDIA_AI_NOTIFICATION_DISPATCHED", {
 const selectedPages =
   sitePlan.slice(0, 6);
 
-const generationId = Date.now();
 const plannedPages = selectedPages.map((page) => ({
   ...page,
   finalSlug:
     page.type === "home"
       ? "home"
-      : `${page.slug}-${generationId}`
+      : page.slug
 }));
 const navigationItems = plannedPages.map((page) => ({
   label: page.title,
