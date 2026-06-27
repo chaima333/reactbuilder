@@ -45,6 +45,7 @@ import exportRoutes from "./modules/export/export.routes";
 import assistantRoutes from "./modules/ia/assistant/assistant.routes";
 import pluginMarketplaceRoutes from "./modules/plugin/plugin.marketplace.routes";
 import { requireSiteAccess } from "./core/middleware/siteGuard";
+import invitationRoutes from "./core/services/invitations/invitation.routes";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 
@@ -79,6 +80,7 @@ app.use("/api/platform", platformRoutes);
    => THIS WAS MISSING (ROOT CAUSE OF 404)
 ======================== */
 const authStack = [authenticateJWT, maintenanceMode];
+app.use("/api/invitations",authStack,invitationRoutes);
 app.use("/api/sites", authStack, siteRoutes);
 
 /* ========================
