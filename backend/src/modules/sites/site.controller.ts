@@ -12,6 +12,16 @@ export const createSite = async (req: AuthRequest, res: Response) => {
   try {
     const { name, subdomain, title } = req.body;
     const userId = req.user.id;
+    const canCreateSite =
+  req.user.role === "ADMIN" ||
+  req.user.role === "EDITOR";
+
+if (!canCreateSite) {
+  return res.status(403).json({
+    success: false,
+    message: "Permission denied: SITE_CREATE"
+  });
+}
 
     if (!name || !subdomain) {
       return res.status(400).json({ success: false, message: "Name and subdomain required" });
