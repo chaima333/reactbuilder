@@ -21,7 +21,7 @@ export const updatePageHandler = async (command: any) => {
       return { success: false, error: "invalid context" };
     }
 
-    const allowedFields = ["title", "content", "blocks", "slug", "status"];
+    const allowedFields = ["title", "content", "blocks"];
     const safePayload: any = {};
 
     const blocks =
