@@ -104,18 +104,30 @@ export const addSiteMember = async (
       });
     }
 
-    const member =
+    if (!req.user?.id) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated"
+      });
+    }
+
+    const result =
       await SiteMembersService.addMemberByEmail({
         siteId,
         email,
         role,
-        actorSiteRole
+        actorSiteRole,
+        actorUserId: req.user.id
       });
 
     return res.status(201).json({
       success: true,
-      message: "Member added successfully",
-      data: member
+      type: result.type,
+      message:
+        result.type === "INVITATION_SENT"
+          ? "Invitation email sent successfully"
+          : "Member added successfully",
+      data: result.data
     });
 
   } catch (err: any) {

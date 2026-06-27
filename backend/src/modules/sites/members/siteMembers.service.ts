@@ -1,7 +1,18 @@
 // backend/src/modules/sites/members/siteMembers.service.ts
 
+import crypto from "crypto";
+
 import SiteMember from "../../../models/SiteMember";
 import User from "../../../models/User";
+import SiteInvitation from "../../../models/SiteInvitation";
+
+import {
+  Site
+} from "../../../models/site";
+
+import {
+  sendSiteInvitationEmail
+} from "../../../core/services/email.service";
 
 type MemberRole =
   | "ADMIN"
@@ -28,9 +39,7 @@ const normalizeRole = (
       .trim()
       .toUpperCase() as MemberRole;
 
-  if (
-    !allowedRoles.includes(nextRole)
-  ) {
+  if (!allowedRoles.includes(nextRole)) {
     const error: any =
       new Error("Invalid member role");
 
@@ -40,6 +49,23 @@ const normalizeRole = (
   }
 
   return nextRole;
+};
+
+const generateInvitationToken = () => {
+  return crypto
+    .randomBytes(32)
+    .toString("hex");
+};
+
+const getInvitationExpirationDate = () => {
+  const date =
+    new Date();
+
+  date.setDate(
+    date.getDate() + 7
+  );
+
+  return date;
 };
 
 const getMemberWithUser = async (
@@ -66,6 +92,18 @@ const getMemberWithUser = async (
       }
     ]
   });
+};
+
+const getSiteName = async (
+  siteId: number
+) => {
+  const site =
+    await Site.findByPk(siteId);
+
+  return (
+    site?.name ||
+    `Site #${siteId}`
+  );
 };
 
 export class SiteMembersService {
@@ -101,12 +139,14 @@ export class SiteMembersService {
     email: string;
     role: string;
     actorSiteRole: string;
+    actorUserId: number;
   }) {
     const {
       siteId,
       email,
       role,
-      actorSiteRole
+      actorSiteRole,
+      actorUserId
     } = params;
 
     const cleanEmail =
@@ -141,46 +181,107 @@ export class SiteMembersService {
         }
       });
 
-    if (!user) {
-      const error: any =
-        new Error(
-          "User not found. The user must register first."
-        );
+    // =========================
+    // CASE 1: USER EXISTS
+    // =========================
 
-      error.status = 404;
+    if (user) {
+      const existing =
+        await SiteMember.findOne({
+          where: {
+            siteId,
+            userId: user.id
+          }
+        });
 
-      throw error;
+      if (existing) {
+        const error: any =
+          new Error(
+            "User is already a member of this site."
+          );
+
+        error.status = 409;
+
+        throw error;
+      }
+
+      await SiteMember.create({
+        siteId,
+        userId: user.id,
+        role: nextRole
+      } as any);
+
+      return {
+        type: "MEMBER_ADDED",
+        data:
+          await getMemberWithUser(
+            siteId,
+            user.id
+          )
+      };
     }
 
-    const existing =
-      await SiteMember.findOne({
+    // =========================
+    // CASE 2: USER DOES NOT EXIST
+    // SEND REAL EMAIL INVITATION
+    // =========================
+
+    const siteName =
+      await getSiteName(siteId);
+
+    const token =
+      generateInvitationToken();
+
+    const expiresAt =
+      getInvitationExpirationDate();
+
+    const existingPendingInvitation =
+      await SiteInvitation.findOne({
         where: {
           siteId,
-          userId: user.id
+          email: cleanEmail,
+          status: "PENDING"
         }
       });
 
-    if (existing) {
-      const error: any =
-        new Error(
-          "User is already a member of this site."
-        );
+    let invitation: SiteInvitation;
 
-      error.status = 409;
+    if (existingPendingInvitation) {
+      await existingPendingInvitation.update({
+        role: nextRole,
+        token,
+        invitedBy: actorUserId,
+        expiresAt
+      });
 
-      throw error;
+      invitation =
+        existingPendingInvitation;
+    } else {
+      invitation =
+        await SiteInvitation.create({
+          siteId,
+          email: cleanEmail,
+          role: nextRole,
+          token,
+          status: "PENDING",
+          invitedBy: actorUserId,
+          expiresAt,
+          acceptedBy: null,
+          acceptedAt: null
+        } as any);
     }
 
-    await SiteMember.create({
-      siteId,
-      userId: user.id,
-      role: nextRole
-    } as any);
+    await sendSiteInvitationEmail({
+      to: cleanEmail,
+      siteName,
+      role: nextRole,
+      token
+    });
 
-    return getMemberWithUser(
-      siteId,
-      user.id
-    );
+    return {
+      type: "INVITATION_SENT",
+      data: invitation
+    };
   }
 
   static async updateMemberRole(params: {
