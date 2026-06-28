@@ -986,9 +986,9 @@ const buildTimeline = (config: SectionConfig): PageBlock => {
 
 const buildNavbar = (config: SectionConfig): PageBlock => {
   const id = makeId("navbar");
-  
-const color = "#0f172a";
-const bgColor = "#ffffff";
+
+  const color = "#0f172a";
+  const bgColor = "#ffffff";
 
   const links =
     config.navigationItems?.length
@@ -1006,43 +1006,45 @@ const bgColor = "#ffffff";
     data: {
       props: {},
       style: responsiveStyle(
-  {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    display: "flex",
-    maxWidth: "none",
-    margin: "0",
-    paddingTop: "14px",
-    boxSizing: "border-box",
-    paddingBottom: "14px",
-    paddingLeft: "28px",
-    paddingRight: "28px",
-    flexWrap: "wrap",
-    gap: "18px",
-    overflow: "visible",
-    backgroundColor: bgColor,
-    color: color,
-    whiteSpace: "nowrap",
-    minWidth: "160px",
-    borderBottom: "1px solid rgba(0,0,0,0.08)"
-  },
-  {
-    paddingLeft: "22px",
-    paddingRight: "22px",
-    gap: "14px"
-  },
-  {
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingLeft: "18px",
-    paddingRight: "18px",
-    gap: "12px",
-    whiteSpace: "normal"
-  }
-)
+        {
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          width: "100%",
+          maxWidth: "none",
+          margin: "0",
+          paddingTop: "14px",
+          paddingBottom: "14px",
+          paddingLeft: "28px",
+          paddingRight: "28px",
+          boxSizing: "border-box",
+          flexWrap: "wrap",
+          gap: "18px",
+          overflow: "visible",
+          backgroundColor: bgColor,
+          color,
+          whiteSpace: "nowrap",
+          borderBottom: "1px solid rgba(0,0,0,0.08)"
+        },
+        {
+          flexDirection: "row",
+          paddingLeft: "22px",
+          paddingRight: "22px",
+          gap: "14px"
+        },
+        {
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          paddingLeft: "18px",
+          paddingRight: "18px",
+          paddingTop: "18px",
+          paddingBottom: "18px",
+          gap: "14px",
+          whiteSpace: "normal"
+        }
+      )
     },
     children: [
       {
@@ -1050,13 +1052,23 @@ const bgColor = "#ffffff";
         type: "flexItem",
         data: {
           props: {},
-          style: responsiveStyle({
-            display: "flex",
-            alignItems: "center",
-            width: "max-content",
-            flex: "0 0 auto",
-            whiteSpace: "nowrap"
-          })
+          style: responsiveStyle(
+            {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-start",
+              width: "max-content",
+              flex: "0 0 auto",
+              whiteSpace: "nowrap"
+            },
+            {
+              justifyContent: "flex-start"
+            },
+            {
+              justifyContent: "center",
+              width: "100%"
+            }
+          )
         },
         children: [
           {
@@ -1067,30 +1079,51 @@ const bgColor = "#ffffff";
                 content: config.title,
                 text: config.title
               },
-              style: responsiveStyle({
-                color: color,
-                fontWeight: "900",
-                fontSize: "24px",
-                letterSpacing: "0.04em",
-                whiteSpace: "nowrap",
-                marginBottom: "0"
-              })
+              style: responsiveStyle(
+                {
+                  color,
+                  fontWeight: "900",
+                  fontSize: "24px",
+                  letterSpacing: "0.02em",
+                  whiteSpace: "nowrap",
+                  marginBottom: "0",
+                  textAlign: "left"
+                },
+                {
+                  fontSize: "22px",
+                  textAlign: "left"
+                },
+                {
+                  fontSize: "22px",
+                  textAlign: "center"
+                }
+              )
             },
             children: []
           }
         ]
       },
+
       {
         id: makeId("navbar-links-item"),
         type: "flexItem",
         data: {
           props: {},
-          style: responsiveStyle({
-            flex: "1 1 auto",
-            minWidth: "0",
-            display: "flex",
-            justifyContent: "center"
-          })
+          style: responsiveStyle(
+            {
+              flex: "1 1 auto",
+              minWidth: "0",
+              display: "flex",
+              justifyContent: "center"
+            },
+            {
+              justifyContent: "center"
+            },
+            {
+              width: "100%",
+              justifyContent: "center"
+            }
+          )
         },
         children: [
           {
@@ -1099,38 +1132,46 @@ const bgColor = "#ffffff";
             data: {
               props: {},
               style: responsiveStyle(
-  {
-    display: "flex",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    columnGap: "18px",
-    rowGap: "10px",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%"
-  },
-  {
-    columnGap: "14px",
-    rowGap: "8px"
-  },
-  {
-    flexDirection: "column",
-    flexWrap: "nowrap",
-    gap: "8px",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%"
-  }
-)
+                {
+                  display: "flex",
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  columnGap: "18px",
+                  rowGap: "10px",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "100%"
+                },
+                {
+                  flexDirection: "row",
+                  columnGap: "14px",
+                  rowGap: "8px"
+                },
+                {
+                  flexDirection: "column",
+                  flexWrap: "nowrap",
+                  gap: "8px",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "100%"
+                }
+              )
             },
             children: links.map((link, index) => ({
               id: makeId(`navbar-link-item-${index}`),
               type: "flexItem",
               data: {
                 props: {},
-                style: responsiveStyle({
-                  flex: "0 0 auto"
-                })
+                style: responsiveStyle(
+                  {
+                    flex: "0 0 auto"
+                  },
+                  {},
+                  {
+                    width: "100%",
+                    textAlign: "center"
+                  }
+                )
               },
               children: [
                 {
@@ -1141,16 +1182,25 @@ const bgColor = "#ffffff";
                       label: link.label,
                       href: link.href
                     },
-                    style: responsiveStyle({
-                      textDecoration: "none",
-                      color: color,
-                      fontSize: "15px",
-                      fontWeight: "700",
-                      whiteSpace: "nowrap",
-                      transition: "color 0.2s ease",
-                      display: "inline-block",
-                      marginRight: "0"
-                    })
+                    style: responsiveStyle(
+                      {
+                        textDecoration: "none",
+                        color,
+                        fontSize: "15px",
+                        fontWeight: "700",
+                        whiteSpace: "nowrap",
+                        display: "inline-block",
+                        marginRight: "0"
+                      },
+                      {
+                        fontSize: "14px"
+                      },
+                      {
+                        fontSize: "15px",
+                        textAlign: "center",
+                        whiteSpace: "normal"
+                      }
+                    )
                   },
                   children: []
                 }
@@ -1159,6 +1209,7 @@ const bgColor = "#ffffff";
           }
         ]
       },
+
       ...(config.cta
         ? [
             {
@@ -1166,9 +1217,17 @@ const bgColor = "#ffffff";
               type: "flexItem",
               data: {
                 props: {},
-                style: responsiveStyle({
-                  flex: "0 0 auto"
-                })
+                style: responsiveStyle(
+                  {
+                    flex: "0 0 auto"
+                  },
+                  {},
+                  {
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "center"
+                  }
+                )
               },
               children: [
                 {
@@ -1179,17 +1238,28 @@ const bgColor = "#ffffff";
                       label: config.cta,
                       href: config.ctaHref || "#"
                     },
-                    style: responsiveStyle({
-                      borderRadius: "999px",
-                      padding: "10px 24px",
-                      backgroundColor: "#2563eb",
-                      color: "#ffffff",
-                      border: "none",
-                      fontWeight: "700",
-                      fontSize: "14px",
-                      cursor: "pointer",
-                      transition: "all 0.2s ease"
-                    })
+                    style: responsiveStyle(
+                      {
+                        borderRadius: "999px",
+                        padding: "10px 22px",
+                        backgroundColor: "#2563eb",
+                        color: "#ffffff",
+                        border: "none",
+                        fontWeight: "700",
+                        fontSize: "14px",
+                        cursor: "pointer"
+                      },
+                      {
+                        fontSize: "14px",
+                        padding: "9px 20px"
+                      },
+                      {
+                        fontSize: "14px",
+                        padding: "10px 22px",
+                        width: "auto",
+                        maxWidth: "220px"
+                      }
+                    )
                   },
                   children: []
                 }
