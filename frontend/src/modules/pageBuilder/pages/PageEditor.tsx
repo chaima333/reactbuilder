@@ -293,6 +293,23 @@ const selectedBlock = useMemo(() => {
       const imported = await importHtmlDocument(htmlCode);
       
       if (imported && imported.blocks) {
+        if (imported.designTokens) {
+          updateToken({
+            colors: {
+              ...(tokens?.colors || {}),
+              ...imported.designTokens.colors
+            },
+            spacing: {
+              ...(tokens?.spacing || {}),
+              ...imported.designTokens.spacing
+            },
+            radius: {
+              ...(tokens?.radius || {}),
+              ...imported.designTokens.radius
+            }
+          });
+        }
+
         const hydrated = hydrateBlocks(
           imported.blocks.map((block: any) => ({
             ...block,
@@ -525,55 +542,6 @@ console.log(
         legacyFooterBlock,
         hasUsefulBlockContent
       });
-
-    console.log(
-      "ZIP_FOOTER_IMPORT_TRACE",
-      {
-        usedGenericImporter:
-          footerBlock !== legacyFooterBlock,
-
-        usedLegacyImporter:
-          footerBlock === legacyFooterBlock,
-
-        footerType:
-          footerBlock?.type,
-
-        footerMeta:
-          footerBlock?.meta,
-
-        footerDesktopStyle:
-          footerBlock?.data?.style?.desktop,
-
-        firstChildDesktopStyle:
-          footerBlock?.children?.[0]
-            ?.data?.style?.desktop
-      }
-    );
-
-    console.log(
-      "ZIP_NAVBAR_IMPORT_TRACE",
-      {
-        navbarType:
-          navbarBlock?.type,
-
-        navbarMeta:
-          navbarBlock?.meta,
-
-        navbarDesktopStyle:
-          navbarBlock?.data?.style?.desktop
-      }
-    );
-
-    console.log(
-      "ZIP_UPDATE_GLOBAL_LAYOUT_PAYLOAD",
-      {
-        navbar:
-          navbarBlock,
-        footer:
-          footerBlock
-      }
-    );
-
     await updateGlobalLayout({
       siteId: Number(siteId),
       globalLayout: {

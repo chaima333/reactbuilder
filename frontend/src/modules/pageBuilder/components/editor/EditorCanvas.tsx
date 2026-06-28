@@ -30,6 +30,7 @@ import {
 import {
   useRuntimeNode
 } from "../../hooks/useRuntimeNode";
+import { tokens } from "../../core/theme/tokens";
 
 interface EditorCanvasProps {
 
@@ -462,6 +463,7 @@ const canvasMaxWidth =
               "border-box",
 
             background:
+              tokens?.colors?.surface ||
               "#fff",
 
             position:

@@ -18,6 +18,11 @@ export const PublicPageRuntime = ({
   site
 }: any) => {
 
+  const runtimeTokens =
+    page?.theme ||
+    site?.theme ||
+    {};
+
   // =========================
   // GLOBAL LAYOUT
   // =========================
@@ -88,9 +93,7 @@ const footerBlocks: any[] =
         mode: "public",
         device: "desktop",
         tokens:
-          page?.theme ||
-          site?.theme ||
-          {}
+          runtimeTokens
       }}
     >
 
@@ -98,7 +101,9 @@ const footerBlocks: any[] =
         sx={{
           width: "100%",
           minHeight: "100vh",
-          bgcolor: "#f8fafc"
+          bgcolor:
+            runtimeTokens?.colors?.surface ||
+            "#f8fafc"
         }}
       >
  {/* GLOBAL NAVBAR */}

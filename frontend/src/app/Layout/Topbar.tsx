@@ -12,27 +12,23 @@ import {
   Popover,
   List,
   ListItem,
-  ListItemText,
   Divider,
   Button,
   ListItemButton,
+  useTheme,
 } from "@mui/material";
-
 import {
   Menu as MenuIcon,
-  MenuOpen as MenuOpenIcon,
   Notifications as NotificationsIcon,
   Brightness4 as DarkModeIcon,
   Brightness7 as LightModeIcon,
 } from "@mui/icons-material";
-
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
 import { toggleTheme } from "../../redux/features/themeSlice";
 import { logout } from "../../redux/features/authSlice";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "../providers/LanguageProvider";
-
 import {
   useGetNotificationsQuery,
   useGetUnreadNotificationsCountQuery,
@@ -51,6 +47,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   onToggleCollapse,
   isCollapsed,
 }) => {
+  const theme = useTheme();
   const { t } = useLanguage();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -60,7 +57,9 @@ export const Topbar: React.FC<TopbarProps> = ({
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
-  const { data: unread } = useGetUnreadNotificationsCountQuery(undefined, {pollingInterval: 5000, });
+  const { data: unread } = useGetUnreadNotificationsCountQuery(undefined, {
+    pollingInterval: 5000,
+  });
   const { data: notifications = [] } = useGetNotificationsQuery();
 
   const [markAsRead] = useMarkNotificationAsReadMutation();
@@ -91,176 +90,378 @@ export const Topbar: React.FC<TopbarProps> = ({
   };
 
   return (
-    <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-      <Toolbar>
+    <AppBar
+      position="fixed"
+      elevation={0}
+      sx={{
+        zIndex: (theme) => theme.zIndex.drawer + 1,
+        bgcolor: theme.palette.background.paper,
+        borderBottom: `1px solid ${theme.palette.divider}`,
+        color: theme.palette.text.primary,
+      }}
+    >
+      <Toolbar sx={{ minHeight: 64, px: { xs: 2, sm: 3 } }}>
+        {/* ============================================
+            كل الـ Menu Buttons محذوفين
+            ============================================ */}
+        {/* 
+        // Hamburger Menu للـ Mobile - محذوف
         <IconButton
-          color="inherit"
-          edge="start"
           onClick={onMenuClick}
-          sx={{ mr: 2, display: { sm: "none" } }}
+          sx={{
+            mr: 1.5,
+            display: { sm: "none" },
+            ...
+          }}
         >
           <MenuIcon />
         </IconButton>
+        */}
 
+        {/* 
+        // Collapse Button - محذوف
         <IconButton
-          color="inherit"
           onClick={onToggleCollapse}
-          sx={{ mr: 2, display: { xs: "none", sm: "inline-flex" } }}
+          sx={{
+            mr: 2,
+            ...
+          }}
         >
           {isCollapsed ? <MenuOpenIcon /> : <MenuIcon />}
         </IconButton>
+        */}
 
-        <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
-          CraftWeb
-        </Typography>
-
-        <IconButton color="inherit" onClick={() => dispatch(toggleTheme())}>
-          {themeMode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
-        </IconButton>
-
-        <IconButton color="inherit" onClick={handleNotificationsOpen}>
-          <Badge badgeContent={unreadCount} color="error">
-            <NotificationsIcon />
-          </Badge>
-        </IconButton>
-
-        <Popover
-  open={Boolean(notifAnchor)}
-  anchorEl={notifAnchor}
-  onClose={handleNotificationsClose}
-  anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-  transformOrigin={{ vertical: "top", horizontal: "right" }}
->
-  <Box sx={{ width: 380, maxHeight: 480 }}>
-    <Box
-      sx={{
-        p: 2,
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-      }}
-    >
-      <Typography variant="h6" fontWeight={900}>
-        Notifications
-      </Typography>
-
-      <Button size="small" onClick={() => markAllAsRead()}>
-        Mark all as read
-      </Button>
-    </Box>
-
-    <Divider />
-
-    {notifications.length === 0 ? (
-      <Box p={3} textAlign="center">
-        <Typography fontWeight={700}>
-          No notifications yet
-        </Typography>
-        <Typography color="text.secondary" fontSize={14}>
-          New updates will appear here.
-        </Typography>
-      </Box>
-    ) : (
-      <List sx={{ p: 0 }}>
-        {notifications.slice(0, 10).map((notif: any) => (
-          <ListItem
-            key={notif.id}
-            disablePadding
+        {/* Logo & Brand */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: 2,
+              bgcolor: theme.palette.primary.main,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#ffffff",
+              fontWeight: 800,
+              fontSize: "1.1rem",
+            }}
           >
-            <ListItemButton
-              onClick={() => markAsRead(notif.id)}
+            RB
+          </Box>
+          <Box sx={{ display: { xs: "none", sm: "block" } }}>
+            <Typography
+              variant="h6"
+              noWrap
               sx={{
-                alignItems: "flex-start",
-                px: 2,
-                py: 1.5,
-                bgcolor: notif.isRead
-                  ? "background.paper"
-                  : "rgba(0,196,154,0.10)",
-                "&:hover": {
-                  bgcolor: notif.isRead
-                    ? "action.hover"
-                    : "rgba(0,196,154,0.16)",
+                fontWeight: 800,
+                color: theme.palette.text.primary,
+                fontSize: "1.1rem",
+                letterSpacing: "-0.02em",
+                lineHeight: 1.2,
+              }}
+            >
+              ReactBuilder
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                color: theme.palette.text.secondary,
+                fontSize: "0.6rem",
+                fontWeight: 600,
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
+              }}
+            >
+              CraftWeb Platform
+            </Typography>
+          </Box>
+        </Box>
+
+        <Box sx={{ flexGrow: 1 }} />
+
+        {/* Actions - فقط Theme, Notifications, User */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          {/* Theme Toggle */}
+          <IconButton
+            onClick={() => dispatch(toggleTheme())}
+            sx={{
+              color: theme.palette.text.secondary,
+              borderRadius: 2,
+              p: 1,
+              "&:hover": {
+                color: theme.palette.text.primary,
+                bgcolor: theme.palette.action.hover,
+              },
+            }}
+          >
+            {themeMode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
+          </IconButton>
+
+          {/* Notifications */}
+          <IconButton
+            onClick={handleNotificationsOpen}
+            sx={{
+              color: theme.palette.text.secondary,
+              borderRadius: 2,
+              p: 1,
+              "&:hover": {
+                color: theme.palette.text.primary,
+                bgcolor: theme.palette.action.hover,
+              },
+            }}
+          >
+            <Badge
+              badgeContent={unreadCount}
+              color="error"
+              sx={{
+                "& .MuiBadge-badge": {
+                  fontSize: "0.6rem",
+                  minWidth: 18,
+                  height: 18,
+                  fontWeight: 700,
                 },
               }}
             >
-              <Avatar
-                sx={{
-                  width: 38,
-                  height: 38,
-                  mr: 1.5,
-                  bgcolor: notif.isRead
-                    ? "grey.300"
-                    : "primary.main",
-                  fontSize: 18,
-                }}
+              <NotificationsIcon />
+            </Badge>
+          </IconButton>
+
+          {/* User Avatar */}
+          <IconButton
+            onClick={handleMenuOpen}
+            sx={{
+              ml: 0.5,
+              p: 0.5,
+              borderRadius: 2,
+              "&:hover": { bgcolor: theme.palette.action.hover },
+            }}
+          >
+            <Avatar
+              sx={{
+                width: 34,
+                height: 34,
+                bgcolor: theme.palette.primary.main,
+                fontWeight: 700,
+                fontSize: "0.9rem",
+                color: "#ffffff",
+              }}
+            >
+              {user?.name?.charAt(0)?.toUpperCase() || "U"}
+            </Avatar>
+          </IconButton>
+        </Box>
+
+        {/* Notifications Popover */}
+        <Popover
+          open={Boolean(notifAnchor)}
+          anchorEl={notifAnchor}
+          onClose={handleNotificationsClose}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+          transformOrigin={{ vertical: "top", horizontal: "right" }}
+          PaperProps={{
+            sx: {
+              mt: 1,
+              borderRadius: 3,
+              boxShadow: theme.shadows[3],
+              border: `1px solid ${theme.palette.divider}`,
+              bgcolor: theme.palette.background.paper,
+            },
+          }}
+        >
+          <Box sx={{ width: 380, maxHeight: 480 }}>
+            <Box
+              sx={{
+                p: 2,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Typography
+                variant="subtitle1"
+                fontWeight={700}
+                color={theme.palette.text.primary}
               >
-                🔔
-              </Avatar>
+                Notifications
+              </Typography>
 
-              <Box sx={{ flex: 1 }}>
-                <Typography
-                  fontWeight={notif.isRead ? 600 : 900}
-                  fontSize={14}
+              {unreadCount > 0 && (
+                <Button
+                  size="small"
+                  onClick={() => markAllAsRead()}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    color: theme.palette.primary.main,
+                    fontSize: "0.75rem",
+                    "&:hover": {
+                      bgcolor: theme.palette.action.selected,
+                    },
+                  }}
                 >
-                  {notif.title}
-                </Typography>
+                  Mark all read
+                </Button>
+              )}
+            </Box>
 
+            <Divider sx={{ borderColor: theme.palette.divider }} />
+
+            {notifications.length === 0 ? (
+              <Box p={3} textAlign="center">
+                <Typography fontWeight={600} color={theme.palette.text.secondary}>
+                  No notifications yet
+                </Typography>
                 <Typography
-                  color="text.secondary"
+                  color={theme.palette.text.disabled}
                   fontSize={13}
-                  sx={{ mt: 0.3 }}
+                  sx={{ mt: 0.5 }}
                 >
-                  {notif.message || notif.type}
-                </Typography>
-
-                <Typography
-                  color="primary.main"
-                  fontSize={12}
-                  fontWeight={700}
-                  sx={{ mt: 0.6 }}
-                >
-                  {new Date(notif.createdAt).toLocaleString()}
+                  New updates will appear here
                 </Typography>
               </Box>
+            ) : (
+              <List sx={{ p: 0 }}>
+                {notifications.slice(0, 10).map((notif: any) => (
+                  <ListItem key={notif.id} disablePadding>
+                    <ListItemButton
+                      onClick={() => markAsRead(notif.id)}
+                      sx={{
+                        alignItems: "flex-start",
+                        px: 2,
+                        py: 1.5,
+                        bgcolor: notif.isRead
+                          ? "transparent"
+                          : theme.palette.action.selected,
+                        borderLeft: notif.isRead
+                          ? "3px solid transparent"
+                          : `3px solid ${theme.palette.primary.main}`,
+                        "&:hover": {
+                          bgcolor: notif.isRead
+                            ? theme.palette.action.hover
+                            : theme.palette.action.selected,
+                        },
+                      }}
+                    >
+                      <Avatar
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          mr: 1.5,
+                          bgcolor: notif.isRead
+                            ? theme.palette.action.disabledBackground
+                            : theme.palette.primary.main,
+                          color: notif.isRead
+                            ? theme.palette.text.disabled
+                            : "#ffffff",
+                          fontSize: 16,
+                        }}
+                      >
+                        🔔
+                      </Avatar>
 
-              {!notif.isRead && (
-                <Box
-                  sx={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    bgcolor: "primary.main",
-                    mt: 1,
-                  }}
-                />
-              )}
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-    )}
-  </Box>
-</Popover>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography
+                          fontWeight={notif.isRead ? 500 : 700}
+                          fontSize={14}
+                          color={theme.palette.text.primary}
+                        >
+                          {notif.title}
+                        </Typography>
 
-        <IconButton onClick={handleMenuOpen} sx={{ ml: 1 }}>
-          <Avatar sx={{ bgcolor: "secondary.main", width: 32, height: 32 }}>
-            {user?.name?.charAt(0)?.toUpperCase() || "U"}
-          </Avatar>
-        </IconButton>
+                        <Typography
+                          color={theme.palette.text.secondary}
+                          fontSize={13}
+                          sx={{ mt: 0.3 }}
+                        >
+                          {notif.message || notif.type}
+                        </Typography>
 
+                        <Typography
+                          color={theme.palette.text.disabled}
+                          fontSize={11}
+                          fontWeight={500}
+                          sx={{ mt: 0.6 }}
+                        >
+                          {new Date(notif.createdAt).toLocaleString()}
+                        </Typography>
+                      </Box>
+
+                      {!notif.isRead && (
+                        <Box
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            bgcolor: theme.palette.primary.main,
+                            mt: 1,
+                            flexShrink: 0,
+                          }}
+                        />
+                      )}
+                    </ListItemButton>
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </Box>
+        </Popover>
+
+        {/* User Menu */}
         <Menu
           anchorEl={anchorEl}
           open={Boolean(anchorEl)}
           onClose={handleMenuClose}
           transformOrigin={{ horizontal: "right", vertical: "top" }}
           anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+          PaperProps={{
+            sx: {
+              mt: 1,
+              borderRadius: 3,
+              boxShadow: theme.shadows[3],
+              border: `1px solid ${theme.palette.divider}`,
+              minWidth: 180,
+              bgcolor: theme.palette.background.paper,
+            },
+          }}
         >
-          <MenuItem onClick={() => { navigate("/profile"); handleMenuClose(); }}>
-            <Typography>{t.profile}</Typography>
+          <MenuItem
+            onClick={() => {
+              navigate("/profile");
+              handleMenuClose();
+            }}
+            sx={{
+              py: 1.5,
+              px: 2.5,
+              "&:hover": { bgcolor: theme.palette.action.hover },
+            }}
+          >
+            <Typography
+              fontSize={14}
+              fontWeight={500}
+              color={theme.palette.text.primary}
+            >
+              {t.profile || "Profile"}
+            </Typography>
           </MenuItem>
 
-          <MenuItem onClick={handleLogout}>
-            <Typography color="error">{t.logout}</Typography>
+          <Divider sx={{ borderColor: theme.palette.divider }} />
+
+          <MenuItem
+            onClick={handleLogout}
+            sx={{
+              py: 1.5,
+              px: 2.5,
+              "&:hover": { bgcolor: theme.palette.action.hover },
+            }}
+          >
+            <Typography
+              fontSize={14}
+              fontWeight={500}
+              color={theme.palette.error.main}
+            >
+              {t.logout || "Logout"}
+            </Typography>
           </MenuItem>
         </Menu>
       </Toolbar>

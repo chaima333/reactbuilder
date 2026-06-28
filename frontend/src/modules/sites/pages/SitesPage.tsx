@@ -26,7 +26,8 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Visibility as VisibilityIcon
+  Visibility as VisibilityIcon,
+  Group as GroupIcon
 } from "@mui/icons-material";
 
 import {
@@ -73,7 +74,9 @@ export const Sites: React.FC = () => {
 
 const isGlobalAdmin =
   userRole === "ADMIN";
-
+const canCreateSite =
+  userRole === "ADMIN" ||
+  userRole === "EDITOR";
   const { enqueueSnackbar } =
     useSnackbar();
 
@@ -86,13 +89,18 @@ const isGlobalAdmin =
   const [selectedSite, setSelectedSite] =
     useState<any>(null);
 
-  const {
-    data,
-    isLoading,
-    error,
-    refetch
-  } =
-    useGetSitesQuery(undefined);
+    const {
+  data,
+  isLoading,
+  error,
+  refetch
+} =
+  useGetSitesQuery(
+    undefined,
+    {
+      refetchOnMountOrArgChange: true
+    }
+  );
 
   const [
     createSite,
@@ -194,6 +202,15 @@ const canDeleteSite = (
     isOwner(site)
   );
 };
+const canManageMembers = (
+  site: any
+) => {
+  return (
+    isSuperAdmin(site) ||
+    isOwner(site) ||
+    isAdmin(site)
+  );
+};
 const canCreatePage = (
   site: any
 ) => {
@@ -230,18 +247,19 @@ const canDeletePage = (
   // EMPTY STATE MODAL
   // =========================
 
-  useEffect(() => {
-    if (
-      !isLoading &&
-      sites.length === 0
-    ) {
-      setModalOpen(true);
-    }
-  }, [
-    isLoading,
-    sites.length
-  ]);
-
+ useEffect(() => {
+  if (
+    !isLoading &&
+    sites.length === 0 &&
+    canCreateSite
+  ) {
+    setModalOpen(true);
+  }
+}, [
+  isLoading,
+  sites.length,
+  canCreateSite
+]);
   // =========================
   // CREATE SITE
   // =========================
@@ -249,6 +267,16 @@ const canDeletePage = (
   const handleCreateSite = async (
     siteData: any
   ) => {
+     if (!canCreateSite) {
+    enqueueSnackbar(
+      "Vous n'avez pas la permission de créer un site.",
+      {
+        variant: "warning"
+      }
+    );
+
+    return;
+  }
     try {
       await createSite(
         siteData
@@ -406,7 +434,54 @@ const canDeletePage = (
       </Box>
     );
   }
+// =========================
+// PUBLIC SITE PATH
+// =========================
 
+const getPublicSitePath = (
+  site: any
+) => {
+  const pages =
+    Array.isArray(site?.pages)
+      ? site.pages
+      : [];
+
+  const publishedPages =
+    pages.filter(
+      (page: any) =>
+        page.status === "published" ||
+        page.isPublished === true ||
+        page.published === true
+    );
+
+  const candidates =
+    publishedPages.length > 0
+      ? publishedPages
+      : pages;
+
+  const homepage =
+    candidates.find(
+      (page: any) =>
+        page.isHomepage === true
+    ) ||
+    candidates.find(
+      (page: any) =>
+        page.slug === "home" ||
+        /^home-\d+$/.test(
+          page.slug || ""
+        )
+    ) ||
+    candidates[0];
+
+  if (
+    homepage?.slug &&
+    homepage.slug !== "home"
+  ) {
+    return `/site/${site.id}/${homepage.slug}`;
+  }
+
+  return `/site/${site.id}`;
+};
   // =========================
   // RENDER
   // =========================
@@ -423,15 +498,17 @@ const canDeletePage = (
           {t.mySites}
         </Typography>
 
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() =>
-            setModalOpen(true)
-          }
-        >
-          {t.createSite}
-        </Button>
+        {canCreateSite && (
+  <Button
+    variant="contained"
+    startIcon={<AddIcon />}
+    onClick={() =>
+      setModalOpen(true)
+    }
+  >
+    {t.createSite}
+  </Button>
+)}
       </Box>
 
       {sites.length === 0 ? (
@@ -447,16 +524,29 @@ const canDeletePage = (
             {t.youHaveNoSites}
           </Typography>
 
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() =>
-              setModalOpen(true)
-            }
-            sx={{ mt: 2 }}
-          >
-            {t.createFirstSite}
-          </Button>
+          {canCreateSite ? (
+  <Button
+    variant="contained"
+    startIcon={<AddIcon />}
+    onClick={() =>
+      setModalOpen(true)
+    }
+    sx={{ mt: 2 }}
+  >
+    {t.createFirstSite}
+  </Button>
+) : (
+  <Alert
+    severity="info"
+    sx={{
+      mt: 3,
+      maxWidth: 520,
+      mx: "auto"
+    }}
+  >
+    Vous avez un accès en lecture seule. Vous ne pouvez pas créer de site.
+  </Alert>
+)}
         </Box>
       ) : (
         <Grid
@@ -656,7 +746,19 @@ const canDeletePage = (
                           {t.edit}
                         </Button>
                       )}
-
+{canManageMembers(site) && (
+  <Button
+    size="small"
+    startIcon={<GroupIcon />}
+    onClick={() =>
+      navigate(
+        `/sites/${site.id}/members`
+      )
+    }
+  >
+    Membres
+  </Button>
+)}
                       <Button
                         size="small"
                         variant="outlined"
@@ -664,14 +766,16 @@ const canDeletePage = (
                           <VisibilityIcon />
                         }
                         onClick={() =>
-                          window.open(
-                            `/site/${site.id}`,
-                            "_blank"
-                          )
-                        }
+                         window.open(
+                        getPublicSitePath(site),
+                       "_blank"
+                           )
+                          }
+                        
                       >
                         Voir
                       </Button>
+                      
 
                       {canDeleteSite(site) && (
                         <Button

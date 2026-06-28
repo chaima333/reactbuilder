@@ -1,42 +1,158 @@
-
-import type { Block } from "../types/page.types";
+import type {
+  Block
+} from "../types/page.types";
 
 const getDesktopStyle = (
   element?: HTMLElement | null
 ) => {
-  if (!element) return {};
+  if (!element) {
+    return {};
+  }
 
   const computed =
-    element.ownerDocument.defaultView?.getComputedStyle(element) ||
+    element.ownerDocument.defaultView
+      ?.getComputedStyle(element) ||
     window.getComputedStyle(element);
 
   return {
-    padding: computed.padding,
-    margin: computed.margin,
-    border: computed.border,
-    borderRadius: computed.borderRadius,
-    background: computed.background,
-    backgroundColor: computed.backgroundColor,
-    backgroundImage: computed.backgroundImage,
-    fontSize: computed.fontSize,
-    fontWeight: computed.fontWeight,
-    lineHeight: computed.lineHeight,
-    marginBottom: computed.marginBottom,
-    borderBottom: computed.borderBottom,
-    color: computed.color
+    padding:
+      computed.padding,
+
+    margin:
+      computed.margin,
+
+    border:
+      computed.border,
+
+    borderRadius:
+      computed.borderRadius,
+
+    background:
+      computed.background,
+
+    backgroundColor:
+      computed.backgroundColor,
+
+    backgroundImage:
+      computed.backgroundImage,
+
+    fontSize:
+      computed.fontSize,
+
+    fontWeight:
+      computed.fontWeight,
+
+    lineHeight:
+      computed.lineHeight,
+
+    marginBottom:
+      computed.marginBottom,
+
+    borderBottom:
+      computed.borderBottom,
+
+    color:
+      computed.color,
+
+    width:
+      computed.width,
+
+    maxWidth:
+      computed.maxWidth
   };
 };
+
+const normalizeCssColor = (
+  value?: string
+) =>
+  (value || "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
+
+const isTransparentPaint = (
+  value?: string
+) => {
+  const normalized =
+    normalizeCssColor(
+      value
+    );
+
+  return (
+    !normalized ||
+    normalized === "transparent" ||
+    normalized === "none" ||
+    normalized === "rgba(0,0,0,0)"
+  );
+};
+
+const hasRealBackground = (
+  style: Record<string, any>
+) =>
+  !isTransparentPaint(
+    style.backgroundColor
+  ) ||
+  (
+    style.backgroundImage &&
+    style.backgroundImage !== "none"
+  ) ||
+  (
+    style.background &&
+    !isTransparentPaint(
+      style.background
+    ) &&
+    style.background !== "none"
+  );
+
+const findNearestPaintStyle = (
+  element?: HTMLElement | null
+) => {
+  let current =
+    element || null;
+
+  while (
+    current &&
+    current.tagName.toLowerCase() !== "html"
+  ) {
+    const style =
+      getDesktopStyle(
+        current
+      );
+
+    if (
+      hasRealBackground(
+        style
+      )
+    ) {
+      return style;
+    }
+
+    current =
+      current.parentElement;
+  }
+
+  return {};
+};
+
+const cleanListItemText = (
+  value: string
+) =>
+  value
+    .replace(
+      /^(\s*(→|â†’)\s*)+/,
+      ""
+    )
+    .trim();
 
 export const generateContentListPreset = (
   semanticResult: any
 ): Block => {
-
   const payload =
     semanticResult?.payload ||
     semanticResult;
 
   const sourceElement =
-    semanticResult?.claimedNode?.element as HTMLElement | undefined;
+    semanticResult?.claimedNode
+      ?.element as HTMLElement | undefined;
 
   const titleElement =
     sourceElement?.querySelector(
@@ -57,50 +173,65 @@ export const generateContentListPreset = (
         ) as HTMLElement[]
       : [];
 
-  console.log(
-    "CONTENT_LIST_SOURCE",
-    {
-      className:
-        sourceElement?.className,
-      tag:
-        sourceElement?.tagName
-    }
-  );
-
   const sourceStyle =
-    getDesktopStyle(sourceElement);
+    getDesktopStyle(
+      sourceElement
+    );
 
-  console.log(
-    "CONTENT_LIST_SECTION_STYLE",
-    sourceStyle
-  );
+  const paintStyle =
+    hasRealBackground(
+      sourceStyle
+    )
+      ? sourceStyle
+      : findNearestPaintStyle(
+          sourceElement
+        );
 
   const titleStyle =
-    getDesktopStyle(titleElement);
+    getDesktopStyle(
+      titleElement
+    );
 
   const descStyle =
-    getDesktopStyle(descElement);
+    getDesktopStyle(
+      descElement
+    );
 
   const firstItemStyle =
-    getDesktopStyle(listItems[0]);
-
-  console.log(
-    "CONTENT_LIST_TEXT_COLOR",
-    firstItemStyle
-  );
+    getDesktopStyle(
+      listItems[0]
+    );
 
   const items =
-    Array.isArray(payload.items)
+    Array.isArray(
+      payload.items
+    )
       ? payload.items
       : [];
 
   const id =
     crypto.randomUUID();
 
-  return {
-    id: `content-list-section-${id}`,
+  const titleColor =
+    titleStyle.color ||
+    paintStyle.color ||
+    sourceStyle.color ||
+    "#ffffff";
 
-    type: "section",
+  const descColor =
+    descStyle.color ||
+    titleColor;
+
+  const itemColor =
+    firstItemStyle.color ||
+    descColor;
+
+  return {
+    id:
+      `content-list-section-${id}`,
+
+    type:
+      "section",
 
     meta: {
       semanticType:
@@ -113,8 +244,10 @@ export const generateContentListPreset = (
       style: {
         desktop: {
           padding:
-            sourceStyle.padding ||
-            "48px 40px",
+            sourceStyle.padding &&
+            sourceStyle.padding !== "0px"
+              ? sourceStyle.padding
+              : "72px 40px",
 
           margin:
             sourceStyle.margin,
@@ -126,20 +259,56 @@ export const generateContentListPreset = (
             sourceStyle.border,
 
           background:
+            paintStyle.background ||
             sourceStyle.background,
 
           backgroundColor:
+            paintStyle.backgroundColor ||
             sourceStyle.backgroundColor,
 
           backgroundImage:
+            paintStyle.backgroundImage ||
             sourceStyle.backgroundImage,
 
-          color: "#0f172a"
+          color:
+            paintStyle.color ||
+            sourceStyle.color ||
+            titleColor,
+
+          width:
+            "100%",
+
+          maxWidth:
+            "100%",
+
+          boxSizing:
+            "border-box",
+
+          overflow:
+            "visible"
         },
 
-        tablet: {},
+        tablet: {
+          width:
+            "100%",
 
-        mobile: {}
+          maxWidth:
+            "100%",
+
+          boxSizing:
+            "border-box"
+        },
+
+        mobile: {
+          width:
+            "100%",
+
+          maxWidth:
+            "100%",
+
+          boxSizing:
+            "border-box"
+        }
       }
     },
 
@@ -156,16 +325,50 @@ export const generateContentListPreset = (
 
           style: {
             desktop: {
+              display:
+                "flex",
+
               flexDirection:
                 "column",
 
               gap:
-                "16px"
+                "16px",
+
+              width:
+                "100%",
+
+              maxWidth:
+                sourceStyle.maxWidth &&
+                sourceStyle.maxWidth !== "none" &&
+                sourceStyle.maxWidth !== "100%"
+                  ? sourceStyle.maxWidth
+                  : "1180px",
+
+              marginLeft:
+                "auto",
+
+              marginRight:
+                "auto",
+
+              boxSizing:
+                "border-box"
             },
 
-            tablet: {},
+            tablet: {
+              width:
+                "100%",
 
-            mobile: {}
+              maxWidth:
+                "100%"
+            },
+
+            mobile: {
+              width:
+                "100%",
+
+              maxWidth:
+                "100%"
+            }
           }
         },
 
@@ -181,14 +384,24 @@ export const generateContentListPreset = (
               props: {},
 
               style: {
-                desktop: {},
+                desktop: {
+                  width:
+                    "100%",
+
+                  maxWidth:
+                    "100%",
+
+                  boxSizing:
+                    "border-box"
+                },
+
                 tablet: {},
+
                 mobile: {}
               }
             },
 
             children: [
-
               {
                 id:
                   `content-list-title-${id}`,
@@ -205,18 +418,26 @@ export const generateContentListPreset = (
                   style: {
                     desktop: {
                       fontSize:
-                        titleStyle.fontSize,
+                        titleStyle.fontSize ||
+                        "32px",
 
                       fontWeight:
-                        titleStyle.fontWeight,
+                        titleStyle.fontWeight ||
+                        "700",
 
                       lineHeight:
-                        titleStyle.lineHeight,
+                        titleStyle.lineHeight ||
+                        "1.15",
+
+                      margin:
+                        "0",
 
                       marginBottom:
-                        titleStyle.marginBottom,
+                        titleStyle.marginBottom ||
+                        "8px",
 
-                      color: "#0f172a"
+                      color:
+                        titleColor
                     },
 
                     tablet: {},
@@ -246,18 +467,25 @@ export const generateContentListPreset = (
                         style: {
                           desktop: {
                             fontSize:
-                              descStyle.fontSize,
+                              descStyle.fontSize ||
+                              "16px",
 
                             fontWeight:
                               descStyle.fontWeight,
 
                             lineHeight:
-                              descStyle.lineHeight,
+                              descStyle.lineHeight ||
+                              "1.6",
+
+                            margin:
+                              "0",
 
                             marginBottom:
-                              descStyle.marginBottom,
+                              descStyle.marginBottom ||
+                              "32px",
 
-                            color: "#0f172a"
+                            color:
+                              descColor
                           },
 
                           tablet: {},
@@ -285,22 +513,28 @@ export const generateContentListPreset = (
                   data: {
                     props: {
                       content:
-                        `→ ${item}`
+                        `→ ${cleanListItemText(
+                          item
+                        )}`
                     },
 
                     style: {
                       desktop: {
                         fontSize:
-                          firstItemStyle.fontSize,
+                          firstItemStyle.fontSize ||
+                          "16px",
 
                         fontWeight:
-                          firstItemStyle.fontWeight,
+                          firstItemStyle.fontWeight ||
+                          "400",
 
                         lineHeight:
-                          firstItemStyle.lineHeight,
+                          firstItemStyle.lineHeight ||
+                          "1.7",
 
                         padding:
-                          firstItemStyle.padding,
+                          firstItemStyle.padding ||
+                          "14px 0",
 
                         borderBottom:
                           index ===
@@ -309,7 +543,10 @@ export const generateContentListPreset = (
                             : firstItemStyle.borderBottom,
 
                         color:
-                          firstItemStyle.color
+                          itemColor,
+
+                        margin:
+                          "0"
                       },
 
                       tablet: {},

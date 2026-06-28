@@ -15,6 +15,9 @@ import {
   extractTitleSegments
 } from "../runtime/importers/html/typography/extractTitleSegments";
 import {
+  resolveInheritedBackground
+} from "../runtime/importers/design/visualContext";
+import {
   filterCardStyle,
   filterHeroSectionStyle,
   filterTextStyle,
@@ -168,15 +171,18 @@ const filterHeroTitleStyle = (
     style
   ),
   ...Object.fromEntries(
-    [
-      "fontStyle",
-      "background",
-      "backgroundColor",
-      "backgroundImage",
-      "backgroundClip",
-      "WebkitBackgroundClip",
-      "WebkitTextFillColor"
-    ]
+   [
+  "fontStyle",
+  "whiteSpace",
+  "wordBreak",
+  "overflowWrap",
+  "background",
+  "backgroundColor",
+  "backgroundImage",
+  "backgroundClip",
+  "WebkitBackgroundClip",
+  "WebkitTextFillColor"
+]
       .filter(
         key =>
           style[key] !== undefined &&
@@ -366,7 +372,8 @@ const createTitleBlock = (
 const createFlexRow = (
   children: Block[],
   desktopStyle: Record<string, any>,
-  itemDesktopStyle: Record<string, any> = {}
+  itemDesktopStyle: Record<string, any> = {},
+  semanticRole?: string
 ): Block | null => {
   if (!children.length) {
     return null;
@@ -375,7 +382,9 @@ const createFlexRow = (
     id: uuidv4(),
     type: "flex" as const,
     data: {
-      props: {},
+      props: semanticRole
+        ? { semanticRole }
+        : {},
       style: {
         desktop: {
           display: "flex",
@@ -1068,93 +1077,6 @@ const createKpiBlock = (
   ]
 });
 
-const getComputedHeroStyle = (
-  element?: HTMLElement | null
-) => {
-  if (!element) {
-    return null;
-  }
-
-  const computed =
-    (
-      element.ownerDocument.defaultView ||
-      window
-    ).getComputedStyle(element);
-
-  return {
-    tag:
-      element.tagName,
-    className:
-      element.getAttribute("class") || "",
-    display:
-      computed.display,
-    flexDirection:
-      computed.flexDirection,
-    flexWrap:
-      computed.flexWrap,
-    gap:
-      computed.gap,
-    alignItems:
-      computed.alignItems,
-    justifyContent:
-      computed.justifyContent,
-    background:
-      computed.background,
-    backgroundColor:
-      computed.backgroundColor,
-    backgroundImage:
-      computed.backgroundImage,
-    color:
-      computed.color,
-    padding:
-      computed.padding,
-    fontSize:
-      computed.fontSize,
-    fontWeight:
-      computed.fontWeight,
-    lineHeight:
-      computed.lineHeight,
-    width:
-      computed.width,
-    maxWidth:
-      computed.maxWidth
-  };
-};
-
-const summarizeHeroBlockTree = (
-  block: Block,
-  depth = 0
-): any => ({
-  type:
-    block.type,
-  semanticType:
-    block.meta?.semanticType,
-  role:
-    block.data?.props?.semanticRole,
-  text:
-    block.type === "title" ||
-    block.type === "text" ||
-    block.type === "button" ||
-    block.type === "link"
-      ? block.data?.props?.content ||
-        block.data?.props?.label ||
-        ""
-      : undefined,
-  style:
-    block.data?.style?.desktop ||
-    block.data?.style ||
-    {},
-  children:
-    depth >= 4
-      ? []
-      : (block.children || []).map(child =>
-          summarizeHeroBlockTree(
-            child,
-            depth + 1
-          )
-        )
-});
-
 export const generateHeroPreset = (
   payload?: HeroPayload & {
 
@@ -1193,31 +1115,41 @@ export const generateHeroPreset = (
         )
       : undefined;
 
+  // The generic style sanitizer intentionally normalizes large typography.
+  // A hero display heading is the exception: keep its real computed scale.
+  const titleComputedStyle =
+    titleElement
+      ? (
+          titleElement.ownerDocument.defaultView ||
+          window
+        ).getComputedStyle(
+          titleElement
+        )
+      : null;
+
+  const heroTitleScaleSource = {
+    desktop: {
+      ...desktopOf(
+        titleStyle
+      ),
+      ...(titleComputedStyle
+        ? {
+            fontSize:
+              titleComputedStyle.fontSize,
+            lineHeight:
+              titleComputedStyle.lineHeight,
+            fontWeight:
+              titleComputedStyle.fontWeight
+          }
+        : {})
+    }
+  };
+
   const subtitleStyle =
     subtitleElement
       ? extractTypographyStyles(
           subtitleElement
         )
-      : undefined;
-
-  const ctaStyle =
-    ctaElement
-      ? {
-          desktop: {
-            ...desktopOf(
-              extractLayoutStyles(
-                ctaElement
-              )
-            ),
-            ...desktopOf(
-              extractTypographyStyles(
-                ctaElement
-              )
-            )
-          },
-          tablet: {},
-          mobile: {}
-        }
       : undefined;
 
   const eyebrowElement =
@@ -1261,12 +1193,6 @@ export const generateHeroPreset = (
           element:
             undefined as HTMLElement | undefined
         }));
-
-  const actionLabels =
-    actionItems.map(
-      item => item.label
-    );
-
   const titleContent =
     extractHeroTitleText(
       titleElement,
@@ -1276,12 +1202,6 @@ export const generateHeroPreset = (
         ) ||
         "Hero Headline"
     );
-
-  const titleLines =
-    extractHeroTitleLines(
-      titleElement
-    );
-
   const kpiContainer =
     claimedElement?.querySelector(
       ".kpi-bar, [class*='kpi-bar'], .metrics, .stats"
@@ -1324,148 +1244,6 @@ export const generateHeroPreset = (
         )
     );
 
-  console.log(
-    "HERO KPI SOURCE",
-    kpiItems.map(
-      (
-        item,
-        index
-      ) => ({
-        index,
-        sourceTag:
-          kpiElements[index]?.tagName || "",
-        sourceClassName:
-          kpiElements[index]?.getAttribute(
-            "class"
-          ) || "",
-        originalDomNode:
-          kpiElements[index]
-            ? {
-                tag:
-                  kpiElements[index].tagName,
-                className:
-                  kpiElements[index].getAttribute(
-                    "class"
-                  ) || "",
-                textContent:
-                  textOf(
-                    kpiElements[index]
-                  ),
-                innerHTML:
-                  kpiElements[index].innerHTML
-                    .slice(0, 1200),
-                dataValue:
-                  kpiElements[index].getAttribute(
-                    "data-value"
-                  ),
-                dataCount:
-                  kpiElements[index].getAttribute(
-                    "data-count"
-                  ),
-                dataTarget:
-                  kpiElements[index].getAttribute(
-                    "data-target"
-                  ),
-                ariaLabel:
-                  kpiElements[index].getAttribute(
-                    "aria-label"
-                  )
-              }
-            : null,
-        rawOuterHTML:
-          kpiElements[index]?.outerHTML
-            ?.slice(0, 1200) || "",
-        rawText:
-          kpiTexts[index] || "",
-        numberText:
-          item.number,
-        labelText:
-          item.label,
-        numberNode:
-          item.numberElement
-            ? {
-                tag:
-                  item.numberElement.tagName,
-                className:
-                  item.numberElement.getAttribute(
-                    "class"
-                  ) || "",
-                textContent:
-                  textOf(
-                    item.numberElement
-                  ),
-                innerHTML:
-                  item.numberElement.innerHTML
-                    .slice(0, 600),
-                dataValue:
-                  item.numberElement.getAttribute(
-                    "data-value"
-                  ),
-                dataCount:
-                  item.numberElement.getAttribute(
-                    "data-count"
-                  ),
-                dataTarget:
-                  item.numberElement.getAttribute(
-                    "data-target"
-                  ),
-                ariaLabel:
-                  item.numberElement.getAttribute(
-                    "aria-label"
-                  ),
-                outerHTML:
-                  item.numberElement.outerHTML
-                    .slice(0, 600)
-              }
-            : null,
-        labelNode:
-          item.labelElement
-            ? {
-                tag:
-                  item.labelElement.tagName,
-                className:
-                  item.labelElement.getAttribute(
-                    "class"
-                  ) || "",
-                textContent:
-                  textOf(
-                    item.labelElement
-                  ),
-                innerHTML:
-                  item.labelElement.innerHTML
-                    .slice(0, 600),
-                dataValue:
-                  item.labelElement.getAttribute(
-                    "data-value"
-                  ),
-                dataCount:
-                  item.labelElement.getAttribute(
-                    "data-count"
-                  ),
-                dataTarget:
-                  item.labelElement.getAttribute(
-                    "data-target"
-                  ),
-                ariaLabel:
-                  item.labelElement.getAttribute(
-                    "aria-label"
-                  ),
-                outerHTML:
-                  item.labelElement.outerHTML
-                    .slice(0, 600)
-              }
-            : null,
-        numberSelectorText:
-          textOf(
-            item.numberElement
-          ),
-        labelSelectorText:
-          textOf(
-            item.labelElement
-          )
-      })
-    )
-  );
 
   const partnersRowElement =
     claimedElement?.querySelector(
@@ -1494,29 +1272,6 @@ export const generateHeroPreset = (
           )
         : payload?.partnerItems || []
     );
-
-  console.log(
-    "HERO PARTNER SOURCE",
-    fallbackPartnerElements.map(
-      (
-        element,
-        index
-      ) => ({
-        index,
-        tag:
-          element.tagName,
-        className:
-          element.getAttribute(
-            "class"
-          ) || "",
-        textContent:
-          textOf(
-            element
-          )
-      })
-    )
-  );
-
   const eyebrowBlock =
     textOf(
       eyebrowElement
@@ -1537,21 +1292,24 @@ export const generateHeroPreset = (
         )
       : null;
 
-  const titleBaseStyle =
-    mergePresetDesktopStyle(
-      {
-        width: "100%",
-        maxWidth: "980px",
-        textAlign: "left"
-      },
-      titleStyle,
-      filterHeroTitleStyle
-    );
+const titleBaseStyle =
+  mergePresetDesktopStyle(
+    {
+      width: "max-content",
+      maxWidth: "none",
+      textAlign: "left",
+      whiteSpace: "nowrap",
+      wordBreak: "keep-all",
+      overflowWrap: "normal"
+    },
+    titleStyle,
+    filterHeroTitleStyle
+  );
 
   const scaledTitleBaseStyle =
     applyHeroTitleScale(
       titleBaseStyle,
-      titleStyle
+      heroTitleScaleSource
     );
 
   const originalHeroTitlePx =
@@ -1566,31 +1324,6 @@ export const generateHeroPreset = (
       titleBaseStyle.desktop?.fontSize
     );
 
-  console.log(
-    "HERO_TITLE_SCALE_APPLIED",
-    {
-      originalFontSize:
-        desktopOf(
-          titleStyle
-        ).fontSize,
-      emittedBefore:
-        titleBaseStyle.desktop?.fontSize,
-      emittedAfter:
-        scaledTitleBaseStyle.desktop?.fontSize,
-      ratioBefore:
-        originalHeroTitlePx &&
-        emittedHeroTitleBeforePx
-          ? Number(
-              (
-                emittedHeroTitleBeforePx /
-                originalHeroTitlePx
-              ).toFixed(
-                3
-              )
-            )
-          : null
-    }
-  );
 
   const titleLineEntries =
     extractHeroTitleLineEntries(
@@ -1632,7 +1365,7 @@ export const generateHeroPreset = (
                 },
                 filterHeroTitleStyle
               ),
-              titleStyle
+              heroTitleScaleSource
             )
           : scaledTitleBaseStyle,
         extractTitleSegments(
@@ -1736,7 +1469,8 @@ export const generateHeroPreset = (
         flex: "0 0 auto",
         flexGrow: 0,
         flexShrink: 0
-      }
+      },
+      "heroActions"
     );
 
   const kpiRow =
@@ -1776,21 +1510,9 @@ export const generateHeroPreset = (
         flexBasis: "0",
         width: "auto",
         minWidth: "0"
-      }
+      },
+      "kpiRow"
     );
-
-  console.log(
-    "KPI ROW CHILDREN COUNT",
-    kpiRow?.children?.length,
-    kpiRow?.children?.map(c => ({
-      type:
-        c.type,
-      childCount:
-        c.children?.length,
-      firstChildText:
-        c.children?.[0]?.children?.[0]?.data?.props?.content
-    }))
-  );
 
   const partnersRow =
     createFlexRow(
@@ -1822,7 +1544,8 @@ export const generateHeroPreset = (
         width: "auto",
         maxWidth: "none",
         flex: "0 1 auto"
-      }
+      },
+      "partnersRow"
     );
 
   const contentChildren =
@@ -1837,27 +1560,6 @@ export const generateHeroPreset = (
       (block): block is Block =>
         !!block
     );
-
-  console.log(
-    "HERO_PRESET_COMPLETENESS",
-    {
-      hasEyebrow:
-        !!eyebrowBlock,
-      actionCount:
-        actionLabels.length,
-      kpiCount:
-        kpiItems.length,
-      partnerCount:
-        partnerItems.length,
-      titleLineCount:
-        titleBlocks.length,
-      childTypes:
-        contentChildren.map(
-          child => child.type
-        )
-    }
-  );
-
   const mergedHeroSectionStyle =
     mergePresetDesktopStyle(
       {
@@ -1869,6 +1571,46 @@ export const generateHeroPreset = (
       sectionStyle,
       filterHeroSectionStyle
     );
+
+  const inheritedBackground =
+    resolveInheritedBackground(
+      claimedElement
+    );
+
+  const emittedHeroBackground =
+    mergedHeroSectionStyle.desktop?.background ||
+    mergedHeroSectionStyle.desktop?.backgroundImage ||
+    mergedHeroSectionStyle.desktop?.backgroundColor;
+
+  const hasLocalHeroBackground =
+    !!emittedHeroBackground &&
+    ![
+      "transparent",
+      "none",
+      "rgba(0, 0, 0, 0)",
+      "rgba(0,0,0,0)"
+    ].includes(
+      String(
+        emittedHeroBackground
+      ).trim().toLowerCase()
+    );
+
+  const finalHeroSectionStyle = {
+    ...mergedHeroSectionStyle,
+    desktop: {
+      ...mergedHeroSectionStyle.desktop,
+      ...(!hasLocalHeroBackground && inheritedBackground
+        ? {
+            background:
+              inheritedBackground.background,
+            backgroundColor:
+              inheritedBackground.backgroundColor,
+            backgroundImage:
+              inheritedBackground.backgroundImage
+          }
+        : {})
+    }
+  };
 
   const heroBlock: Block = {
 
@@ -1891,7 +1633,7 @@ export const generateHeroPreset = (
 
       style: {
 
-        ...mergedHeroSectionStyle
+        ...finalHeroSectionStyle
       }
     },
 
@@ -2157,49 +1899,5 @@ justifyContent:
       }
     ]
   };
-
-  console.log(
-    "HERO_VISUAL_STYLE_REPORT",
-    {
-      section:
-        getComputedHeroStyle(
-          claimedElement
-        ),
-      titleNodes:
-        [
-          titleElement,
-          ...titleLineEntries
-            .map(entry => entry.element)
-            .filter(
-              (
-                element
-              ): element is HTMLElement =>
-                !!element &&
-                element !== titleElement
-            )
-        ].map(
-          getComputedHeroStyle
-        ),
-      ctaRow:
-        getComputedHeroStyle(
-          actionElements[0]?.parentElement ||
-          ctaElement?.parentElement ||
-          null
-        ),
-      kpiBar:
-        {
-          ...getComputedHeroStyle(
-            kpiContainer
-          ),
-          itemCount:
-            kpiItems.length
-        },
-      emittedHeroTree:
-        summarizeHeroBlockTree(
-          heroBlock
-        )
-    }
-  );
-
   return heroBlock;
 }

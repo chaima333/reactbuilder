@@ -1,11 +1,10 @@
-import { CSSProperties } from "@mui/material/styles/createTypography";
+import type {
+  CSSProperties
+} from "react";
+
 import {
   useResolvedStyle
 } from "../../../../core/theme/useResolvedStyle";
-
-import {
-  useRuntime
-} from "../../../../runtime/context/RuntimeProvider";
 
 type Device =
   | "desktop"
@@ -16,109 +15,98 @@ export const TextBlock = ({
   data,
   device
 }: any) => {
+  const currentDevice =
+    (
+      device ||
+      "desktop"
+    ) as Device;
 
-  // =====================================
-  // RUNTIME
-  // =====================================
+  const resolvedStyle =
+    useResolvedStyle(
+      data?.style,
+      currentDevice
+    ) as CSSProperties;
 
-  const context =
-    useRuntime();
+  const content =
+    data?.props?.text ||
+    data?.props?.content ||
+    "";
 
-  // =====================================
-  // RESPONSIVE STYLE
-  // =====================================
+  const isKpiNumber =
+    data?.props?.semanticRole ===
+    "kpiNumber";
 
-const currentDevice =
+  const kpiFontSize =
+    currentDevice === "mobile"
+      ? "34px"
+      : currentDevice === "tablet"
+        ? "40px"
+        : "48px";
 
-  (
-    device ||
-    "desktop"
-  ) as Device;
+  const finalStyle: CSSProperties = {
+    ...resolvedStyle,
 
+    fontSize:
+      isKpiNumber
+        ? kpiFontSize
+        : resolvedStyle.fontSize,
 
-const resolvedStyle =
+    width:
+      isKpiNumber
+        ? "auto"
+        : resolvedStyle.width || "100%",
 
-useResolvedStyle(
-  data?.style,
-  currentDevice
-);
-  // =====================================
-  // DEBUG
-  // =====================================
+    maxWidth:
+      isKpiNumber
+        ? "none"
+        : resolvedStyle.maxWidth || "100%",
 
-  if (
-    context.mode ===
-    "editor"
-  ) {
+    minWidth:
+      isKpiNumber
+        ? "auto"
+        : resolvedStyle.minWidth ?? 0,
 
-    console.log(
-      "🔥 TEXT BLOCK",
-      {
-        props:
-          data?.props,
+    height:
+      resolvedStyle.height || "auto",
 
-        style:
-          resolvedStyle
-      }
-    );
+    overflow:
+      resolvedStyle.overflow || "visible",
 
-    console.log(
-      "🔥 FINAL TEXT STYLE",
-      resolvedStyle
-    );
-  }
+    overflowWrap:
+      isKpiNumber
+        ? "normal"
+        : resolvedStyle.overflowWrap || "break-word",
 
-  // =====================================
-  // CONTENT
-  // =====================================
-const content =
+    wordBreak:
+      isKpiNumber
+        ? "keep-all"
+        : resolvedStyle.wordBreak || "normal",
 
-  data?.props?.text ||
+    whiteSpace:
+      isKpiNumber
+        ? "nowrap"
+        : resolvedStyle.whiteSpace || "normal",
 
-  data?.props?.content ||
+    hyphens:
+      resolvedStyle.hyphens || "none",
 
-  "";
+    lineHeight:
+      isKpiNumber
+        ? "1"
+        : resolvedStyle.lineHeight || "1.55",
 
-const finalStyle: CSSProperties = {
-  ...resolvedStyle,
+    boxSizing:
+      resolvedStyle.boxSizing || "border-box",
 
-  width:
-    resolvedStyle.width || "100%",
-
-  maxWidth:
-    resolvedStyle.maxWidth || "100%",
-
-  minWidth: 0,
-
-  height: "auto",
-
-  overflowWrap: "break-word",
-
-  wordBreak: "normal",
-
-  whiteSpace: "normal",
-
-  lineHeight:
-    resolvedStyle.lineHeight || "1.55",
-
-  boxSizing: "border-box",
-
-  cursor:
-    resolvedStyle.cursor
-};
-
-  // =====================================
-  // RENDER
-  // =====================================
+    cursor:
+      resolvedStyle.cursor
+  };
 
   return (
-
-  <div
-    style={finalStyle}
-  >
-
-    {content}
-
-  </div>
-);
+    <div
+      style={finalStyle}
+    >
+      {content}
+    </div>
+  );
 };

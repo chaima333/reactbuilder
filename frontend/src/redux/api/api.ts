@@ -17,12 +17,13 @@ export const api = createApi({
     'PendingUsers',
     'Activity',
     "AdminStats",
-"Plugins",
-"ActivityLogs",
+    "Plugins",
+    "ActivityLogs",
     "AdminSettings",
     "PlatformSettings",
-   "Notifications",
+    "Notifications",
      "Dashboard",
+     "SiteMembers"
 
 
     ],

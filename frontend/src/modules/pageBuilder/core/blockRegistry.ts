@@ -42,6 +42,8 @@ import {
   footerDefinition
 } from "../components/blocks/layout/footer";
 
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+
 // =========================
 // PRIMITIVES
 // =========================
@@ -188,6 +190,13 @@ features: emptySemanticDefinition(
   "Features Section",
   React.createElement(
   GridViewIcon 
+  )
+),
+faq: emptySemanticDefinition(
+  "faq",
+  "FAQ Section",
+  React.createElement(
+    HelpOutlineIcon
   )
 )
 };

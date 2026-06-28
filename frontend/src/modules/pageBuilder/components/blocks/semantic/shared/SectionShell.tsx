@@ -72,11 +72,13 @@ export const SectionShell = ({
 
 
 
- background:
-  undefined,
+background:
+  resolved.background,
 
 backgroundColor:
-  resolved.backgroundColor || "transparent",
+  resolved.background
+    ? undefined
+    : resolved.backgroundColor || "transparent",
 
 backgroundImage:
   resolved.backgroundImage,

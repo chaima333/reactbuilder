@@ -15,7 +15,7 @@ export type MarketplacePlugin = {
   priority: number;
   events: string[];
   permissions: string[];
-
+  mode?: "sync" | "async";
   installed: boolean;
   enabled: boolean;
   installedVersion?: string | null;

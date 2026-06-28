@@ -62,6 +62,7 @@ import { FigmaImportBridge } from "./modules/pageBuilder/pages/figma/FigmaImport
 import AdminPlugins from "./modules/admin/pages/AdminPlugins";
 import AdminAIAnalytics from "./modules/admin/pages/ai-analytics";
 import SitePluginMarketplacePage from "./modules/pageBuilder/plugins/SitePluginMarketplacePage";
+import AcceptInvitationPage from "./modules/sites/pages/AcceptInvitationPage";
 
 
 // ======================================================
@@ -148,10 +149,17 @@ const Media = lazy(
   () => import("./modules/media/pages/MediaPage")
 );
 
+const SiteMembersPage = lazy(
+  () => import("./modules/sites/pages/SiteMembersPage")
+);
+
 // ======================================================
 
-const GOOGLE_CLIENT_ID = "xxx";
-
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+console.log(
+  "GOOGLE_CLIENT_ID_USED:",
+  GOOGLE_CLIENT_ID
+);
 // ======================================================
 // ROUTE GUARDS
 // ======================================================
@@ -362,6 +370,14 @@ const AppContent: React.FC = () => {
   element={<AdminAIAnalytics />}
 />
                     </Route>
+                    <Route
+  path="/sites/:siteId/members"
+  element={<SiteMembersPage />}
+/>
+<Route
+  path="/invitations/accept"
+  element={<AcceptInvitationPage />}
+/>
 
                   </Route>
 

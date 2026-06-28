@@ -7,7 +7,6 @@ import {
 import {
   applySectionTitleScale,
   filterCardStyle,
-  filterSectionStyle,
   filterTextStyle,
   mergePresetDesktopStyle
 } from "./styleFilters";
@@ -198,7 +197,63 @@ const shouldUseDarkFallback = (
     )
   );
 };
+const getFeatureSectionPaintStyle = (
+  element?: HTMLElement
+): Record<string, any> => {
+  if (!element) {
+    return {};
+  }
 
+  const win =
+    element.ownerDocument.defaultView ||
+    window;
+
+  let current: HTMLElement | null =
+    element;
+
+  while (
+    current &&
+    current !== element.ownerDocument.body
+  ) {
+    const computed =
+      win.getComputedStyle(
+        current
+      );
+
+    const style = {
+      background:
+        computed.background,
+      backgroundColor:
+        computed.backgroundColor,
+      backgroundImage:
+        computed.backgroundImage,
+      color:
+        computed.color
+    };
+
+    if (
+      hasMeaningfulBackground(
+        style
+      ) ||
+      classSuggestsDark(
+        current
+      )
+    ) {
+      return {
+        ...style,
+        width:
+          "100%",
+        boxSizing:
+          "border-box"
+      };
+    }
+
+    current =
+      current.parentElement;
+  }
+
+  return {};
+};
 const findContainerElement = (
   claimedElement?: HTMLElement,
   sourceElement?: HTMLElement
@@ -248,38 +303,6 @@ const createContainerStyle = (
     }
   };
 };
-
-const summarizeBlockTree = (
-  block: Block | null,
-  depth = 0
-): any => {
-  if (!block || depth > 4) {
-    return null;
-  }
-
-  return {
-    type:
-      block.type,
-    content:
-      block.data?.props?.content ||
-      block.data?.props?.label ||
-      block.data?.props?.title ||
-      "",
-    semanticRole:
-      block.data?.props?.semanticRole,
-    childCount:
-      block.children?.length || 0,
-    children:
-      (block.children || []).map(
-        child =>
-          summarizeBlockTree(
-            child as Block,
-            depth + 1
-          )
-      )
-  };
-};
-
 const getFeatureCardElements = (
   element?: HTMLElement
 ) => {
@@ -895,27 +918,6 @@ const createFeatureItem = (
     getChipElements(
       cardElement
     );
-
-  const extractedTags =
-    tagElements
-      .map(element => ({
-        tag:
-          element.tagName,
-        className:
-          element.getAttribute("class") || "",
-        directText:
-          getDirectText(element),
-        textContent:
-          getText(element),
-        outerHTML:
-          element.outerHTML.slice(0, 600)
-      }))
-      .filter(
-        entry =>
-          entry.directText ||
-          entry.textContent
-      );
-
   const chipList =
     createChipList(
       tagElements
@@ -935,17 +937,37 @@ const createFeatureItem = (
     );
 
 const fallbackCardStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "12px",
-  height: "100%"
+  display:
+    "flex",
+
+  flexDirection:
+    "column",
+
+  gap:
+    "12px",
+
+  height:
+    "100%",
+
+  ...(useDarkCardFallback
+    ? {
+        backgroundColor:
+          "rgba(8, 28, 48, 0.92)",
+
+        border:
+          "1px solid rgba(96, 165, 250, 0.22)",
+
+        borderRadius:
+          "12px",
+
+        padding:
+          "22px",
+
+        color:
+          "#eaf4ff"
+      }
+    : {})
 };
-
-  const filteredCardStyle =
-    filterCardStyle(
-      extractedCardStyle?.desktop || {}
-    );
-
   const emittedCardStyle =
     mergePresetDesktopStyle(
       fallbackCardStyle,
@@ -1096,24 +1118,29 @@ export const generateFeaturePillarsPreset = (
     getFeatureCardElements(
       cardSourceElement
     );
-  items.forEach(
-    (
-      item,
-      index
-    ) => {
-      const cardElement =
-        cardElements[index];
-
-    }
-  );
-
+ 
   const sectionStyle =
+  claimedElement
+    ? extractLayoutStyles(
+        claimedElement
+      )
+    : undefined;
+const sectionPaintStyle =
+  getFeatureSectionPaintStyle(
     claimedElement
-      ? extractLayoutStyles(
-          claimedElement
-        )
-      : undefined;
-
+  );
+console.log(
+  "🔥 FEATURE_PILLARS_PRESET_USED",
+  {
+    items:
+      items.length,
+    claimedClass:
+      claimedElement?.className,
+    sourceClass:
+      cardSourceElement?.className,
+    sectionPaintStyle
+  }
+);
   const featureCards =
     items.map(
       (
@@ -1198,13 +1225,34 @@ const contentChildren =
     data: {
       props: {},
 style: {
-  desktop: {
-    ...(sectionStyle?.desktop || {}),
-    overflow: "visible"
+ desktop: {
+  ...(sectionStyle?.desktop || {}),
+  ...sectionPaintStyle,
+
+    paddingTop:
+      sectionStyle?.desktop?.paddingTop ||
+      "80px",
+
+    paddingBottom:
+      sectionStyle?.desktop?.paddingBottom ||
+      "80px",
+
+    paddingLeft:
+      sectionStyle?.desktop?.paddingLeft ||
+      "24px",
+
+    paddingRight:
+      sectionStyle?.desktop?.paddingRight ||
+      "24px",
+
+    overflow:
+      "visible"
   },
+
   tablet: {
     ...(sectionStyle?.tablet || {})
   },
+
   mobile: {
     ...(sectionStyle?.mobile || {})
   }

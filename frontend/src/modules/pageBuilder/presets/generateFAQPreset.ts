@@ -22,14 +22,21 @@ const titleBlock = (
       text,
       content: text
     },
-    style: responsive({
-      fontSize: "40px",
-      fontWeight: 800,
-      textAlign: "center",
-      color: "#111827",
-      marginBottom: "16px",
-      ...style
-    })
+    style: responsive(
+      {
+        fontSize: "40px",
+        fontWeight: 800,
+        textAlign: "center",
+        color: "#111827",
+        marginBottom: "12px",
+        ...style
+      },
+      {},
+      {
+        fontSize: "30px",
+        lineHeight: "1.2"
+      }
+    )
   },
   children: []
 });
@@ -45,70 +52,95 @@ const textBlock = (
       text,
       content: text
     },
+    style: responsive(
+      {
+        fontSize: "17px",
+        lineHeight: "1.7",
+        color: "#475569",
+        textAlign: "center",
+        marginBottom: "0",
+        ...style
+      },
+      {},
+      {
+        fontSize: "15px"
+      }
+    )
+  },
+  children: []
+});
+
+const flexItem = (
+  children: any[],
+  style: Record<string, any> = {}
+) => ({
+  id: makeId("faq-flex-item"),
+  type: "flexItem",
+  data: {
+    props: {},
     style: responsive({
-      fontSize: "18px",
-      lineHeight: "1.7",
-      color: "#475569",
-      textAlign: "center",
+      width: "100%",
       ...style
     })
   },
-  children: []
+  children
 });
 
 const faqItem = (
   question: string,
   answer: string
 ) => ({
-  id: makeId("faq-item"),
-  type: "flex",
+  id: makeId("faq-grid-item"),
+  type: "gridItem",
   data: {
     props: {},
     style: responsive({
-      display: "flex",
-      flexDirection: "column",
-      gap: "10px",
-      padding: "24px",
-      borderRadius: "18px",
-      backgroundColor: "#ffffff",
-      border: "1px solid #e5e7eb",
-      boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)"
+      minWidth: "0"
     })
   },
   children: [
     {
-      id: makeId("faq-question"),
-      type: "title",
+      id: makeId("faq-card"),
+      type: "flex",
       data: {
-        props: {
-          text: question,
-          content: question
-        },
-        style: responsive({
-          fontSize: "20px",
-          fontWeight: 700,
-          color: "#111827",
-          margin: 0
-        })
+        props: {},
+        style: responsive(
+          {
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px",
+            minHeight: "190px",
+            padding: "26px",
+            borderRadius: "16px",
+            backgroundColor: "#ffffff",
+            border: "1px solid #e5e7eb",
+            boxShadow: "0 12px 28px rgba(15, 23, 42, 0.07)"
+          },
+          {},
+          {
+            padding: "22px",
+            minHeight: "auto"
+          }
+        )
       },
-      children: []
-    },
-    {
-      id: makeId("faq-answer"),
-      type: "text",
-      data: {
-        props: {
-          text: answer,
-          content: answer
-        },
-        style: responsive({
-          fontSize: "16px",
-          lineHeight: "1.7",
-          color: "#64748b",
-          margin: 0
-        })
-      },
-      children: []
+      children: [
+        flexItem([
+          titleBlock(question, {
+            fontSize: "20px",
+            fontWeight: 800,
+            textAlign: "left",
+            color: "#0f172a",
+            marginBottom: "0"
+          })
+        ]),
+        flexItem([
+          textBlock(answer, {
+            fontSize: "15px",
+            textAlign: "left",
+            color: "#64748b"
+          })
+        ])
+      ]
     }
   ]
 });
@@ -116,17 +148,31 @@ const faqItem = (
 export const generateFAQPreset = () => ({
   id: makeId("faq-section"),
   type: "section",
+  meta: {
+    semanticType: "FAQ_SECTION",
+    displayName: "FAQ Section"
+  },
   data: {
     props: {},
     meta: {
       semanticType: "FAQ_SECTION"
     },
-    style: responsive({
-      width: "100%",
-      padding: "90px 40px",
-      backgroundColor: "#f8fafc",
-      boxSizing: "border-box"
-    })
+    style: responsive(
+      {
+        width: "100%",
+        padding: "88px 40px",
+        backgroundColor: "#f8fafc",
+        boxSizing: "border-box",
+        display: "flex",
+        justifyContent: "center"
+      },
+      {
+        padding: "72px 28px"
+      },
+      {
+        padding: "56px 18px"
+      }
+    )
   },
   children: [
     {
@@ -135,30 +181,82 @@ export const generateFAQPreset = () => ({
       data: {
         props: {},
         style: responsive({
-          maxWidth: "980px",
+          width: "100%",
+          maxWidth: "1080px",
           margin: "0 auto",
           display: "flex",
           flexDirection: "column",
-          gap: "28px"
+          alignItems: "center",
+          gap: "34px",
         })
       },
       children: [
-        titleBlock("Frequently Asked Questions"),
-        textBlock(
-          "Find clear answers to the most common questions about our services."
+        flexItem(
+          [
+            titleBlock("Frequently Asked Questions"),
+            textBlock(
+              "Quick answers to help visitors understand your services, process, and next steps.",
+              {
+                maxWidth: "680px",
+                marginLeft: "auto",
+                marginRight: "auto"
+              }
+            )
+          ],
+          {
+            maxWidth: "760px",
+            margin: "0 auto"
+          }
         ),
+        flexItem(
+  [
+    {
+      id: makeId("faq-grid"),
+      type: "grid",
+      data: {
+        props: {},
+        style: responsive(
+          {
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: "22px",
+            width: "100%"
+          },
+          {
+            gridTemplateColumns: "1fr"
+          },
+          {
+            gridTemplateColumns: "1fr",
+            gap: "16px"
+          }
+        )
+      },
+      children: [
         faqItem(
           "How can I get started?",
-          "You can contact our team and we will guide you through the first steps."
+          "Reach out with your goals and we will guide you through the first steps."
         ),
         faqItem(
           "Can I customize this section?",
-          "Yes, every question, answer, color, spacing and layout can be edited in the builder."
+          "Yes. Every question, answer, color, spacing, and layout can be edited in the builder."
         ),
         faqItem(
           "Is this section responsive?",
-          "Yes, it is designed to work across desktop, tablet and mobile devices."
+          "Yes. The layout adapts cleanly across desktop, tablet, and mobile screens."
+        ),
+        faqItem(
+          "Can I add more questions?",
+          "Yes. Duplicate an item or add new editable blocks to expand the FAQ."
         )
+      ]
+    }
+  ],
+  {
+    width: "100%",
+    maxWidth: "1180px",
+    margin: "0 auto"
+  }
+)
       ]
     }
   ]

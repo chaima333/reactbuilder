@@ -2465,7 +2465,92 @@ const emitFallbackStructuredContainer = (
 // =====================================================
 // FALLBACK COMPILER
 // =====================================================
+const makeShortInlineTextSafe = (
+  style: Record<string, any> = {}
+) => ({
+  ...style,
 
+  desktop: {
+    ...(style.desktop || {}),
+
+    display:
+      "inline-flex",
+
+    width:
+      "max-content",
+
+    minWidth:
+      "max-content",
+
+    maxWidth:
+      "none",
+
+    flexShrink:
+      0,
+
+    alignSelf:
+      "flex-start",
+
+    whiteSpace:
+      "nowrap",
+
+    wordBreak:
+      "keep-all",
+
+    overflowWrap:
+      "normal",
+
+    hyphens:
+      "none",
+
+    overflow:
+      "visible"
+  },
+
+  tablet: {
+    ...(style.tablet || {}),
+
+    width:
+      "max-content",
+
+    minWidth:
+      "max-content",
+
+    whiteSpace:
+      "nowrap",
+
+    wordBreak:
+      "keep-all",
+
+    overflowWrap:
+      "normal",
+
+    hyphens:
+      "none"
+  },
+
+  mobile: {
+    ...(style.mobile || {}),
+
+    width:
+      "max-content",
+
+    minWidth:
+      "max-content",
+
+    whiteSpace:
+      "nowrap",
+
+    wordBreak:
+      "keep-all",
+
+    overflowWrap:
+      "normal",
+
+    hyphens:
+      "none"
+  }
+});
 function fallbackCompileElement(
   element: HTMLElement,
   path: (string | number)[],
@@ -2600,34 +2685,43 @@ if (
     );
 
   const computedSection =
-    extractComputedStyles(element);
+  extractComputedStyles(element);
 
-  const sectionStyle =
-    sanitizeSectionLayoutStyle(
-      sectionId,
-      extractLayoutStyles(element)
-    );
+const shouldInheritSectionPaint =
+  tagName === "section" &&
+  !hasRealPaint(
+    computedSection
+  );
+
+const sectionPaintSource =
+  shouldInheritSectionPaint
+    ? resolvePaintSource(
+        element,
+        computedSection
+      )
+    : computedSection;
+
+const sectionStyle =
+  sanitizeSectionLayoutStyle(
+    sectionId,
+    extractLayoutStyles(element)
+  );
 
   sectionStyle.desktop = {
     ...(sectionStyle.desktop || {}),
 
-    background:
-      computedSection.background &&
-      computedSection.background !== "rgba(0, 0, 0, 0)" &&
-      computedSection.background !== "transparent"
-        ? computedSection.background
-        : sectionStyle.desktop?.background,
+  background:
+  sectionPaintSource?.background ||
+  sectionStyle.desktop?.background,
 
-    backgroundColor:
-      computedSection.backgroundColor &&
-      computedSection.backgroundColor !== "rgba(0, 0, 0, 0)" &&
-      computedSection.backgroundColor !== "transparent"
-        ? computedSection.backgroundColor
-        : sectionStyle.desktop?.backgroundColor,
+backgroundColor:
+  sectionPaintSource?.backgroundColor ||
+  sectionStyle.desktop?.backgroundColor,
 
-    color:
-      computedSection.color ||
-      sectionStyle.desktop?.color,
+color:
+  computedSection.color ||
+  sectionPaintSource?.color ||
+  sectionStyle.desktop?.color,
 
     padding:
       computedSection.padding &&
@@ -2652,6 +2746,64 @@ if (
       },
 
       children: compiledChildren
+    }
+  ];
+}
+
+if (
+  [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6"
+  ].includes(tagName)
+) {
+  const titleContent =
+    normalizeDiagnosticText(
+      element.textContent || ""
+    );
+
+  const titleSegments =
+    extractTitleSegments(
+      element
+    );
+
+  return [
+    {
+      id:
+        generateNodeId(
+          COMPILER_BLOCK_TYPES.TITLE,
+          path
+        ),
+
+      type:
+        COMPILER_BLOCK_TYPES.TITLE,
+
+      data: {
+        props: {
+          content:
+            titleContent,
+
+          level:
+            tagName,
+
+          ...(titleSegments.length
+            ? {
+                segments:
+                  titleSegments
+              }
+            : {})
+        },
+
+        style:
+          extractTypographyStyles(
+            element
+          )
+      },
+
+      children: []
     }
   ];
 }
@@ -2719,10 +2871,26 @@ if (
             element.textContent?.trim() || ""
         },
 
-        style:
-          extractTypographyStyles(
-            element
-          )
+ style:
+  (
+    tagName === "span" ||
+    (
+      normalizeDiagnosticText(
+        element.textContent || ""
+      ).length <= 40 &&
+      !normalizeDiagnosticText(
+        element.textContent || ""
+      ).includes(" ")
+    )
+  )
+    ? makeShortInlineTextSafe(
+        extractTypographyStyles(
+          element
+        )
+      )
+    : extractTypographyStyles(
+        element
+      )
       },
 
       children: []
@@ -2782,8 +2950,312 @@ if (
 // =====================================
 // LINK
 // =====================================
-
 if (tagName === "a") {
+  const safeChildren =
+    getSafeChildren(
+      element
+    );
+
+  const isCompositeLink =
+    safeChildren.length > 0 &&
+    !!element.querySelector(
+      "h1,h2,h3,h4,h5,h6,p,span,div,img"
+    );
+
+  if (
+    isCompositeLink
+  ) {
+    const compositeChildren =
+      safeChildren.flatMap(
+        (
+          child,
+          index
+        ) =>
+          parseDomToBlocks(
+            child,
+            [
+              ...path,
+              index
+            ],
+            ownership,
+            warnings,
+            matcherHits
+          )
+      );
+const anchorStyle =
+  extractLayoutStyles(
+    element
+  );
+
+const originalCardHeight = anchorStyle.desktop?.minHeight || anchorStyle.desktop?.height;
+delete anchorStyle.desktop.height; delete anchorStyle.desktop.maxHeight;delete anchorStyle.desktop.overflow;
+const normalizeCardTextBlocks = (
+  blocks: SerializedBlock[]
+): SerializedBlock[] =>
+  blocks.map((block: any) => {
+    const next = {
+      ...block,
+
+      data: {
+        ...(block.data || {}),
+
+        style: {
+          ...(block.data?.style || {}),
+
+          desktop: {
+            ...(block.data?.style?.desktop || {})
+          },
+
+          tablet: {
+            ...(block.data?.style?.tablet || {})
+          },
+
+          mobile: {
+            ...(block.data?.style?.mobile || {})
+          }
+        }
+      },
+
+      children:
+        normalizeCardTextBlocks(
+          block.children || []
+        )
+    };
+
+    if (
+      next.type ===
+      COMPILER_BLOCK_TYPES.TITLE
+    ) {
+      next.data.style.desktop.fontSize =
+        "22px";
+
+      next.data.style.desktop.lineHeight =
+        "1.12";
+
+      next.data.style.desktop.margin =
+        "0";
+
+      next.data.style.desktop.marginBottom =
+        "8px";
+
+      next.data.style.tablet.fontSize =
+        "21px";
+
+      next.data.style.mobile.fontSize =
+        "20px";
+    }
+
+    if (
+      next.type ===
+      COMPILER_BLOCK_TYPES.TEXT
+    ) {
+      next.data.style.desktop.margin =
+        "0";
+
+      next.data.style.desktop.lineHeight =
+        next.data.style.desktop.lineHeight ||
+        "1.55";
+    }
+
+    return next;
+  });
+    return [
+      {
+        id:
+          generateNodeId(
+            COMPILER_BLOCK_TYPES.FLEX,
+            path
+          ),
+
+        type:
+          COMPILER_BLOCK_TYPES.FLEX,
+
+        data: {
+          props: {
+            href:
+              element.getAttribute(
+                "href"
+              ) || "#"
+          },
+
+    style: {
+  ...anchorStyle,
+
+  desktop: {
+    ...(anchorStyle.desktop || {}),
+
+    display:
+      "flex",
+
+    flexDirection:
+      "column",
+
+    alignItems:
+      "flex-start",
+
+    justifyContent:
+      "space-between",
+
+    gap:
+      anchorStyle.desktop?.gap &&
+      anchorStyle.desktop.gap !== "normal"
+        ? anchorStyle.desktop.gap
+        : "12px",
+
+    width:
+      "100%",
+
+    maxWidth:
+      "100%",
+
+    minWidth:
+      "0",
+
+    height:
+      "auto",
+
+    minHeight:
+      originalCardHeight &&
+      originalCardHeight !== "auto"
+        ? originalCardHeight
+        : "220px",
+
+    overflow:
+      "visible",
+
+    boxSizing:
+      "border-box"
+  },
+
+  tablet: {
+    ...(anchorStyle.tablet || {}),
+
+    width:
+      "100%",
+
+    maxWidth:
+      "100%",
+
+    minWidth:
+      "0",
+
+    overflow:
+      "visible"
+  },
+
+  mobile: {
+    ...(anchorStyle.mobile || {}),
+
+    width:
+      "100%",
+
+    maxWidth:
+      "100%",
+
+    minWidth:
+      "0",
+
+    overflow:
+      "visible"
+  }
+}
+        },
+
+        children: [
+          {
+            id:
+              generateNodeId(
+                COMPILER_BLOCK_TYPES.FLEX_ITEM,
+                [
+                  ...path,
+                  "content"
+                ]
+              ),
+
+            type:
+              COMPILER_BLOCK_TYPES.FLEX_ITEM,
+
+            data: {
+              props: {},
+              style: {
+  desktop: {
+    display:
+      "flex",
+
+    flexDirection:
+      "column",
+
+    alignItems:
+      "flex-start",
+
+    gap:
+      "14px",
+
+    width:
+      "100%",
+
+    minWidth:
+      "0",
+
+    overflow:
+      "visible",
+
+    boxSizing:
+      "border-box"
+  },
+
+  tablet: {
+    display:
+      "flex",
+
+    flexDirection:
+      "column",
+
+    alignItems:
+      "flex-start",
+
+    gap:
+      "12px",
+
+    width:
+      "100%",
+
+    minWidth:
+      "0",
+
+    overflow:
+      "visible"
+  },
+
+  mobile: {
+    display:
+      "flex",
+
+    flexDirection:
+      "column",
+
+    alignItems:
+      "flex-start",
+
+    gap:
+      "10px",
+
+    width:
+      "100%",
+
+    minWidth:
+      "0",
+
+    overflow:
+      "visible"
+  }
+} },
+children:
+  normalizeCardTextBlocks(
+    compositeChildren
+  )
+    }  ]  } ];}
+
   return [
     {
       id:
@@ -2796,9 +3268,7 @@ if (tagName === "a") {
         COMPILER_BLOCK_TYPES.LINK,
 
       data: {
-
         props: {
-
           label:
             element.textContent?.trim() || "",
 
@@ -2818,7 +3288,6 @@ if (tagName === "a") {
     }
   ];
 }
-
 // =====================================
 // BUTTON
 // =====================================
@@ -3058,11 +3527,8 @@ function emitFlexContainer(
   blockType: string =
     COMPILER_BLOCK_TYPES.FLEX
 ): SerializedBlock[] {
-
   return [
-
     {
-
       id:
         generateNodeId(
           blockType,
@@ -3073,172 +3539,187 @@ function emitFlexContainer(
         blockType,
 
       data: {
-
-       props: {
-
-  ...(semanticMetadata
-    ? {
-        semantic:
-          semanticMetadata
-      }
-    : {})
-},
+        props: {
+          ...(semanticMetadata
+            ? {
+                semantic:
+                  semanticMetadata
+              }
+            : {})
+        },
 
         style
       },
 
-     children:
-
-  getSafeChildren(element)
-
-    .flatMap(
-      (
-        child,
-        index
-      ) => {
-
-        const childPath = [
-          ...path,
-          index
-        ];
-
-        const childElementId =
-          getElementId(
-            child
-          );
-
-        const isNavbarContainer =
-          blockType ===
-          COMPILER_BLOCK_TYPES.NAVBAR;
-
-        const childClassName =
-          getElementClassName(
-            child
-          );
-
-        const isNavbarLogoChild =
-          isNavbarContainer &&
+      children:
+        getSafeChildren(
+          element
+        ).flatMap(
           (
-            childClassName.includes("logo") ||
-            !!child.querySelector(".logo, [class*='logo']")
-          );
-
-        const isNavbarDropdownChild =
-  isNavbarContainer &&
-  (
-    childClassName.includes("dropdown") ||
-    childClassName.includes("submenu") ||
-    childClassName.includes("has-sub") ||
-    !!child.querySelector("ul")
-  );
-
-const isNavbarLinksChild =
-  isNavbarContainer &&
-  !isNavbarDropdownChild &&
-  (
-    childClassName.includes("nav-links") ||
-    childClassName.includes("menu")
-  );
-
-        const childOwnedByNestedFlex =
-
-          ownership.flexGroups.some(
-            flex =>
-
-              flex.elementId ===
-              childElementId
-          );
-
-        if (
-          childOwnedByNestedFlex
-        ) {
-
-          return parseDomToBlocks(
-
             child,
+            index
+          ) => {
+            const childPath = [
+              ...path,
+              index
+            ];
 
-            childPath,
+            const childElementId =
+              getElementId(
+                child
+              );
 
-            ownership,
+            const isNavbarContainer =
+              blockType ===
+              COMPILER_BLOCK_TYPES.NAVBAR;
 
-            warnings,
+            const childClassName =
+              getElementClassName(
+                child
+              );
 
-            matcherHits
-          );
-        }
+            const isNavbarLogoChild =
+              isNavbarContainer &&
+              (
+                childClassName.includes(
+                  "logo"
+                ) ||
+                !!child.querySelector(
+                  ".logo, [class*='logo']"
+                )
+              );
 
-        return [{
+            const isNavbarDropdownChild =
+              isNavbarContainer &&
+              (
+                childClassName.includes(
+                  "dropdown"
+                ) ||
+                childClassName.includes(
+                  "submenu"
+                ) ||
+                childClassName.includes(
+                  "has-sub"
+                ) ||
+                !!child.querySelector(
+                  "ul"
+                )
+              );
 
-          id:
-            generateNodeId(
-              COMPILER_BLOCK_TYPES.FLEX_ITEM,
-              childPath
-            ),
+            const isNavbarLinksChild =
+              isNavbarContainer &&
+              !isNavbarDropdownChild &&
+              (
+                childClassName.includes(
+                  "nav-links"
+                ) ||
+                childClassName.includes(
+                  "menu"
+                )
+              );
 
-          type:
-            COMPILER_BLOCK_TYPES.FLEX_ITEM,
+            const childOwnedByNestedFlex =
+              ownership.flexGroups.some(
+                flex =>
+                  flex.elementId ===
+                  childElementId
+              );
 
-          data: {
-
-            props: {},
-
-            style: {
-
-              desktop:
-                isNavbarContainer
-                  ? {
-                      flex:
-                        isNavbarLinksChild
-                          ? "1 1 auto"
-                          : "0 0 auto",
-                      flexGrow:
-                        isNavbarLinksChild
-                          ? 1
-                          : 0,
-                      flexShrink:
-                        isNavbarLogoChild
-                          ? 0
-                          : 1,
-                      minWidth:
-                        isNavbarLogoChild
-                          ? "max-content"
-                          : "0",
-                      whiteSpace:
-                        "nowrap"
-                    }
-                  : {
-                      flexGrow: 0,height: "auto",minHeight: "auto", minWidth: "0"
-                    },
-              tablet: {},
-              mobile:
-                isNavbarContainer
-                  ? {
-                      width: "100%",
-                      minWidth: "0"
-                    }
-                  : {}
+            if (
+              childOwnedByNestedFlex
+            ) {
+              return parseDomToBlocks(
+                child,
+                childPath,
+                ownership,
+                warnings,
+                matcherHits
+              );
             }
-          },
 
-          children:
+            return [
+              {
+                id:
+                  generateNodeId(
+                    COMPILER_BLOCK_TYPES.FLEX_ITEM,
+                    childPath
+                  ),
 
-            parseDomToItemChildren(
+                type:
+                  COMPILER_BLOCK_TYPES.FLEX_ITEM,
 
-              child,
+                data: {
+                  props: {},
 
-              childPath,
+                  style: {
+                    desktop:
+                      isNavbarContainer
+                        ? {
+                            flex:
+                              isNavbarLinksChild
+                                ? "1 1 auto"
+                                : "0 0 auto",
 
-              ownership,
+                            flexGrow:
+                              isNavbarLinksChild
+                                ? 1
+                                : 0,
 
-              warnings,
+                            flexShrink:
+                              isNavbarLogoChild
+                                ? 0
+                                : 1,
 
-              matcherHits
-            )
+                            minWidth:
+                              isNavbarLogoChild
+                                ? "max-content"
+                                : "0",
 
-        }];
+                            whiteSpace:
+                              "nowrap"
+                          }
+                        : {
+                            flexGrow:
+                              0,
 
-      }
-    )
+                            height:
+                              "auto",
+
+                            minHeight:
+                              "auto",
+
+                            minWidth:
+                              "0"
+                          },
+
+                    tablet:
+                      {},
+
+                    mobile:
+                      isNavbarContainer
+                        ? {
+                            width:
+                              "100%",
+
+                            minWidth:
+                              "0"
+                          }
+                        : {}
+                  }
+                },
+
+                children:
+                  parseDomToItemChildren(
+                    child,
+                    childPath,
+                    ownership,
+                    warnings,
+                    matcherHits
+                  )
+              }
+            ];
+          }
+        )
     }
   ];
 }
@@ -3734,6 +4215,33 @@ function emitGridContainer(
   semanticMetadata?: any
 ): SerializedBlock[] {
 const computedStyles = extractComputedStyles(element);
+const parentComputedStyles =
+  element.parentElement
+    ? extractComputedStyles(
+        element.parentElement
+      )
+    : null;
+
+const ownWidth =
+  parseCssNumericValue(
+    computedStyles.width
+  );
+
+const parentWidth =
+  parseCssNumericValue(
+    parentComputedStyles?.width
+  );
+
+const resolvedGridMaxWidth =
+  computedStyles.maxWidth &&
+  computedStyles.maxWidth !== "none" &&
+  computedStyles.maxWidth !== "100%"
+    ? computedStyles.maxWidth
+    : parentWidth > 0 &&
+        ownWidth > 0 &&
+        ownWidth < parentWidth
+      ? computedStyles.width
+      : "1180px";
 const rawColumns = computedStyles.gridTemplateColumns || "";
 const semanticColumns = semanticMetadata?.columnCount;
 const computedColumnCount = rawColumns .split(" ").filter(Boolean).length;
@@ -3772,10 +4280,17 @@ const normalizedColumns =
       style?.padding ||
       computedStyles.padding,
 
-    margin: "0 auto",
-    width: "100%",
-    maxWidth: "100%",
-    minWidth: "0",
+  width:
+  "100%",
+
+maxWidth:
+  resolvedGridMaxWidth,
+
+marginLeft:
+  "auto",
+
+marginRight:
+  "auto",
 
     backgroundColor:
       style?.desktop?.backgroundColor ||
@@ -3840,6 +4355,12 @@ return [
       (child, index) => {
         const childLayoutStyle =
           extractLayoutStyles(child);
+          delete childLayoutStyle.desktop.height;
+delete childLayoutStyle.desktop.minHeight;
+delete childLayoutStyle.desktop.maxHeight;
+
+childLayoutStyle.desktop.overflow =
+  "visible";
 
         const fallbackChildren =
           fallbackCompileElement(
@@ -3867,7 +4388,7 @@ return [
                 width: "100%",
                 maxWidth: "100%",
                 minWidth: "0",
-                overflow: "hidden",
+                overflow: "visible",
                 boxSizing: "border-box"
               },
 
@@ -3875,7 +4396,7 @@ return [
                 width: "100%",
                 maxWidth: "100%",
                 minWidth: "0",
-                overflow: "hidden",
+                overflow: "visible",
                 boxSizing: "border-box"
               },
 
@@ -3883,7 +4404,7 @@ return [
                 width: "100%",
                 maxWidth: "100%",
                 minWidth: "0",
-                overflow: "hidden",
+                overflow: "visible",
                 boxSizing: "border-box"
               }
             }
@@ -4337,6 +4858,119 @@ function parseDomToBlocks(
 const stylesheetCache = new Map<string, string>();
 const IMPORT_SANDBOX_CLASS = "__html_import_sandbox";
 
+type ImportedDocumentSurface = {
+  background?: string;
+  backgroundColor?: string;
+  backgroundImage?: string;
+  backgroundPosition?: string;
+  backgroundRepeat?: string;
+  backgroundSize?: string;
+};
+
+const hasVisibleBackground = (
+  style: Record<string, any> = {}
+) => {
+  const background =
+    String(style.background || "").trim();
+  const backgroundColor =
+    String(style.backgroundColor || "").trim();
+  const backgroundImage =
+    String(style.backgroundImage || "").trim();
+
+  return (
+    (!!background &&
+      background !== "none" &&
+      !/^rgba?\(0,\s*0,\s*0,\s*0\)/i.test(background) &&
+      background !== "transparent") ||
+    (!!backgroundColor &&
+      !isTransparentColor(backgroundColor)) ||
+    (!!backgroundImage &&
+      backgroundImage !== "none")
+  );
+};
+
+const extractDocumentSurface = (
+  body: HTMLElement
+): ImportedDocumentSurface => {
+  const computed =
+    getElementWindow(body).getComputedStyle(body);
+  const hasColor =
+    !isTransparentColor(computed.backgroundColor);
+  const hasImage =
+    computed.backgroundImage &&
+    computed.backgroundImage !== "none";
+
+  if (!hasColor && !hasImage) {
+    return {};
+  }
+
+  return {
+    background:
+      computed.background || undefined,
+    backgroundColor:
+      hasColor
+        ? computed.backgroundColor
+        : undefined,
+    backgroundImage:
+      hasImage
+        ? computed.backgroundImage
+        : undefined,
+    backgroundPosition:
+      hasImage
+        ? computed.backgroundPosition
+        : undefined,
+    backgroundRepeat:
+      hasImage
+        ? computed.backgroundRepeat
+        : undefined,
+    backgroundSize:
+      hasImage
+        ? computed.backgroundSize
+        : undefined
+  };
+};
+
+/**
+ * The builder has no DOM body of its own for an imported page. Any theme paint
+ * declared on the source body would otherwise disappear and transparent root
+ * sections would render on the editor's white canvas.
+ */
+const applyDocumentSurfaceToRootSections = (
+  blocks: SerializedBlock[],
+  surface: ImportedDocumentSurface
+): SerializedBlock[] => {
+  if (!hasVisibleBackground(surface)) {
+    return blocks;
+  }
+
+  return blocks.map(block => {
+    if (block.type !== "section") {
+      return block;
+    }
+
+    const desktop =
+      block.data?.style?.desktop || {};
+
+    if (hasVisibleBackground(desktop)) {
+      return block;
+    }
+
+    return {
+      ...block,
+      data: {
+        ...block.data,
+        style: {
+          ...(block.data?.style || {}),
+          desktop: {
+            ...surface,
+            ...desktop
+          }
+        }
+      }
+    };
+  });
+};
+
 export async function importHtmlDocument(
   htmlString: string,
   context: ImportHtmlContext = {}
@@ -4604,6 +5238,24 @@ export async function importHtmlDocument(
             content =
               await response.text();
 
+            // SPA hosts often answer a missing asset with index.html and 200.
+            // Treating that response as CSS silently produces a half-styled import.
+            if (
+              /^\s*(?:<!doctype\s+html|<html[\s>])/i.test(
+                content
+              )
+            ) {
+              loadReport.push({
+                href,
+                loaded: false,
+                candidate,
+                status,
+                contentType,
+                reason: "HTML_RESPONSE_INSTEAD_OF_CSS"
+              });
+              continue;
+            }
+
             stylesheetCache.set(
               candidate,
               content
@@ -4671,6 +5323,14 @@ export async function importHtmlDocument(
           href,
           loaded: false,
           candidates
+        });
+
+        warnings.push({
+          type: "EXTERNAL_STYLESHEET_LOAD_FAILED",
+          message:
+            `Could not load stylesheet "${href}". ` +
+            "The imported page may be only partially styled; import the complete site bundle or inline the CSS.",
+          path: `head > link[href="${href}"]`
         });
 
       }
@@ -4943,6 +5603,9 @@ return css;
     );
     const body = sandbox;
 
+    const documentSurface =
+      extractDocumentSurface(body);
+
     const originalDomTextNodes =
       collectDomTextNodes(
         body
@@ -4950,7 +5613,18 @@ return css;
 
   
 
-    const designTokens = extractDesignTokens(body);
+    const extractedDesignTokens =
+      extractDesignTokens(body);
+
+    const designTokens: ExtractedDesignTokens = {
+      ...extractedDesignTokens,
+      colors: {
+        ...extractedDesignTokens.colors,
+        surface:
+          documentSurface.backgroundColor ||
+          extractedDesignTokens.colors.surface
+      }
+    };
     const {
       ownership,
       semanticBlocks
@@ -5318,9 +5992,15 @@ assertTreeInvariants(
   normalized as any
 );
 
+const normalizedWithDocumentSurface =
+  applyDocumentSurfaceToRootSections(
+    normalized as any,
+    documentSurface
+  );
+
 const normalizedWithTokens =
   applyDesignTokensToBlocks(
-    normalized as any,
+    normalizedWithDocumentSurface as any,
     designTokens
   );
 
@@ -5596,9 +6276,18 @@ assertTreeInvariants(
   visualBlocks as any
 );
 
+// Re-apply the page paint after every semantic/profile reconstruction step.
+// Several of those steps clone or replace root sections, so applying it only
+// before reconstruction is not a strong enough invariant.
+const visualBlocksWithDocumentSurface =
+  applyDocumentSurfaceToRootSections(
+    visualBlocks as any,
+    documentSurface
+  );
+
 const serializableVisualBlocks =
   sanitizeBlockTreeStyles(
-    visualBlocks as any,
+    visualBlocksWithDocumentSurface as any,
     "importHtmlDocument.finalBlocks"
   );
 return {

@@ -65,7 +65,10 @@ export const PublicSite: React.FC = () => {
   // ERROR
   // =========================
 
-  if (error || !siteData) {
+  if (
+    error ||
+    !siteData
+  ) {
 
     return (
 
@@ -90,38 +93,92 @@ export const PublicSite: React.FC = () => {
     ) || [];
 
   // =========================
+  // NORMALIZED SLUG
+  // =========================
+
+  const normalizedSlug =
+    slug?.trim();
+
+  // =========================
   // HOMEPAGE
   // =========================
 
   const homepage =
     publishedPages.find(
-      (p: any) => p.isHomepage === true
+      (p: any) =>
+        p.isHomepage === true
     ) ||
     publishedPages.find(
-      (p: any) => p.slug === "home"
+      (p: any) =>
+        p.slug === "home"
     ) ||
     publishedPages[0];
 
+  // =========================
+  // ROUTE TYPE
+  // =========================
+
   const isHomepageRoute =
-    !slug ||
-    slug === "home" ||
-    /^home-\d+$/.test(slug);
+    !normalizedSlug ||
+    normalizedSlug === "home" ||
+    /^home-\d+$/.test(
+      normalizedSlug
+    );
+
+  // =========================
+  // SELECTED PAGE
+  // =========================
 
   const selectedPage =
-    !isHomepageRoute
-      ? publishedPages.find(
-          (p: any) => p.slug === slug
-        )
-      : homepage;
+    isHomepageRoute
+      ? homepage
+      : publishedPages.find(
+          (p: any) =>
+            p.slug === normalizedSlug
+        );
 
-  console.log("PUBLISHED_HOMEPAGE_ID", {
-    homepageId: homepage?.id,
-    selectedPageId: selectedPage?.id,
-    selectedSlug: selectedPage?.slug,
-    requestedSlug: slug,
-    isHomepage: selectedPage?.isHomepage,
-    blocksCount: selectedPage?.blocks?.length || 0
-  });
+  const isRequestedSlugMissing =
+    !!normalizedSlug &&
+    !isHomepageRoute &&
+    !selectedPage;
+
+  console.log(
+    "PUBLIC_SITE_PAGE_RESOLUTION",
+    {
+      homepageId:
+        homepage?.id,
+
+      selectedPageId:
+        selectedPage?.id,
+
+      selectedSlug:
+        selectedPage?.slug,
+
+      requestedSlug:
+        normalizedSlug,
+
+      isHomepageRoute,
+
+      isRequestedSlugMissing,
+
+      isHomepage:
+        selectedPage?.isHomepage,
+
+      blocksCount:
+        selectedPage?.blocks?.length || 0,
+
+      publishedPages:
+        publishedPages.map(
+          (p: any) => ({
+            id: p.id,
+            title: p.title,
+            slug: p.slug,
+            status: p.status,
+            isHomepage: p.isHomepage
+          })
+        )
+    }
+  );
 
   // =========================
   // RENDER
@@ -132,27 +189,28 @@ export const PublicSite: React.FC = () => {
     <Box
       sx={{
         minHeight: "100vh",
-        bgcolor: "#f8fafc"
+        bgcolor:
+          selectedPage?.theme?.colors?.surface ||
+          siteData?.theme?.colors?.surface ||
+          "#f8fafc"
       }}
     >
-
-      {/* ===================== */}
-      {/* HOMEPAGE RUNTIME */}
-      {/* ===================== */}
 
       {selectedPage ? (
 
         <PublicPageRuntime
-  page={selectedPage}
-  site={siteData}
-/>
+          page={selectedPage}
+          site={siteData}
+        />
 
       ) : (
 
         <Container sx={{ py: 10 }}>
 
           <Alert severity="info">
-            Aucun homepage publié
+            {isRequestedSlugMissing
+              ? "Page non trouvée ou non publiée"
+              : "Aucun homepage publié"}
           </Alert>
 
         </Container>

@@ -6,6 +6,8 @@ import {
   Stack,
   Chip,
   CardActions,
+  Divider,
+  Box,
 } from "@mui/material";
 
 import type {
@@ -32,39 +34,108 @@ export const PluginCard = ({
   onUninstall,
 }: PluginCardProps) => {
   return (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" fontWeight={800}>
+    <Card
+      elevation={3}
+      sx={{
+        height: "100%",
+        minHeight: 310,
+        display: "flex",
+        flexDirection: "column",
+        borderRadius: 3,
+      }}
+    >
+      <CardContent sx={{ flex: 1 }}>
+        <Typography variant="h6" fontWeight={900}>
           {plugin.name}
         </Typography>
 
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ mt: 1, minHeight: 44 }}
+        >
           {plugin.description || "No description available."}
         </Typography>
 
-        <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+        <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 2 }}>
           <Chip
             size="small"
-            label={plugin.installed ? "Installed" : "Not installed"}
+            color="primary"
+            variant="outlined"
+            label={`v${plugin.version || "1.0.0"}`}
           />
 
           <Chip
             size="small"
-            label={plugin.enabled ? "Enabled" : "Disabled"}
+            variant="outlined"
+            label={plugin.category || "General"}
           />
+
+          <Chip
+            size="small"
+            variant="outlined"
+            label={plugin.author || "ReactBuilder"}
+          />
+        </Stack>
+
+        <Divider sx={{ my: 2 }} />
+
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          {!plugin.installed ? (
+            <Chip
+              size="small"
+              color="default"
+              label="Not Installed"
+            />
+          ) : (
+            <>
+              <Chip
+                size="small"
+                color="success"
+                label="Installed"
+              />
+
+              <Chip
+                size="small"
+                color={plugin.enabled ? "success" : "warning"}
+                label={plugin.enabled ? "Enabled" : "Disabled"}
+              />
+            </>
+          )}
 
           {!canManagePlugins && (
             <Chip
               size="small"
-              label="Read-only"
               variant="outlined"
+              label="Read Only"
             />
           )}
         </Stack>
+
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="caption" color="text.secondary" display="block">
+            Mode: {plugin.mode || "runtime"}
+          </Typography>
+
+          <Typography variant="caption" color="text.secondary" display="block">
+            Priority: {plugin.priority ?? 0}
+          </Typography>
+
+          <Typography variant="caption" color="text.secondary" display="block">
+            Runtime: {plugin.runtimeEnabled ? "Active" : "Inactive"}
+          </Typography>
+        </Box>
       </CardContent>
 
       {canManagePlugins && (
-        <CardActions>
+        <CardActions
+          sx={{
+            px: 2,
+            pb: 2,
+            flexWrap: "wrap",
+            gap: 1,
+          }}
+        >
           {!plugin.installed && (
             <Button
               variant="contained"
@@ -97,6 +168,7 @@ export const PluginCard = ({
 
           {plugin.installed && (
             <Button
+              variant="outlined"
               color="error"
               disabled={isBusy}
               onClick={() => onUninstall(plugin.id)}

@@ -10,9 +10,6 @@ import {
   presetRegistry
 } from "../../../../../presets/presetRegistry";
 import { generateNavbarPreset } from "../../../../../presets/generateNavbarPreset";
-import {
-  generateServicePageSectionPreset
-} from "../../../../../presets/generateServicePageSectionPreset";
 
 const generateCTAGroupPreset = (
   payload: any
@@ -99,9 +96,6 @@ Partial<
 
   HERO_SECTION:
     presetRegistry.hero,
-
-  SERVICE_PAGE_SECTION:
-    generateServicePageSectionPreset,
 
   FEATURE_PILLARS:
     presetRegistry.featurePillars,

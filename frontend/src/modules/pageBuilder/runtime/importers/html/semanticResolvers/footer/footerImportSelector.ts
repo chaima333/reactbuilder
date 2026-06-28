@@ -50,6 +50,29 @@ const getFirstChildDesktopStyle = (
 ): Record<string, any> =>
   block?.children?.[0]?.data?.style?.desktop || {};
 
+const withFooterSemantic = (
+  block: Block
+): Block => ({
+  ...block,
+
+  type:
+    "section",
+
+  meta: {
+    ...(block.meta || {}),
+    semanticType:
+      "FOOTER"
+  },
+
+  data: {
+    ...(block.data || {}),
+    props:
+      block.data?.props || {},
+    style:
+      block.data?.style || {}
+  }
+});
+
 const hasCenteredContainer = (
   block?: any
 ) => {
@@ -82,12 +105,6 @@ export const normalizeFooterLikeNavbar = (
     return null;
   }
 
-  if (hasCenteredContainer(block)) {
-    return {
-      ...block,
-      type: "footer"
-    };
-  }
 
   const blockDesktopStyle =
     getDesktopStyle(block);
@@ -115,13 +132,29 @@ export const normalizeFooterLikeNavbar = (
   const containerGap =
     pickUsefulValue(
       firstChildDesktopStyle.gap,
-      legacyContainerDesktopStyle.gap
+      legacyContainerDesktopStyle.gap,
+      "38px"
+    );
+
+  const containerPaddingLeft =
+    pickUsefulValue(
+      firstChildDesktopStyle.paddingLeft,
+      legacyContainerDesktopStyle.paddingLeft
+    );
+
+  const containerPaddingRight =
+    pickUsefulValue(
+      firstChildDesktopStyle.paddingRight,
+      legacyContainerDesktopStyle.paddingRight
     );
 
   const containerStyle =
     cleanStyle({
-      display: "flex",
-      flexDirection: "column",
+      display:
+        "flex",
+
+      flexDirection:
+        "column",
 
       width:
         containerWidth,
@@ -139,16 +172,10 @@ export const normalizeFooterLikeNavbar = (
         "auto",
 
       paddingLeft:
-        pickUsefulValue(
-          firstChildDesktopStyle.paddingLeft,
-          legacyContainerDesktopStyle.paddingLeft
-        ),
+        containerPaddingLeft,
 
       paddingRight:
-        pickUsefulValue(
-          firstChildDesktopStyle.paddingRight,
-          legacyContainerDesktopStyle.paddingRight
-        ),
+        containerPaddingRight,
 
       gap:
         containerGap,
@@ -157,57 +184,65 @@ export const normalizeFooterLikeNavbar = (
         "border-box"
     });
 
-  return {
-    ...block,
+const normalizedBlock: Block = {
+  ...block,
 
-    type:
-      "footer",
+  type:
+    "section",
 
-    data: {
-      ...(block.data || {}),
-      props:
-        block.data?.props || {},
-      style: {
-        ...(block.data?.style || {}),
-        desktop: {
-          ...blockDesktopStyle,
-          width: "100%",
-          boxSizing: "border-box"
-        }
+  meta: {
+    ...(block.meta || {}),
+    semanticType:
+      "FOOTER"
+  },
+
+  data: {
+    ...(block.data || {}),
+    props:
+      block.data?.props || {},
+    style: {
+      ...(block.data?.style || {}),
+      desktop: {
+        ...blockDesktopStyle,
+        width: "100%",
+        boxSizing: "border-box"
       }
-    },
+    }
+  },
 
-    children: [
-      {
-        id:
-          createId("footer-container"),
+  children: [
+    {
+      id:
+        createId("footer-container"),
 
-        type:
-          "flex",
+      type:
+        "flex",
 
-        data: {
-          props: {},
-          style: {
-            desktop:
-              containerStyle,
+      data: {
+        props: {},
+        style: {
+          desktop:
+            containerStyle,
 
-            tablet: {
-              width: "100%",
-              boxSizing: "border-box"
-            },
+          tablet: {
+            width: "100%",
+            boxSizing: "border-box"
+          },
 
-            mobile: {
-              width: "100%",
-              boxSizing: "border-box"
-            }
+          mobile: {
+            width: "100%",
+            boxSizing: "border-box"
           }
-        },
+        }
+      },
 
-        children:
-          block.children || []
-      }
-    ]
-  };
+      children:
+        block.children || []
+    }
+  ]
+};
+
+  return normalizedBlock;
 };
 
 export const selectImportedFooterBlock = ({

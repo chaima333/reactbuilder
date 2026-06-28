@@ -63,6 +63,51 @@ const findSemanticType = (
   return null;
 };
 
+const getOwnSemanticRole = (
+  block: any
+) =>
+  block?.data?.props?.semanticRole ||
+  block?.props?.semanticRole ||
+  "";
+
+const getBlockText = (
+  block: any
+): string => {
+  if (!block) {
+    return "";
+  }
+
+  const props =
+    block?.data?.props ||
+    block?.props ||
+    {};
+
+  return [
+    props.content,
+    props.text,
+    props.label,
+    props.title,
+    ...(block.children || []).map(
+      getBlockText
+    )
+  ]
+    .filter(Boolean)
+    .join(" ");
+};
+
+const looksLikeKpiMetric = (
+  block: any
+) =>
+  hasSemanticRole(
+    block,
+    "kpiNumber"
+  ) ||
+  /(?:[$€£]\s*)?\d[\d\s.,]*(?:[a-z]+)?\s*[+%]?/i.test(
+    getBlockText(
+      block
+    )
+  );
+
 export const FlexBlock = ({
   block,
   children,
@@ -113,8 +158,27 @@ const resolved =
   // FLEX DIRECTION
   // =====================================
 
+  const semanticRole =
+    getOwnSemanticRole(
+      block
+    );
+
+  const isKpiRow =
+    semanticRole === "kpiRow" ||
+    (
+      (block?.children?.length || 0) >= 3 &&
+      block.children.every(
+        (child: any) =>
+          looksLikeKpiMetric(
+            child
+          )
+      )
+    );
+
   const flexDirection =
-    device === "mobile" &&
+    isKpiRow
+      ? "row"
+      : device === "mobile" &&
     !hasSemanticRole(
       block,
       "kpiNumber"
@@ -142,13 +206,17 @@ const hasMarginShorthand =
     
 
     display:
-  resolved.display || "flex",
+  isKpiRow
+    ? "flex"
+    : resolved.display || "flex",
 
     flexDirection:
       flexDirection,
 
     flexWrap:
-      resolved.flexWrap ||
+      isKpiRow
+        ? "nowrap"
+        : resolved.flexWrap ||
       (
         flexDirection === "column"
           ? "nowrap"
