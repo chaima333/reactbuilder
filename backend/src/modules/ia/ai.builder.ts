@@ -6,11 +6,79 @@ import { CATEGORY_TEMPLATES, SectionConfig, SectionKind, TemplateConfig } from "
 const makeId = (prefix: string) =>
   `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
-const responsiveStyle = (desktop: Record<string, any> = {}) => ({
-  desktop,
-  tablet: {},
-  mobile: {}
-});
+const responsiveStyle = (
+  desktop: Record<string, any> = {}
+) => {
+  const isGrid =
+    desktop.display === "grid";
+
+  const isRowFlex =
+    desktop.display === "flex" &&
+    desktop.flexDirection === "row";
+
+  return {
+    desktop,
+
+    tablet: {
+      ...(isGrid
+        ? {
+            gridTemplateColumns:
+              "repeat(2, minmax(0, 1fr))"
+          }
+        : {}),
+
+      ...(isRowFlex
+        ? {
+            flexDirection: "column",
+            alignItems: "center"
+          }
+        : {}),
+
+      ...(desktop.fontSize
+        ? {
+            fontSize: "32px"
+          }
+        : {}),
+
+      ...(desktop.padding
+        ? {
+            padding: "64px 28px"
+          }
+        : {}),
+
+      maxWidth: "100%"
+    },
+
+    mobile: {
+      ...(isGrid
+        ? {
+            gridTemplateColumns: "1fr"
+          }
+        : {}),
+
+      ...(isRowFlex
+        ? {
+            flexDirection: "column",
+            alignItems: "center"
+          }
+        : {}),
+
+      ...(desktop.fontSize
+        ? {
+            fontSize: "24px"
+          }
+        : {}),
+
+      ...(desktop.padding
+        ? {
+            padding: "48px 18px"
+          }
+        : {}),
+
+      maxWidth: "100%"
+    }
+  };
+};
 
 // ============================================
 // BLOCK BUILDERS (LES COMPOSANTS DE BASE)
