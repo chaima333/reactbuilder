@@ -83,13 +83,6 @@ const responsiveStyle = (
           0.85,
           14
         ),
-
-      ...(desktop.padding
-        ? {
-            padding: "64px 28px"
-          }
-        : {}),
-
       maxWidth: "100%",
 
       ...tablet
@@ -115,13 +108,6 @@ const responsiveStyle = (
           0.75,
           12
         ),
-
-      ...(desktop.padding
-        ? {
-            padding: "48px 18px"
-          }
-        : {}),
-
       maxWidth: "100%",
 
       ...mobile
@@ -237,16 +223,24 @@ const sectionBlock = (
   type: "section",
   data: {
     props: {},
-    style: responsiveStyle({
-      padding: "80px 40px",
-      backgroundColor: "#ffffff",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",     // ← CENTRAGE
-      justifyContent: "center", // ← CENTRAGE
-      width: "100%",
-      ...style
-    })
+    style: responsiveStyle(
+  {
+    padding: "80px 40px",
+    backgroundColor: "#ffffff",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    ...style
+  },
+  {
+    padding: "64px 28px"
+  },
+  {
+    padding: "48px 18px"
+  }
+)
   },
   children: [
     flexBlock(children.map((child) => flexItemBlock([child])))
@@ -1422,15 +1416,25 @@ const buildHero = (config: SectionConfig): PageBlock => {
     type: "section",
     data: {
       props: {},
-      style: responsiveStyle({
-        backgroundColor: bgColor,
-        padding: "80px 40px",
-        minHeight: "60vh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center"
-      })
+      style: responsiveStyle(
+  {
+    backgroundColor: bgColor,
+    padding: "80px 40px",
+    minHeight: "60vh",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  {
+    padding: "64px 28px",
+    minHeight: "auto"
+  },
+  {
+    padding: "48px 18px",
+    minHeight: "auto"
+  }
+)
     },
     children: [heroRow]
   };
