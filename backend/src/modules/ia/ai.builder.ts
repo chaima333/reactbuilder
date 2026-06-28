@@ -18,6 +18,35 @@ const cleanStyle = (
     )
   );
 
+const scalePx = (
+  value: any,
+  factor: number,
+  min: number
+) => {
+  if (
+    typeof value !== "string" ||
+    !value.endsWith("px")
+  ) {
+    return undefined;
+  }
+
+  const number =
+    Number(
+      value.replace("px", "")
+    );
+
+  if (
+    Number.isNaN(number)
+  ) {
+    return undefined;
+  }
+
+  return `${Math.max(
+    Math.round(number * factor),
+    min
+  )}px`;
+};
+
 const responsiveStyle = (
   desktop: Record<string, any> = {},
   tablet: Record<string, any> = {},
@@ -48,11 +77,12 @@ const responsiveStyle = (
           }
         : {}),
 
-      ...(desktop.fontSize
-        ? {
-            fontSize: "32px"
-          }
-        : {}),
+      fontSize:
+        scalePx(
+          desktop.fontSize,
+          0.85,
+          14
+        ),
 
       ...(desktop.padding
         ? {
@@ -79,11 +109,12 @@ const responsiveStyle = (
           }
         : {}),
 
-      ...(desktop.fontSize
-        ? {
-            fontSize: "24px"
-          }
-        : {}),
+      fontSize:
+        scalePx(
+          desktop.fontSize,
+          0.75,
+          12
+        ),
 
       ...(desktop.padding
         ? {
