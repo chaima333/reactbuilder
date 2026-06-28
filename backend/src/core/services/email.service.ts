@@ -1,4 +1,9 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
+
+const resend =
+  new Resend(
+    process.env.RESEND_API_KEY
+  );
 
 const escapeHtml = (
   value: string
@@ -22,20 +27,8 @@ export const sendSiteInvitationEmail = async ({
   role: string;
   token: string;
 }) => {
-
-  const emailUser =
-    process.env.EMAIL_USER;
-
-  const emailPass =
-    process.env.EMAIL_PASS;
-
-  if (
-    !emailUser ||
-    !emailPass
-  ) {
-    throw new Error(
-      "EMAIL_USER or EMAIL_PASS is missing"
-    );
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error("RESEND_API_KEY is missing");
   }
 
   const frontendUrl =
@@ -45,9 +38,9 @@ export const sendSiteInvitationEmail = async ({
   const inviteUrl =
     `${frontendUrl}/invitations/accept?token=${token}`;
 
-  const from =
-    process.env.EMAIL_FROM ||
-    `CraftWeb <${emailUser}>`;
+  const realEmailTo =
+    process.env.DEMO_INVITE_RECIPIENT ||
+    to;
 
   const safeSiteName =
     escapeHtml(siteName);
@@ -55,82 +48,52 @@ export const sendSiteInvitationEmail = async ({
   const safeRole =
     escapeHtml(role);
 
-  const transporter =
-    nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: emailUser,
-        pass: emailPass
-      }
+  const safeOriginalTo =
+    escapeHtml(to);
+
+  const { data, error } =
+    await resend.emails.send({
+      from: "CraftWeb <onboarding@resend.dev>",
+      to: [realEmailTo],
+      subject: `Invitation à rejoindre ${siteName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+          <h2>Invitation CraftWeb</h2>
+
+          <p>
+            Vous avez été invité(e) à rejoindre le site
+            <strong>${safeSiteName}</strong>
+            avec le rôle
+            <strong>${safeRole}</strong>.
+          </p>
+
+          <p style="color:#666">
+            Mode démo: invitation originale pour
+            <strong>${safeOriginalTo}</strong>.
+          </p>
+
+          <p>
+            <a href="${inviteUrl}">
+              Accepter l'invitation
+            </a>
+          </p>
+        </div>
+      `
     });
 
-  try {
-
-    const result =
-      await transporter.sendMail({
-        from,
-        to,
-        subject:
-          `Invitation à rejoindre ${siteName}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-            <h2>Invitation CraftWeb</h2>
-
-            <p>
-              Vous avez été invité(e) à rejoindre le site
-              <strong>${safeSiteName}</strong>
-              avec le rôle
-              <strong>${safeRole}</strong>.
-            </p>
-
-            <p>
-              Cliquez sur le bouton ci-dessous pour accepter l'invitation.
-            </p>
-
-            <p>
-              <a
-                href="${inviteUrl}"
-                style="
-                  display: inline-block;
-                  padding: 12px 18px;
-                  background: #00b894;
-                  color: white;
-                  text-decoration: none;
-                  border-radius: 8px;
-                  font-weight: bold;
-                "
-              >
-                Accepter l'invitation
-              </a>
-            </p>
-
-            <p style="color: #666; font-size: 13px;">
-              Si vous n'êtes pas concerné(e), ignorez cet email.
-            </p>
-          </div>
-        `
-      });
-
-    console.log(
-      "GMAIL_EMAIL_SENT",
-      {
-        to,
-        messageId:
-          result.messageId
-      }
-    );
-
-    return result;
-
-  } catch (error) {
-
-    console.error(
-      "GMAIL_EMAIL_ERROR",
-      error
-    );
+  if (error) {
+    console.error("RESEND_EMAIL_ERROR", error);
 
     throw new Error(
+      error.message ||
       "Failed to send invitation email"
     );
   }
+
+  console.log("RESEND_EMAIL_SENT", {
+    originalTo: to,
+    deliveredTo: realEmailTo
+  });
+
+  return data;
 };
