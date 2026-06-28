@@ -248,7 +248,7 @@ export const CATEGORY_TEMPLATES: Record<string, TemplateConfig> = {
         text: "Empowering minds through innovative education. Courses, resources, and expert guidance.",
         cta: "Explore Courses",
         image:
-          "https://images.unsplash.com/photo-1523050854058-8df90110c7f1?w=600&h=400&fit=crop",
+  "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80",
         style: { backgroundColor: "#f0fdf4", color: "#064e3b", titleSize: "54px" },
       },
       {

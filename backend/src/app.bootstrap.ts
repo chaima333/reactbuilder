@@ -5,6 +5,7 @@ import { MediaPlugin } from "./modules/plugin/media.plugin";
 import { NotificationPlugin } from "./modules/plugin/notification.plugin";
 import { AiHistoryPlugin } from "./modules/plugin/aiHistory.plugin";
 import { syncRegisteredPlugins } from "./modules/plugin/plugin.synchronizer";
+import { FigmaPlugin } from "./modules/plugin/FigmaPlugin";
 
 let initialized = false;
 
@@ -18,6 +19,7 @@ export const bootstrapPlugins = async () => {
   cmsRegistry.register(NotificationPlugin, 30);
   cmsRegistry.register(AiHistoryPlugin, 25);
   cmsRegistry.register(MediaPlugin, 20);
+  cmsRegistry.register(FigmaPlugin);
 
 await syncRegisteredPlugins();
   console.log("✅ Plugins registered:", cmsRegistry.getPlugins());

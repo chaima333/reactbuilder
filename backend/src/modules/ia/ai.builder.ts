@@ -6,8 +6,22 @@ import { CATEGORY_TEMPLATES, SectionConfig, SectionKind, TemplateConfig } from "
 const makeId = (prefix: string) =>
   `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 
+const cleanStyle = (
+  style: Record<string, any>
+) =>
+  Object.fromEntries(
+    Object.entries(style).filter(
+      ([, value]) =>
+        value !== undefined &&
+        value !== null &&
+        value !== ""
+    )
+  );
+
 const responsiveStyle = (
-  desktop: Record<string, any> = {}
+  desktop: Record<string, any> = {},
+  tablet: Record<string, any> = {},
+  mobile: Record<string, any> = {}
 ) => {
   const isGrid =
     desktop.display === "grid";
@@ -19,7 +33,7 @@ const responsiveStyle = (
   return {
     desktop,
 
-    tablet: {
+    tablet: cleanStyle({
       ...(isGrid
         ? {
             gridTemplateColumns:
@@ -46,10 +60,12 @@ const responsiveStyle = (
           }
         : {}),
 
-      maxWidth: "100%"
-    },
+      maxWidth: "100%",
 
-    mobile: {
+      ...tablet
+    }),
+
+    mobile: cleanStyle({
       ...(isGrid
         ? {
             gridTemplateColumns: "1fr"
@@ -75,11 +91,12 @@ const responsiveStyle = (
           }
         : {}),
 
-      maxWidth: "100%"
-    }
+      maxWidth: "100%",
+
+      ...mobile
+    })
   };
 };
-
 // ============================================
 // BLOCK BUILDERS (LES COMPOSANTS DE BASE)
 // ============================================
@@ -988,28 +1005,44 @@ const bgColor = "#ffffff";
     type: "navbar",
     data: {
       props: {},
-      style: responsiveStyle({
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        width: "100%",
-        display: "flex",
-        maxWidth: "none",
-        margin: "0",
-        paddingTop: "14px",
-        boxSizing: "border-box",
-        paddingBottom: "14px",
-        paddingLeft: "28px",
-        paddingRight: "28px",
-        flexWrap: "wrap",
-        gap: "18px",
-        overflow: "visible",
-        backgroundColor: bgColor,
-        color: color,
-        whiteSpace: "nowrap",
-        minWidth: "160px",
-        borderBottom: "1px solid rgba(0,0,0,0.08)"
-      })
+      style: responsiveStyle(
+  {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    display: "flex",
+    maxWidth: "none",
+    margin: "0",
+    paddingTop: "14px",
+    boxSizing: "border-box",
+    paddingBottom: "14px",
+    paddingLeft: "28px",
+    paddingRight: "28px",
+    flexWrap: "wrap",
+    gap: "18px",
+    overflow: "visible",
+    backgroundColor: bgColor,
+    color: color,
+    whiteSpace: "nowrap",
+    minWidth: "160px",
+    borderBottom: "1px solid rgba(0,0,0,0.08)"
+  },
+  {
+    paddingLeft: "22px",
+    paddingRight: "22px",
+    gap: "14px"
+  },
+  {
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingLeft: "18px",
+    paddingRight: "18px",
+    gap: "12px",
+    whiteSpace: "normal"
+  }
+)
     },
     children: [
       {
@@ -1065,16 +1098,30 @@ const bgColor = "#ffffff";
             type: "flex",
             data: {
               props: {},
-              style: responsiveStyle({
-                display: "flex",
-                flexDirection: "row",
-                flexWrap: "wrap",
-                columnGap: "18px",
-                rowGap: "10px",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "100%"
-              })
+              style: responsiveStyle(
+  {
+    display: "flex",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    columnGap: "18px",
+    rowGap: "10px",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%"
+  },
+  {
+    columnGap: "14px",
+    rowGap: "8px"
+  },
+  {
+    flexDirection: "column",
+    flexWrap: "nowrap",
+    gap: "8px",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%"
+  }
+)
             },
             children: links.map((link, index) => ({
               id: makeId(`navbar-link-item-${index}`),
@@ -1102,7 +1149,7 @@ const bgColor = "#ffffff";
                       whiteSpace: "nowrap",
                       transition: "color 0.2s ease",
                       display: "inline-block",
-                      marginRight: "24px"
+                      marginRight: "0"
                     })
                   },
                   children: []
@@ -1843,15 +1890,29 @@ const buildFooter = (config: SectionConfig): PageBlock => {
     type: "grid",
     data: {
       props: {},
-      style: responsiveStyle({
-        display: "grid",
-        gridTemplateColumns: "repeat(5, 1fr)",
-        gap: "32px",
-        maxWidth: "1200px",
-        margin: "0 auto",
-        padding: "0 20px",
-        width: "100%"
-      })
+      style: responsiveStyle(
+  {
+    display: "grid",
+    gridTemplateColumns: "repeat(5, 1fr)",
+    gap: "32px",
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "0 20px",
+    width: "100%"
+  },
+  {
+    gridTemplateColumns:
+      "repeat(2, minmax(0, 1fr))",
+    gap: "28px",
+    padding: "0 12px"
+  },
+  {
+    gridTemplateColumns: "1fr",
+    gap: "24px",
+    padding: "0",
+    textAlign: "center"
+  }
+)
     },
     children: gridChildren
   };
@@ -1863,11 +1924,19 @@ const buildFooter = (config: SectionConfig): PageBlock => {
     type: "footer",
     data: {
       props: {},
-      style: responsiveStyle({
-        backgroundColor: bgColor,
-        borderTop: "1px solid #1e293b",
-        padding: "60px 40px 40px 40px"
-      })
+     style: responsiveStyle(
+  {
+    backgroundColor: bgColor,
+    borderTop: "1px solid #1e293b",
+    padding: "60px 40px 40px 40px"
+  },
+  {
+    padding: "52px 28px 36px 28px"
+  },
+  {
+    padding: "44px 20px 32px 20px"
+  }
+)
     },
     children: [
       flexBlock([
