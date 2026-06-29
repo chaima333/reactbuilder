@@ -1189,12 +1189,16 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
                 props: {},
                 style: responsiveStyle(
                   {
-                    flex: "0 0 auto"
+                    flex: "0 0 auto",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
                   },
                   {},
                   {
                     width: "100%",
-                    textAlign: "center"
+                    textAlign: "center",
+                    justifyContent: "center"
                   }
                 )
               },
@@ -1215,15 +1219,19 @@ const buildNavbar = (config: SectionConfig): PageBlock => {
                         fontWeight: "700",
                         whiteSpace: "nowrap",
                         display: "inline-block",
-                        marginRight: "0"
+                        marginRight: "22px",
+                        padding: "6px 0"
                       },
                       {
-                        fontSize: "14px"
+                        fontSize: "14px",
+                        marginRight: "14px"
                       },
                       {
                         fontSize: "15px",
                         textAlign: "center",
-                        whiteSpace: "normal"
+                        whiteSpace: "normal",
+                        marginRight: "0",
+                        padding: "4px 0"
                       }
                     )
                   },
