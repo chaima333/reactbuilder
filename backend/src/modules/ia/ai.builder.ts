@@ -2078,66 +2078,103 @@ const buildFooter = (config: SectionConfig): PageBlock => {
 };
 
 const buildFAQ = (config: SectionConfig): PageBlock => {
-  const items = config.items || [];
+  const items =
+    config.items || [];
 
-  const faqBlocks: PageBlock[] = items.map((item) => {
-    const [question, answer] = item.split("|");
+  const faqBlocks: PageBlock[] =
+    items.map((item) => {
+      const [question, answer] =
+        item.split("|");
 
-    return {
-      id: makeId("faq-item"),
-      type: "flex",
-      data: {
-        props: {},
-        style: responsiveStyle({
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px",
-          width: "100%",
-          maxWidth: "820px", // ← IMPORTANT: largeur fixe
-          margin: "0 auto",   // ← IMPORTANT: centrage
-          padding: "22px 26px",
-          backgroundColor: "#ffffff",
-          border: "1px solid #e5e7eb",
-          borderRadius: "14px",
-          boxShadow: "0 8px 24px rgba(15,23,42,0.06)",
-          boxSizing: "border-box"
-        })
-      },
-      children: [
-        textBlock(question || item, {
-          fontSize: "18px",
-          fontWeight: "800",
-          color: "#0f172a",
-          textAlign: "left",
-          marginBottom: "0"
-        }),
+      const faqCard: PageBlock = {
+        id: makeId("faq-item-card"),
+        type: "flex",
+        data: {
+          props: {},
+          style: responsiveStyle(
+            {
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+              width: "100%",
+              maxWidth: "820px",
+              padding: "22px 26px",
+              backgroundColor: "#ffffff",
+              border: "1px solid #e5e7eb",
+              borderRadius: "14px",
+              boxShadow: "0 8px 24px rgba(15,23,42,0.06)",
+              boxSizing: "border-box"
+            },
+            {},
+            {
+              maxWidth: "100%",
+              padding: "18px"
+            }
+          )
+        },
+        children: [
+          textBlock(question || item, {
+            fontSize: "18px",
+            fontWeight: "800",
+            color: "#0f172a",
+            textAlign: "left",
+            marginBottom: "0"
+          }),
 
-        textBlock(answer || "", {
-          fontSize: "15px",
-          color: "#64748b",
-          textAlign: "left",
-          lineHeight: "1.7",
-          marginBottom: "0"
-        })
-      ]
-    };
-  });
+          textBlock(answer || "", {
+            fontSize: "15px",
+            color: "#64748b",
+            textAlign: "left",
+            lineHeight: "1.7",
+            marginBottom: "0"
+          })
+        ]
+      };
+
+      return {
+        id: makeId("faq-item-wrapper"),
+        type: "flexItem",
+        data: {
+          props: {},
+          style: responsiveStyle(
+            {
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center"
+            },
+            {},
+            {
+              width: "100%"
+            }
+          )
+        },
+        children: [faqCard]
+      };
+    });
 
   const faqContainer: PageBlock = {
     id: makeId("faq-container"),
     type: "flex",
     data: {
       props: {},
-      style: responsiveStyle({
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center", // ← CENTRAGE
-        gap: "16px",
-        width: "100%",
-        maxWidth: "900px",
-        margin: "0 auto",     // ← CENTRAGE
-        boxSizing: "border-box"
-      })
+      style: responsiveStyle(
+        {
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "16px",
+          width: "100%",
+          maxWidth: "900px",
+          margin: "0 auto",
+          boxSizing: "border-box"
+        },
+        {},
+        {
+          maxWidth: "100%"
+        }
+      )
     },
     children: faqBlocks
   };
@@ -2167,7 +2204,6 @@ const buildFAQ = (config: SectionConfig): PageBlock => {
     }
   );
 };
-
 // ============================================
 // CONTACT LAYOUT (CONSERVÉ)
 // ============================================
