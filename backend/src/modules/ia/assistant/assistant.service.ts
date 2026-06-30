@@ -436,6 +436,199 @@ const improveText = (
   return safeText;
 };
 
+const isDesignPrompt = (
+  prompt: string
+) => {
+  const text =
+    prompt.toLowerCase();
+
+  return (
+    text.includes("design") ||
+    text.includes("style") ||
+    text.includes("modern") ||
+    text.includes("premium") ||
+    text.includes("dark") ||
+    text.includes("clean") ||
+    text.includes("spacing") ||
+    text.includes("shadow") ||
+    text.includes("animation") ||
+    text.includes("attractive") ||
+    text.includes("beautiful")
+  );
+};
+
+const improveDesign = (
+  block: any,
+  prompt: string
+) => {
+  const text =
+    prompt.toLowerCase();
+
+  const desktopStyle =
+    block?.data?.style?.desktop || {};
+
+  const tabletStyle =
+    block?.data?.style?.tablet || {};
+
+  const mobileStyle =
+    block?.data?.style?.mobile || {};
+
+  let desktopPatch: Record<string, any> = {};
+  let tabletPatch: Record<string, any> = {};
+  let mobilePatch: Record<string, any> = {};
+
+  // BUTTON DESIGN
+  if (block?.type === "button") {
+    desktopPatch = {
+      padding: "14px 34px",
+      borderRadius: "999px",
+      backgroundColor: "#2563eb",
+      color: "#ffffff",
+      fontWeight: "800",
+      fontSize: "15px",
+      border: "none",
+      boxShadow: "0 14px 28px rgba(37,99,235,0.28)",
+      cursor: "pointer",
+      transition: "all 0.25s ease"
+    };
+
+    tabletPatch = {
+      padding: "12px 28px",
+      fontSize: "14px"
+    };
+
+    mobilePatch = {
+      padding: "11px 24px",
+      fontSize: "14px",
+      maxWidth: "220px",
+      width: "auto"
+    };
+  }
+
+  // TITLE DESIGN
+  else if (block?.type === "title") {
+    desktopPatch = {
+      fontSize: "52px",
+      fontWeight: "900",
+      lineHeight: "1.08",
+      letterSpacing: "-0.04em",
+      color: text.includes("dark")
+        ? "#ffffff"
+        : "#0f172a",
+      marginBottom: "18px"
+    };
+
+    tabletPatch = {
+      fontSize: "40px",
+      lineHeight: "1.12"
+    };
+
+    mobilePatch = {
+      fontSize: "32px",
+      lineHeight: "1.15",
+      textAlign: "center"
+    };
+  }
+
+  // TEXT DESIGN
+  else if (block?.type === "text") {
+    desktopPatch = {
+      fontSize: "18px",
+      lineHeight: "1.8",
+      color: text.includes("dark")
+        ? "#cbd5e1"
+        : "#475569",
+      maxWidth: "760px"
+    };
+
+    tabletPatch = {
+      fontSize: "16px"
+    };
+
+    mobilePatch = {
+      fontSize: "15px",
+      textAlign: "center"
+    };
+  }
+
+  // SECTION / FLEX / CARD DESIGN
+  else {
+    if (
+      text.includes("dark") ||
+      text.includes("premium")
+    ) {
+      desktopPatch = {
+        backgroundColor: "#020617",
+        color: "#ffffff",
+        padding: "96px 48px",
+        borderRadius: "28px",
+        border: "1px solid rgba(255,255,255,0.12)",
+        boxShadow: "0 30px 80px rgba(2,6,23,0.35)",
+        boxSizing: "border-box",
+        transition: "all 0.3s ease"
+      };
+    } else if (
+      text.includes("clean") ||
+      text.includes("minimal")
+    ) {
+      desktopPatch = {
+        backgroundColor: "#f8fafc",
+        color: "#0f172a",
+        padding: "64px 40px",
+        borderRadius: "20px",
+        border: "1px solid #e2e8f0",
+        boxShadow: "none",
+        boxSizing: "border-box"
+      };
+    } else {
+      desktopPatch = {
+        backgroundColor: "#ffffff",
+        color: "#0f172a",
+        padding: "72px 44px",
+        borderRadius: "24px",
+        border: "1px solid #e5e7eb",
+        boxShadow: "0 24px 60px rgba(15,23,42,0.12)",
+        boxSizing: "border-box",
+        transition: "all 0.3s ease"
+      };
+    }
+
+    tabletPatch = {
+      padding: "56px 32px",
+      maxWidth: "100%"
+    };
+
+    mobilePatch = {
+      padding: "42px 20px",
+      maxWidth: "100%",
+      borderRadius: "18px"
+    };
+  }
+
+  return {
+    ...block,
+    data: {
+      ...block.data,
+      style: {
+        ...block.data?.style,
+        desktop: {
+          ...desktopStyle,
+          ...desktopPatch
+        },
+        tablet: {
+          ...tabletStyle,
+          ...tabletPatch
+        },
+        mobile: {
+          ...mobileStyle,
+          ...mobilePatch
+        }
+      }
+    }
+  };
+};
+
+
 export const editBlockWithAssistant = async ({
   prompt,
   block,
@@ -453,7 +646,20 @@ export const editBlockWithAssistant = async ({
 
   let updatedBlock =
     { ...block };
+if (isDesignPrompt(prompt)) {
+  updatedBlock =
+    improveDesign(
+      block,
+      prompt
+    );
 
+  return {
+    block: updatedBlock,
+    reply: `Selected ${block.type} block design improved successfully.`,
+    pageTitle,
+    slug
+  };
+}
   if (
     ["title", "text", "button"].includes(block.type)
   ) {
