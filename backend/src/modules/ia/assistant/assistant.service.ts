@@ -305,3 +305,154 @@ export const askAssistant = async (
     suggestions: uniqueSuggestions.slice(0, 6),
   };
 };
+
+const getEditableBlockText = (
+  block: any
+): string => {
+  return (
+    block?.data?.props?.text ||
+    block?.data?.props?.content ||
+    block?.data?.props?.label ||
+    ""
+  );
+};
+
+const setBlockText = (
+  block: any,
+  text: string
+) => {
+  if (block?.type === "button") {
+    return {
+      ...block,
+      data: {
+        ...block.data,
+        props: {
+          ...block.data?.props,
+          label: text
+        }
+      }
+    };
+  }
+
+  return {
+    ...block,
+    data: {
+      ...block.data,
+      props: {
+        ...block.data?.props,
+        text,
+        content: text
+      }
+    }
+  };
+};
+
+const improveText = (
+  text: string,
+  prompt: string
+) => {
+  const lowerPrompt =
+    prompt.toLowerCase();
+
+  if (
+    lowerPrompt.includes("short") ||
+    lowerPrompt.includes("shorter") ||
+    lowerPrompt.includes("résumé") ||
+    lowerPrompt.includes("court")
+  ) {
+    return text
+      .split(".")[0]
+      .slice(0, 90);
+  }
+
+  if (
+    lowerPrompt.includes("professional") ||
+    lowerPrompt.includes("pro") ||
+    lowerPrompt.includes("formal")
+  ) {
+    return `Professional ${text}`
+      .replace("Professional Professional", "Professional");
+  }
+
+  if (
+    lowerPrompt.includes("marketing") ||
+    lowerPrompt.includes("attractive")
+  ) {
+    return `${text} — built to help your business grow with confidence.`;
+  }
+
+  if (
+    lowerPrompt.includes("french") ||
+    lowerPrompt.includes("français") ||
+    lowerPrompt.includes("translate to french")
+  ) {
+    return `Version française: ${text}`;
+  }
+
+  if (
+    lowerPrompt.includes("arabic") ||
+    lowerPrompt.includes("arabe")
+  ) {
+    return `النسخة العربية: ${text}`;
+  }
+
+  return `${text} Improve your message with clearer value and stronger impact.`;
+};
+
+export const editBlockWithAssistant = async ({
+  prompt,
+  block,
+  pageTitle,
+  slug
+}: {
+  prompt: string;
+  block: any;
+  pageTitle?: string;
+  slug?: string;
+}) => {
+ 
+  const currentText =
+  getEditableBlockText(block);
+
+  let updatedBlock =
+    { ...block };
+
+  if (
+    ["title", "text", "button"].includes(block.type)
+  ) {
+    const newText =
+      improveText(
+        currentText,
+        prompt
+      );
+
+    updatedBlock =
+      setBlockText(
+        block,
+        newText
+      );
+  } else {
+    updatedBlock = {
+      ...block,
+      data: {
+        ...block.data,
+        style: {
+          ...block.data?.style,
+          desktop: {
+            ...block.data?.style?.desktop,
+            borderRadius: "18px",
+            boxShadow:
+              "0 12px 30px rgba(15,23,42,0.10)"
+          }
+        }
+      }
+    };
+  }
+
+  return {
+    block: updatedBlock,
+    reply: `Selected ${block.type} block updated successfully.`,
+    pageTitle,
+    slug
+  };
+};

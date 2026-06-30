@@ -1,10 +1,13 @@
-// assistant.routes.ts
-
 import { Router } from "express";
-import { assistant } from "./assistant.controller";
+import {
+  assistant,
+  editSelectedBlock
+} from "./assistant.controller";
 
 const router = Router();
 
 router.post("/", assistant);
+
+router.post("/edit-block", editSelectedBlock);
 
 export default router;
