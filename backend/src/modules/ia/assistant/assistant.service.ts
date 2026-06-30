@@ -349,54 +349,91 @@ const setBlockText = (
 
 const improveText = (
   text: string,
-  prompt: string
+  prompt: string,
+  blockType: string
 ) => {
   const lowerPrompt =
     prompt.toLowerCase();
 
-  if (
-    lowerPrompt.includes("short") ||
-    lowerPrompt.includes("shorter") ||
-    lowerPrompt.includes("résumé") ||
-    lowerPrompt.includes("court")
-  ) {
-    return text
-      .split(".")[0]
-      .slice(0, 90);
+  const safeText =
+    text?.trim() || "Your content";
+
+  if (blockType === "title") {
+    if (
+      lowerPrompt.includes("professional") ||
+      lowerPrompt.includes("pro") ||
+      lowerPrompt.includes("formal")
+    ) {
+      return "Build Smarter Digital Solutions";
+    }
+
+    if (
+      lowerPrompt.includes("short") ||
+      lowerPrompt.includes("shorter") ||
+      lowerPrompt.includes("court")
+    ) {
+      return safeText
+        .split(" ")
+        .slice(0, 6)
+        .join(" ");
+    }
+
+    return "Smart Digital Solutions for Growing Teams";
   }
 
-  if (
-    lowerPrompt.includes("professional") ||
-    lowerPrompt.includes("pro") ||
-    lowerPrompt.includes("formal")
-  ) {
-    return `Professional ${text}`
-      .replace("Professional Professional", "Professional");
+  if (blockType === "button") {
+    if (
+      lowerPrompt.includes("contact")
+    ) {
+      return "Contact Us";
+    }
+
+    if (
+      lowerPrompt.includes("start")
+    ) {
+      return "Get Started";
+    }
+
+    return "Learn More";
   }
 
-  if (
-    lowerPrompt.includes("marketing") ||
-    lowerPrompt.includes("attractive")
-  ) {
-    return `${text} — built to help your business grow with confidence.`;
+  if (blockType === "text") {
+    if (
+      lowerPrompt.includes("professional") ||
+      lowerPrompt.includes("pro") ||
+      lowerPrompt.includes("formal")
+    ) {
+      return "We help organizations grow with smarter automation, reliable cloud infrastructure, and seamless API integrations.";
+    }
+
+    if (
+      lowerPrompt.includes("short") ||
+      lowerPrompt.includes("shorter") ||
+      lowerPrompt.includes("court")
+    ) {
+      return safeText
+        .split(".")[0]
+        .slice(0, 120);
+    }
+
+    if (
+      lowerPrompt.includes("marketing") ||
+      lowerPrompt.includes("attractive")
+    ) {
+      return "Transform your workflows with intelligent digital solutions designed to save time, improve performance, and support business growth.";
+    }
+
+    if (
+      lowerPrompt.includes("french") ||
+      lowerPrompt.includes("français")
+    ) {
+      return "Nous aidons les organisations à automatiser leurs tâches, améliorer leur productivité et développer des solutions numériques intelligentes.";
+    }
+
+    return "We help teams create clearer, faster, and more effective digital experiences.";
   }
 
-  if (
-    lowerPrompt.includes("french") ||
-    lowerPrompt.includes("français") ||
-    lowerPrompt.includes("translate to french")
-  ) {
-    return `Version française: ${text}`;
-  }
-
-  if (
-    lowerPrompt.includes("arabic") ||
-    lowerPrompt.includes("arabe")
-  ) {
-    return `النسخة العربية: ${text}`;
-  }
-
-  return `${text} Improve your message with clearer value and stronger impact.`;
+  return safeText;
 };
 
 export const editBlockWithAssistant = async ({
@@ -420,11 +457,12 @@ export const editBlockWithAssistant = async ({
   if (
     ["title", "text", "button"].includes(block.type)
   ) {
-    const newText =
-      improveText(
-        currentText,
-        prompt
-      );
+   const newText =
+  improveText(
+    currentText,
+    prompt,
+    block.type
+  );
 
     updatedBlock =
       setBlockText(
