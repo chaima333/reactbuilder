@@ -681,98 +681,286 @@ const buildPricing = (config: SectionConfig): PageBlock => {
 };
 
 // 5. RESERVATION BUILDER
-const buildReservation = (config: SectionConfig): PageBlock => {
+const buildReservation = (
+  config: SectionConfig
+): PageBlock => {
   const fields = [
-    { name: "name", type: "text", label: "Full Name", required: true },
-    { name: "email", type: "email", label: "Email Address", required: true },
-    { name: "phone", type: "tel", label: "Phone Number", required: true },
-    { name: "date", type: "date", label: "Preferred Date", required: true },
-    { name: "time", type: "time", label: "Preferred Time", required: true },
-    { name: "guests", type: "number", label: "Number of Guests", required: true },
-    { name: "message", type: "textarea", label: "Special Requests", required: false },
+    {
+      name: "name",
+      type: "text",
+      label: "Full Name",
+      required: true
+    },
+    {
+      name: "email",
+      type: "email",
+      label: "Email Address",
+      required: true
+    },
+    {
+      name: "phone",
+      type: "tel",
+      label: "Phone Number",
+      required: true
+    },
+    {
+      name: "date",
+      type: "date",
+      label: "Preferred Date",
+      required: true
+    },
+    {
+      name: "time",
+      type: "time",
+      label: "Preferred Time",
+      required: true
+    },
+    {
+      name: "guests",
+      type: "number",
+      label: "Number of Guests",
+      required: true
+    },
+    {
+      name: "message",
+      type: "textarea",
+      label: "Special Requests",
+      required: false
+    }
   ];
 
-  const fieldBlocks: PageBlock[] = fields.map((field) => ({
-    id: makeId(`reservation-field-${field.name}`),
-    type: field.type === "textarea" ? "textarea" : "input",
-    data: {
-      props: {
-        name: field.name,
-        placeholder: field.label,
-        required: field.required,
-        type: field.type,
-        label: field.label,
+  const fieldBlocks: PageBlock[] =
+    fields.map((field) => ({
+      id: makeId(
+        `reservation-field-${field.name}`
+      ),
+      type:
+        field.type === "textarea"
+          ? "textarea"
+          : "input",
+      data: {
+        props: {
+          name: field.name,
+          placeholder: field.label,
+          required: field.required,
+          type: field.type,
+          label: field.label
+        },
+        style: responsiveStyle(
+          {
+            width: "100%",
+            minHeight:
+              field.type === "textarea"
+                ? "130px"
+                : "52px",
+            padding: "14px 16px",
+            fontSize: "15px",
+            border: "1px solid #cbd5e1",
+            borderRadius: "14px",
+            marginBottom: "0",
+            backgroundColor: "#ffffff",
+            color: "#0f172a",
+            boxSizing: "border-box",
+            outline: "none"
+          },
+          {},
+          {
+            minHeight:
+              field.type === "textarea"
+                ? "120px"
+                : "50px"
+          }
+        )
       },
-      style: responsiveStyle({
-        width: "100%",
-        padding: "12px 16px",
-        fontSize: "16px",
-        border: "1px solid #d1d5db",
-        borderRadius: "8px",
-        marginBottom: "16px",
-        backgroundColor: "#ffffff",
-        color: "#0f172a",
-        boxSizing: "border-box",
-      }),
-    },
-    children: [],
-  }));
+      children: []
+    }));
 
-  return {
+  const formGrid: PageBlock = {
+    id: makeId("reservation-form-grid"),
+    type: "grid",
+    data: {
+      props: {},
+      style: responsiveStyle(
+        {
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(2, minmax(0, 1fr))",
+          gap: "16px",
+          width: "100%"
+        },
+        {
+          gridTemplateColumns: "1fr",
+          gap: "14px"
+        },
+        {
+          gridTemplateColumns: "1fr",
+          gap: "12px"
+        }
+      )
+    },
+    children: fieldBlocks.map((fieldBlock) =>
+      gridItemBlock([fieldBlock])
+    )
+  };
+
+  const reservationCard: PageBlock = {
     id: makeId("reservation-card"),
     type: "flex",
     data: {
       props: {},
-      style: responsiveStyle({
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-        width: "100%",
-        maxWidth: "600px",
-        margin: "0 auto",
-        backgroundColor: "#ffffff",
-        padding: "60px 40px",
-        borderRadius: "16px",
-        boxShadow: "0 12px 30px rgba(0,0,0,0.1)",
-        boxSizing: "border-box",
-      }),
+      style: responsiveStyle(
+        {
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          justifyContent: "center",
+          gap: "18px",
+          width: "100%",
+          maxWidth: "760px",
+          margin: "0 auto",
+          backgroundColor: "#ffffff",
+          padding: "52px",
+          borderRadius: "24px",
+          border: "1px solid #e5e7eb",
+          boxShadow:
+            "0 22px 55px rgba(15,23,42,0.12)",
+          boxSizing: "border-box"
+        },
+        {
+          maxWidth: "680px",
+          padding: "42px"
+        },
+        {
+          maxWidth: "100%",
+          padding: "28px 20px",
+          borderRadius: "18px"
+        }
+      )
     },
     children: [
-      titleBlock(config.title || "Make a Reservation", {
-        fontSize: "28px",
-        marginBottom: "8px"
-      }),
-      textBlock(config.text || "Fill in the details below to secure your spot.", {
-        fontSize: "16px",
-        color: "#64748b",
-        marginBottom: "24px"
-      }),
-      ...fieldBlocks,
+      titleBlock(
+        config.title || "Make a Reservation",
+        {
+          fontSize: "34px",
+          fontWeight: "900",
+          textAlign: "center",
+          marginBottom: "4px",
+          color: "#0f172a"
+        }
+      ),
+
+      textBlock(
+        config.text ||
+          "Fill in the details below and our team will confirm your reservation shortly.",
+        {
+          fontSize: "16px",
+          color: "#64748b",
+          textAlign: "center",
+          lineHeight: "1.7",
+          marginBottom: "14px"
+        }
+      ),
+
+      formGrid,
+
       {
         id: makeId("reservation-submit"),
         type: "button",
         data: {
           props: {
             label: "Book Now",
-            type: "submit",
+            type: "submit"
           },
-          style: responsiveStyle({
-            padding: "14px 32px",
-            backgroundColor: "#2563eb",
-            color: "#ffffff",
-            border: "none",
-            borderRadius: "8px",
-            fontSize: "16px",
-            fontWeight: "600",
-            cursor: "pointer",
-          }),
+          style: responsiveStyle(
+            {
+              alignSelf: "center",
+              padding: "14px 36px",
+              backgroundColor: "#2563eb",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "14px",
+              fontSize: "16px",
+              fontWeight: "800",
+              cursor: "pointer",
+              boxShadow:
+                "0 14px 30px rgba(37,99,235,0.28)"
+            },
+            {},
+            {
+              width: "100%",
+              maxWidth: "260px"
+            }
+          )
         },
-        children: [],
-      },
-    ],
+        children: []
+      }
+    ]
+  };
+
+  return {
+    id: makeId("reservation-section"),
+    type: "section",
+    data: {
+      props: {},
+      style: responsiveStyle(
+        {
+          width: "100%",
+          minHeight: "70vh",
+          padding: "100px 40px",
+          backgroundColor:
+            config.style?.backgroundColor ||
+            "#f8fafc",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxSizing: "border-box"
+        },
+        {
+          padding: "76px 28px",
+          minHeight: "auto"
+        },
+        {
+          padding: "56px 18px",
+          minHeight: "auto"
+        }
+      )
+    },
+    children: [
+      {
+        id: makeId("reservation-section-flex"),
+        type: "flex",
+        data: {
+          props: {},
+          style: responsiveStyle({
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "100%",
+            maxWidth: "1100px",
+            margin: "0 auto"
+          })
+        },
+        children: [
+          {
+            id: makeId("reservation-section-item"),
+            type: "flexItem",
+            data: {
+              props: {},
+              style: responsiveStyle({
+                width: "100%",
+                display: "flex",
+                justifyContent: "center"
+              })
+            },
+            children: [
+              reservationCard
+            ]
+          }
+        ]
+      }
+    ]
   };
 };
-
 // 6. INTEGRATIONS BUILDER
 const buildIntegrations = (config: SectionConfig): PageBlock => {
   const items = config.items || [];
