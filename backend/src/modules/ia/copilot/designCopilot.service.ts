@@ -243,7 +243,33 @@ export const createDesignCopilotResponse = (
       )
     );
   }
-
+if (
+  message.includes("stats") ||
+  message.includes("impact") ||
+  message.includes("numbers") ||
+  message.includes("metrics") ||
+  message.includes("kpi") ||
+  message.includes("chiffres") ||
+  message.includes("statistiques")
+) {
+  suggestions.unshift(
+    makeSuggestion(
+      "improve-stats-section",
+      "Improve stats / impact section",
+      "Make numbers more visible with premium stat cards, better alignment, stronger spacing, and clearer hierarchy.",
+      [
+        {
+          type: "IMPROVE_STATS",
+          target: "page"
+        },
+        {
+          type: "CENTER_LAYOUT",
+          target: "impact"
+        }
+      ]
+    )
+  );
+}
   if (
     suggestions.length === 0
   ) {

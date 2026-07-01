@@ -95,7 +95,27 @@ const looksLikeCard = (
     text.includes("get in touch")
   );
 };
+const looksLikeStatsBlock = (
+  block: PageBlock
+): boolean => {
+  const text =
+    blockText(block);
 
+  const id =
+    String(block.id || "").toLowerCase();
+
+  return (
+    id.includes("stat") ||
+    id.includes("impact") ||
+    text.includes("our impact") ||
+    text.includes("impact") ||
+    text.includes("stats") ||
+    text.includes("1000") ||
+    text.includes("98%") ||
+    text.includes("200+") ||
+    text.includes("4.9")
+  );
+};
 const applyActionToBlock = (
   block: PageBlock,
   action: DesignAction
@@ -301,7 +321,88 @@ const applyActionToBlock = (
     desktop.boxSizing =
       "border-box";
   }
+if (
+  action.type === "IMPROVE_STATS" &&
+  looksLikeStatsBlock(block)
+) {
+  if (
+    block.type === "section" ||
+    block.type === "flex" ||
+    block.type === "grid"
+  ) {
+    desktop.display =
+      desktop.display || "flex";
 
+    desktop.justifyContent =
+      "center";
+
+    desktop.alignItems =
+      "center";
+
+    desktop.gap =
+      desktop.gap || "24px";
+
+    desktop.width =
+      "100%";
+
+    desktop.maxWidth =
+      desktop.maxWidth || "980px";
+
+    desktop.margin =
+      "0 auto";
+
+    desktop.boxSizing =
+      "border-box";
+  }
+
+  if (
+    block.type === "flexItem" ||
+    block.type === "gridItem" ||
+    block.type === "flex"
+  ) {
+    desktop.borderRadius =
+      "20px";
+
+    desktop.boxShadow =
+      "0 18px 45px rgba(15,23,42,0.12)";
+
+    desktop.border =
+      desktop.border || "1px solid #e5e7eb";
+
+    desktop.backgroundColor =
+      desktop.backgroundColor || "#ffffff";
+
+    desktop.padding =
+      desktop.padding || "24px";
+
+    desktop.textAlign =
+      "center";
+
+    desktop.boxSizing =
+      "border-box";
+  }
+
+  if (
+    block.type === "text" ||
+    block.type === "title"
+  ) {
+    desktop.textAlign =
+      "center";
+
+    if (
+      blockText(block).match(/\d/)
+    ) {
+      desktop.fontSize =
+        desktop.fontSize || "36px";
+
+      desktop.fontWeight =
+        "900";
+
+      desktop.color =
+        desktop.color || "#09286b";
+    }
+  }
+}
   return {
     ...block,
     data: {

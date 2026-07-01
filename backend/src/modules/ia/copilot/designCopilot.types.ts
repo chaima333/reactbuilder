@@ -5,6 +5,7 @@ export type DesignActionType =
   | "IMPROVE_BUTTONS"
   | "IMPROVE_IMAGES"
   | "IMPROVE_FORMS"
+  | "IMPROVE_STATS"
   | "APPLY_PROFILE";
 
 export interface DesignAction {
