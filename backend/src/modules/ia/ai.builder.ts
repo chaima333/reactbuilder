@@ -2,6 +2,7 @@
 
 import { PageBlock } from "../pages/types/page.types";
 import { CATEGORY_TEMPLATES, SectionConfig, SectionKind, TemplateConfig } from "./ai.templates";
+import { applyDesignSystemToBlocks, generateDesignSystem } from "./designSystem.generator";
 
 const makeId = (prefix: string) =>
   `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
@@ -3115,38 +3116,125 @@ export function generatePageBlocksByType(
   pageTitle?: string,
   generatedBlocks: PageBlock[] = []
 ): PageBlock[] {
+  let blocks: PageBlock[];
+
   switch (pageType) {
     case "home":
-      return generateHomeBlocks(category, aiContent, heroImageUrl, navigationItems);
+      blocks =
+        generateHomeBlocks(
+          category,
+          aiContent,
+          heroImageUrl,
+          navigationItems
+        );
+      break;
+
     case "about":
-      return generateAboutBlocks(category, aiContent, heroImageUrl, navigationItems);
+      blocks =
+        generateAboutBlocks(
+          category,
+          aiContent,
+          heroImageUrl,
+          navigationItems
+        );
+      break;
+
     case "services":
-      return generateServicesBlocks(category, aiContent, heroImageUrl, navigationItems);
+      blocks =
+        generateServicesBlocks(
+          category,
+          aiContent,
+          heroImageUrl,
+          navigationItems
+        );
+      break;
+
     case "contact":
-      return generateContactBlocks(category, aiContent, heroImageUrl, navigationItems);
+      blocks =
+        generateContactBlocks(
+          category,
+          aiContent,
+          heroImageUrl,
+          navigationItems
+        );
+      break;
+
     case "solutions":
-      return generateSolutionsBlocks(category, aiContent, heroImageUrl, navigationItems);
+      blocks =
+        generateSolutionsBlocks(
+          category,
+          aiContent,
+          heroImageUrl,
+          navigationItems
+        );
+      break;
+
     case "pricing":
-      return generatePricingBlocks(category, aiContent, heroImageUrl, navigationItems);
+      blocks =
+        generatePricingBlocks(
+          category,
+          aiContent,
+          heroImageUrl,
+          navigationItems
+        );
+      break;
+
     case "integrations":
-      return generateIntegrationsBlocks(category, aiContent, heroImageUrl, navigationItems);
+      blocks =
+        generateIntegrationsBlocks(
+          category,
+          aiContent,
+          heroImageUrl,
+          navigationItems
+        );
+      break;
+
     case "reservation":
-      return generateReservationBlocks(category, aiContent, heroImageUrl, navigationItems);
+    case "reservations":
+    case "appointments":
+      blocks =
+        generateReservationBlocks(
+          category,
+          aiContent,
+          heroImageUrl,
+          navigationItems
+        );
+      break;
+
     default:
-      return generateSpecializedBlocks(
-        category,
-        aiContent,
-        heroImageUrl,
-        navigationItems,
-        {
-          hero: {
-            title: pageTitle || pageType,
-            text: `Explore our ${pageTitle || pageType} resources and capabilities.`
-          }
-        },
-        ["navbar", "hero", "features", "cta", "faq", "footer"]
-      );
+      blocks =
+        generateSpecializedBlocks(
+          category,
+          aiContent,
+          heroImageUrl,
+          navigationItems,
+          {
+            hero: {
+              title: pageTitle || pageType,
+              text: `Explore our ${pageTitle || pageType} resources and capabilities.`
+            }
+          },
+          [
+            "navbar",
+            "hero",
+            "features",
+            "cta",
+            "faq",
+            "footer"
+          ]
+        );
+      break;
   }
+
+  const designSystem =
+    generateDesignSystem(
+      category
+    );
+
+  return applyDesignSystemToBlocks(
+    blocks,
+    designSystem
+  );
 }
 
 // ============================================
