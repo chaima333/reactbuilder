@@ -2281,51 +2281,36 @@ const buildFAQ = (
         type: "flex",
         data: {
           props: {},
-          style: responsiveStyle(
-            {
-              display: "flex",
-              flexDirection: "column",
-              gap: "10px",
-              width: "100%",
-              maxWidth: "760px",
-              margin: "0 auto",
-              padding: "22px 26px",
-              backgroundColor: "#ffffff",
-              border: "1px solid #e5e7eb",
-              borderRadius: "14px",
-              boxShadow:
-                "0 8px 24px rgba(15,23,42,0.06)",
-              boxSizing: "border-box"
-            },
-            {},
-            {
-              maxWidth: "100%",
-              padding: "18px"
-            }
-          )
+          style: responsiveStyle({
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+            width: "100%",
+            padding: "22px 26px",
+            backgroundColor: "#ffffff",
+            border: "1px solid #e5e7eb",
+            borderRadius: "14px",
+            boxShadow:
+              "0 8px 24px rgba(15,23,42,0.06)",
+            boxSizing: "border-box"
+          })
         },
         children: [
-          textBlock(
-            question || item,
-            {
-              fontSize: "18px",
-              fontWeight: "800",
-              color: "#0f172a",
-              textAlign: "left",
-              marginBottom: "0"
-            }
-          ),
+          textBlock(question || item, {
+            fontSize: "18px",
+            fontWeight: "800",
+            color: "#0f172a",
+            textAlign: "left",
+            marginBottom: "0"
+          }),
 
-          textBlock(
-            answer || "",
-            {
-              fontSize: "15px",
-              color: "#64748b",
-              textAlign: "left",
-              lineHeight: "1.7",
-              marginBottom: "0"
-            }
-          )
+          textBlock(answer || "", {
+            fontSize: "15px",
+            color: "#64748b",
+            textAlign: "left",
+            lineHeight: "1.7",
+            marginBottom: "0"
+          })
         ]
       };
 
@@ -2334,25 +2319,11 @@ const buildFAQ = (
         type: "flexItem",
         data: {
           props: {},
-          style: responsiveStyle(
-            {
-              width: "100%",
-              maxWidth: "780px",
-              margin: "0 auto",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center"
-            },
-            {},
-            {
-              width: "100%",
-              maxWidth: "100%"
-            }
-          )
+          style: responsiveStyle({
+            width: "100%"
+          })
         },
-        children: [
-          faqCard
-        ]
+        children: [faqCard]
       };
     });
 
@@ -2361,62 +2332,120 @@ const buildFAQ = (
     type: "flex",
     data: {
       props: {},
-      style: responsiveStyle(
-        {
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "16px",
-          width: "100%",
-          maxWidth: "780px",
-          margin: "0 auto",
-          boxSizing: "border-box"
-        },
-        {},
-        {
-          maxWidth: "100%"
-        }
-      )
+      style: responsiveStyle({
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "stretch",
+        justifyContent: "center",
+        gap: "16px",
+        width: "100%",
+        maxWidth: "780px",
+        margin: "0 auto",
+        boxSizing: "border-box"
+      })
     },
     children: faqBlocks
   };
 
-  return sectionBlock(
-    [
-      titleBlock(
-        config.title ||
-          "Frequently Asked Questions",
-        {
-          fontSize: "38px",
-          fontWeight: "900",
-          marginBottom: "12px",
-          textAlign: "center"
-        }
-      ),
+  return {
+    id: makeId("faq-section"),
+    type: "section",
+    data: {
+      props: {},
+      style: responsiveStyle({
+        backgroundColor:
+          config.style?.backgroundColor ||
+          "#f8fafc",
+        padding: "90px 40px",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        boxSizing: "border-box"
+      })
+    },
+    children: [
+      {
+        id: makeId("faq-outer"),
+        type: "flex",
+        data: {
+          props: {},
+          style: responsiveStyle({
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "100%",
+            maxWidth: "900px",
+            margin: "0 auto",
+            boxSizing: "border-box"
+          })
+        },
+        children: [
+          {
+            id: makeId("faq-title-item"),
+            type: "flexItem",
+            data: {
+              props: {},
+              style: responsiveStyle({
+                width: "100%"
+              })
+            },
+            children: [
+              titleBlock(
+                config.title ||
+                  "Frequently Asked Questions",
+                {
+                  fontSize: "38px",
+                  fontWeight: "900",
+                  marginBottom: "12px",
+                  textAlign: "center"
+                }
+              )
+            ]
+          },
 
-      textBlock(
-        config.text ||
-          "Find answers to common questions.",
-        {
-          fontSize: "16px",
-          color: "#64748b",
-          marginBottom: "42px",
-          textAlign: "center"
-        }
-      ),
+          {
+            id: makeId("faq-text-item"),
+            type: "flexItem",
+            data: {
+              props: {},
+              style: responsiveStyle({
+                width: "100%"
+              })
+            },
+            children: [
+              textBlock(
+                config.text ||
+                  "Find answers to common questions.",
+                {
+                  fontSize: "16px",
+                  color: "#64748b",
+                  marginBottom: "42px",
+                  textAlign: "center"
+                }
+              )
+            ]
+          },
 
-      faqContainer
-    ],
-    {
-      backgroundColor:
-        config.style?.backgroundColor ||
-        "#f8fafc",
-      padding: "90px 40px",
-      textAlign: "center",
-      width: "100%"
-    }
-  );
+          {
+            id: makeId("faq-container-item"),
+            type: "flexItem",
+            data: {
+              props: {},
+              style: responsiveStyle({
+                width: "100%",
+                display: "flex",
+                justifyContent: "center"
+              })
+            },
+            children: [faqContainer]
+          }
+        ]
+      }
+    ]
+  };
 };
 // ============================================
 // CONTACT LAYOUT (CONSERVÉ)
@@ -2750,6 +2779,7 @@ const buildContactLayout = (): PageBlock => ({
         padding: "90px 40px",
         width: "100%",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         boxSizing: "border-box"
@@ -2764,7 +2794,7 @@ const buildContactLayout = (): PageBlock => ({
   },
   children: [
     {
-      id: makeId("contact-layout-flex"),
+      id: makeId("contact-outer-flex"),
       type: "flex",
       data: {
         props: {},
@@ -2772,76 +2802,114 @@ const buildContactLayout = (): PageBlock => ({
           {
             display: "flex",
             flexDirection: "row",
-            gap: "48px",
-            alignItems: "stretch",
+            alignItems: "center",
             justifyContent: "center",
-            maxWidth: "1180px",
-            margin: "0 auto",
             width: "100%",
-            flexWrap: "wrap",
             boxSizing: "border-box"
           },
           {
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "32px"
+            flexDirection: "column"
           },
           {
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "24px"
+            flexDirection: "column"
           }
         )
       },
       children: [
         {
-          id: makeId("contact-info-item"),
+          id: makeId("contact-outer-item"),
           type: "flexItem",
           data: {
             props: {},
-            style: responsiveStyle(
-              {
-                flex: "1 1 480px",
-                maxWidth: "560px",
-                width: "100%",
-                display: "flex",
-                justifyContent: "center"
-              },
-              {
-                maxWidth: "640px"
-              },
-              {
-                maxWidth: "100%"
-              }
-            )
+            style: responsiveStyle({
+              width: "100%",
+              maxWidth: "1180px",
+              margin: "0 auto",
+              display: "flex",
+              justifyContent: "center",
+              boxSizing: "border-box"
+            })
           },
           children: [
-            buildContactInfo()
-          ]
-        },
-        {
-          id: makeId("contact-form-item"),
-          type: "flexItem",
-          data: {
-            props: {},
-            style: responsiveStyle(
-              {
-                flex: "1 1 480px",
-                maxWidth: "560px",
-                width: "100%",
-                display: "flex",
-                justifyContent: "center"
+            {
+              id: makeId("contact-layout-flex"),
+              type: "flex",
+              data: {
+                props: {},
+                style: responsiveStyle(
+                  {
+                    display: "flex",
+                    flexDirection: "row",
+                    gap: "48px",
+                    alignItems: "stretch",
+                    justifyContent: "center",
+                    width: "100%",
+                    maxWidth: "1180px",
+                    margin: "0 auto",
+                    flexWrap: "wrap",
+                    boxSizing: "border-box"
+                  },
+                  {
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "32px"
+                  },
+                  {
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "24px"
+                  }
+                )
               },
-              {
-                maxWidth: "640px"
-              },
-              {
-                maxWidth: "100%"
-              }
-            )
-          },
-          children: [
-            buildContactForm()
+              children: [
+                {
+                  id: makeId("contact-info-item"),
+                  type: "flexItem",
+                  data: {
+                    props: {},
+                    style: responsiveStyle(
+                      {
+                        flex: "1 1 480px",
+                        maxWidth: "560px",
+                        width: "100%",
+                        display: "flex",
+                        justifyContent: "center"
+                      },
+                      {
+                        maxWidth: "640px"
+                      },
+                      {
+                        maxWidth: "100%"
+                      }
+                    )
+                  },
+                  children: [buildContactInfo()]
+                },
+                {
+                  id: makeId("contact-form-item"),
+                  type: "flexItem",
+                  data: {
+                    props: {},
+                    style: responsiveStyle(
+                      {
+                        flex: "1 1 480px",
+                        maxWidth: "560px",
+                        width: "100%",
+                        display: "flex",
+                        justifyContent: "center"
+                      },
+                      {
+                        maxWidth: "640px"
+                      },
+                      {
+                        maxWidth: "100%"
+                      }
+                    )
+                  },
+                  children: [buildContactForm()]
+                }
+              ]
+            }
           ]
         }
       ]
