@@ -139,10 +139,11 @@ const computeScore = (
 
 export const validateAiPageBlocks = (
   pageType: string,
-  blocks: PageBlock[]
+  blocks: PageBlock[],
+  prompt: string = ""
 ): AiValidationResult => {
-  const issues: AiValidationIssue[] = [];
 
+  const issues: AiValidationIssue[] = [];
   if (!Array.isArray(blocks) || blocks.length === 0) {
     return {
       valid: false,
@@ -159,30 +160,156 @@ export const validateAiPageBlocks = (
     };
   }
 
-  const flatBlocks =
-    walkBlocks(blocks);
-
+  const flatBlocks = walkBlocks(blocks);
   const navbarCount =
-    countByType(blocks, "navbar");
+  countByType(blocks, "navbar");
 
-  const footerCount =
-    countByType(blocks, "footer");
+const footerCount =
+  countByType(blocks, "footer");
 
-  const sectionCount =
-    countByType(blocks, "section");
+const sectionCount =
+  countByType(blocks, "section");
 
-  const titleCount =
-    countByType(flatBlocks, "title");
+const titleCount =
+  countByType(flatBlocks, "title");
 
-  const textCount =
-    countByType(flatBlocks, "text");
+const textCount =
+  countByType(flatBlocks, "text");
 
-  const buttonCount =
-    countByType(flatBlocks, "button");
+const inputCount =
+  countByType(flatBlocks, "input") +
+  countByType(flatBlocks, "textarea");
+const promptText =
+  prompt.toLowerCase();
 
-  const inputCount =
-    countByType(flatBlocks, "input") +
-    countByType(flatBlocks, "textarea");
+const promptNeedsStats =
+  [
+    "statistics",
+    "stats",
+    "numbers",
+    "metrics",
+    "kpi",
+    "impact",
+    "success rate",
+    "uptime",
+    "rating"
+  ].some((keyword) =>
+    promptText.includes(keyword)
+  );
+
+const promptNeedsPricing =
+  [
+    "pricing",
+    "price",
+    "plans",
+    "subscription",
+    "packages"
+  ].some((keyword) =>
+    promptText.includes(keyword)
+  );
+
+const promptNeedsFaq =
+  [
+    "faq",
+    "frequently asked",
+    "questions"
+  ].some((keyword) =>
+    promptText.includes(keyword)
+  );
+
+const promptNeedsContact =
+  [
+    "contact",
+    "consultation",
+    "booking",
+    "appointment"
+  ].some((keyword) =>
+    promptText.includes(keyword)
+  );
+
+const hasStats =
+  flatBlocks.some((block) =>
+    String(block.id || "")
+      .toLowerCase()
+      .includes("stats")
+  );
+
+const hasPricing =
+  flatBlocks.some((block) =>
+    String(block.id || "")
+      .toLowerCase()
+      .includes("pricing")
+  );
+
+const hasFaq =
+  flatBlocks.some((block) =>
+    String(block.id || "")
+      .toLowerCase()
+      .includes("faq")
+  );
+
+const hasContact =
+  flatBlocks.some((block) =>
+    String(block.id || "")
+      .toLowerCase()
+      .includes("contact")
+  ) || inputCount >= 3;
+
+  if (
+  promptNeedsStats &&
+  pageType === "home" &&
+  !hasStats
+) {
+  pushIssue(issues, {
+    code: "PROMPT_STATS_NOT_SATISFIED",
+    severity: "warning",
+    pageType,
+    message:
+      "Prompt asks for statistics or metrics, but no stats section was detected."
+  });
+}
+
+if (
+  promptNeedsPricing &&
+  pageType === "pricing" &&
+  !hasPricing
+) {
+  pushIssue(issues, {
+    code: "PROMPT_PRICING_NOT_SATISFIED",
+    severity: "warning",
+    pageType,
+    message:
+      "Prompt asks for pricing, but no pricing section was detected."
+  });
+}
+
+if (
+  promptNeedsFaq &&
+  !hasFaq &&
+  ["home", "services", "pricing"].includes(pageType)
+) {
+  pushIssue(issues, {
+    code: "PROMPT_FAQ_NOT_SATISFIED",
+    severity: "warning",
+    pageType,
+    message:
+      "Prompt asks for FAQ, but no FAQ section was detected."
+  });
+}
+
+if (
+  promptNeedsContact &&
+  pageType === "contact" &&
+  !hasContact
+) {
+  pushIssue(issues, {
+    code: "PROMPT_CONTACT_NOT_SATISFIED",
+    severity: "warning",
+    pageType,
+    message:
+      "Prompt asks for contact or consultation, but no contact form was detected."
+  });
+}
 
   if (navbarCount === 0) {
     pushIssue(issues, {

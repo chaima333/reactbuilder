@@ -630,7 +630,8 @@ const pageTitle =
 const validationBeforeRepair =
   validateAiPageBlocks(
     planPage.type,
-    pageBlocks
+    pageBlocks,
+    prompt
   );
 
 console.log("AI_PAGE_VALIDATION_BEFORE_REPAIR", {
@@ -651,7 +652,8 @@ pageBlocks =
 const validation =
   validateAiPageBlocks(
     planPage.type,
-    pageBlocks
+    pageBlocks,
+    prompt
   );
 
 console.log("AI_PAGE_VALIDATION", {
@@ -670,6 +672,7 @@ if (!validation.valid) {
     issues: validation.issues
   });
 }
+
   console.log("PAGE_TYPE_ASSIGNED", {
     type: planPage.type,
     slug: pageSlug,

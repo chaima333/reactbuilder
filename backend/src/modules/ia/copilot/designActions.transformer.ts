@@ -326,42 +326,119 @@ if (
   looksLikeStatsBlock(block)
 ) {
   if (
-    block.type === "section" ||
-    block.type === "flex" ||
-    block.type === "grid"
+    block.type === "section"
   ) {
     desktop.display =
-      desktop.display || "flex";
+      "flex";
 
-    desktop.justifyContent =
-      "center";
+    desktop.flexDirection =
+      "column";
 
     desktop.alignItems =
       "center";
 
-    desktop.gap =
-      desktop.gap || "24px";
+    desktop.justifyContent =
+      "center";
 
     desktop.width =
       "100%";
 
-    desktop.maxWidth =
-      desktop.maxWidth || "980px";
-
-    desktop.margin =
-      "0 auto";
+    desktop.padding =
+      desktop.padding || "88px 40px";
 
     desktop.boxSizing =
       "border-box";
   }
 
   if (
-    block.type === "flexItem" ||
-    block.type === "gridItem" ||
+    block.type === "grid"
+  ) {
+    desktop.display =
+      "grid";
+
+    desktop.gridTemplateColumns =
+      "repeat(4, minmax(150px, 1fr))";
+
+    desktop.gap =
+      "22px";
+
+    desktop.width =
+      "100%";
+
+    desktop.maxWidth =
+      "900px";
+
+    desktop.margin =
+      "0 auto";
+
+    tablet.gridTemplateColumns =
+      "repeat(2, minmax(140px, 1fr))";
+
+    mobile.gridTemplateColumns =
+      "1fr";
+  }
+
+  if (
     block.type === "flex"
   ) {
+    desktop.display =
+      "flex";
+
+    desktop.flexDirection =
+      desktop.flexDirection || "row";
+
+    desktop.flexWrap =
+      "wrap";
+
+    desktop.justifyContent =
+      "center";
+
+    desktop.alignItems =
+      "stretch";
+
+    desktop.gap =
+      "22px";
+
+    desktop.width =
+      "100%";
+
+    desktop.maxWidth =
+      desktop.maxWidth || "900px";
+
+    desktop.margin =
+      "0 auto";
+  }
+
+  if (
+    block.type === "flexItem" ||
+    block.type === "gridItem"
+  ) {
+    desktop.flex =
+      "1 1 150px";
+
+    desktop.minWidth =
+      "150px";
+
+    desktop.maxWidth =
+      "220px";
+
+    desktop.width =
+      "100%";
+
+    desktop.boxSizing =
+      "border-box";
+  }
+
+  if (
+    (
+      block.type === "flex" ||
+      block.type === "gridItem" ||
+      block.type === "flexItem"
+    ) &&
+    blockText(block).match(/\d/)
+  ) {
     desktop.borderRadius =
-      "20px";
+      "22px";
 
     desktop.boxShadow =
       "0 18px 45px rgba(15,23,42,0.12)";
@@ -373,7 +450,7 @@ if (
       desktop.backgroundColor || "#ffffff";
 
     desktop.padding =
-      desktop.padding || "24px";
+      desktop.padding || "26px 22px";
 
     desktop.textAlign =
       "center";
@@ -393,13 +470,22 @@ if (
       blockText(block).match(/\d/)
     ) {
       desktop.fontSize =
-        desktop.fontSize || "36px";
+        "36px";
 
       desktop.fontWeight =
         "900";
 
+      desktop.lineHeight =
+        "1.05";
+
       desktop.color =
-        desktop.color || "#09286b";
+        desktop.color || "#0e224e";
+
+      desktop.whiteSpace =
+        "nowrap";
+
+      desktop.wordBreak =
+        "keep-all";
     }
   }
 }
