@@ -5,6 +5,7 @@ import { Seo } from "../../models/Seo";
 import { MediaService } from "../media/media.service";
 import { PageService } from "../pages/services/page.service";
 import { generatePageBlocksByType, generateHomeBlocks} from "./ai.builder";
+import { repairAiPageBlocks } from "./ai.repair";
 import { CATEGORY_TEMPLATES } from "./ai.templates";
 import { validateAiPageBlocks } from "./ai.validator";
 import { buildBusinessProfile, buildSiteContext } from "./business.profile";
@@ -616,15 +617,37 @@ const pageTitle =
     : `${generated.title || category} ${planPage.title}`;
 
   const pageSlug = planPage.finalSlug;
-  const pageBlocks = generatePageBlocksByType(
+  let pageBlocks = generatePageBlocksByType(
+  planPage.type,
+  category,
+  aiContent,
+  heroImageUrl,
+  navigationItems,
+  planPage.title,
+  generated.blocks
+);
+
+const validationBeforeRepair =
+  validateAiPageBlocks(
     planPage.type,
-    category,
-    aiContent,
-    heroImageUrl,
-    navigationItems,
-    planPage.title,
-    generated.blocks
+    pageBlocks
   );
+
+console.log("AI_PAGE_VALIDATION_BEFORE_REPAIR", {
+  pageType: planPage.type,
+  slug: pageSlug,
+  valid: validationBeforeRepair.valid,
+  score: validationBeforeRepair.score,
+  issues: validationBeforeRepair.issues
+});
+
+pageBlocks =
+  repairAiPageBlocks(
+    planPage.type,
+    pageBlocks,
+    validationBeforeRepair.issues
+  );
+
 const validation =
   validateAiPageBlocks(
     planPage.type,

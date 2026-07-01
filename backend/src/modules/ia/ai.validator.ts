@@ -371,24 +371,29 @@ export const validateAiPageBlocks = (
     });
   }
 
-  const emptyTextBlocks =
-    flatBlocks.filter(
-      (block) =>
-        ["title", "text", "button", "link"].includes(
-          block.type
-        ) &&
-        !hasMeaningfulText(block)
-    );
+const emptyTextBlocks =
+  flatBlocks.filter(
+    (block) =>
+      ["title", "text", "button", "link"].includes(
+        block.type
+      ) &&
+      !hasMeaningfulText(block)
+  );
 
-  if (emptyTextBlocks.length > 0) {
-    pushIssue(issues, {
-      code: "EMPTY_TEXT_BLOCKS",
-      severity: "warning",
-      pageType,
-      message:
-        `${emptyTextBlocks.length} text-like blocks are empty or too short.`
-    });
-  }
+if (emptyTextBlocks.length > 0) {
+  pushIssue(issues, {
+    code: "EMPTY_TEXT_BLOCKS",
+    severity: "warning",
+    pageType,
+    message:
+      `${emptyTextBlocks.length} text-like blocks are empty or too short.`,
+    blockId:
+      emptyTextBlocks
+        .slice(0, 5)
+        .map((block) => block.id)
+        .join(", ")
+  });
+}
 
   const missingResponsive =
     flatBlocks.filter(
