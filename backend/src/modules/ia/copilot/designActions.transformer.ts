@@ -172,7 +172,8 @@ const applyActionToBlock = (
   block: PageBlock,
   action: DesignAction,
   inStatsScope = false,
-  inFooterScope = false
+  inFooterScope = false,
+  inNavbarScope = false
 ): PageBlock => {
   const style =
     ensureResponsiveStyle(
@@ -212,6 +213,17 @@ const applyActionToBlock = (
 
 const footerScope =
   inFooterScope || footerScopeStarts;
+  const navbarScopeStarts =
+  action.type === "IMPROVE_NAVBAR" &&
+  (
+    block.type === "navbar" ||
+    String(block.id || "")
+      .toLowerCase()
+      .includes("navbar")
+  );
+
+const navbarScope =
+  inNavbarScope || navbarScopeStarts;
 
   if (
     action.type === "CENTER_LAYOUT" &&
@@ -550,59 +562,180 @@ const footerScope =
   }
 if (
   action.type === "IMPROVE_NAVBAR" &&
-  (
-    block.type === "navbar" ||
-    String(block.id || "").toLowerCase().includes("navbar") ||
-    String(block.id || "").toLowerCase().includes("nav")
-  )
+  navbarScope
 ) {
-  desktop.display =
-    "flex";
+  if (
+    navbarScopeStarts
+  ) {
+    desktop.display =
+      "flex";
 
-  desktop.flexDirection =
-    "row";
+    desktop.flexDirection =
+      "row";
 
-  desktop.alignItems =
-    "center";
+    desktop.alignItems =
+      "center";
 
-  desktop.justifyContent =
-    "space-between";
+    desktop.justifyContent =
+      "space-between";
 
-  desktop.gap =
-    "32px";
+    desktop.gap =
+      "32px";
 
-  desktop.width =
-    "100%";
+    desktop.width =
+      "100%";
 
-  desktop.padding =
-    "18px 48px";
+    desktop.minHeight =
+      "82px";
 
-  desktop.backgroundColor =
-    "#ffffff";
+    desktop.padding =
+      "18px 64px";
 
-  desktop.boxShadow =
-    "0 12px 35px rgba(15,23,42,0.08)";
+    desktop.backgroundColor =
+      "#ffffff";
 
-  desktop.borderBottom =
-    "1px solid #e5e7eb";
+    desktop.boxShadow =
+      "0 12px 35px rgba(15,23,42,0.08)";
 
-  desktop.boxSizing =
-    "border-box";
+    desktop.borderBottom =
+      "1px solid #e5e7eb";
 
-  tablet.padding =
-    "16px 28px";
+    desktop.boxSizing =
+      "border-box";
 
-  mobile.flexDirection =
-    "column";
+    tablet.padding =
+      "16px 32px";
 
-  mobile.alignItems =
-    "center";
+    mobile.flexDirection =
+      "column";
 
-  mobile.gap =
-    "16px";
+    mobile.alignItems =
+      "center";
 
-  mobile.padding =
-    "18px";
+    mobile.justifyContent =
+      "center";
+
+    mobile.gap =
+      "16px";
+
+    mobile.padding =
+      "18px";
+  }
+
+  if (
+    block.type === "flex" ||
+    block.type === "grid"
+  ) {
+    desktop.display =
+      "flex";
+
+    desktop.flexDirection =
+      "row";
+
+    desktop.alignItems =
+      "center";
+
+    desktop.justifyContent =
+      desktop.justifyContent || "center";
+
+    desktop.flexWrap =
+      "nowrap";
+
+    desktop.gap =
+      desktop.gap || "28px";
+
+    desktop.width =
+      desktop.width || "auto";
+
+    desktop.maxWidth =
+      "none";
+
+    desktop.margin =
+      "0";
+
+    desktop.boxSizing =
+      "border-box";
+
+    mobile.flexWrap =
+      "wrap";
+
+    mobile.justifyContent =
+      "center";
+  }
+
+  if (
+    block.type === "flexItem" ||
+    block.type === "gridItem"
+  ) {
+    desktop.display =
+      desktop.display || "flex";
+
+    desktop.alignItems =
+      "center";
+
+    desktop.justifyContent =
+      "center";
+
+    desktop.width =
+      "auto";
+
+    desktop.maxWidth =
+      "none";
+
+    desktop.margin =
+      "0";
+
+    desktop.padding =
+      desktop.padding || "0";
+
+    desktop.boxSizing =
+      "border-box";
+  }
+
+  if (
+    block.type === "text" ||
+    block.type === "title"
+  ) {
+    desktop.whiteSpace =
+      "nowrap";
+
+    desktop.textAlign =
+      "center";
+
+    desktop.margin =
+      "0";
+
+    desktop.color =
+      desktop.color || "#0f172a";
+
+    desktop.fontWeight =
+      desktop.fontWeight || "800";
+  }
+
+  if (
+    block.type === "button"
+  ) {
+    desktop.whiteSpace =
+      "nowrap";
+
+    desktop.borderRadius =
+      "14px";
+
+    desktop.padding =
+      "12px 24px";
+
+    desktop.fontWeight =
+      "800";
+
+    desktop.backgroundColor =
+      desktop.backgroundColor || "#0d2760";
+
+    desktop.color =
+      "#ffffff";
+
+    desktop.boxShadow =
+      "0 12px 28px rgba(37,99,235,0.24)";
+  }
 }
 
 if (
@@ -705,7 +838,7 @@ if (
       "#e5e7eb";
 
     desktop.padding =
-      "64px 48px 28px";
+  "48px 48px 24px";
 
     desktop.width =
       "100%";
@@ -742,7 +875,7 @@ if (
       "1.4fr repeat(4, 1fr)";
 
     desktop.gap =
-      "36px";
+      "24px";
 
     desktop.width =
       "100%";
@@ -778,8 +911,7 @@ if (
     desktop.alignItems =
       "flex-start";
 
-    desktop.gap =
-      desktop.gap || "32px";
+    desktop.gap = "24px";
 
     desktop.width =
       "100%";
@@ -860,12 +992,13 @@ if (
     },
     children:
       block.children?.map((child) =>
-        applyActionToBlock(
-          child,
-          action,
-          statsScope,
-          footerScope
-        )
+       applyActionToBlock(
+  child,
+  action,
+  statsScope,
+  footerScope,
+  navbarScope
+)
       ) || []
   };
 };
