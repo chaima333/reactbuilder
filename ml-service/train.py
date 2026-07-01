@@ -16,7 +16,9 @@ vectorizer = TfidfVectorizer()
 
 X_vectorized = vectorizer.fit_transform(X)
 
-model = LogisticRegression()
+model = LogisticRegression(
+    max_iter=1000
+)
 
 model.fit(X_vectorized, y)
 
