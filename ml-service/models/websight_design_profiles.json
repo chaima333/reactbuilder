@@ -1,0 +1,151 @@
+{
+  "source": "WebSight 5000 HTML sample",
+  "rows": 5000,
+  "profileCounts": {
+    "form-focused": 2738,
+    "card-heavy-modern": 2173,
+    "image-rich-gallery": 89
+  },
+  "profiles": {
+    "card-heavy-modern": {
+      "stats": {
+        "rows": 2173,
+        "avgButtons": 0.27,
+        "avgCards": 0.02,
+        "avgSections": 0.74,
+        "avgForms": 0.0,
+        "avgImages": 0.7,
+        "avgLinks": 1.12,
+        "avgHeadings": 2.18,
+        "avgColors": 0.03,
+        "avgFontSizes": 0.0,
+        "avgRadius": 0.0,
+        "avgShadows": 0.0,
+        "avgPadding": 0.0,
+        "avgMargin": 0.0,
+        "heroRate": 0.05,
+        "pricingRate": 0.05,
+        "testimonialRate": 0.15,
+        "faqRate": 0.02,
+        "contactRate": 0.0,
+        "servicesRate": 0.37,
+        "portfolioRate": 0.03
+      },
+      "profile": {
+        "layoutDensity": "minimal",
+        "spacingStyle": "compact",
+        "visualStyle": "card-heavy-modern",
+        "heroStyle": "simple-top-section",
+        "cardStyle": "clean-flat",
+        "buttonStyle": "rounded-primary",
+        "animationPreset": "card-stagger-up"
+      },
+      "backendDesignPreset": {
+        "sectionPadding": "64px 28px",
+        "cardRadius": "20px",
+        "cardShadow": "0 20px 50px rgba(15, 23, 42, 0.12)",
+        "gridGap": "30px",
+        "buttonRadius": "14px",
+        "imageRadius": "20px"
+      }
+    },
+    "form-focused": {
+      "stats": {
+        "rows": 2738,
+        "avgButtons": 0.34,
+        "avgCards": 0.02,
+        "avgSections": 0.73,
+        "avgForms": 0.1,
+        "avgImages": 0.79,
+        "avgLinks": 3.54,
+        "avgHeadings": 2.09,
+        "avgColors": 0.01,
+        "avgFontSizes": 0.0,
+        "avgRadius": 0.0,
+        "avgShadows": 0.0,
+        "avgPadding": 0.0,
+        "avgMargin": 0.0,
+        "heroRate": 0.07,
+        "pricingRate": 0.03,
+        "testimonialRate": 0.1,
+        "faqRate": 0.04,
+        "contactRate": 0.96,
+        "servicesRate": 0.52,
+        "portfolioRate": 0.08
+      },
+      "profile": {
+        "layoutDensity": "minimal",
+        "spacingStyle": "compact",
+        "visualStyle": "form-focused",
+        "heroStyle": "simple-top-section",
+        "cardStyle": "clean-flat",
+        "buttonStyle": "rounded-primary",
+        "animationPreset": "soft-fade-up"
+      },
+      "backendDesignPreset": {
+        "sectionPadding": "64px 28px",
+        "cardRadius": "20px",
+        "cardShadow": "0 18px 45px rgba(15, 23, 42, 0.10)",
+        "gridGap": "28px",
+        "buttonRadius": "14px",
+        "imageRadius": "18px"
+      }
+    },
+    "image-rich-gallery": {
+      "stats": {
+        "rows": 89,
+        "avgButtons": 0.19,
+        "avgCards": 0.0,
+        "avgSections": 0.74,
+        "avgForms": 0.0,
+        "avgImages": 1.79,
+        "avgLinks": 1.13,
+        "avgHeadings": 1.85,
+        "avgColors": 0.02,
+        "avgFontSizes": 0.0,
+        "avgRadius": 0.0,
+        "avgShadows": 0.0,
+        "avgPadding": 0.0,
+        "avgMargin": 0.0,
+        "heroRate": 0.09,
+        "pricingRate": 0.01,
+        "testimonialRate": 0.06,
+        "faqRate": 0.0,
+        "contactRate": 0.0,
+        "servicesRate": 0.15,
+        "portfolioRate": 1.0
+      },
+      "profile": {
+        "layoutDensity": "minimal",
+        "spacingStyle": "compact",
+        "visualStyle": "image-rich-gallery",
+        "heroStyle": "simple-top-section",
+        "cardStyle": "clean-flat",
+        "buttonStyle": "rounded-primary",
+        "animationPreset": "staggered-gallery"
+      },
+      "backendDesignPreset": {
+        "sectionPadding": "64px 28px",
+        "cardRadius": "22px",
+        "cardShadow": "0 18px 45px rgba(15, 23, 42, 0.10)",
+        "gridGap": "28px",
+        "buttonRadius": "14px",
+        "imageRadius": "24px"
+      }
+    }
+  },
+  "recommendedUsage": {
+    "Medical": "form-focused",
+    "Healthcare": "form-focused",
+    "Restaurant": "image-rich-gallery",
+    "FoodHospitality": "image-rich-gallery",
+    "RealEstate": "image-rich-gallery",
+    "Portfolio": "image-rich-gallery",
+    "Agency": "card-heavy-modern",
+    "Technology": "card-heavy-modern",
+    "Corporate": "card-heavy-modern",
+    "Business": "card-heavy-modern",
+    "Finance": "card-heavy-modern",
+    "Default": "card-heavy-modern"
+  }
+}
