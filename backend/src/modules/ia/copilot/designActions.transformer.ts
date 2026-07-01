@@ -171,7 +171,8 @@ const hasDirectStatValue = (
 const applyActionToBlock = (
   block: PageBlock,
   action: DesignAction,
-  inStatsScope = false
+  inStatsScope = false,
+  inFooterScope = false
 ): PageBlock => {
   const style =
     ensureResponsiveStyle(
@@ -199,6 +200,18 @@ const applyActionToBlock = (
 
   const statsScope =
     inStatsScope || statsScopeStarts;
+
+    const footerScopeStarts =
+  action.type === "IMPROVE_FOOTER" &&
+  (
+    block.type === "footer" ||
+    String(block.id || "")
+      .toLowerCase()
+      .includes("footer")
+  );
+
+const footerScope =
+  inFooterScope || footerScopeStarts;
 
   if (
     action.type === "CENTER_LAYOUT" &&
@@ -535,7 +548,310 @@ const applyActionToBlock = (
         "keep-all";
     }
   }
+if (
+  action.type === "IMPROVE_NAVBAR" &&
+  (
+    block.type === "navbar" ||
+    String(block.id || "").toLowerCase().includes("navbar") ||
+    String(block.id || "").toLowerCase().includes("nav")
+  )
+) {
+  desktop.display =
+    "flex";
 
+  desktop.flexDirection =
+    "row";
+
+  desktop.alignItems =
+    "center";
+
+  desktop.justifyContent =
+    "space-between";
+
+  desktop.gap =
+    "32px";
+
+  desktop.width =
+    "100%";
+
+  desktop.padding =
+    "18px 48px";
+
+  desktop.backgroundColor =
+    "#ffffff";
+
+  desktop.boxShadow =
+    "0 12px 35px rgba(15,23,42,0.08)";
+
+  desktop.borderBottom =
+    "1px solid #e5e7eb";
+
+  desktop.boxSizing =
+    "border-box";
+
+  tablet.padding =
+    "16px 28px";
+
+  mobile.flexDirection =
+    "column";
+
+  mobile.alignItems =
+    "center";
+
+  mobile.gap =
+    "16px";
+
+  mobile.padding =
+    "18px";
+}
+
+if (
+  action.type === "IMPROVE_NAVBAR" &&
+  statsScope === false
+) {
+  const own =
+    ownBlockText(block);
+
+  const isNavbarChild =
+    own.includes("home") ||
+    own.includes("about") ||
+    own.includes("services") ||
+    own.includes("pricing") ||
+    own.includes("integrations") ||
+    own.includes("contact us") ||
+    own.includes("flowpilot");
+
+  if (isNavbarChild) {
+    if (
+      block.type === "flex" ||
+      block.type === "grid" ||
+      block.type === "flexItem" ||
+      block.type === "gridItem"
+    ) {
+      desktop.display =
+        desktop.display || "flex";
+
+      desktop.flexDirection =
+        "row";
+
+      desktop.alignItems =
+        "center";
+
+      desktop.justifyContent =
+        "center";
+
+      desktop.gap =
+        desktop.gap || "24px";
+
+      desktop.width =
+        desktop.width || "auto";
+
+      desktop.maxWidth =
+        "none";
+
+      desktop.margin =
+        "0";
+
+      desktop.boxSizing =
+        "border-box";
+    }
+
+    if (
+      block.type === "text" ||
+      block.type === "title"
+    ) {
+      desktop.whiteSpace =
+        "nowrap";
+
+      desktop.textAlign =
+        "center";
+
+      desktop.margin =
+        "0";
+    }
+
+    if (
+      block.type === "button"
+    ) {
+      desktop.whiteSpace =
+        "nowrap";
+
+      desktop.borderRadius =
+        "14px";
+
+      desktop.padding =
+        "12px 24px";
+
+      desktop.fontWeight =
+        "800";
+
+      desktop.boxShadow =
+        "0 12px 28px rgba(37,99,235,0.24)";
+    }
+  }
+}
+if (
+  action.type === "IMPROVE_FOOTER" &&
+  footerScope
+) {
+  if (
+    block.type === "footer" ||
+    footerScopeStarts
+  ) {
+    desktop.backgroundColor =
+      "#020617";
+
+    desktop.color =
+      "#e5e7eb";
+
+    desktop.padding =
+      "64px 48px 28px";
+
+    desktop.width =
+      "100%";
+
+    desktop.display =
+      "flex";
+
+    desktop.flexDirection =
+      "column";
+
+    desktop.alignItems =
+      "center";
+
+    desktop.justifyContent =
+      "center";
+
+    desktop.boxSizing =
+      "border-box";
+
+    tablet.padding =
+      "52px 32px 24px";
+
+    mobile.padding =
+      "42px 20px 22px";
+  }
+
+  if (
+    block.type === "grid"
+  ) {
+    desktop.display =
+      "grid";
+
+    desktop.gridTemplateColumns =
+      "1.4fr repeat(4, 1fr)";
+
+    desktop.gap =
+      "36px";
+
+    desktop.width =
+      "100%";
+
+    desktop.maxWidth =
+      "1180px";
+
+    desktop.margin =
+      "0 auto";
+
+    desktop.alignItems =
+      "flex-start";
+
+    tablet.gridTemplateColumns =
+      "repeat(2, minmax(0, 1fr))";
+
+    mobile.gridTemplateColumns =
+      "1fr";
+  }
+
+  if (
+    block.type === "flex"
+  ) {
+    desktop.display =
+      "flex";
+
+    desktop.flexWrap =
+      "wrap";
+
+    desktop.justifyContent =
+      "space-between";
+
+    desktop.alignItems =
+      "flex-start";
+
+    desktop.gap =
+      desktop.gap || "32px";
+
+    desktop.width =
+      "100%";
+
+    desktop.maxWidth =
+      desktop.maxWidth || "1180px";
+
+    desktop.margin =
+      "0 auto";
+
+    desktop.boxSizing =
+      "border-box";
+  }
+
+  if (
+    block.type === "flexItem" ||
+    block.type === "gridItem"
+  ) {
+    desktop.minWidth =
+      desktop.minWidth || "150px";
+
+    desktop.boxSizing =
+      "border-box";
+  }
+
+  if (
+    block.type === "text" ||
+    block.type === "title"
+  ) {
+    desktop.color =
+      desktop.color || "#cbd5e1";
+
+    desktop.textAlign =
+      desktop.textAlign || "left";
+
+    desktop.lineHeight =
+      desktop.lineHeight || "1.7";
+
+    desktop.marginBottom =
+      desktop.marginBottom || "8px";
+
+    if (
+      ownBlockText(block).includes("flowpilot") ||
+      ownBlockText(block).includes("company") ||
+      ownBlockText(block).includes("resources") ||
+      ownBlockText(block).includes("contact") ||
+      ownBlockText(block).includes("follow")
+    ) {
+      desktop.color =
+        "#ffffff";
+
+      desktop.fontWeight =
+        "800";
+    }
+  }
+
+  if (
+    block.type === "button"
+  ) {
+    desktop.borderRadius =
+      "14px";
+
+    desktop.padding =
+      "12px 24px";
+
+    desktop.fontWeight =
+      "800";
+
+    desktop.boxShadow =
+      "0 12px 28px rgba(37,99,235,0.24)";
+  }
+}
   return {
     ...block,
     data: {
@@ -547,7 +863,8 @@ const applyActionToBlock = (
         applyActionToBlock(
           child,
           action,
-          statsScope
+          statsScope,
+          footerScope
         )
       ) || []
   };

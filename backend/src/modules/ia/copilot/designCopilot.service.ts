@@ -129,6 +129,66 @@ export const createDesignCopilotResponse = (
     resolveDesignProfile(category);
 
   const suggestions: DesignSuggestion[] = [];
+  const wantsNavbar =
+  message.includes("navbar") ||
+  message.includes("navigation") ||
+  message.includes("nav ") ||
+  message.includes("menu") ||
+  message.includes("header");
+
+if (wantsNavbar) {
+  suggestions.push(
+    makeSuggestion(
+      "improve-navbar-layout",
+      "Improve navbar layout",
+      "Align logo, navigation links, and CTA button in one clean horizontal SaaS navbar.",
+      [
+        {
+          type: "IMPROVE_NAVBAR",
+          target: "navbar"
+        }
+      ]
+    )
+  );
+
+  return {
+    reply:
+      `I detected a navbar-specific request. ` +
+      `I will only improve the navbar layout using the ${profile} design profile.`,
+    designProfile: profile,
+    suggestions
+  };
+}
+const wantsFooter =
+  message.includes("footer") ||
+  message.includes("bottom") ||
+  message.includes("copyright") ||
+  message.includes("follow us") ||
+  message.includes("social links");
+
+if (wantsFooter) {
+  suggestions.push(
+    makeSuggestion(
+      "improve-footer-layout",
+      "Improve footer layout",
+      "Make the footer cleaner, premium, well-spaced, and aligned with a modern SaaS layout.",
+      [
+        {
+          type: "IMPROVE_FOOTER",
+          target: "footer"
+        }
+      ]
+    )
+  );
+
+  return {
+    reply:
+      `I detected a footer-specific request. ` +
+      `I will only improve the footer layout using the ${profile} design profile.`,
+    designProfile: profile,
+    suggestions
+  };
+}
 
   if (
     message.includes("premium") ||

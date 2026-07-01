@@ -6,6 +6,8 @@ export type DesignActionType =
   | "IMPROVE_IMAGES"
   | "IMPROVE_FORMS"
   | "IMPROVE_STATS"
+  | "IMPROVE_NAVBAR"
+  | "IMPROVE_FOOTER"
   | "APPLY_PROFILE";
 
 export interface DesignAction {
