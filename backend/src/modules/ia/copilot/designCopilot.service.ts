@@ -261,15 +261,12 @@ if (
         {
           type: "IMPROVE_STATS",
           target: "page"
-        },
-        {
-          type: "CENTER_LAYOUT",
-          target: "impact"
         }
       ]
     )
   );
 }
+
   if (
     suggestions.length === 0
   ) {

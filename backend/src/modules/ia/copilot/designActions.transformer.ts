@@ -1,5 +1,14 @@
-import { PageBlock } from "../../pages/types/page.types";
 import { DesignAction } from "./designCopilot.types";
+
+type PageBlock = {
+  id?: string;
+  type?: string;
+  data?: {
+    props?: Record<string, any>;
+    style?: any;
+  };
+  children?: PageBlock[];
+};
 
 const isResponsiveStyle = (
   style: any
@@ -38,7 +47,7 @@ const ensureResponsiveStyle = (
   };
 };
 
-const blockText = (
+const ownBlockText = (
   block: PageBlock
 ): string => {
   const props =
@@ -50,10 +59,25 @@ const blockText = (
     text: props.text,
     content: props.content,
     label: props.label,
-    title: props.title,
-    children: block.children
+    title: props.title
   }).toLowerCase();
 };
+
+const directChildrenText = (
+  block: PageBlock
+): string =>
+  JSON.stringify(
+    (block.children || []).map((child) => ({
+      id: child.id,
+      type: child.type,
+      props: child.data?.props || {}
+    }))
+  ).toLowerCase();
+
+const blockText = (
+  block: PageBlock
+): string =>
+  JSON.stringify(block || {}).toLowerCase();
 
 const matchesTarget = (
   block: PageBlock,
@@ -89,17 +113,16 @@ const looksLikeCard = (
     id.includes("contact") ||
     id.includes("pricing") ||
     id.includes("reservation") ||
-    text.includes("card") ||
-    text.includes("services") ||
     text.includes("frequently asked") ||
     text.includes("get in touch")
   );
 };
-const looksLikeStatsBlock = (
+
+const startsStatsScope = (
   block: PageBlock
 ): boolean => {
-  const text =
-    blockText(block);
+  const own =
+    ownBlockText(block);
 
   const id =
     String(block.id || "").toLowerCase();
@@ -107,18 +130,48 @@ const looksLikeStatsBlock = (
   return (
     id.includes("stat") ||
     id.includes("impact") ||
-    text.includes("our impact") ||
-    text.includes("impact") ||
-    text.includes("stats") ||
-    text.includes("1000") ||
-    text.includes("98%") ||
-    text.includes("200+") ||
-    text.includes("4.9")
+    id.includes("number") ||
+    own.includes("our impact") ||
+    own.includes("our numbers") ||
+    own.includes("stats") ||
+    own.includes("key metrics")
   );
 };
+
+const hasOwnStatValue = (
+  block: PageBlock
+): boolean => {
+  const own =
+    ownBlockText(block);
+
+  return (
+    /[0-9]/.test(own) ||
+    own.includes("%") ||
+    own.includes("+") ||
+    own.includes("★") ||
+    own.includes("rating")
+  );
+};
+
+const hasDirectStatValue = (
+  block: PageBlock
+): boolean => {
+  const text =
+    `${ownBlockText(block)} ${directChildrenText(block)}`;
+
+  return (
+    /[0-9]/.test(text) ||
+    text.includes("%") ||
+    text.includes("+") ||
+    text.includes("★") ||
+    text.includes("rating")
+  );
+};
+
 const applyActionToBlock = (
   block: PageBlock,
-  action: DesignAction
+  action: DesignAction,
+  inStatsScope = false
 ): PageBlock => {
   const style =
     ensureResponsiveStyle(
@@ -139,6 +192,13 @@ const applyActionToBlock = (
       block,
       action.target
     );
+
+  const statsScopeStarts =
+    action.type === "IMPROVE_STATS" &&
+    startsStatsScope(block);
+
+  const statsScope =
+    inStatsScope || statsScopeStarts;
 
   if (
     action.type === "CENTER_LAYOUT" &&
@@ -321,154 +381,141 @@ const applyActionToBlock = (
     desktop.boxSizing =
       "border-box";
   }
-if (
-  action.type === "IMPROVE_STATS" &&
-  looksLikeStatsBlock(block)
-) {
-  if (
-    block.type === "section"
-  ) {
-    desktop.display =
-      "flex";
-
-    desktop.flexDirection =
-      "column";
-
-    desktop.alignItems =
-      "center";
-
-    desktop.justifyContent =
-      "center";
-
-    desktop.width =
-      "100%";
-
-    desktop.padding =
-      desktop.padding || "88px 40px";
-
-    desktop.boxSizing =
-      "border-box";
-  }
 
   if (
-    block.type === "grid"
+    action.type === "IMPROVE_STATS" &&
+    statsScope
   ) {
-    desktop.display =
-      "grid";
+    if (
+      statsScopeStarts &&
+      block.type === "section"
+    ) {
+      desktop.display =
+        "flex";
 
-    desktop.gridTemplateColumns =
-      "repeat(4, minmax(150px, 1fr))";
+      desktop.flexDirection =
+        "column";
 
-    desktop.gap =
-      "22px";
+      desktop.alignItems =
+        "center";
 
-    desktop.width =
-      "100%";
+      desktop.justifyContent =
+        "center";
 
-    desktop.maxWidth =
-      "900px";
+      desktop.width =
+        "100%";
 
-    desktop.margin =
-      "0 auto";
-
-    tablet.gridTemplateColumns =
-      "repeat(2, minmax(140px, 1fr))";
-
-    mobile.gridTemplateColumns =
-      "1fr";
-  }
-
-  if (
-    block.type === "flex"
-  ) {
-    desktop.display =
-      "flex";
-
-    desktop.flexDirection =
-      desktop.flexDirection || "row";
-
-    desktop.flexWrap =
-      "wrap";
-
-    desktop.justifyContent =
-      "center";
-
-    desktop.alignItems =
-      "stretch";
-
-    desktop.gap =
-      "22px";
-
-    desktop.width =
-      "100%";
-
-    desktop.maxWidth =
-      desktop.maxWidth || "900px";
-
-    desktop.margin =
-      "0 auto";
-  }
-
-  if (
-    block.type === "flexItem" ||
-    block.type === "gridItem"
-  ) {
-    desktop.flex =
-      "1 1 150px";
-
-    desktop.minWidth =
-      "150px";
-
-    desktop.maxWidth =
-      "220px";
-
-    desktop.width =
-      "100%";
-
-    desktop.boxSizing =
-      "border-box";
-  }
-
-  if (
-    (
-      block.type === "flex" ||
-      block.type === "gridItem" ||
-      block.type === "flexItem"
-    ) &&
-    blockText(block).match(/\d/)
-  ) {
-    desktop.borderRadius =
-      "22px";
-
-    desktop.boxShadow =
-      "0 18px 45px rgba(15,23,42,0.12)";
-
-    desktop.border =
-      desktop.border || "1px solid #e5e7eb";
-
-    desktop.backgroundColor =
-      desktop.backgroundColor || "#ffffff";
-
-    desktop.padding =
-      desktop.padding || "26px 22px";
-
-    desktop.textAlign =
-      "center";
-
-    desktop.boxSizing =
-      "border-box";
-  }
-
-  if (
-    block.type === "text" ||
-    block.type === "title"
-  ) {
-    desktop.textAlign =
-      "center";
+      desktop.boxSizing =
+        "border-box";
+    }
 
     if (
-      blockText(block).match(/\d/)
+      statsScopeStarts &&
+      block.type === "grid"
     ) {
+      desktop.display =
+        "grid";
+
+      desktop.gridTemplateColumns =
+        "repeat(4, minmax(150px, 1fr))";
+
+      desktop.gap =
+        "22px";
+
+      desktop.width =
+        "100%";
+
+      desktop.maxWidth =
+        "920px";
+
+      desktop.margin =
+        "0 auto";
+
+      tablet.gridTemplateColumns =
+        "repeat(2, minmax(140px, 1fr))";
+
+      mobile.gridTemplateColumns =
+        "1fr";
+    }
+
+    if (
+      statsScopeStarts &&
+      block.type === "flex"
+    ) {
+      desktop.display =
+        "flex";
+
+      desktop.flexDirection =
+        desktop.flexDirection || "row";
+
+      desktop.flexWrap =
+        "wrap";
+
+      desktop.justifyContent =
+        "center";
+
+      desktop.alignItems =
+        "stretch";
+
+      desktop.gap =
+        "22px";
+
+      desktop.width =
+        "100%";
+
+      desktop.maxWidth =
+        desktop.maxWidth || "920px";
+
+      desktop.margin =
+        "0 auto";
+    }
+
+    if (
+      (
+        block.type === "flexItem" ||
+        block.type === "gridItem" ||
+        block.type === "flex"
+      ) &&
+      hasDirectStatValue(block)
+    ) {
+      desktop.minWidth =
+        desktop.minWidth || "150px";
+
+      desktop.maxWidth =
+        desktop.maxWidth || "230px";
+
+      desktop.borderRadius =
+        "22px";
+
+      desktop.boxShadow =
+        "0 18px 45px rgba(15,23,42,0.12)";
+
+      desktop.border =
+        desktop.border || "1px solid #e5e7eb";
+
+      desktop.backgroundColor =
+        desktop.backgroundColor || "#ffffff";
+
+      desktop.padding =
+        desktop.padding || "26px 22px";
+
+      desktop.textAlign =
+        "center";
+
+      desktop.boxSizing =
+        "border-box";
+    }
+
+    if (
+      (
+        block.type === "text" ||
+        block.type === "title"
+      ) &&
+      hasOwnStatValue(block)
+    ) {
+      desktop.textAlign =
+        "center";
+
       desktop.fontSize =
         "36px";
 
@@ -479,7 +526,7 @@ if (
         "1.05";
 
       desktop.color =
-        desktop.color || "#0e224e";
+        desktop.color || "#2563eb";
 
       desktop.whiteSpace =
         "nowrap";
@@ -488,7 +535,7 @@ if (
         "keep-all";
     }
   }
-}
+
   return {
     ...block,
     data: {
@@ -499,7 +546,8 @@ if (
       block.children?.map((child) =>
         applyActionToBlock(
           child,
-          action
+          action,
+          statsScope
         )
       ) || []
   };
