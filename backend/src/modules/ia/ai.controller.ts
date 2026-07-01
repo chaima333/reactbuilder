@@ -2,6 +2,8 @@ import { Response } from "express";
 import { AuthRequest } from "../../shared/auth.util";
 import { AiService } from "./ai.service";
 import { AiHistoryService } from "./ai.history.service";
+import { createDesignCopilotResponse } from "./copilot/designCopilot.service";
+import { applyDesignActions } from "./copilot/designActions.transformer";
 
 export const generatePage = async (req: AuthRequest, res: Response) => {
   try {
@@ -144,6 +146,129 @@ export const getHistory = async (
     res.status(500).json({
       success: false,
       message: error.message
+    });
+  }
+};
+export const designCopilotChat = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const {
+      message,
+      prompt,
+      blocks,
+      category,
+      pageTitle,
+      slug,
+      pageType
+    } = req.body;
+
+    const finalMessage =
+      message || prompt || "";
+
+    if (
+      !Array.isArray(blocks) ||
+      blocks.length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Blocks are required",
+        code: "BLOCKS_REQUIRED"
+      });
+    }
+
+    const result =
+      createDesignCopilotResponse({
+        message: finalMessage,
+        category,
+        pageTitle,
+        slug,
+        pageType,
+        blocks
+      });
+
+    return res.json({
+      success: true,
+      data: result
+    });
+  } catch (error: any) {
+    console.error("DESIGN_COPILOT_CHAT_ERROR", {
+      message: error.message,
+      stack: error.stack
+    });
+
+    return res.status(500).json({
+      success: false,
+      message: "Design Co-Pilot failed",
+      code: "DESIGN_COPILOT_FAILED"
+    });
+  }
+};
+
+export const designCopilotApply = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const {
+      suggestion,
+      actions,
+      blocks
+    } = req.body;
+
+    if (
+      !Array.isArray(blocks) ||
+      blocks.length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Blocks are required",
+        code: "BLOCKS_REQUIRED"
+      });
+    }
+
+    const designActions =
+      suggestion?.actions ||
+      actions;
+
+    if (
+      !Array.isArray(designActions) ||
+      designActions.length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Design actions are required",
+        code: "ACTIONS_REQUIRED"
+      });
+    }
+
+    const updatedBlocks =
+      applyDesignActions(
+        blocks,
+        designActions
+      );
+
+    return res.json({
+      success: true,
+      data: {
+        blocks: updatedBlocks,
+        reply:
+          suggestion?.title
+            ? `✅ Applied: ${suggestion.title}`
+            : "✅ Design improvement applied successfully."
+      }
+    });
+  } catch (error: any) {
+    console.error("DESIGN_COPILOT_APPLY_ERROR", {
+      message: error.message,
+      stack: error.stack
+    });
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to apply design improvement",
+      code: "DESIGN_APPLY_FAILED"
     });
   }
 };

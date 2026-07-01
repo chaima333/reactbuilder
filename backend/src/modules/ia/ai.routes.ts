@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { generatePage, getHistory } from "./ai.controller";
+import { designCopilotApply, designCopilotChat, generatePage, getHistory } from "./ai.controller";
 import { requirePermission } from "../../core/middleware/role.middleware";
 import { PERMISSIONS } from "../../core/constants/permissions";
 
@@ -14,5 +14,15 @@ router.get(
   "/history",
   getHistory
 );
+router.post(
+  "/design-copilot/chat",
+  requirePermission(PERMISSIONS.PAGE_UPDATE),
+  designCopilotChat
+);
 
+router.post(
+  "/design-copilot/apply",
+  requirePermission(PERMISSIONS.PAGE_UPDATE),
+  designCopilotApply
+);
 export default router;

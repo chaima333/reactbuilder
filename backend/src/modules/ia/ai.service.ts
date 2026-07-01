@@ -14,6 +14,23 @@ import { generateSitePlan } from "./site.plan";
 const ML_SERVICE_URL =
   process.env.ML_SERVICE_URL || "http://localhost:5000";
 
+  const MIN_ML_CONFIDENCE = 0.55;
+
+type MlPrediction = {
+  category: string;
+  confidence: number;
+  source: "ml" | "fallback";
+  error?: string;
+};
+
+type CategoryDecision = {
+  category: string;
+  mlCategory: string;
+  mlConfidence: number;
+  usedFallback: boolean;
+  reason: string;
+};
+
 export class AiService {
   private static fallbackCategory(prompt: string): string {
     const text = prompt.toLowerCase();
@@ -172,49 +189,90 @@ if (
 
     return "Corporate";
   }
-
-  private static async predictCategory(prompt: string): Promise<string> {
-    console.log("ML_SERVICE_URL_USED", ML_SERVICE_URL);
-
-    try {
-      const response = await fetch(`${ML_SERVICE_URL}/predict`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          prompt
-        })
-      });
-
-      console.log("ML_RESPONSE_STATUS", response.status);
-
-      if (!response.ok) {
-        console.error(
-          "ML service returned error status:",
-          response.status
-        );
-
-        return this.fallbackCategory(prompt);
-      }
-
-      const result = await response.json();
-
-      console.log("ML_RESPONSE_BODY", result);
-
-      return result.category || this.fallbackCategory(prompt);
-    } catch (error) {
-      console.error("ML service error:", error);
-
-      return this.fallbackCategory(prompt);
-    }
-  }
-private static resolveFinalCategory(
-  mlCategory: string,
+private static async predictCategory(
   prompt: string
+): Promise<MlPrediction> {
+  console.log("ML_SERVICE_URL_USED", ML_SERVICE_URL);
+
+  try {
+    const response = await fetch(`${ML_SERVICE_URL}/predict`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        prompt
+      })
+    });
+
+    console.log("ML_RESPONSE_STATUS", response.status);
+
+    if (!response.ok) {
+      console.error(
+        "ML service returned error status:",
+        response.status
+      );
+
+      return {
+        category: this.fallbackCategory(prompt),
+        confidence: 0,
+        source: "fallback",
+        error: `ML_HTTP_${response.status}`
+      };
+    }
+
+    const result = await response.json();
+
+    console.log("ML_RESPONSE_BODY", result);
+
+    const category =
+      typeof result.category === "string" &&
+      result.category.trim()
+        ? result.category
+        : this.fallbackCategory(prompt);
+
+    const confidence =
+      typeof result.confidence === "number"
+        ? result.confidence
+        : 0;
+
+    return {
+      category,
+      confidence,
+      source: "ml"
+    };
+  } catch (error) {
+    console.error("ML service error:", error);
+
+    return {
+      category: this.fallbackCategory(prompt),
+      confidence: 0,
+      source: "fallback",
+      error: "ML_SERVICE_UNAVAILABLE"
+    };
+  }
+}
+private static normalizeSupportedCategory(
+  category: string
 ): string {
-  const text =
-    prompt.toLowerCase();
+  if (CATEGORY_TEMPLATES[category]) {
+    return category;
+  }
+
+  if (category === "Cybersecurity") {
+    return CATEGORY_TEMPLATES["Cybersecurity"]
+      ? "Cybersecurity"
+      : "Technology";
+  }
+
+  return "Corporate";
+}
+
+private static resolveFinalCategory(
+  prediction: MlPrediction,
+  prompt: string
+): CategoryDecision {
+  const text = prompt.toLowerCase();
 
   const scores: Record<string, number> = {
     Technology: 0,
@@ -224,7 +282,10 @@ private static resolveFinalCategory(
     Finance: 0,
     Ecommerce: 0,
     Restaurant: 0,
-    Cybersecurity: 0
+    Agency: 0,
+    Consulting: 0,
+    Portfolio: 0,
+    Corporate: 0
   };
 
   const addScore = (
@@ -239,55 +300,21 @@ private static resolveFinalCategory(
     }
   };
 
-  addScore("Technology", [
-    "saas",
-    "software",
-    "workflow",
-    "automation",
-    "api",
-    "apis",
-    "integration",
-    "integrations",
-    "analytics",
-    "dashboard",
-    "cloud",
-    "platform",
-    "real-time",
-    "productivity"
-  ]);
-
-  addScore("RealEstate", [
-    "real estate",
-    "property",
-    "properties",
-    "rent",
-    "rental",
-    "buying",
-    "selling",
-    "homes",
-    "agents",
-    "valuation"
-  ]);
-
-  addScore("Cybersecurity", [
-    "cybersecurity",
-    "cyber security",
-    "threat",
-    "penetration testing",
-    "soc",
-    "siem",
-    "compliance",
-    "incident response"
-  ]);
-
-  addScore("Education", [
-    "school",
-    "academy",
-    "course",
-    "training",
-    "student",
-    "learning",
-    "certification"
+  addScore("Finance", [
+    "fintech",
+    "finance",
+    "financial",
+    "bank",
+    "banking",
+    "investment",
+    "investor",
+    "investors",
+    "wealth",
+    "trading",
+    "loan",
+    "portfolio",
+    "robo-advisor",
+    "advisory"
   ]);
 
   addScore("Medical", [
@@ -296,16 +323,8 @@ private static resolveFinalCategory(
     "medical",
     "healthcare",
     "hospital",
-    "appointment"
-  ]);
-
-  addScore("Finance", [
-    "finance",
-    "bank",
-    "investment",
-    "loan",
-    "trading",
-    "wealth"
+    "appointment",
+    "telemedicine"
   ]);
 
   addScore("Ecommerce", [
@@ -325,26 +344,135 @@ private static resolveFinalCategory(
     "table"
   ]);
 
-  const bestCategory =
-    Object.entries(scores)
-      .sort((a, b) => b[1] - a[1])[0];
+  addScore("RealEstate", [
+    "real estate",
+    "property",
+    "properties",
+    "rent",
+    "rental",
+    "buying",
+    "selling",
+    "homes",
+    "agents",
+    "valuation",
+    "villa",
+    "apartment"
+  ]);
+
+  addScore("Technology", [
+    "saas",
+    "software",
+    "workflow",
+    "automation",
+    "api",
+    "apis",
+    "integration",
+    "analytics",
+    "dashboard",
+    "cloud",
+    "platform",
+    "ai",
+    "machine learning",
+    "cybersecurity",
+    "cyber security",
+    "penetration testing",
+    "soc",
+    "siem"
+  ]);
+
+  addScore("Education", [
+    "school",
+    "academy",
+    "course",
+    "training",
+    "student",
+    "learning",
+    "certification",
+    "university"
+  ]);
+
+  addScore("Agency", [
+    "agency",
+    "marketing",
+    "branding",
+    "campaign",
+    "advertising"
+  ]);
+
+  addScore("Consulting", [
+    "consulting",
+    "consultant",
+    "strategy",
+    "business development"
+  ]);
+
+  addScore("Portfolio", [
+    "portfolio",
+    "designer",
+    "photographer",
+    "creative",
+    "gallery",
+    "projects"
+  ]);
+
+  const [ruleCategory, ruleScore] =
+    Object.entries(scores).sort(
+      (a, b) => b[1] - a[1]
+    )[0];
+
+  const mlCategory =
+    this.normalizeSupportedCategory(
+      prediction.category
+    );
+
+  const mlConfidence =
+    prediction.confidence;
 
   if (
-    bestCategory &&
-    bestCategory[1] >= 2 &&
-    bestCategory[0] !== mlCategory
+    prediction.source === "fallback" ||
+    mlConfidence < MIN_ML_CONFIDENCE
   ) {
-    console.warn("AI_CATEGORY_RULE_OVERRIDE", {
-      from: mlCategory,
-      to: bestCategory[0],
-      score: bestCategory[1]
-    });
+    const fallbackCategory =
+      ruleScore >= 1
+        ? this.normalizeSupportedCategory(ruleCategory)
+        : this.fallbackCategory(prompt);
 
-    return bestCategory[0];
+    return {
+      category: fallbackCategory,
+      mlCategory,
+      mlConfidence,
+      usedFallback: true,
+      reason:
+        prediction.source === "fallback"
+          ? "ML_SERVICE_FALLBACK"
+          : "LOW_ML_CONFIDENCE"
+    };
   }
 
-  return mlCategory;
-}
+  if (
+    ruleScore >= 2 &&
+    ruleCategory !== mlCategory &&
+    mlConfidence < 0.75
+  ) {
+    return {
+      category: this.normalizeSupportedCategory(ruleCategory),
+      mlCategory,
+      mlConfidence,
+      usedFallback: true,
+      reason: "RULE_OVERRIDE"
+    };
+  }
+
+  return {
+    category: mlCategory,
+    mlCategory,
+    mlConfidence,
+    usedFallback: false,
+    reason: "ML_CONFIDENT"
+  };
+};
+
+
  static async generatePage(
   siteId: number,
   userId: number,
@@ -357,9 +485,27 @@ private static resolveFinalCategory(
     throw new Error("PROMPT_REQUIRED");
   }
 
-const mlCategory =await this.predictCategory(prompt);
+const prediction =
+  await this.predictCategory(prompt);
 
-const category = this.resolveFinalCategory(mlCategory,prompt);
+const categoryDecision =
+  this.resolveFinalCategory(
+    prediction,
+    prompt
+  );
+
+const category =
+  categoryDecision.category;
+
+console.log("AI_CATEGORY_DECISION", {
+  prompt,
+  mlCategory: categoryDecision.mlCategory,
+  mlConfidence: categoryDecision.mlConfidence,
+  finalCategory: category,
+  usedFallback: categoryDecision.usedFallback,
+  reason: categoryDecision.reason
+});
+
 const businessProfile =
   buildBusinessProfile(
     category,
@@ -555,13 +701,17 @@ if (existingPage) {
     action: "ai_page_generated",
     entityType: "page",
     entityId: result.data.id,
-    details: {
-      category,
-      prompt,
-      pageTitle,
-      pageType: planPage.type,
-      slug: pageSlug
-    }
+  details: {
+  category,
+  prompt,
+  pageTitle,
+  pageType: planPage.type,
+  slug: pageSlug,
+  mlCategory: categoryDecision.mlCategory,
+  mlConfidence: categoryDecision.mlConfidence,
+  usedFallback: categoryDecision.usedFallback,
+  categoryDecisionReason: categoryDecision.reason
+}
   });
 
   const seo = generateSeo(
@@ -619,8 +769,13 @@ console.log("AI_HISTORY_WILL_SAVE", {
   siteId,
   userId,
   category,
+  mlCategory: categoryDecision.mlCategory,
+  mlConfidence: categoryDecision.mlConfidence,
+  usedFallback: categoryDecision.usedFallback,
+  reason: categoryDecision.reason,
   pagesGenerated: plannedPages.length
 });
+
 console.log("AI_HISTORY_SAVED");
 await AiGeneration.create({
   siteId,
@@ -630,6 +785,7 @@ await AiGeneration.create({
   pagesGenerated: plannedPages.length,
   status: "success"
 });
+
 return createdPages[0];
 }};
 
