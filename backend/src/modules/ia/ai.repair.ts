@@ -49,7 +49,19 @@ const getTextValue = (
       ""
   ).trim();
 };
+const isDecorativeIconBlock = (
+  block: PageBlock
+): boolean => {
+  const id =
+    String(block.id || "").toLowerCase();
 
+  return (
+    id.includes("icon") ||
+    id.includes("avatar") ||
+    id.includes("logo") ||
+    id.includes("stars")
+  );
+};
 const repairBlock = (
   block: PageBlock,
   pageType: string
@@ -61,10 +73,11 @@ const repairBlock = (
         )
       : [];
 
-  if (
-    ["title", "text", "button", "link"].includes(block.type) &&
-    getTextValue(block).length < 3
-  ) {
+if (
+  ["title", "text", "button", "link"].includes(block.type) &&
+  !isDecorativeIconBlock(block) &&
+  getTextValue(block).length < 3
+) {
     const fallback =
       fallbackTextByType(block.type, pageType);
 

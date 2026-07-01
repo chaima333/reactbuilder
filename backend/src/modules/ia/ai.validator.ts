@@ -370,13 +370,26 @@ export const validateAiPageBlocks = (
         "Contact page should contain a stronger contact form."
     });
   }
+const isDecorativeIconBlock = (
+  block: PageBlock
+): boolean => {
+  const id =
+    String(block.id || "").toLowerCase();
 
+  return (
+    id.includes("icon") ||
+    id.includes("avatar") ||
+    id.includes("logo") ||
+    id.includes("stars")
+  );
+};
 const emptyTextBlocks =
   flatBlocks.filter(
     (block) =>
       ["title", "text", "button", "link"].includes(
         block.type
       ) &&
+      !isDecorativeIconBlock(block) &&
       !hasMeaningfulText(block)
   );
 
