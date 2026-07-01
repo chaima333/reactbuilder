@@ -12,12 +12,16 @@ print("Rows:", len(df))
 X = df["text"]
 y = df["label"]
 
-vectorizer = TfidfVectorizer()
+vectorizer = TfidfVectorizer(
+    ngram_range=(1, 2),
+    max_features=5000
+)
 
 X_vectorized = vectorizer.fit_transform(X)
 
 model = LogisticRegression(
-    max_iter=1000
+    max_iter=1000,
+    class_weight="balanced"
 )
 
 model.fit(X_vectorized, y)
