@@ -6,6 +6,7 @@ import { MediaService } from "../media/media.service";
 import { PageService } from "../pages/services/page.service";
 import { generatePageBlocksByType, generateHomeBlocks} from "./ai.builder";
 import { CATEGORY_TEMPLATES } from "./ai.templates";
+import { validateAiPageBlocks } from "./ai.validator";
 import { buildBusinessProfile, buildSiteContext } from "./business.profile";
 import { generateAiContent } from "./content.generator";
 import { generateSeo } from "./seo.generator";
@@ -624,7 +625,28 @@ const pageTitle =
     planPage.title,
     generated.blocks
   );
+const validation =
+  validateAiPageBlocks(
+    planPage.type,
+    pageBlocks
+  );
 
+console.log("AI_PAGE_VALIDATION", {
+  pageType: planPage.type,
+  slug: pageSlug,
+  valid: validation.valid,
+  score: validation.score,
+  issues: validation.issues
+});
+
+if (!validation.valid) {
+  console.warn("AI_PAGE_VALIDATION_FAILED", {
+    pageType: planPage.type,
+    slug: pageSlug,
+    score: validation.score,
+    issues: validation.issues
+  });
+}
   console.log("PAGE_TYPE_ASSIGNED", {
     type: planPage.type,
     slug: pageSlug,
@@ -710,7 +732,10 @@ if (existingPage) {
   mlCategory: categoryDecision.mlCategory,
   mlConfidence: categoryDecision.mlConfidence,
   usedFallback: categoryDecision.usedFallback,
-  categoryDecisionReason: categoryDecision.reason
+  categoryDecisionReason: categoryDecision.reason,
+  validationScore: validation.score,
+  validationValid: validation.valid,
+  validationIssues: validation.issues
 }
   });
 

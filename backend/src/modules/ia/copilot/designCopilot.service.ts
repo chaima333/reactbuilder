@@ -13,60 +13,70 @@ const normalize = (value: string) =>
 const inferCategory = (
   request: DesignCopilotRequest
 ): string => {
-  const text = JSON.stringify({
+  const pageText = JSON.stringify({
     category: request.category,
     pageType: request.pageType,
     pageTitle: request.pageTitle,
     slug: request.slug,
-    message: request.message,
     blocks: request.blocks
   }).toLowerCase();
 
   if (
-    text.includes("restaurant") ||
-    text.includes("menu") ||
-    text.includes("reservation") ||
-    text.includes("table")
+    pageText.includes("technova") ||
+    pageText.includes("technology") ||
+    pageText.includes("software") ||
+    pageText.includes("saas") ||
+    pageText.includes("ai automation") ||
+    pageText.includes("cloud") ||
+    pageText.includes("api")
+  ) {
+    return "Technology";
+  }
+
+  if (
+    pageText.includes("restaurant") ||
+    pageText.includes("menu") ||
+    pageText.includes("reservation") ||
+    pageText.includes("table")
   ) {
     return "Restaurant";
   }
 
   if (
-    text.includes("medical") ||
-    text.includes("clinic") ||
-    text.includes("doctor") ||
-    text.includes("appointment")
+    pageText.includes("medical") ||
+    pageText.includes("clinic") ||
+    pageText.includes("doctor") ||
+    pageText.includes("appointment")
   ) {
     return "Medical";
   }
 
   if (
-    text.includes("finance") ||
-    text.includes("investment") ||
-    text.includes("bank")
+    pageText.includes("finance") ||
+    pageText.includes("investment") ||
+    pageText.includes("bank")
   ) {
     return "Finance";
   }
 
   if (
-    text.includes("portfolio") ||
-    text.includes("gallery") ||
-    text.includes("creative")
+    pageText.includes("portfolio") ||
+    pageText.includes("gallery") ||
+    pageText.includes("creative")
   ) {
     return "Portfolio";
   }
 
   if (
-    text.includes("real estate") ||
-    text.includes("property") ||
-    text.includes("rent")
+    pageText.includes("real estate") ||
+    pageText.includes("property") ||
+    pageText.includes("rent")
   ) {
     return "RealEstate";
   }
 
   return request.category || "Corporate";
 };
-
 const resolveDesignProfile = (
   category: string
 ) => {
