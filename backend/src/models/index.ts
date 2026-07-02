@@ -19,15 +19,16 @@ import Notification from "./Notification";
 import { AiGeneration } from "./AiGeneration";
 import SiteInvitation from "./SiteInvitation";
 import { AiActivityEvent } from "./AiActivityEvent";
+import { PartnerApplication } from "./PartnerApplication";
 
 export const models = [
   User, Token, Page, Site, ActivityLog, Media, 
   Seo, Plugin, SitePlugin, SiteMember, 
-  PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken,PlatformSetting,Notification,AiGeneration,SiteInvitation,AiActivityEvent
+  PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken,PlatformSetting,Notification,AiGeneration,SiteInvitation,AiActivityEvent,PartnerApplication
 ];
 
 export { 
   User, Token, Page, Site, ActivityLog, 
   Media, Seo, Plugin, SitePlugin, SiteMember, 
-  PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken,PlatformSetting,Notification,AiGeneration,SiteInvitation,AiActivityEvent
+  PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken,PlatformSetting,Notification,AiGeneration,SiteInvitation,AiActivityEvent,PartnerApplication
 };
