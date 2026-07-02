@@ -214,10 +214,11 @@ export const designCopilotApply = async (
 ) => {
   try {
     console.log("DESIGN_COPILOT_APPLY_STARTED", {
-      siteId: req.siteContext?.siteId || req.params.siteId,
-      userId: req.user?.id,
-      pageId: req.body?.pageId
-    });
+  bodyKeys: Object.keys(req.body || {}),
+  siteContext: req.siteContext,
+  userId: req.user?.id,
+  params: req.params
+});
 
     const validation =
       ApplyDesignCopilotSchema.safeParse(
@@ -335,15 +336,26 @@ if (
     }
 
     return res.json({
-      success: true,
-      data: {
-        blocks: updatedBlocks,
-        reply:
-          suggestion?.title
-            ? `Applied: ${suggestion.title}`
-            : "Design improvement applied successfully."
-      }
-    });
+  success: true,
+  data: {
+    blocks: updatedBlocks,
+    reply:
+      suggestion?.title
+        ? `Applied: ${suggestion.title}`
+        : "Design improvement applied successfully.",
+    activityDebug: {
+      reachedApplyController: true,
+      triedActivityRecord:
+        !!activitySiteId &&
+        !!activityUserId,
+      siteId: activitySiteId,
+      userId: activityUserId,
+      pageId: activityPageId,
+      actionsCount:
+        designActions.length
+    }
+  }
+});
   } catch (error: any) {
     console.error(
       "DESIGN_COPILOT_APPLY_ERROR",
