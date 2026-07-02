@@ -37,3 +37,12 @@ export const recordAiActivity = async (
     });
   }
 };
+
+export const getAiActivityHistory = async (
+  siteId: number,
+  limit = 20
+) => AiActivityEvent.findAll({
+  where: { siteId },
+  order: [["createdAt", "DESC"]],
+  limit
+});

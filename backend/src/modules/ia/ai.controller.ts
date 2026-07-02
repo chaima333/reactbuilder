@@ -5,7 +5,7 @@ import { AiHistoryService } from "./ai.history.service";
 import { createDesignCopilotResponse } from "./copilot/designCopilot.service";
 import { applyDesignActions } from "./copilot/designActions.transformer";
 import { ApplyDesignCopilotSchema } from "./copilot/designCopilot.schema";
-import { recordAiActivity } from "./history/aiActivity.service";
+import { getAiActivityHistory, recordAiActivity } from "./history/aiActivity.service";
 
 export const generatePage = async (req: AuthRequest, res: Response) => {
   try {
@@ -148,6 +148,29 @@ export const getHistory = async (
     res.status(500).json({
       success: false,
       message: error.message
+    });
+  }
+};
+export const getActivityHistory = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const siteId = Number(req.siteContext?.siteId);
+    if (!siteId) {
+      return res.status(400).json({ success: false, message: "Site context missing" });
+    }
+
+    const history = await getAiActivityHistory(siteId);
+    return res.json({ success: true, data: history });
+  } catch (error: any) {
+    console.error("AI_ACTIVITY_HISTORY_ERROR", {
+      message: error.message,
+      siteId: req.siteContext?.siteId
+    });
+    return res.status(500).json({
+      success: false,
+      message: "Failed to load AI activity history"
     });
   }
 };
