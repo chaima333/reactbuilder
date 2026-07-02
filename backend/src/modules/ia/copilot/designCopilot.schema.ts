@@ -30,10 +30,41 @@ export const DesignSuggestionSchema = z.object({
 
 export const ApplyDesignCopilotSchema =
   z.object({
-    blocks: z.array(z.unknown()).min(1).max(5000),
-    suggestion: DesignSuggestionSchema.optional(),
-    actions: z.array(DesignActionSchema).min(1).max(10).optional()
-  }).refine(
-    value => !!value.suggestion || !!value.actions,
-    { message: "A suggestion or actions are required" }
-  );
+    siteId: z
+      .union([
+        z.number(),
+        z.string()
+      ])
+      .optional(),
+
+    pageId: z
+      .union([
+        z.number(),
+        z.string()
+      ])
+      .optional(),
+
+    blocks: z
+      .array(z.unknown())
+      .min(1)
+      .max(5000),
+
+    suggestion:
+      DesignSuggestionSchema.optional(),
+
+    actions:
+      z.array(DesignActionSchema)
+        .min(1)
+        .max(10)
+        .optional()
+  })
+    .strict()
+    .refine(
+      value =>
+        !!value.suggestion ||
+        !!value.actions,
+      {
+        message:
+          "A suggestion or actions are required"
+      }
+    );
