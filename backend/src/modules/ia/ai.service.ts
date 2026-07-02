@@ -837,7 +837,13 @@ await AiGeneration.create({
   status: "success"
 });
 
-return createdPages[0];
+const firstCreatedPage = createdPages[0];
+
+if (firstCreatedPage) {
+  (firstCreatedPage as any).aiCategory = category;
+}
+
+return firstCreatedPage;
 }};
 
 

@@ -742,6 +742,8 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
     try {
       setAiLoading(true);
       const result = await editSelectedBlock({
+        siteId,
+        pageId,
         prompt: aiPrompt,
         block: selectedBlock,
         pageTitle,
@@ -1065,6 +1067,7 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
       setAiLoading(true);
   const result = await designCopilotChat({
   siteId,
+  pageId,
   message: prompt,
   blocks,
   pageTitle,

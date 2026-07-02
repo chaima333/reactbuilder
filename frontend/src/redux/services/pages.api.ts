@@ -443,7 +443,8 @@ export const pagesApi = api.injectEndpoints({
     response.data,
   invalidatesTags: (result, error, { siteId }) => [
     { type: "Pages", id: "LIST" },
-    { type: "Sites", id: siteId }
+    { type: "Sites", id: siteId },
+    { type: "AiActivity" }
   ],
 }),
 

@@ -10,6 +10,16 @@ export type AiActivityEvent = {
     suggestionTitle?: string | null;
     actionsCount?: number;
     actions?: Array<{ improvement?: string }>;
+    title?: string;
+    message?: string;
+    errorCode?: string;
+    suggestionsCount?: number;
+    blockId?: string;
+    blockType?: string;
+    promptPreview?: string;
+    messagePreview?: string;
+    instructionPreview?: string;
+    source?: string;
   };
   createdAt: string;
 };
@@ -41,6 +51,7 @@ export const aiApi = api.injectEndpoints({
     method: "POST",
     body
   }),
+  invalidatesTags: ["AiActivity"],
 }),
 designCopilotChat: builder.mutation<any, any>({
   query: ({ siteId, ...body }) => ({
@@ -48,6 +59,7 @@ designCopilotChat: builder.mutation<any, any>({
     method: "POST",
     body,
   }),
+  invalidatesTags: ["AiActivity"],
 }),
 
 designCopilotApply: builder.mutation<any, any>({

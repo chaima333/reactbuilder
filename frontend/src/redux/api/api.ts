@@ -23,9 +23,9 @@ export const api = createApi({
     "PlatformSettings",
     "Notifications",
      "Dashboard",
-     "SiteMembers"
-
-
+     "SiteMembers",
+     "PartnerApplications",
+     "AiActivity"
     ],
 
   endpoints: () => ({}),

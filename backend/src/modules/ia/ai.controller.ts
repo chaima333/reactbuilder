@@ -7,6 +7,20 @@ import { applyDesignActions } from "./copilot/designActions.transformer";
 import { ApplyDesignCopilotSchema } from "./copilot/designCopilot.schema";
 import { getAiActivityHistory, recordAiActivity } from "./history/aiActivity.service";
 
+const previewText = (value: unknown) =>
+  typeof value === "string" ? value.trim().slice(0, 200) : "";
+
+const getGenerationErrorCode = (error: any) => {
+  switch (error?.message) {
+    case "PROMPT_REQUIRED": return "PROMPT_REQUIRED";
+    case "PAGE_ALREADY_EXISTS": return "PAGE_ALREADY_EXISTS";
+    case "ML_SERVICE_ERROR": return "ML_SERVICE_UNAVAILABLE";
+    case "SITE_NOT_FOUND":
+    case "USER_NOT_FOUND": return "RESOURCE_NOT_FOUND";
+    default: return "INTERNAL_SERVER_ERROR";
+  }
+};
+
 export const generatePage = async (req: AuthRequest, res: Response) => {
   try {
     // Najem naamlou validation mel log
@@ -32,6 +46,17 @@ export const generatePage = async (req: AuthRequest, res: Response) => {
 
     // Validation mte3 prompt
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 3) {
+      await recordAiActivity({
+        siteId,
+        userId,
+        eventType: "AI_PAGE_GENERATION_FAILED",
+        details: {
+          errorCode: "INVALID_PROMPT",
+          message: "Prompt must be at least 3 characters long",
+          promptPreview: previewText(prompt),
+          source: "ai-page-generator"
+        }
+      });
       return res.status(400).json({
         success: false,
         message: "Prompt must be at least 3 characters long"
@@ -61,6 +86,20 @@ const generatedTitle =
       generatedTitle
     );
 
+    await recordAiActivity({
+      siteId,
+      userId,
+      pageId: page?.id || null,
+      eventType: "AI_PAGE_GENERATED",
+      details: {
+        title: page?.title || generatedTitle,
+        promptPreview: previewText(prompt),
+        pageId: page?.id || null,
+        ...((page as any)?.aiCategory ? { category: (page as any).aiCategory } : {}),
+        source: "ai-page-generator"
+      }
+    });
+
     console.log("✅ PAGE_GENERATED_SUCCESSFULLY", {
       pageId: page?.id,
       siteId,
@@ -85,6 +124,22 @@ const generatedTitle =
       siteId: req.siteContext?.siteId,
       userId: req.user?.id
     });
+
+    const activitySiteId = Number(req.siteContext?.siteId || req.params.siteId || 0);
+    const activityUserId = Number(req.user?.id || 0);
+    if (activitySiteId && activityUserId) {
+      await recordAiActivity({
+        siteId: activitySiteId,
+        userId: activityUserId,
+        eventType: "AI_PAGE_GENERATION_FAILED",
+        details: {
+          errorCode: getGenerationErrorCode(error),
+          message: error?.message || "Page generation failed",
+          promptPreview: previewText(req.body?.prompt),
+          source: "ai-page-generator"
+        }
+      });
+    }
     
     // TODO: replace string-based error matching with AppError classes after demo stabilization.
 
@@ -186,7 +241,8 @@ export const designCopilotChat = async (
       category,
       pageTitle,
       slug,
-      pageType
+      pageType,
+      pageId
     } = req.body;
 
     const finalMessage =
@@ -212,6 +268,20 @@ export const designCopilotChat = async (
     pageType,
     blocks
   });
+
+    await recordAiActivity({
+      siteId: Number(req.siteContext.siteId),
+      userId: Number(req.user.id),
+      pageId: Number(pageId) || null,
+      eventType: "DESIGN_COPILOT_CHAT",
+      details: {
+        messagePreview: previewText(finalMessage),
+        suggestionsCount: Array.isArray(result?.suggestions)
+          ? result.suggestions.length
+          : 0,
+        source: "design-copilot"
+      }
+    });
 
     return res.json({
       success: true,

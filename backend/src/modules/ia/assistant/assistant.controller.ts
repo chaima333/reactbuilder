@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { askAssistant, editBlockWithAssistant } from "./assistant.service";
+import { AuthRequest } from "../../../shared/auth.util";
+import { recordAiActivity } from "../history/aiActivity.service";
 
 export const assistant = async (req: Request, res: Response) => {
   try {
@@ -40,7 +42,7 @@ export const assistant = async (req: Request, res: Response) => {
   }
 };
 export const editSelectedBlock = async (
-  req: Request,
+  req: AuthRequest,
   res: Response
 ) => {
   try {
@@ -48,7 +50,9 @@ export const editSelectedBlock = async (
       prompt,
       block,
       pageTitle,
-      slug
+      slug,
+      siteId,
+      pageId
     } = req.body;
 
     if (
@@ -75,6 +79,23 @@ export const editSelectedBlock = async (
         pageTitle,
         slug
       });
+
+    const activitySiteId = Number(siteId || 0);
+    const activityUserId = Number(req.user?.id || 0);
+    if (activitySiteId && activityUserId) {
+      await recordAiActivity({
+        siteId: activitySiteId,
+        userId: activityUserId,
+        pageId: Number(pageId) || null,
+        eventType: "AI_BLOCK_EDIT",
+        details: {
+          blockId: block.id,
+          blockType: block.type || null,
+          instructionPreview: prompt.trim().slice(0, 200),
+          source: "ai-assistant"
+        }
+      });
+    }
 
     return res.json({
       success: true,
