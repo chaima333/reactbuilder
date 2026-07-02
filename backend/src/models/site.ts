@@ -11,6 +11,7 @@ import {
 } from "sequelize-typescript";
 import { Page } from "./page";
 import { ActivityLog } from "./activityLog";
+import { PartnerApplication } from "./PartnerApplication";
 
 @Table({
   tableName: "sites",
@@ -122,4 +123,10 @@ globalLayout!: any;
     as: 'activities'
   })
   activities!: ActivityLog[];
+
+    @HasMany(() => PartnerApplication, {
+    foreignKey: "siteId",
+    as: "partnerApplications"
+  })
+  partnerApplications!: PartnerApplication[];
 }

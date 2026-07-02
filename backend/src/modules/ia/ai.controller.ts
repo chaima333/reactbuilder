@@ -254,20 +254,41 @@ export const designCopilotApply = async (
         designActions
       );
 
-    const activitySiteId =
-      Number(
-        req.siteContext?.siteId ||
-        req.params.siteId
-      );
+   const activitySiteId =
+  Number(
+    req.siteContext?.siteId ||
+    req.params.siteId ||
+    (validation.data as any).siteId ||
+    0
+  );
 
-    const activityUserId =
-      Number(req.user?.id);
+const activityUserId =
+  Number(
+    req.user?.id ||
+    (req as any).user?.id ||
+    0
+  );
 
-    const activityPageId =
-      Number(
-        (validation.data as any).pageId || 0
-      ) || null;
-
+const activityPageId =
+  Number(
+    (validation.data as any).pageId ||
+    0
+  ) || null;
+if (
+  !activitySiteId ||
+  !activityUserId
+) {
+  console.warn("AI_ACTIVITY_SKIPPED_CONTEXT_MISSING", {
+    activitySiteId,
+    activityUserId,
+    bodySiteId:
+      (validation.data as any).siteId,
+    paramSiteId:
+      req.params.siteId,
+    contextSiteId:
+      req.siteContext?.siteId
+  });
+}
     if (
       activitySiteId &&
       activityUserId
