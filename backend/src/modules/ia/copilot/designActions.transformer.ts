@@ -689,6 +689,29 @@ const applyActionToBlock = (
 
       desktop.boxSizing =
         "border-box";
+        desktop.background =
+  "transparent";
+
+desktop.backgroundColor =
+  "transparent";
+
+desktop.boxShadow =
+  "none";
+
+desktop.border =
+  "none";
+
+desktop.minHeight =
+  "auto";
+
+desktop.height =
+  "auto";
+
+desktop.padding =
+  "0";
+
+desktop.borderRadius =
+  "0";
     }
 
     if (
@@ -709,6 +732,20 @@ const applyActionToBlock = (
 
       desktop.fontWeight =
         desktop.fontWeight || "800";
+        desktop.background =
+  "transparent";
+
+desktop.backgroundColor =
+  "transparent";
+
+desktop.boxShadow =
+  "none";
+
+desktop.border =
+  "none";
+
+desktop.padding =
+  "0";
     }
 
     if (

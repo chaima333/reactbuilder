@@ -46,6 +46,7 @@ import assistantRoutes from "./modules/ia/assistant/assistant.routes";
 import pluginMarketplaceRoutes from "./modules/plugin/plugin.marketplace.routes";
 import { requireSiteAccess } from "./core/middleware/siteGuard";
 import invitationRoutes from "./core/services/invitations/invitation.routes";
+import partnerApplicationRoutes, { publicPartnerApplicationRoutes } from "./modules/partnerApplications/partnerApplication.routes";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 
@@ -74,6 +75,10 @@ app.use("/p/public",publicSiteRoutes);
 ======================== */
 app.use("/api/auth", authRoutes);
 app.use("/api/platform", platformRoutes);
+app.use(
+  "/api/public/sites/:siteId/partner-applications",
+  publicPartnerApplicationRoutes
+);
 
 /* ========================
    GLOBAL (IMPORTANT FIX 🔥)
@@ -90,6 +95,7 @@ const tenantStack = [authenticateJWT, maintenanceMode, tenantResolver,requireSit
 app.use("/api/sites/:siteId/dashboard",tenantStack , dashboardRoutes);
 app.use("/api/sites/:siteId/pages", tenantStack, pageRoutes);
 app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
+app.use("/api/sites/:siteId/partner-applications", tenantStack,partnerApplicationRoutes);
 app.use("/api/sites/:siteId/import",tenantStack,importRoutes);
 app.use("/api/figma-plugin", figmaPluginRoutes);
 app.use("/api/notifications", notificationRoutes);
