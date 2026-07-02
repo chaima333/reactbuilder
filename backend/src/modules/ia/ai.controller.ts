@@ -213,6 +213,12 @@ export const designCopilotApply = async (
   res: Response
 ) => {
   try {
+    console.log("DESIGN_COPILOT_APPLY_STARTED", {
+      siteId: req.siteContext?.siteId || req.params.siteId,
+      userId: req.user?.id,
+      pageId: req.body?.pageId
+    });
+
     const validation =
       ApplyDesignCopilotSchema.safeParse(
         req.body
@@ -226,6 +232,12 @@ export const designCopilotApply = async (
         errors: validation.error.issues
       });
     }
+
+    console.log("DESIGN_COPILOT_APPLY_VALIDATED", {
+      siteId: req.siteContext?.siteId || req.params.siteId,
+      userId: req.user?.id,
+      pageId: validation.data.pageId
+    });
 
     const {
       suggestion,
@@ -247,6 +259,10 @@ export const designCopilotApply = async (
         code: "NO_DESIGN_ACTIONS"
       });
     }
+
+    console.log("DESIGN_COPILOT_APPLY_ACTIONS_READY", {
+      actionsCount: designActions.length
+    });
 
     const updatedBlocks =
       applyDesignActions(
@@ -274,6 +290,13 @@ const activityPageId =
     (validation.data as any).pageId ||
     0
   ) || null;
+
+console.log("AI_ACTIVITY_CONTEXT", {
+  activitySiteId,
+  activityUserId,
+  activityPageId
+});
+
 if (
   !activitySiteId ||
   !activityUserId

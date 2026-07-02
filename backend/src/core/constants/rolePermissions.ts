@@ -43,6 +43,10 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     PERMISSIONS.MEMBER_INVITE,
     PERMISSIONS.MEMBER_UPDATE_ROLE,
     PERMISSIONS.MEMBER_REMOVE,
+
+     // Partner Applications
+    PERMISSIONS.PARTNER_APPLICATION_READ,
+    PERMISSIONS.PARTNER_APPLICATION_REVIEW,
   ],
 
   ADMIN: [
@@ -77,6 +81,10 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     // Members
     PERMISSIONS.MEMBER_READ,
     PERMISSIONS.MEMBER_INVITE,
+
+        // Partner Applications
+    PERMISSIONS.PARTNER_APPLICATION_READ,
+    PERMISSIONS.PARTNER_APPLICATION_REVIEW,
   ],
 
   EDITOR: [
@@ -101,6 +109,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
 
     // Members
     PERMISSIONS.MEMBER_READ,
+
   ],
 
   VIEWER: [
