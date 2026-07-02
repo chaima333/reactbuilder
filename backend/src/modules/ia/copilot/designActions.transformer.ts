@@ -194,16 +194,21 @@ const applyActionToBlock = (
       block,
       action.target
     );
+    const isImprove = (
+  improvement: string
+): boolean =>
+  action.type === "IMPROVE_DESIGN" &&
+  action.improvement === improvement;
 
-  const statsScopeStarts =
-    action.type === "IMPROVE_STATS" &&
-    startsStatsScope(block);
+ const statsScopeStarts =
+  isImprove("IMPROVE_STATS") &&
+  startsStatsScope(block);
 
   const statsScope =
     inStatsScope || statsScopeStarts;
 
   const footerScopeStarts =
-    action.type === "IMPROVE_FOOTER" &&
+    isImprove("IMPROVE_FOOTER") &&
     (
       block.type === "footer" ||
       String(block.id || "")
@@ -215,7 +220,7 @@ const applyActionToBlock = (
     inFooterScope || footerScopeStarts;
 
   const navbarScopeStarts =
-    action.type === "IMPROVE_NAVBAR" &&
+    isImprove("IMPROVE_NAVBAR") &&
     (
       block.type === "navbar" ||
       String(block.id || "")
@@ -227,7 +232,7 @@ const applyActionToBlock = (
     inNavbarScope || navbarScopeStarts;
 
   if (
-    action.type === "CENTER_LAYOUT" &&
+    isImprove("CENTER_LAYOUT")&&
     targetMatches
   ) {
     if (
@@ -266,7 +271,7 @@ const applyActionToBlock = (
   }
 
   if (
-    action.type === "IMPROVE_SPACING" &&
+    isImprove("IMPROVE_SPACING") &&
     targetMatches
   ) {
     if (
@@ -302,7 +307,7 @@ const applyActionToBlock = (
   }
 
   if (
-    action.type === "IMPROVE_CARDS" &&
+    isImprove("IMPROVE_CARDS") &&
     looksLikeCard(block)
   ) {
     if (
@@ -341,7 +346,7 @@ const applyActionToBlock = (
   }
 
   if (
-    action.type === "IMPROVE_BUTTONS" &&
+    isImprove("IMPROVE_BUTTONS") &&
     block.type === "button"
   ) {
     desktop.borderRadius =
@@ -361,7 +366,7 @@ const applyActionToBlock = (
   }
 
   if (
-    action.type === "IMPROVE_IMAGES" &&
+    isImprove("IMPROVE_IMAGES") &&
     block.type === "image"
   ) {
     desktop.borderRadius =
@@ -378,7 +383,7 @@ const applyActionToBlock = (
   }
 
   if (
-    action.type === "IMPROVE_FORMS" &&
+    isImprove("IMPROVE_FORMS") &&
     (
       block.type === "input" ||
       block.type === "textarea"
@@ -409,7 +414,7 @@ const applyActionToBlock = (
   }
 
   if (
-    action.type === "IMPROVE_STATS" &&
+    isImprove("IMPROVE_STATS") &&
     statsScope
   ) {
     if (
@@ -563,7 +568,7 @@ const applyActionToBlock = (
   }
 
   if (
-    action.type === "IMPROVE_NAVBAR" &&
+    isImprove("IMPROVE_NAVBAR") &&
     navbarScope
   ) {
     if (navbarScopeStarts) {
@@ -732,10 +737,11 @@ const applyActionToBlock = (
     }
   }
 
-  if (
-    action.type === "IMPROVE_FOOTER" &&
-    footerScopeStarts
-  ) {
+ if (
+  isImprove("IMPROVE_FOOTER") &&
+  footerScope
+) {
+  if (footerScopeStarts) {
     desktop.backgroundColor =
       "#020617";
 
@@ -761,22 +767,96 @@ const applyActionToBlock = (
       "36px 20px 20px";
   }
 
+  if (
+    block.type === "flex" ||
+    block.type === "grid"
+  ) {
+    desktop.gap =
+      desktop.gap || "28px";
+
+    desktop.alignItems =
+      desktop.alignItems || "flex-start";
+
+    desktop.justifyContent =
+      desktop.justifyContent || "space-between";
+
+    desktop.width =
+      desktop.width || "100%";
+
+    desktop.boxSizing =
+      "border-box";
+  }
+
+  if (
+    block.type === "flexItem" ||
+    block.type === "gridItem"
+  ) {
+    desktop.boxSizing =
+      "border-box";
+
+    desktop.minWidth =
+      desktop.minWidth || "160px";
+  }
+
+  if (
+    block.type === "text" ||
+    block.type === "title" ||
+    block.type === "link"
+  ) {
+    desktop.color =
+      block.type === "title"
+        ? "#ffffff"
+        : "#cbd5e1";
+
+    desktop.margin =
+      desktop.margin || "0";
+
+    desktop.lineHeight =
+      desktop.lineHeight || "1.7";
+
+    desktop.textDecoration =
+      "none";
+  }
+
+  if (
+    block.type === "button"
+  ) {
+    desktop.borderRadius =
+      "14px";
+
+    desktop.padding =
+      "12px 22px";
+
+    desktop.fontWeight =
+      "800";
+
+    desktop.backgroundColor =
+      desktop.backgroundColor || "#2563eb";
+
+    desktop.color =
+      "#ffffff";
+
+    desktop.boxShadow =
+      "0 12px 28px rgba(37,99,235,0.24)";
+  }
+}
+
   return {
     ...block,
     data: {
       ...(block.data || {}),
       style
     },
-    children:
-      block.children?.map((child) =>
-        applyActionToBlock(
-          child,
-          action,
-          statsScope,
-          false,
-          navbarScope
-        )
-      ) || []
+   children:
+  block.children?.map((child) =>
+    applyActionToBlock(
+      child,
+      action,
+      statsScope,
+      footerScope,
+      navbarScope
+    )
+  ) || []
   };
 };
 

@@ -1,25 +1,41 @@
 import OpenAI from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import Anthropic from "@anthropic-ai/sdk";
+
+type AiProvider =
+  | "gemini"
+  | "openai"
+  | "claude";
+
+export const isLlmEnabled = () =>
+  process.env.LLM_ENABLED === "true";
 
 export const generateText = async (
   prompt: string
 ): Promise<string> => {
+  if (!isLlmEnabled()) {
+    throw new Error("LLM_DISABLED");
+  }
 
   const provider =
-    process.env.AI_PROVIDER || "gemini";
+    (process.env.AI_PROVIDER || "gemini") as AiProvider;
 
   switch (provider) {
-
     case "gemini": {
+      if (!process.env.GEMINI_API_KEY) {
+        throw new Error("GEMINI_API_KEY_MISSING");
+      }
 
       const gemini =
         new GoogleGenerativeAI(
-          process.env.GEMINI_API_KEY!
+          process.env.GEMINI_API_KEY
         );
 
       const model =
         gemini.getGenerativeModel({
-          model: "gemini-2.0-flash"
+          model:
+            process.env.GEMINI_MODEL ||
+            "gemini-2.0-flash"
         });
 
       const result =
@@ -31,33 +47,77 @@ export const generateText = async (
     }
 
     case "openai": {
+      if (!process.env.OPENAI_API_KEY) {
+        throw new Error("OPENAI_API_KEY_MISSING");
+      }
 
       const openai =
         new OpenAI({
           apiKey:
-            process.env.OPENAI_API_KEY!
+            process.env.OPENAI_API_KEY
         });
 
       const response =
         await openai.responses.create({
-          model: "gpt-4.1-mini",
+          model:
+            process.env.OPENAI_MODEL ||
+            "gpt-4.1-mini",
           input: prompt
         });
 
       return response.output_text;
     }
 
-    default:
+    case "claude": {
+      if (!process.env.ANTHROPIC_API_KEY) {
+        throw new Error("ANTHROPIC_API_KEY_MISSING");
+      }
 
+      const anthropic =
+        new Anthropic({
+          apiKey:
+            process.env.ANTHROPIC_API_KEY
+        });
+
+      const response =
+        await anthropic.messages.create({
+          model:
+            process.env.ANTHROPIC_MODEL ||
+            "claude-sonnet-5",
+          max_tokens: 1200,
+          messages: [
+            {
+              role: "user",
+              content: prompt
+            }
+          ]
+        });
+
+      return response.content
+        .map((block) =>
+          block.type === "text"
+            ? block.text
+            : ""
+        )
+        .join("\n")
+        .trim();
+    }
+
+    default:
       throw new Error(
         `Unsupported AI provider: ${provider}`
       );
   }
 };
-export const testLLM = async () => {
-  const response = await generateText(
-    "Say only: Gemini connection successful."
-  );
 
-  console.log("LLM_TEST:", response);
+export const testLLM = async () => {
+  const response =
+    await generateText(
+      "Say only: LLM connection successful."
+    );
+
+  console.log(
+    "LLM_TEST:",
+    response
+  );
 };

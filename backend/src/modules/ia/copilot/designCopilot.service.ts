@@ -1,3 +1,4 @@
+import { generateText } from "../llm/llm.client";
 import {
   DesignAction,
   DesignCopilotRequest,
@@ -116,7 +117,218 @@ const makeSuggestion = (
   actions
 });
 
-export const createDesignCopilotResponse = (
+
+const safeJsonParse = (value: string) => {
+  try {
+    const cleaned =
+      value
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
+
+    return JSON.parse(cleaned);
+  } catch {
+    return null;
+  }
+};
+
+const allowedImprovements = new Set([
+  "CENTER_LAYOUT",
+  "IMPROVE_SPACING",
+  "IMPROVE_CARDS",
+  "IMPROVE_BUTTONS",
+  "IMPROVE_IMAGES",
+  "IMPROVE_FORMS",
+  "IMPROVE_STATS",
+  "IMPROVE_NAVBAR",
+  "IMPROVE_FOOTER"
+]);
+
+const sanitizeAiSuggestions = (
+  value: any
+): DesignSuggestion[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item, index) => ({
+      id:
+        String(item.id || `ai-design-${index}`),
+
+      title:
+        String(item.title || "AI design improvement"),
+
+      description:
+        String(
+          item.description ||
+          "Improve this part of the page."
+        ),
+
+      actions:
+        Array.isArray(item.actions)
+          ? item.actions
+              .map((action: any) => {
+                if (
+                  action.type === "IMPROVE_DESIGN" &&
+                  allowedImprovements.has(action.improvement)
+                ) {
+                  return {
+                    type: "IMPROVE_DESIGN",
+                    improvement: action.improvement,
+                    target: action.target,
+                    payload: action.payload || {}
+                  };
+                }
+
+                return null;
+              })
+              .filter(Boolean)
+          : []
+    }))
+    .filter((item) => item.actions.length > 0);
+};
+
+const summarizeBlocksForAi = (
+  blocks: any[]
+) => {
+  return JSON.stringify(
+    blocks.map((block) => ({
+      id: block.id,
+      type: block.type,
+      props: block.data?.props || {},
+      styleKeys: Object.keys(block.data?.style?.desktop || {}),
+      childrenCount: block.children?.length || 0
+    }))
+  ).slice(0, 6000);
+};
+export const createDesignCopilotResponse = async (
+  request: DesignCopilotRequest
+): Promise<DesignCopilotResponse> => {
+  const category =
+    inferCategory(request);
+
+  const profile =
+    resolveDesignProfile(category);
+
+  const fallback =
+    createFallbackDesignCopilotResponse(
+      request
+    );
+
+  try {
+    const prompt = `
+You are the AI Design Co-Pilot of ReactBuilder.
+
+The user wants to improve the current page design.
+
+You must understand the user's request and return ONLY valid JSON.
+
+Page context:
+- category: ${category}
+- designProfile: ${profile}
+- pageTitle: ${request.pageTitle || ""}
+- slug: ${request.slug || ""}
+
+User message:
+${request.message}
+
+Current page blocks summary:
+${summarizeBlocksForAi(request.blocks)}
+
+Allowed design improvements:
+- CENTER_LAYOUT
+- IMPROVE_SPACING
+- IMPROVE_CARDS
+- IMPROVE_BUTTONS
+- IMPROVE_IMAGES
+- IMPROVE_FORMS
+- IMPROVE_STATS
+- IMPROVE_NAVBAR
+- IMPROVE_FOOTER
+
+Important:
+- Do NOT return APPLY_PROFILE.
+- Do NOT return raw action strings.
+- Every action must use this exact shape:
+  {
+    "type": "IMPROVE_DESIGN",
+    "improvement": "ONE_OF_ALLOWED_IMPROVEMENTS",
+    "target": "page",
+    "payload": {}
+  }
+
+Rules:
+- If the user mentions navbar, return only navbar actions.
+- If the user mentions footer, return only footer actions.
+- If the user mentions stats, numbers, impact, or KPI, return stats actions.
+- If the user asks for general premium/modern design, return global design actions.
+- Never modify content text.
+- Never generate a new page.
+- Return 1 to 3 suggestions maximum.
+- Each suggestion must contain actions.
+- Output JSON only.
+
+JSON format:
+{
+  "reply": "short explanation",
+  "suggestions": [
+    {
+      "id": "short-id",
+      "title": "Suggestion title",
+      "description": "What will be improved",
+      "actions": [
+        {
+  "type": "IMPROVE_DESIGN",
+  "improvement": "IMPROVE_NAVBAR",
+  "target": "navbar",
+  "payload": {}
+}
+      ]
+    }
+  ]
+}
+`;
+
+    const aiText =
+      await generateText(prompt);
+
+    const parsed =
+      safeJsonParse(aiText);
+
+    const suggestions =
+      sanitizeAiSuggestions(
+        parsed?.suggestions
+      );
+
+    if (
+      !parsed ||
+      suggestions.length === 0
+    ) {
+      return fallback;
+    }
+
+    return {
+      reply:
+        String(
+          parsed.reply ||
+            "I understood your design request and prepared safe improvements."
+        ),
+      designProfile: profile,
+      suggestions
+    };
+  } catch (error) {
+    console.error(
+      "DESIGN_COPILOT_LLM_FAILED",
+      error
+    );
+
+    return fallback;
+  }
+};
+
+
+export const createFallbackDesignCopilotResponse = (
   request: DesignCopilotRequest
 ): DesignCopilotResponse => {
   const message =
@@ -129,66 +341,119 @@ export const createDesignCopilotResponse = (
     resolveDesignProfile(category);
 
   const suggestions: DesignSuggestion[] = [];
+
+  type ImproveDesignAction =
+    Extract<
+      DesignAction,
+      {
+        type: "IMPROVE_DESIGN";
+      }
+    >;
+
+  const improve = (
+    improvement: ImproveDesignAction["improvement"],
+    target: string = "page",
+    payload: Record<string, any> = {}
+  ): DesignAction => ({
+    type: "IMPROVE_DESIGN",
+    improvement,
+    target,
+    payload
+  });
+
   const wantsNavbar =
-  message.includes("navbar") ||
-  message.includes("navigation") ||
-  message.includes("nav ") ||
-  message.includes("menu") ||
-  message.includes("header");
+    message.includes("navbar") ||
+    message.includes("navigation") ||
+    message.includes("nav ") ||
+    message.includes("menu") ||
+    message.includes("header");
 
-if (wantsNavbar) {
-  suggestions.push(
-    makeSuggestion(
-      "improve-navbar-layout",
-      "Improve navbar layout",
-      "Align logo, navigation links, and CTA button in one clean horizontal SaaS navbar.",
-      [
-        {
-          type: "IMPROVE_NAVBAR",
-          target: "navbar"
-        }
-      ]
-    )
-  );
+  if (wantsNavbar) {
+    suggestions.push(
+      makeSuggestion(
+        "improve-navbar-layout",
+        "Improve navbar layout",
+        "Align logo, navigation links, and CTA button in one clean horizontal SaaS navbar.",
+        [
+          improve(
+            "IMPROVE_NAVBAR",
+            "navbar"
+          )
+        ]
+      )
+    );
 
-  return {
-    reply:
-      `I detected a navbar-specific request. ` +
-      `I will only improve the navbar layout using the ${profile} design profile.`,
-    designProfile: profile,
-    suggestions
-  };
-}
-const wantsFooter =
-  message.includes("footer") ||
-  message.includes("bottom") ||
-  message.includes("copyright") ||
-  message.includes("follow us") ||
-  message.includes("social links");
+    return {
+      reply:
+        `I detected a navbar-specific request. ` +
+        `I will only improve the navbar layout using the ${profile} design profile.`,
+      designProfile: profile,
+      suggestions
+    };
+  }
 
-if (wantsFooter) {
-  suggestions.push(
-    makeSuggestion(
-      "improve-footer-layout",
-      "Improve footer layout",
-      "Make the footer cleaner, premium, well-spaced, and aligned with a modern SaaS layout.",
-      [
-        {
-          type: "IMPROVE_FOOTER",
-          target: "footer"
-        }
-      ]
-    )
-  );
+  const wantsFooter =
+    message.includes("footer") ||
+    message.includes("bottom") ||
+    message.includes("copyright") ||
+    message.includes("follow us") ||
+    message.includes("social links");
 
-  return {
-    reply:
-      `I detected a footer-specific request. ` +
-      `I will only improve the footer layout using the ${profile} design profile.`,
-    designProfile: profile,
-    suggestions
-  };
-}
+  if (wantsFooter) {
+    suggestions.push(
+      makeSuggestion(
+        "improve-footer-layout",
+        "Improve footer layout",
+        "Make the footer cleaner, premium, well-spaced, and aligned with a modern SaaS layout.",
+        [
+          improve(
+            "IMPROVE_FOOTER",
+            "footer"
+          )
+        ]
+      )
+    );
+
+    return {
+      reply:
+        `I detected a footer-specific request. ` +
+        `I will only improve the footer layout using the ${profile} design profile.`,
+      designProfile: profile,
+      suggestions
+    };
+  }
+
+  if (
+    message.includes("stats") ||
+    message.includes("impact") ||
+    message.includes("numbers") ||
+    message.includes("metrics") ||
+    message.includes("kpi") ||
+    message.includes("chiffres") ||
+    message.includes("statistiques")
+  ) {
+    suggestions.push(
+      makeSuggestion(
+        "improve-stats-section",
+        "Improve stats / impact section",
+        "Make numbers more visible with premium stat cards, better alignment, stronger spacing, and clearer hierarchy.",
+        [
+          improve(
+            "IMPROVE_STATS",
+            "page"
+          )
+        ]
+      )
+    );
+
+    return {
+      reply:
+        `I detected a stats-specific request. ` +
+        `I will only improve the stats / impact section using the ${profile} design profile.`,
+      designProfile: profile,
+      suggestions
+    };
+  }
 
   if (
     message.includes("premium") ||
@@ -205,18 +470,18 @@ if (wantsFooter) {
         "Improve global visual design",
         "Upgrade spacing, cards, buttons, and overall visual hierarchy.",
         [
-          {
-            type: "IMPROVE_SPACING",
-            target: "page"
-          },
-          {
-            type: "IMPROVE_CARDS",
-            target: "page"
-          },
-          {
-            type: "IMPROVE_BUTTONS",
-            target: "page"
-          }
+          improve(
+            "IMPROVE_SPACING",
+            "page"
+          ),
+          improve(
+            "IMPROVE_CARDS",
+            "page"
+          ),
+          improve(
+            "IMPROVE_BUTTONS",
+            "page"
+          )
         ]
       )
     );
@@ -236,18 +501,18 @@ if (wantsFooter) {
         "Center important layouts",
         "Center FAQ, contact, and reservation sections inside the page.",
         [
-          {
-            type: "CENTER_LAYOUT",
-            target: "faq"
-          },
-          {
-            type: "CENTER_LAYOUT",
-            target: "contact"
-          },
-          {
-            type: "CENTER_LAYOUT",
-            target: "reservation"
-          }
+          improve(
+            "CENTER_LAYOUT",
+            "faq"
+          ),
+          improve(
+            "CENTER_LAYOUT",
+            "contact"
+          ),
+          improve(
+            "CENTER_LAYOUT",
+            "reservation"
+          )
         ]
       )
     );
@@ -265,14 +530,14 @@ if (wantsFooter) {
         "Improve forms",
         "Make inputs, textarea, and form cards more spacious and professional.",
         [
-          {
-            type: "IMPROVE_FORMS",
-            target: "page"
-          },
-          {
-            type: "IMPROVE_BUTTONS",
-            target: "page"
-          }
+          improve(
+            "IMPROVE_FORMS",
+            "page"
+          ),
+          improve(
+            "IMPROVE_BUTTONS",
+            "page"
+          )
         ]
       )
     );
@@ -287,45 +552,22 @@ if (wantsFooter) {
         "Apply image-rich design profile",
         "Use stronger image radius, softer shadows, and gallery-friendly visual style.",
         [
-          {
-            type: "IMPROVE_IMAGES",
-            target: "page"
-          },
-          {
-            type: "IMPROVE_CARDS",
-            target: "page"
-          },
-          {
-            type: "IMPROVE_SPACING",
-            target: "page"
-          }
+          improve(
+            "IMPROVE_IMAGES",
+            "page"
+          ),
+          improve(
+            "IMPROVE_CARDS",
+            "page"
+          ),
+          improve(
+            "IMPROVE_SPACING",
+            "page"
+          )
         ]
       )
     );
   }
-if (
-  message.includes("stats") ||
-  message.includes("impact") ||
-  message.includes("numbers") ||
-  message.includes("metrics") ||
-  message.includes("kpi") ||
-  message.includes("chiffres") ||
-  message.includes("statistiques")
-) {
-  suggestions.unshift(
-    makeSuggestion(
-      "improve-stats-section",
-      "Improve stats / impact section",
-      "Make numbers more visible with premium stat cards, better alignment, stronger spacing, and clearer hierarchy.",
-      [
-        {
-          type: "IMPROVE_STATS",
-          target: "page"
-        }
-      ]
-    )
-  );
-}
 
   if (
     suggestions.length === 0
@@ -336,18 +578,18 @@ if (
         "Apply safe design upgrade",
         "Improve spacing, cards, and buttons without changing the page structure.",
         [
-          {
-            type: "IMPROVE_SPACING",
-            target: "page"
-          },
-          {
-            type: "IMPROVE_CARDS",
-            target: "page"
-          },
-          {
-            type: "IMPROVE_BUTTONS",
-            target: "page"
-          }
+          improve(
+            "IMPROVE_SPACING",
+            "page"
+          ),
+          improve(
+            "IMPROVE_CARDS",
+            "page"
+          ),
+          improve(
+            "IMPROVE_BUTTONS",
+            "page"
+          )
         ]
       )
     );

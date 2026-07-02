@@ -621,6 +621,36 @@ const FAQ_BY_CATEGORY: Record<string, string[]> = {
     "Do you have analytics?|Yes, we provide detailed analytics and insights."
   ]
 };
+const parseLlmJson = (
+  response: string
+): Partial<AiGeneratedContent> | undefined => {
+  try {
+    const cleaned =
+      response
+        .trim()
+        .replace(/^```json/i, "")
+        .replace(/^```/i, "")
+        .replace(/```$/i, "")
+        .trim();
+
+    return JSON.parse(cleaned);
+  } catch {
+    return undefined;
+  }
+};
+
+const logLlmFailure = (
+  error: unknown
+) => {
+  const message =
+    error instanceof Error
+      ? error.message
+      : String(error);
+
+  console.warn("LLM_FALLBACK_USED", {
+    reason: message
+  });
+};
 export const generateAiContent = async (
   siteContext: SiteContext,
   prompt: string
@@ -911,33 +941,44 @@ const fallbackContent: AiGeneratedContent = {
     ? `Turn your ${dynamicServices[0].toLowerCase()} vision into a scalable digital experience.`
     : ctaTextByCategory[category] || "Create a modern digital presence with AI."
 };
-let llmContent: Partial<AiGeneratedContent> | undefined;
+let llmContent:
+  | Partial<AiGeneratedContent>
+  | undefined;
 
 try {
-
   const promptText =
     buildAiContentPrompt(
-      siteContext
+      siteContext,
+      cleanPrompt
     );
 
-  const response = await generateText( promptText);
+  const response =
+    await generateText(promptText);
 
- try { llmContent = JSON.parse(response);
+  llmContent =
+    parseLlmJson(response);
 
-  console.log("LLM RESPONSE:");
-console.log(response);
-} catch { console.warn( "LLM returned invalid JSON. Using fallback.");
-
-  llmContent =undefined;}
-
+  if (!llmContent) {
+    console.warn(
+      "LLM_INVALID_JSON_USING_FALLBACK"
+    );
+  } else {
+    console.log("LLM_JSON_CONTENT_USED", {
+      title: llmContent.title,
+      services:
+        llmContent.services?.length || 0,
+      features:
+        llmContent.features?.length || 0,
+      stats:
+        llmContent.stats?.length || 0,
+      faqs:
+        llmContent.faqs?.length || 0
+    });
+  }
 } catch (error) {
-
-  console.error(
-    "LLM_ERROR:",
-    error
-  );
-
+  logLlmFailure(error);
 }
+
 return sanitizeAiContent(
   fallbackContent,
   llmContent

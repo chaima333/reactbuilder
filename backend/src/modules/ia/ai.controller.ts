@@ -4,6 +4,7 @@ import { AiService } from "./ai.service";
 import { AiHistoryService } from "./ai.history.service";
 import { createDesignCopilotResponse } from "./copilot/designCopilot.service";
 import { applyDesignActions } from "./copilot/designActions.transformer";
+import { ApplyDesignCopilotSchema } from "./copilot/designCopilot.schema";
 
 export const generatePage = async (req: AuthRequest, res: Response) => {
   try {
@@ -178,15 +179,15 @@ export const designCopilotChat = async (
       });
     }
 
-    const result =
-      createDesignCopilotResponse({
-        message: finalMessage,
-        category,
-        pageTitle,
-        slug,
-        pageType,
-        blocks
-      });
+   const result =
+  await createDesignCopilotResponse({
+    message: finalMessage,
+    category,
+    pageTitle,
+    slug,
+    pageType,
+    blocks
+  });
 
     return res.json({
       success: true,
@@ -211,37 +212,22 @@ export const designCopilotApply = async (
   res: Response
 ) => {
   try {
-    const {
-      suggestion,
-      actions,
-      blocks
-    } = req.body;
+    const validation = ApplyDesignCopilotSchema.safeParse(req.body);
 
-    if (
-      !Array.isArray(blocks) ||
-      blocks.length === 0
-    ) {
+    if (!validation.success) {
       return res.status(400).json({
         success: false,
-        message: "Blocks are required",
-        code: "BLOCKS_REQUIRED"
+        message: "Invalid design action request",
+        code: "INVALID_DESIGN_ACTIONS",
+        errors: validation.error.issues
       });
     }
+
+    const { suggestion, actions, blocks } = validation.data;
 
     const designActions =
       suggestion?.actions ||
       actions;
-
-    if (
-      !Array.isArray(designActions) ||
-      designActions.length === 0
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Design actions are required",
-        code: "ACTIONS_REQUIRED"
-      });
-    }
 
     const updatedBlocks =
       applyDesignActions(
