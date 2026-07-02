@@ -202,28 +202,29 @@ const applyActionToBlock = (
   const statsScope =
     inStatsScope || statsScopeStarts;
 
-    const footerScopeStarts =
-  action.type === "IMPROVE_FOOTER" &&
-  (
-    block.type === "footer" ||
-    String(block.id || "")
-      .toLowerCase()
-      .includes("footer")
-  );
+  const footerScopeStarts =
+    action.type === "IMPROVE_FOOTER" &&
+    (
+      block.type === "footer" ||
+      String(block.id || "")
+        .toLowerCase()
+        .includes("footer")
+    );
 
-const footerScope =
-  inFooterScope || footerScopeStarts;
+  const footerScope =
+    inFooterScope || footerScopeStarts;
+
   const navbarScopeStarts =
-  action.type === "IMPROVE_NAVBAR" &&
-  (
-    block.type === "navbar" ||
-    String(block.id || "")
-      .toLowerCase()
-      .includes("navbar")
-  );
+    action.type === "IMPROVE_NAVBAR" &&
+    (
+      block.type === "navbar" ||
+      String(block.id || "")
+        .toLowerCase()
+        .includes("navbar")
+    );
 
-const navbarScope =
-  inNavbarScope || navbarScopeStarts;
+  const navbarScope =
+    inNavbarScope || navbarScopeStarts;
 
   if (
     action.type === "CENTER_LAYOUT" &&
@@ -560,209 +561,14 @@ const navbarScope =
         "keep-all";
     }
   }
-if (
-  action.type === "IMPROVE_NAVBAR" &&
-  navbarScope
-) {
-  if (
-    navbarScopeStarts
-  ) {
-    desktop.display =
-      "flex";
-
-    desktop.flexDirection =
-      "row";
-
-    desktop.alignItems =
-      "center";
-
-    desktop.justifyContent =
-      "space-between";
-
-    desktop.gap =
-      "32px";
-
-    desktop.width =
-      "100%";
-
-    desktop.minHeight =
-      "82px";
-
-    desktop.padding =
-      "18px 64px";
-
-    desktop.backgroundColor =
-      "#ffffff";
-
-    desktop.boxShadow =
-      "0 12px 35px rgba(15,23,42,0.08)";
-
-    desktop.borderBottom =
-      "1px solid #e5e7eb";
-
-    desktop.boxSizing =
-      "border-box";
-
-    tablet.padding =
-      "16px 32px";
-
-    mobile.flexDirection =
-      "column";
-
-    mobile.alignItems =
-      "center";
-
-    mobile.justifyContent =
-      "center";
-
-    mobile.gap =
-      "16px";
-
-    mobile.padding =
-      "18px";
-  }
 
   if (
-    block.type === "flex" ||
-    block.type === "grid"
+    action.type === "IMPROVE_NAVBAR" &&
+    navbarScope
   ) {
-    desktop.display =
-      "flex";
-
-    desktop.flexDirection =
-      "row";
-
-    desktop.alignItems =
-      "center";
-
-    desktop.justifyContent =
-      desktop.justifyContent || "center";
-
-    desktop.flexWrap =
-      "nowrap";
-
-    desktop.gap =
-      desktop.gap || "28px";
-
-    desktop.width =
-      desktop.width || "auto";
-
-    desktop.maxWidth =
-      "none";
-
-    desktop.margin =
-      "0";
-
-    desktop.boxSizing =
-      "border-box";
-
-    mobile.flexWrap =
-      "wrap";
-
-    mobile.justifyContent =
-      "center";
-  }
-
-  if (
-    block.type === "flexItem" ||
-    block.type === "gridItem"
-  ) {
-    desktop.display =
-      desktop.display || "flex";
-
-    desktop.alignItems =
-      "center";
-
-    desktop.justifyContent =
-      "center";
-
-    desktop.width =
-      "auto";
-
-    desktop.maxWidth =
-      "none";
-
-    desktop.margin =
-      "0";
-
-    desktop.padding =
-      desktop.padding || "0";
-
-    desktop.boxSizing =
-      "border-box";
-  }
-
-  if (
-    block.type === "text" ||
-    block.type === "title"
-  ) {
-    desktop.whiteSpace =
-      "nowrap";
-
-    desktop.textAlign =
-      "center";
-
-    desktop.margin =
-      "0";
-
-    desktop.color =
-      desktop.color || "#0f172a";
-
-    desktop.fontWeight =
-      desktop.fontWeight || "800";
-  }
-
-  if (
-    block.type === "button"
-  ) {
-    desktop.whiteSpace =
-      "nowrap";
-
-    desktop.borderRadius =
-      "14px";
-
-    desktop.padding =
-      "12px 24px";
-
-    desktop.fontWeight =
-      "800";
-
-    desktop.backgroundColor =
-      desktop.backgroundColor || "#0d2760";
-
-    desktop.color =
-      "#ffffff";
-
-    desktop.boxShadow =
-      "0 12px 28px rgba(37,99,235,0.24)";
-  }
-}
-
-if (
-  action.type === "IMPROVE_NAVBAR" &&
-  statsScope === false
-) {
-  const own =
-    ownBlockText(block);
-
-  const isNavbarChild =
-    own.includes("home") ||
-    own.includes("about") ||
-    own.includes("services") ||
-    own.includes("pricing") ||
-    own.includes("integrations") ||
-    own.includes("contact us") ||
-    own.includes("flowpilot");
-
-  if (isNavbarChild) {
-    if (
-      block.type === "flex" ||
-      block.type === "grid" ||
-      block.type === "flexItem" ||
-      block.type === "gridItem"
-    ) {
+    if (navbarScopeStarts) {
       desktop.display =
-        desktop.display || "flex";
+        "flex";
 
       desktop.flexDirection =
         "row";
@@ -771,7 +577,69 @@ if (
         "center";
 
       desktop.justifyContent =
+        "space-between";
+
+      desktop.gap =
+        "28px";
+
+      desktop.width =
+        "100%";
+
+      desktop.minHeight =
+        "82px";
+
+      desktop.padding =
+        "18px 56px";
+
+      desktop.backgroundColor =
+        "#ffffff";
+
+      desktop.boxShadow =
+        "0 12px 35px rgba(15,23,42,0.08)";
+
+      desktop.borderBottom =
+        "1px solid #e5e7eb";
+
+      desktop.boxSizing =
+        "border-box";
+
+      tablet.padding =
+        "16px 32px";
+
+      mobile.flexDirection =
+        "column";
+
+      mobile.alignItems =
         "center";
+
+      mobile.justifyContent =
+        "center";
+
+      mobile.gap =
+        "16px";
+
+      mobile.padding =
+        "18px";
+    }
+
+    if (
+      block.type === "flex" ||
+      block.type === "grid"
+    ) {
+      desktop.display =
+        "flex";
+
+      desktop.flexDirection =
+        "row";
+
+      desktop.alignItems =
+        "center";
+
+      desktop.justifyContent =
+        desktop.justifyContent || "center";
+
+      desktop.flexWrap =
+        "nowrap";
 
       desktop.gap =
         desktop.gap || "24px";
@@ -790,6 +658,35 @@ if (
     }
 
     if (
+      block.type === "flexItem" ||
+      block.type === "gridItem"
+    ) {
+      desktop.display =
+        desktop.display || "flex";
+
+      desktop.alignItems =
+        "center";
+
+      desktop.justifyContent =
+        "center";
+
+      desktop.width =
+        "auto";
+
+      desktop.maxWidth =
+        "none";
+
+      desktop.margin =
+        "0";
+
+      desktop.padding =
+        desktop.padding || "0";
+
+      desktop.boxSizing =
+        "border-box";
+    }
+
+    if (
       block.type === "text" ||
       block.type === "title"
     ) {
@@ -801,6 +698,12 @@ if (
 
       desktop.margin =
         "0";
+
+      desktop.color =
+        desktop.color || "#0f172a";
+
+      desktop.fontWeight =
+        desktop.fontWeight || "800";
     }
 
     if (
@@ -818,17 +721,19 @@ if (
       desktop.fontWeight =
         "800";
 
+      desktop.backgroundColor =
+        desktop.backgroundColor || "#2563eb";
+
+      desktop.color =
+        "#ffffff";
+
       desktop.boxShadow =
         "0 12px 28px rgba(37,99,235,0.24)";
     }
   }
-}
-if (
-  action.type === "IMPROVE_FOOTER" &&
-  footerScope
-) {
+
   if (
-    block.type === "footer" ||
+    action.type === "IMPROVE_FOOTER" &&
     footerScopeStarts
   ) {
     desktop.backgroundColor =
@@ -838,152 +743,24 @@ if (
       "#e5e7eb";
 
     desktop.padding =
-  "48px 48px 24px";
+      "48px 56px 24px";
 
     desktop.width =
       "100%";
 
-    desktop.display =
-      "flex";
-
-    desktop.flexDirection =
-      "column";
-
-    desktop.alignItems =
-      "center";
-
-    desktop.justifyContent =
-      "center";
-
     desktop.boxSizing =
       "border-box";
+
+    desktop.display =
+      "block";
 
     tablet.padding =
-      "52px 32px 24px";
+      "40px 32px 22px";
 
     mobile.padding =
-      "42px 20px 22px";
+      "36px 20px 20px";
   }
 
-  if (
-    block.type === "grid"
-  ) {
-    desktop.display =
-      "grid";
-
-    desktop.gridTemplateColumns =
-      "1.4fr repeat(4, 1fr)";
-
-    desktop.gap =
-      "24px";
-
-    desktop.width =
-      "100%";
-
-    desktop.maxWidth =
-      "1180px";
-
-    desktop.margin =
-      "0 auto";
-
-    desktop.alignItems =
-      "flex-start";
-
-    tablet.gridTemplateColumns =
-      "repeat(2, minmax(0, 1fr))";
-
-    mobile.gridTemplateColumns =
-      "1fr";
-  }
-
-  if (
-    block.type === "flex"
-  ) {
-    desktop.display =
-      "flex";
-
-    desktop.flexWrap =
-      "wrap";
-
-    desktop.justifyContent =
-      "space-between";
-
-    desktop.alignItems =
-      "flex-start";
-
-    desktop.gap = "24px";
-
-    desktop.width =
-      "100%";
-
-    desktop.maxWidth =
-      desktop.maxWidth || "1180px";
-
-    desktop.margin =
-      "0 auto";
-
-    desktop.boxSizing =
-      "border-box";
-  }
-
-  if (
-    block.type === "flexItem" ||
-    block.type === "gridItem"
-  ) {
-    desktop.minWidth =
-      desktop.minWidth || "150px";
-
-    desktop.boxSizing =
-      "border-box";
-  }
-
-  if (
-    block.type === "text" ||
-    block.type === "title"
-  ) {
-    desktop.color =
-      desktop.color || "#cbd5e1";
-
-    desktop.textAlign =
-      desktop.textAlign || "left";
-
-    desktop.lineHeight =
-      desktop.lineHeight || "1.7";
-
-    desktop.marginBottom =
-      desktop.marginBottom || "8px";
-
-    if (
-      ownBlockText(block).includes("flowpilot") ||
-      ownBlockText(block).includes("company") ||
-      ownBlockText(block).includes("resources") ||
-      ownBlockText(block).includes("contact") ||
-      ownBlockText(block).includes("follow")
-    ) {
-      desktop.color =
-        "#ffffff";
-
-      desktop.fontWeight =
-        "800";
-    }
-  }
-
-  if (
-    block.type === "button"
-  ) {
-    desktop.borderRadius =
-      "14px";
-
-    desktop.padding =
-      "12px 24px";
-
-    desktop.fontWeight =
-      "800";
-
-    desktop.boxShadow =
-      "0 12px 28px rgba(37,99,235,0.24)";
-  }
-}
   return {
     ...block,
     data: {
@@ -992,13 +769,13 @@ if (
     },
     children:
       block.children?.map((child) =>
-       applyActionToBlock(
-  child,
-  action,
-  statsScope,
-  footerScope,
-  navbarScope
-)
+        applyActionToBlock(
+          child,
+          action,
+          statsScope,
+          false,
+          navbarScope
+        )
       ) || []
   };
 };

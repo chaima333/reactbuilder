@@ -3,7 +3,6 @@
 // ==================== HELPERS ====================
 
 import { AiGeneratedContent, SiteContext } from "./ai.types";
-import { BusinessProfile } from "./business.profile";
 import { generateText } from "./llm/llm.client";
 import { buildAiContentPrompt } from "./llm/llm.prompt";
 import { sanitizeAiContent } from "./sanitizeAiContent";
