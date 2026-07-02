@@ -9,7 +9,6 @@ export const PERMISSIONS = {
   SITE_UPDATE: "SITE_UPDATE",
   SITE_DELETE: "SITE_DELETE",
 
-  // Compatibility alias فقط كان عندك كود قديم يستعمل SITE_EDIT
   SITE_EDIT: "SITE_UPDATE",
 
   // =========================
