@@ -5,6 +5,7 @@ import { AiHistoryService } from "./ai.history.service";
 import { createDesignCopilotResponse } from "./copilot/designCopilot.service";
 import { applyDesignActions } from "./copilot/designActions.transformer";
 import { ApplyDesignCopilotSchema } from "./copilot/designCopilot.schema";
+import { recordAiActivity } from "./history/aiActivity.service";
 
 export const generatePage = async (req: AuthRequest, res: Response) => {
   try {
@@ -212,7 +213,10 @@ export const designCopilotApply = async (
   res: Response
 ) => {
   try {
-    const validation = ApplyDesignCopilotSchema.safeParse(req.body);
+    const validation =
+      ApplyDesignCopilotSchema.safeParse(
+        req.body
+      );
 
     if (!validation.success) {
       return res.status(400).json({
@@ -223,11 +227,26 @@ export const designCopilotApply = async (
       });
     }
 
-    const { suggestion, actions, blocks } = validation.data;
+    const {
+      suggestion,
+      actions,
+      blocks
+    } = validation.data;
 
     const designActions =
       suggestion?.actions ||
       actions;
+
+    if (
+      !Array.isArray(designActions) ||
+      designActions.length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "No valid design actions provided",
+        code: "NO_DESIGN_ACTIONS"
+      });
+    }
 
     const updatedBlocks =
       applyDesignActions(
@@ -235,21 +254,60 @@ export const designCopilotApply = async (
         designActions
       );
 
+    const activitySiteId =
+      Number(
+        req.siteContext?.siteId ||
+        req.params.siteId
+      );
+
+    const activityUserId =
+      Number(req.user?.id);
+
+    const activityPageId =
+      Number(
+        (validation.data as any).pageId || 0
+      ) || null;
+
+    if (
+      activitySiteId &&
+      activityUserId
+    ) {
+      await recordAiActivity({
+        siteId: activitySiteId,
+        userId: activityUserId,
+        pageId: activityPageId,
+        eventType: "DESIGN_COPILOT_APPLY",
+        details: {
+          suggestionId:
+            suggestion?.id || null,
+          suggestionTitle:
+            suggestion?.title || null,
+          actions: designActions,
+          actionsCount:
+            designActions.length,
+          source: "design-copilot"
+        }
+      });
+    }
+
     return res.json({
       success: true,
       data: {
         blocks: updatedBlocks,
         reply:
           suggestion?.title
-            ? `✅ Applied: ${suggestion.title}`
-            : "✅ Design improvement applied successfully."
+            ? `Applied: ${suggestion.title}`
+            : "Design improvement applied successfully."
       }
     });
   } catch (error: any) {
-    console.error("DESIGN_COPILOT_APPLY_ERROR", {
-      message: error.message,
-      stack: error.stack
-    });
+    console.error(
+      "DESIGN_COPILOT_APPLY_ERROR",
+      {
+        message: error.message,
+        stack: error.stack
+      }
+    );
 
     return res.status(500).json({
       success: false,
