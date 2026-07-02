@@ -13,16 +13,19 @@ import {
 } from "../../core/constants/permissions";
 
 export const publicPartnerApplicationRoutes =
-  Router();
+  Router({
+    mergeParams: true
+  });
 
 publicPartnerApplicationRoutes.post(
   "/",
   partnerApplicationController.createPublicApplication
 );
 
-
 const partnerApplicationRoutes =
-  Router();
+  Router({
+    mergeParams: true
+  });
 
 partnerApplicationRoutes.get(
   "/",
