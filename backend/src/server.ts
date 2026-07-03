@@ -48,6 +48,8 @@ import { requireSiteAccess } from "./core/middleware/siteGuard";
 import invitationRoutes from "./core/services/invitations/invitation.routes";
 import partnerApplicationRoutes, { publicPartnerApplicationRoutes } from "./modules/partnerApplications/partnerApplication.routes";
 import { rejectOversizedAiContentLength } from "./modules/ia/aiRequestLimits.middleware";
+import chatbotPublicRoutes from "./modules/chatbot/chatbot.public.routes";
+import { rejectOversizedChatbotContentLength } from "./modules/chatbot/chatbot.payloadLimit";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 
@@ -56,6 +58,7 @@ const PORT = Number(process.env.PORT) || 10000;
 ======================== */
 app.use(cors());
 app.use(rejectOversizedAiContentLength);
+app.use(rejectOversizedChatbotContentLength);
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
@@ -77,14 +80,10 @@ app.use("/p/public",publicSiteRoutes);
 ======================== */
 app.use("/api/auth", authRoutes);
 app.use("/api/platform", platformRoutes);
-app.use(
-  "/api/public/sites/:siteId/partner-applications",
-  publicPartnerApplicationRoutes
-);
+app.use( "/api/public/sites/:siteId/partner-applications", publicPartnerApplicationRoutes);
 
 /* ========================
-   GLOBAL (IMPORTANT FIX 🔥)
-   => THIS WAS MISSING (ROOT CAUSE OF 404)
+   GLOBAL (IMPORTANT FIX )
 ======================== */
 const authStack = [authenticateJWT, maintenanceMode];
 app.use("/api/invitations",authStack,invitationRoutes);
@@ -103,6 +102,7 @@ app.use("/api/figma-plugin", figmaPluginRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/sites/:siteId/ia", tenantStack, iaRoutes);
 app.use("/api/ai/assistant", authStack, assistantRoutes);
+app.use("/api/public/sites/:siteId/chatbot",chatbotPublicRoutes);
 /* ========================
    ADMIN / USERS
 ======================== */
