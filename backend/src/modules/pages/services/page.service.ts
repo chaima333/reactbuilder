@@ -207,11 +207,42 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
   // ================= RESTORE =================
 static async restoreVersion(siteId: number, pageId: number, versionId: number, userId: number) {
   return await sequelize.transaction(async (t) => {
-    const version = await PageVersion.findOne({ where: { id: versionId, pageId }, transaction: t });
-    if (!version) throw new Error("VERSION_NOT_FOUND");
+    const page = await Page.findOne({
+      where: { id: pageId, siteId },
+      transaction: t,
+      lock: t.LOCK.UPDATE
+    });
 
-    const page = await Page.findByPk(pageId, { transaction: t });
+    if (!page) {
+      throw new Error("PAGE_NOT_FOUND");
+    }
+
+    const version = await PageVersion.findOne({
+      where: {
+        id: versionId,
+        pageId,
+        siteId
+      },
+      transaction: t
+    });
+
+    if (!version) {
+      throw new Error("VERSION_NOT_FOUND");
+    }
+
     const oldPage = page.toJSON();
+
+    // Preserve the current state first so every restore can be undone.
+    // Restore scope is intentionally limited to title, content, and blocks.
+    await PageVersion.create({
+      pageId: page.id,
+      siteId,
+      title: page.title,
+      content: page.content,
+      blocks: page.blocks,
+      status: page.status,
+      createdBy: userId
+    }, { transaction: t });
 
     await page.update({ 
       content: version.content, 

@@ -50,8 +50,10 @@ import partnerApplicationRoutes, { publicPartnerApplicationRoutes } from "./modu
 import { rejectOversizedAiContentLength } from "./modules/ia/aiRequestLimits.middleware";
 import chatbotPublicRoutes from "./modules/chatbot/chatbot.public.routes";
 import { rejectOversizedChatbotContentLength } from "./modules/chatbot/chatbot.payloadLimit";
+import platformAssistantRoutes from "./modules/platformAssistant/services/platformAssistant.routes";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
+const authStack = [authenticateJWT, maintenanceMode];
 
 /* ========================
    GLOBAL MIDDLEWARE
@@ -65,6 +67,13 @@ app.use(
   "/api/public/sites/:siteId/chatbot",
   express.json({ limit: "50kb" }),
   chatbotPublicRoutes
+);
+
+app.use(
+  "/api/platform-assistant",
+  authStack,
+  express.json({ limit: "100kb" }),
+  platformAssistantRoutes
 );
 
 app.use(express.json({ limit: "50mb" }));
@@ -92,7 +101,6 @@ app.use( "/api/public/sites/:siteId/partner-applications", publicPartnerApplicat
 /* ========================
    GLOBAL (IMPORTANT FIX )
 ======================== */
-const authStack = [authenticateJWT, maintenanceMode];
 app.use("/api/invitations",authStack,invitationRoutes);
 app.use("/api/sites", authStack, siteRoutes);
 

@@ -229,7 +229,24 @@ export const restorePageVersion = async (req: AuthRequest, res: Response) => {
 
     return res.json({ success: true, data: PageMapper.toDTO(result.data) });
   } catch (err: any) {
-    return res.status(500).json({ success: false, message: err.message });
+    if (err?.message === "PAGE_NOT_FOUND") {
+      return res.status(404).json({
+        success: false,
+        message: "Page not found"
+      });
+    }
+
+    if (err?.message === "VERSION_NOT_FOUND") {
+      return res.status(404).json({
+        success: false,
+        message: "Version not found"
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to restore page version"
+    });
   }
 };
 

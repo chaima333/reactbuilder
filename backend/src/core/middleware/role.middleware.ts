@@ -19,7 +19,7 @@ export const normalizeRole = (role?: string): SiteRole => {
     case "VIEWER":
       return "VIEWER";
     default:
-      return "VIEWER"; // fallback safe
+      return "VIEWER"; 
   }
 };
 
