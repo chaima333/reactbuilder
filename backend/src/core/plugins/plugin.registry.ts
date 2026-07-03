@@ -97,6 +97,7 @@ public getAllPlugins() {
       enabled,
       events: instance.events,
       permissions: instance.permissions ?? [],
+      marketplace: instance.marketplace,
       meta: instance.meta
     })
   );

@@ -21,6 +21,7 @@ export const syncRegisteredPlugins = async () => {
 
   for (const registered of registeredPlugins) {
     const slug = registered.name;
+    const marketplace = registered.marketplace;
 
     const [plugin, created] =
       await Plugin.findOrCreate({
@@ -28,12 +29,21 @@ export const syncRegisteredPlugins = async () => {
           slug
         },
         defaults: {
-          name: titleFromSlug(slug),
+          name:
+            marketplace?.displayName ||
+            titleFromSlug(slug),
           slug,
-          description: `${titleFromSlug(slug)} plugin for ReactBuilder.`,
-          version: "1.0.0",
-          author: "ReactBuilder",
-          category: categoryFromSlug(slug),
+          description:
+            marketplace?.description ||
+            `${titleFromSlug(slug)} plugin for ReactBuilder.`,
+          version:
+            marketplace?.version || "1.0.0",
+          author:
+            marketplace?.author || "ReactBuilder",
+          category:
+            marketplace?.category ||
+            categoryFromSlug(slug),
+          icon: marketplace?.icon,
           status: "published",
           isActive: registered.enabled
         }
@@ -41,11 +51,25 @@ export const syncRegisteredPlugins = async () => {
 
     if (!created) {
       await plugin.update({
+        name:
+          marketplace?.displayName ||
+          plugin.name,
+        description:
+          marketplace?.description ||
+          plugin.description,
+        author:
+          marketplace?.author ||
+          plugin.author,
+        icon:
+          marketplace?.icon ||
+          plugin.icon,
         isActive: registered.enabled,
         category:
+          marketplace?.category ||
           plugin.category ||
           categoryFromSlug(slug),
         version:
+          marketplace?.version ||
           plugin.version ||
           "1.0.0",
         status:

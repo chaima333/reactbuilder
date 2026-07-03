@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { Site } from "../../models";
+import {
+  getPublicChatbotConfig
+} from "./services/chatbotConfig.service";
 
 export const publicChatbotGuard = async (
   req: Request,
@@ -41,19 +43,43 @@ export const publicChatbotGuard = async (
       });
     }
 
-    const site =
-      await Site.findByPk(siteId);
+    const config =
+      await getPublicChatbotConfig(siteId);
 
-    if (!site) {
-      return res.status(404).json({
+    if (!config.enabled) {
+      return res.status(403).json({
         success: false,
-        message: "Site not found",
-        code: "SITE_NOT_FOUND"
+        message: "Chatbot is not available for this site",
+        code: "CHATBOT_NOT_ENABLED"
       });
     }
 
     return next();
   } catch (error) {
+    const errorCode =
+      error instanceof Error
+        ? error.message
+        : "";
+
+    if (errorCode === "INVALID_SITE_ID") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid site id",
+        code: "INVALID_SITE_ID"
+      });
+    }
+
+    if (
+      errorCode ===
+      "CHATBOT_SITE_NOT_AVAILABLE"
+    ) {
+      return res.status(404).json({
+        success: false,
+        message: "Chatbot is not available",
+        code: "CHATBOT_NOT_AVAILABLE"
+      });
+    }
+
     console.error("PUBLIC_CHATBOT_GUARD_ERROR", {
       error:
         error instanceof Error

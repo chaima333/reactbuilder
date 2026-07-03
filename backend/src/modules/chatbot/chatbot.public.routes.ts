@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import {
+  getPublicChatbotConfiguration,
   sendPublicChatbotMessage
 } from "./chatbot.public.controller";
 
@@ -15,10 +16,15 @@ import {
 const router =
   Router({ mergeParams: true });
 
+router.get(
+  "/config",
+  getPublicChatbotConfiguration
+);
+
 router.post(
   "/message",
-  publicChatbotRateLimit,
   publicChatbotGuard,
+  publicChatbotRateLimit,
   sendPublicChatbotMessage
 );
 

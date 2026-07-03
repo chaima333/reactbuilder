@@ -26,6 +26,15 @@ export interface ICmsPlugin {
   enabled: boolean;
   permissions?: PluginPermission[];
 
+  marketplace?: {
+    displayName: string;
+    description: string;
+    category: string;
+    icon?: string;
+    version?: string;
+    author?: string;
+  };
+
   register?(context: any): void;
 
   execute(event: UnifiedEvent): Promise<void>;

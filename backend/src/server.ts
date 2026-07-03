@@ -57,12 +57,19 @@ const PORT = Number(process.env.PORT) || 10000;
    GLOBAL MIDDLEWARE
 ======================== */
 app.use(cors());
+
 app.use(rejectOversizedAiContentLength);
 app.use(rejectOversizedChatbotContentLength);
+
+app.use(
+  "/api/public/sites/:siteId/chatbot",
+  express.json({ limit: "50kb" }),
+  chatbotPublicRoutes
+);
+
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-
 /* ========================
    HEALTH CHECK
 ======================== */
@@ -102,7 +109,6 @@ app.use("/api/figma-plugin", figmaPluginRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/sites/:siteId/ia", tenantStack, iaRoutes);
 app.use("/api/ai/assistant", authStack, assistantRoutes);
-app.use("/api/public/sites/:siteId/chatbot",chatbotPublicRoutes);
 /* ========================
    ADMIN / USERS
 ======================== */
