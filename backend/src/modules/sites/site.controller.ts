@@ -393,68 +393,59 @@ export const getDefaultSite = async (
     });
   }
 };
-
-
 export const getPublicSite = async (
-
   req: Request,
-
   res: Response
-
 ) => {
-
   try {
-
     const siteId =
-      Number(
-        req.params.siteId
-      );
+      Number(req.params.siteId);
+
+    if (!Number.isFinite(siteId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid site id"
+      });
+    }
 
     const site =
-
-      await Site.findByPk(
-        siteId,
-        {
-
-          include: [
-            {
-              association:
-                "pages"
+      await Site.findOne({
+        where: {
+          id: siteId,
+          status: "active"
+        },
+        include: [
+          {
+            model: Page,
+            as: "pages",
+            required: false,
+            where: {
+              status: "published"
             }
-          ]
-        }
-      );
+          }
+        ]
+      });
 
     if (!site) {
-
       return res
         .status(404)
         .json({
-
-          success:false,
-
-          message:
-            "Site not found"
+          success: false,
+          message: "Site not found"
         });
     }
 
     return res.json({
-
-      success:true,
-
+      success: true,
       data: site
     });
 
-  } catch (error:any) {
-
+  } catch (error: any) {
     return res
       .status(500)
       .json({
-
-        success:false,
-
-        message:
-          error.message
-        });
+        success: false,
+        message: error.message
+      });
   }
 };

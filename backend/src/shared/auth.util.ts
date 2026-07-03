@@ -2,8 +2,14 @@ import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import { User, Token } from '../models';
 
-const secretkey = process.env.JWT_SECRET || 'your_secret_key';
+const secretkey =
+  process.env.JWT_SECRET;
 
+if (!secretkey) {
+  throw new Error(
+    "JWT_SECRET missing"
+  );
+}
 // --- Interfaces ---
 
 export interface JwtPayload {
