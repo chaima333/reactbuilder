@@ -1745,7 +1745,7 @@ const hasMeaningfulElementContent = (
     element.textContent || ""
   ) ||
   !!element.querySelector(
-    "img,svg,video,audio,input,button,a"
+    "img,svg,video,audio,input,textarea,select,button,a"
   );
 
 const splitGridTrackList = (
@@ -2030,6 +2030,693 @@ const compileDirectChildNodes = (
       );
     }
   );
+
+const mergeExtractedVisualStyles = (
+  element: HTMLElement
+) => {
+  const layout =
+    extractLayoutStyles(
+      element
+    );
+
+  const typography =
+    extractTypographyStyles(
+      element
+    );
+
+  return {
+    desktop: {
+      ...(layout.desktop || {}),
+      ...(typography.desktop || {})
+    },
+    tablet: {
+      ...(layout.tablet || {}),
+      ...(typography.tablet || {})
+    },
+    mobile: {
+      ...(layout.mobile || {}),
+      ...(typography.mobile || {})
+    }
+  };
+};
+
+const attachPseudoElementBlocks = (
+  _element: HTMLElement,
+  _path: (string | number)[],
+  compiledBlocks: SerializedBlock[]
+): SerializedBlock[] => {
+  return compiledBlocks;
+};
+
+function parseDomToBlocks(
+  element: HTMLElement,
+  path: (string | number)[],
+  ownership: OwnershipBuckets,
+  warnings: ImportWarning[],
+  matcherHits: ImportMatcherHit[]
+): SerializedBlock[] {
+  return attachPseudoElementBlocks(
+    element,
+    path,
+    parseDomToBlocksInternal(
+      element,
+      path,
+      ownership,
+      warnings,
+      matcherHits
+    )
+  );
+}
+
+const createChoiceControlVisual = (
+  element: HTMLInputElement,
+  path: (string | number)[]
+): SerializedBlock => {
+  const computed =
+    getElementWindow(
+      element
+    ).getComputedStyle(
+      element
+    );
+
+  const isRadio =
+    element.type === "radio";
+
+  const marker =
+    isRadio
+      ? element.checked
+        ? "◉"
+        : "○"
+      : element.checked
+        ? "☑"
+        : "☐";
+
+  const sourceSize =
+    Number.parseFloat(
+      computed.width || ""
+    );
+
+  const size =
+    Number.isFinite(sourceSize) &&
+    sourceSize > 0
+      ? `${Math.min(
+          Math.max(
+            sourceSize,
+            12
+          ),
+          24
+        )}px`
+      : "16px";
+
+  return {
+    id: generateNodeId(
+      COMPILER_BLOCK_TYPES.TEXT,
+      path
+    ),
+    type: COMPILER_BLOCK_TYPES.TEXT,
+    data: {
+      props: {
+        content: marker
+      },
+      style: {
+        desktop: {
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: size,
+          minWidth: size,
+          maxWidth: size,
+          height: size,
+          flexShrink: 0,
+          color: computed.color,
+          fontFamily: computed.fontFamily,
+          fontSize: size,
+          lineHeight: "1",
+          boxSizing: "border-box",
+          overflow: "visible"
+        },
+        tablet: {
+          width: size,
+          minWidth: size,
+          maxWidth: size,
+          height: size,
+          flexShrink: 0
+        },
+        mobile: {
+          width: size,
+          minWidth: size,
+          maxWidth: size,
+          height: size,
+          flexShrink: 0
+        }
+      }
+    },
+    children: []
+  };
+};
+const createVisualFormControl = (
+  element: HTMLElement,
+  path: (string | number)[],
+  displayText = ""
+): SerializedBlock => {
+  const visualStyle =
+    mergeExtractedVisualStyles(
+      element
+    );
+
+  return {
+    id:
+      generateNodeId(
+        COMPILER_BLOCK_TYPES.FLEX,
+        path
+      ),
+
+    type:
+      COMPILER_BLOCK_TYPES.FLEX,
+
+    data: {
+      props: {
+        semantic: {
+          semanticIntent:
+            "FORM_CONTROL_VISUAL"
+        }
+      },
+
+      style: {
+        ...visualStyle,
+
+        desktop: {
+          ...(visualStyle.desktop || {}),
+
+          display:
+            "flex",
+
+          alignItems:
+            "center",
+
+          width:
+            visualStyle.desktop?.width ||
+            "100%",
+
+          maxWidth:
+            visualStyle.desktop?.maxWidth ||
+            "100%",
+
+          minWidth:
+            "0",
+
+          boxSizing:
+            "border-box",
+
+          overflow:
+            "hidden"
+        },
+
+        tablet: {
+          ...(visualStyle.tablet || {}),
+
+          width:
+            "100%",
+
+          maxWidth:
+            "100%",
+
+          minWidth:
+            "0",
+
+          boxSizing:
+            "border-box"
+        },
+
+        mobile: {
+          ...(visualStyle.mobile || {}),
+
+          width:
+            "100%",
+
+          maxWidth:
+            "100%",
+
+          minWidth:
+            "0",
+
+          boxSizing:
+            "border-box"
+        }
+      }
+    },
+
+    children:
+      displayText
+        ? [
+            {
+              id:
+                generateNodeId(
+                  COMPILER_BLOCK_TYPES.TEXT,
+                  [
+                    ...path,
+                    "value"
+                  ]
+                ),
+
+              type:
+                COMPILER_BLOCK_TYPES.TEXT,
+
+              data: {
+                props: {
+                  content:
+                    displayText
+                },
+
+                style:
+                  extractTypographyStyles(
+                    element
+                  )
+              },
+
+              children: []
+            }
+          ]
+        : []
+  };
+};
+const emitFallbackLabel = (
+  element: HTMLElement,
+  path: (string | number)[],
+  ownership: OwnershipBuckets,
+  warnings: ImportWarning[],
+  matcherHits: ImportMatcherHit[]
+): SerializedBlock[] => {
+  const computed =
+    getElementWindow(
+      element
+    ).getComputedStyle(
+      element
+    );
+
+  const visualStyle =
+    mergeExtractedVisualStyles(
+      element
+    );
+
+  const directChoiceControl =
+    Array.from(
+      element.children
+    ).find(
+      child =>
+        child instanceof
+          getElementWindow(
+            element
+          ).HTMLInputElement &&
+        (
+          (child as HTMLInputElement)
+            .type === "checkbox" ||
+          (child as HTMLInputElement)
+            .type === "radio"
+        )
+    ) as HTMLInputElement | undefined;
+
+  if (directChoiceControl) {
+    const isRadio =
+      directChoiceControl.type ===
+      "radio";
+
+    const marker =
+      isRadio
+        ? directChoiceControl.checked
+          ? "◉"
+          : "○"
+        : directChoiceControl.checked
+          ? "☑"
+          : "☐";
+
+    const labelText =
+      Array.from(
+        element.childNodes
+      )
+        .filter(
+          node =>
+            node !==
+            directChoiceControl
+        )
+        .map(
+          node =>
+            node.textContent || ""
+        )
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    return [
+      {
+        id: generateNodeId(
+          COMPILER_BLOCK_TYPES.TEXT,
+          path
+        ),
+        type: COMPILER_BLOCK_TYPES.TEXT,
+        data: {
+          props: {
+            content:
+              labelText
+                ? `${marker} ${labelText}`
+                : marker
+          },
+          style: {
+            ...visualStyle,
+            desktop: {
+              ...(visualStyle.desktop || {}),
+              display: "inline-flex",
+              alignItems:
+                computed.alignItems ||
+                "center",
+              width: "max-content",
+              maxWidth: "100%",
+              minWidth: "0",
+              boxSizing: "border-box"
+            }
+          }
+        },
+        children: []
+      }
+    ];
+  }
+
+  if (
+    element.children.length === 0
+  ) {
+    return [
+      {
+        id: generateNodeId(
+          COMPILER_BLOCK_TYPES.TEXT,
+          path
+        ),
+        type: COMPILER_BLOCK_TYPES.TEXT,
+        data: {
+          props: {
+            content:
+              normalizeDiagnosticText(
+                element.textContent || ""
+              )
+          },
+          style: visualStyle
+        },
+        children: []
+      }
+    ];
+  }
+
+  const children =
+    compileDirectChildNodes(
+      element,
+      path,
+      ownership,
+      warnings,
+      matcherHits
+    );
+
+  if (!children.length) {
+    return [];
+  }
+
+  const sourceDisplay =
+    computed.display;
+
+  const display =
+    sourceDisplay === "flex" ||
+    sourceDisplay === "inline-flex"
+      ? sourceDisplay
+      : "inline-flex";
+
+  return [
+    {
+      id: generateNodeId(
+        COMPILER_BLOCK_TYPES.FLEX,
+        path
+      ),
+      type: COMPILER_BLOCK_TYPES.FLEX,
+      data: {
+        props: {},
+        style: {
+          ...visualStyle,
+          desktop: {
+            ...(visualStyle.desktop || {}),
+            display,
+            flexDirection:
+              computed.flexDirection ||
+              "row",
+            flexWrap:
+              computed.flexWrap ||
+              "wrap",
+            alignItems:
+              computed.alignItems ||
+              "center",
+            justifyContent:
+              computed.justifyContent ||
+              "flex-start",
+            gap:
+              computed.gap &&
+              computed.gap !== "normal"
+                ? computed.gap
+                : "8px",
+            minWidth: "0",
+            boxSizing: "border-box"
+          }
+        }
+      },
+      children: children.map(
+        (child, index) => ({
+          id: generateNodeId(
+            COMPILER_BLOCK_TYPES.FLEX_ITEM,
+            [
+              ...path,
+              "label-item",
+              index
+            ]
+          ),
+          type:
+            COMPILER_BLOCK_TYPES.FLEX_ITEM,
+          data: {
+            props: {},
+            style: {
+              desktop: {
+                flex: "0 0 auto",
+                minWidth: "0",
+                boxSizing: "border-box"
+              },
+              tablet: {
+                flex: "0 0 auto",
+                minWidth: "0"
+              },
+              mobile: {
+                flex: "0 0 auto",
+                minWidth: "0"
+              }
+            }
+          },
+          children: [child]
+        })
+      )
+    }
+  ];
+};
+
+const emitFallbackFormContainer = (
+  element: HTMLElement,
+  path: (string | number)[],
+  ownership: OwnershipBuckets,
+  warnings: ImportWarning[],
+  matcherHits: ImportMatcherHit[]
+): SerializedBlock[] => {
+  const computed =
+    getElementWindow(
+      element
+    ).getComputedStyle(
+      element
+    );
+
+  const extracted =
+    extractLayoutStyles(
+      element
+    );
+
+  const children =
+    getSafeChildren(
+      element
+    ).flatMap(
+      (child, index) =>
+        parseDomToBlocks(
+          child,
+          [...path, index],
+          ownership,
+          warnings,
+          matcherHits
+        )
+    );
+
+  if (!children.length) {
+    return [];
+  }
+
+  const isGrid =
+    computed.display === "grid";
+
+  const blockType =
+    isGrid
+      ? COMPILER_BLOCK_TYPES.GRID
+      : COMPILER_BLOCK_TYPES.FLEX;
+
+  const itemType =
+    isGrid
+      ? COMPILER_BLOCK_TYPES.GRID_ITEM
+      : COMPILER_BLOCK_TYPES.FLEX_ITEM;
+
+  const leftMargin =
+    Number.parseFloat(
+      computed.marginLeft || ""
+    );
+
+  const rightMargin =
+    Number.parseFloat(
+      computed.marginRight || ""
+    );
+
+  const centered =
+    computed.marginLeft === "auto" ||
+    computed.marginRight === "auto" ||
+    (
+      Number.isFinite(leftMargin) &&
+      Number.isFinite(rightMargin) &&
+      leftMargin > 0 &&
+      leftMargin === rightMargin
+    );
+
+  const desktopStyle = {
+    ...(extracted.desktop || {}),
+    display:
+      computed.display ||
+      "block",
+    flexDirection:
+      computed.display === "flex" ||
+      computed.display === "inline-flex"
+        ? computed.flexDirection
+        : "column",
+    flexWrap:
+      computed.flexWrap,
+    gridTemplateColumns:
+      isGrid
+        ? computed.gridTemplateColumns
+        : undefined,
+    justifyContent:
+      computed.justifyContent,
+    alignItems:
+      computed.alignItems,
+    gap:
+      computed.gap !== "normal"
+        ? computed.gap
+        : extracted.desktop?.gap,
+    width:
+      computed.width ||
+      extracted.desktop?.width,
+    maxWidth:
+      computed.maxWidth !== "none"
+        ? computed.maxWidth
+        : extracted.desktop?.maxWidth,
+    marginLeft:
+      centered
+        ? "auto"
+        : computed.marginLeft,
+    marginRight:
+      centered
+        ? "auto"
+        : computed.marginRight,
+    padding:
+      computed.padding,
+    border:
+      computed.border,
+    borderRadius:
+      computed.borderRadius,
+    background:
+      computed.background,
+    backgroundColor:
+      computed.backgroundColor,
+    color:
+      computed.color,
+    boxSizing:
+      computed.boxSizing ||
+      "border-box",
+    minWidth: "0",
+    overflow: "visible"
+  };
+
+  return [
+    {
+      id: generateNodeId(
+        blockType,
+        path
+      ),
+      type: blockType,
+      data: {
+        props: {},
+        style: {
+          ...extracted,
+          desktop: desktopStyle,
+          tablet: {
+            ...(extracted.tablet || {}),
+            width: "100%",
+            maxWidth:
+              desktopStyle.maxWidth ||
+              "100%",
+            marginLeft: "auto",
+            marginRight: "auto",
+            minWidth: "0",
+            boxSizing: "border-box"
+          },
+          mobile: {
+            ...(extracted.mobile || {}),
+            width: "100%",
+            maxWidth: "100%",
+            marginLeft: "auto",
+            marginRight: "auto",
+            minWidth: "0",
+            boxSizing: "border-box"
+          }
+        }
+      },
+      children: children.map(
+        (child, index) => ({
+          id: generateNodeId(
+            itemType,
+            [
+              ...path,
+              "form-item",
+              index
+            ]
+          ),
+          type: itemType,
+          data: {
+            props: {},
+            style: {
+              desktop: {
+                width: "100%",
+                minWidth: "0",
+                boxSizing: "border-box"
+              },
+              tablet: {
+                width: "100%",
+                minWidth: "0"
+              },
+              mobile: {
+                width: "100%",
+                minWidth: "0"
+              }
+            }
+          },
+          children: [child]
+        })
+      )
+    }
+  ];
+};
 
 const emitFallbackStructuredContainer = (
   element: HTMLElement,
@@ -2462,9 +3149,7 @@ const emitFallbackStructuredContainer = (
     }
   ];
 };
-// =====================================================
-// FALLBACK COMPILER
-// =====================================================
+
 const makeShortInlineTextSafe = (
   style: Record<string, any> = {}
 ) => ({
@@ -2551,6 +3236,42 @@ const makeShortInlineTextSafe = (
       "none"
   }
 });
+const cleanImportedListItemText = (
+  value = ""
+) =>
+  normalizeDiagnosticText(
+    value
+  )
+    .replace(
+      /^([•·●○◦▪▫‣→✓✔\-]\s*)+/,
+      ""
+    )
+    .trim();
+
+const getImportedListMarker = (
+  element: HTMLElement
+) => {
+  const parent =
+    element.parentElement;
+
+  if (
+    parent &&
+    getTagNameLower(parent) === "ol"
+  ) {
+    const index =
+      Array.from(parent.children)
+        .filter(
+          child =>
+            isHtmlElementLike(child) &&
+            getTagNameLower(child) === "li"
+        )
+        .indexOf(element);
+
+    return `${index + 1}.`;
+  }
+
+  return "•";
+};
 function fallbackCompileElement(
   element: HTMLElement,
   path: (string | number)[],
@@ -2801,6 +3522,443 @@ if (
           extractTypographyStyles(
             element
           )
+      },
+
+      children: []
+    }
+  ];
+}
+if (
+  tagName === "form"
+) {
+  return emitFallbackFormContainer(
+    element,
+    path,
+    ownership,
+    warnings,
+    matcherHits
+  );
+}
+
+if (
+  tagName === "label"
+) {
+  return emitFallbackLabel(
+    element,
+    path,
+    ownership,
+    warnings,
+    matcherHits
+  );
+}
+
+if (
+  tagName === "input"
+) {
+  const input =
+    element as HTMLInputElement;
+
+  if (
+    input.type === "checkbox" ||
+    input.type === "radio"
+  ) {
+    return [
+      createChoiceControlVisual(
+        input,
+        path
+      )
+    ];
+  }
+
+  const displayText =
+    input.getAttribute(
+      "placeholder"
+    ) ||
+    input.value ||
+    input.getAttribute(
+      "value"
+    ) ||
+    "";
+
+  return [
+    createVisualFormControl(
+      input,
+      path,
+      displayText
+    )
+  ];
+}
+
+if (
+  tagName === "textarea"
+) {
+  const textarea =
+    element as HTMLTextAreaElement;
+
+  const displayText =
+    textarea.getAttribute(
+      "placeholder"
+    ) ||
+    textarea.value ||
+    textarea.textContent ||
+    "";
+
+  return [
+    createVisualFormControl(
+      textarea,
+      path,
+      normalizeDiagnosticText(
+        displayText
+      )
+    )
+  ];
+}
+
+if (
+  tagName === "select"
+) {
+  const select =
+    element as HTMLSelectElement;
+
+  const selectedOption =
+    select.selectedOptions?.[0] ||
+    select.options?.[0];
+
+  const displayText =
+    normalizeDiagnosticText(
+      selectedOption?.textContent ||
+      selectedOption?.value ||
+      ""
+    );
+
+  return [
+    createVisualFormControl(
+      select,
+      path,
+      displayText
+    )
+  ];
+}
+if (
+  tagName === "ul" ||
+  tagName === "ol"
+) {
+  const computed =
+    extractComputedStyles(
+      element
+    );
+
+  const listItems =
+    getSafeChildren(
+      element
+    ).filter(
+      child =>
+        getTagNameLower(child) === "li" &&
+        hasMeaningfulElementContent(child)
+    );
+
+  if (!listItems.length) {
+    return [];
+  }
+
+  return [
+    {
+      id:
+        generateNodeId(
+          COMPILER_BLOCK_TYPES.FLEX,
+          path
+        ),
+
+      type:
+        COMPILER_BLOCK_TYPES.FLEX,
+
+      data: {
+        props: {
+          semantic: {
+            semanticIntent:
+              "IMPORTED_LIST"
+          }
+        },
+
+        style: {
+          ...extractLayoutStyles(
+            element
+          ),
+
+          desktop: {
+            ...(extractLayoutStyles(element).desktop || {}),
+
+            display:
+              "flex",
+
+            flexDirection:
+              "column",
+
+            gap:
+              computed.gap &&
+              computed.gap !== "normal"
+                ? computed.gap
+                : "14px",
+
+            paddingLeft:
+              "0",
+
+            margin:
+              computed.margin || "0",
+
+            listStyleType:
+              "none",
+
+            width:
+              "100%",
+
+            maxWidth:
+              "100%",
+
+            minWidth:
+              "0",
+
+            boxSizing:
+              "border-box"
+          },
+
+          tablet: {
+            ...(extractLayoutStyles(element).tablet || {}),
+
+            paddingLeft:
+              "0",
+
+            width:
+              "100%",
+
+            minWidth:
+              "0"
+          },
+
+          mobile: {
+            ...(extractLayoutStyles(element).mobile || {}),
+
+            paddingLeft:
+              "0",
+
+            width:
+              "100%",
+
+            minWidth:
+              "0"
+          }
+        }
+      },
+
+      children:
+        listItems.map(
+          (item, index) => ({
+            id:
+              generateNodeId(
+                COMPILER_BLOCK_TYPES.FLEX_ITEM,
+                [
+                  ...path,
+                  "list-item",
+                  index
+                ]
+              ),
+
+            type:
+              COMPILER_BLOCK_TYPES.FLEX_ITEM,
+
+            data: {
+              props: {},
+
+              style: {
+                desktop: {
+                  display:
+                    "flex",
+
+                  alignItems:
+                    "flex-start",
+
+                  width:
+                    "100%",
+
+                  minWidth:
+                    "0",
+
+                  boxSizing:
+                    "border-box"
+                },
+
+                tablet: {
+                  width:
+                    "100%",
+
+                  minWidth:
+                    "0"
+                },
+
+                mobile: {
+                  width:
+                    "100%",
+
+                  minWidth:
+                    "0"
+                }
+              }
+            },
+
+            children:
+              parseDomToBlocks(
+                item,
+                [
+                  ...path,
+                  "list-item",
+                  index,
+                  "content"
+                ],
+                ownership,
+                warnings,
+                matcherHits
+              )
+          })
+        )
+    }
+  ];
+}
+
+if (
+  tagName === "li"
+) {
+  const text =
+    cleanImportedListItemText(
+      element.textContent || ""
+    );
+
+  if (!text) {
+    return [];
+  }
+
+  const marker =
+    getImportedListMarker(
+      element
+    );
+
+  const typography =
+    extractTypographyStyles(
+      element
+    );
+
+  const cleanStyle = {
+    ...typography,
+
+    desktop: {
+      ...(typography.desktop || {}),
+
+      display:
+        "block",
+
+      listStyleType:
+        "none",
+
+      listStylePosition:
+        "outside",
+
+      margin:
+        "0",
+
+      padding:
+        "0",
+
+      paddingLeft:
+        "0",
+
+      textIndent:
+        "0",
+
+      whiteSpace:
+        "normal",
+
+      minWidth:
+        "0",
+
+      boxSizing:
+        "border-box"
+    },
+
+    tablet: {
+      ...(typography.tablet || {}),
+
+      display:
+        "block",
+
+      listStyleType:
+        "none",
+
+      margin:
+        "0",
+
+      padding:
+        "0",
+
+      paddingLeft:
+        "0",
+
+      textIndent:
+        "0",
+
+      whiteSpace:
+        "normal",
+
+      minWidth:
+        "0"
+    },
+
+    mobile: {
+      ...(typography.mobile || {}),
+
+      display:
+        "block",
+
+      listStyleType:
+        "none",
+
+      margin:
+        "0",
+
+      padding:
+        "0",
+
+      paddingLeft:
+        "0",
+
+      textIndent:
+        "0",
+
+      whiteSpace:
+        "normal",
+
+      minWidth:
+        "0"
+    }
+  };
+
+  return [
+    {
+      id:
+        generateNodeId(
+          COMPILER_BLOCK_TYPES.TEXT,
+          path
+        ),
+
+      type:
+        COMPILER_BLOCK_TYPES.TEXT,
+
+      data: {
+        props: {
+          content:
+            `${marker} ${text}`
+        },
+
+        style:
+          cleanStyle
       },
 
       children: []
@@ -3314,7 +4472,7 @@ if (tagName === "button") {
         },
 
         style:
-          extractTypographyStyles(
+          mergeExtractedVisualStyles(
             element
           )
       },
@@ -4417,7 +5575,7 @@ childLayoutStyle.desktop.overflow =
   }
 ];
 }
-function parseDomToBlocks(
+function parseDomToBlocksInternal(
   element: HTMLElement,
   path: (string | number)[],
   ownership: OwnershipBuckets,
@@ -4513,8 +5671,7 @@ function parseDomToBlocks(
   if (
     [
       "SPAN",
-      "SMALL",
-      "LABEL"
+      "SMALL"
     ].includes(element.tagName)
   ) {
     const isInsideHeading =
@@ -4553,6 +5710,30 @@ function parseDomToBlocks(
         children: []
       }
     ];
+  }
+
+  if (
+    element.tagName === "LABEL"
+  ) {
+    return emitFallbackLabel(
+      element,
+      path,
+      ownership,
+      warnings,
+      matcherHits
+    );
+  }
+
+  if (
+    element.tagName === "FORM"
+  ) {
+    return emitFallbackFormContainer(
+      element,
+      path,
+      ownership,
+      warnings,
+      matcherHits
+    );
   }
 
   const directSemanticReplacementChildren =
@@ -4669,6 +5850,10 @@ function parseDomToBlocks(
         "H5",
         "H6",
         "P",
+        "LABEL",
+        "INPUT",
+        "TEXTAREA",
+        "SELECT",
         "BUTTON",
         "A"
       ].includes(child.tagName)
@@ -5493,24 +6678,7 @@ return css;
         heroStyle.minHeight === "0px"
       )
     ) {
-      console.error(
-        "CSS_SCOPE_FAILED",
-        {
-          selector: ".hero",
-          expectedDisplay: "flex",
-          actualDisplay:
-            heroStyle.display,
-          minHeight:
-            heroStyle.minHeight,
-          paddingTop:
-            heroStyle.paddingTop,
-          className:
-            getElementClassName(hero),
-          matchedRules:
-            getMatchedRules(hero)
-        }
-      );
-
+    
       throw new Error(
         "CSS_SCOPE_FAILED: .hero styles were not applied before semantic analysis"
       );
@@ -5668,95 +6836,79 @@ getSafeChildren(body).forEach((child) => {
       activeBodyChildTwoContainer =
         bodyChildTwoContainer;
     }
-    getSafeChildren(body).forEach((child, index) => {
-      if (
-        activeBodyChildTwoContainer &&
-        (
-          child ===
-            activeBodyChildTwoContainer ||
-          child.contains(
-            activeBodyChildTwoContainer
-          )
+getSafeChildren(body).forEach(
+  (child, index) => {
+    if (
+      activeBodyChildTwoContainer &&
+      (
+        child === activeBodyChildTwoContainer ||
+        child.contains(
+          activeBodyChildTwoContainer
         )
-      ) {
-        finalBlocks.push(
-          ...compileServiceContainerInDomOrder(
-            activeBodyChildTwoContainer,
-            [
-              index,
-              "servicePage"
-            ],
-            ownershipBuckets,
-            warnings,
-            matcherHits
-          )
-        );
-
-        return;
-      }
-
-      const matchedSemantic = semanticBlocks.find((b: any) => {
-        const claimed = b.claimedNode?.element;
-        return claimed === child ;
-      });
-  if (matchedSemantic) {
-  finalBlocks.push(
-    matchedSemantic.emitted
-  );
-
-  logSemanticDroppedText(
-    child,
-    matchedSemantic.emitted
-  );
-} else {
-  const nestedSemanticMatches =
-    semanticBlocks.filter((entry: any) => {
-      const claimed =
-        entry.claimedNode?.element;
-
-      return (
-        claimed &&
-        claimed !== child &&
-        child.contains(claimed)
+      )
+    ) {
+      finalBlocks.push(
+        ...compileServiceContainerInDomOrder(
+          activeBodyChildTwoContainer,
+          [
+            index,
+            "servicePage"
+          ],
+          ownershipBuckets,
+          warnings,
+          matcherHits
+        )
       );
-    });
-if (nestedSemanticMatches.length > 0) {
-  const compiled = parseDomToBlocks(
-    child,
-    [index],
-    ownershipBuckets,
-    warnings,
-    matcherHits
-  );
 
-  finalBlocks.push(
-    ...splitNestedSemanticSectionsForRoot(
-      compiled
-    )
-  );
+      return;
+    }
 
-  return;
-}
+    const matchedSemantic =
+      semanticBlocks.find(
+        (entry: any) => {
+          const claimed =
+            entry.claimedNode?.element;
 
-  const compiled = parseDomToBlocks(
-    child,
-    [index],
-    ownershipBuckets,
-    warnings,
-    matcherHits
-  );
+          return claimed === child;
+        }
+      );
 
-  finalBlocks.push(
-    ...splitNestedSemanticSectionsForRoot(
-      compiled
-    )
-  );
-} });
-preserveMissingSemanticBlocks(
-  "finalBlocks",
-  finalBlocks,
-  semanticBlocks
+    if (
+      matchedSemantic?.emitted
+    ) {
+      finalBlocks.push(
+        matchedSemantic.emitted
+      );
+
+      logSemanticDroppedText(
+        child,
+        matchedSemantic.emitted
+      );
+
+      return;
+    }
+
+    const compiled =
+      parseDomToBlocks(
+        child,
+        [index],
+        ownershipBuckets,
+        warnings,
+        matcherHits
+      );
+
+    finalBlocks.push(
+      ...splitNestedSemanticSectionsForRoot(
+        compiled
+      )
+    );
+  }
 );
+//preserveMissingSemanticBlocks(
+  //"finalBlocks",
+  //finalBlocks,
+  //semanticBlocks
+//);
 
 const orderedServiceSections =
   finalBlocks.filter(
@@ -6318,9 +7470,6 @@ return {
         sandboxFrame
       );
   }
-
-    console.error("Critical import pipeline error:", error);
-
     if (
       error instanceof Error &&
       error.name === "InvariantViolationException"
@@ -6817,35 +7966,60 @@ function preserveMissingSemanticBlocks(
       existingIds.has(
         emitted.id
       );
-      if (semanticType === "CTA_SECTION") {
-
-
-  return;
-}
+      if (semanticType === "CTA_SECTION") { return;}
+      if (
+  semanticType === "CTA_SECTION" ||
+  semanticType === "CONTACT_LAYOUT"
+) {return;}
 
     if (
       !emitted ||
       !semanticType ||
       alreadyExists
-    ) {
-  
-      return;
-    }
+    ) { return;}
 
-    if (
-      emitted.type ===
-      COMPILER_BLOCK_TYPES.SECTION
-    ) {
-      if (
-        semanticType ===
-        "SERVICE_PAGE_SECTION"
-      ) {
-    
-        return;
-      }
+   if (
+  emitted.type ===
+  COMPILER_BLOCK_TYPES.SECTION
+) {
+  if (
+    semanticType ===
+    "SERVICE_PAGE_SECTION"
+  ) {
+    return;
+  }
 
-      return;
-    }
+  const emittedSubtreeIds =
+    collectAllBlocks(
+      [emitted]
+    )
+      .map((block: any) => block?.id)
+      .filter(Boolean);
+
+  const overlappingIds =
+    emittedSubtreeIds.filter(
+      (id: string) =>
+        existingIds.has(
+          id
+        )
+    );
+
+  if (
+    overlappingIds.length
+  ) {
+    return;
+  }
+
+  blocks.push(
+    emitted
+  );
+
+  existingIds.add(
+    emitted.id
+  );
+
+  return;
+}
 
     const emittedSubtreeIds =
       collectAllBlocks(
@@ -6949,15 +8123,6 @@ function assertNoSectionInsideLayout(
   ) {
     return;
   }
-
-  console.error(
-    "SECTION_NESTED_INSIDE_LAYOUT",
-    {
-      stage,
-      violations
-    }
-  );
-
   throw new Error(
     "SECTION_NESTED_INSIDE_LAYOUT"
   );
@@ -6987,31 +8152,6 @@ function assertFeaturePillarsPreservedAfterMerge(
   if (actualFeaturePillars.length > 0) {
     return;
   }
-
-  console.error(
-    "FEATURE_PILLARS_LOST_AFTER_MERGE",
-    {
-      stage,
-      expected:
-        expectedFeaturePillars.map((entry: any) => ({
-          id:
-            entry.emitted?.id,
-          type:
-            entry.emitted?.type,
-          childrenCount:
-            (entry.emitted?.children || []).length,
-          style:
-            entry.emitted?.data?.style ||
-            entry.emitted?.style ||
-            null
-        })),
-      topLevelSemanticTypes:
-        summarizeTopLevelSemanticTypes(
-          blocks || []
-        )
-    }
-  );
-
   throw new Error(
     "FEATURE_PILLARS_LOST_AFTER_MERGE"
   );
@@ -7593,14 +8733,7 @@ function assertNoNullChildren(
   );
 
   if (invalidPaths.length) {
-    console.error(
-      "NULL_CHILDREN_IN_BLOCK_TREE",
-      {
-        stage,
-        invalidPaths
-      }
-    );
-
+   
     throw new Error(
       `NULL_CHILDREN_IN_BLOCK_TREE: ${stage}`
     );

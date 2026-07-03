@@ -1,12 +1,14 @@
 export const extractComputedStyles = (
-  element: HTMLElement
+  element: HTMLElement,
+  pseudo?: "::before" | "::after"
 ) => {
 
   const computed =
     (
       element.ownerDocument.defaultView || window
     ).getComputedStyle(
-      element
+      element,
+      pseudo as any
     );
 
   return {
@@ -27,6 +29,9 @@ export const extractComputedStyles = (
     alignItems:
       computed.alignItems,
 
+    flexWrap:
+      computed.flexWrap,
+
     gap:
       computed.gap,
 
@@ -38,6 +43,12 @@ export const extractComputedStyles = (
 
     padding:
       computed.padding,
+
+    paddingTop:
+      computed.paddingTop,
+
+    paddingBottom:
+      computed.paddingBottom,
 
     paddingLeft:
       computed.paddingLeft,
@@ -60,11 +71,35 @@ export const extractComputedStyles = (
     maxWidth:
       computed.maxWidth,
 
+    minWidth:
+      computed.minWidth,
+
     minHeight:
       computed.minHeight,
 
     position:
       computed.position,
+
+    top:
+      computed.top,
+
+    right:
+      computed.right,
+
+    bottom:
+      computed.bottom,
+
+    left:
+      computed.left,
+
+    content:
+      computed.content,
+
+    visibility:
+      computed.visibility,
+
+    alignSelf:
+      computed.alignSelf,
 
     boxSizing:
       computed.boxSizing,
@@ -103,12 +138,12 @@ borderRadius:
 boxShadow:
   computed.boxShadow,
 
-backdropFilter:
-  computed.backdropFilter,
+    listStyleType:
+      computed.listStyleType,
 
-opacity:
-  computed.opacity,
-    // =====================
+    listStyleImage:
+      computed.listStyleImage,
+
     // TYPOGRAPHY
     // =====================
 
