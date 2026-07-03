@@ -5,9 +5,26 @@ import { SiteMember } from "../../models/SiteMember";
 import { Site } from "../../models/site";
 import { saveFigmaImportPayload } from "../pages/services/figma/figmaImportStore";
 import { MediaService } from "../media/media.service";
+import { ROLE_PERMISSIONS } from "../pages/domain/rules";
+import { normalizeRole } from "../../core/middleware/role.middleware";
+import { Permission, PERMISSIONS } from "../../core/constants/permissions";
 
 const makePluginToken = () =>
   "rb_figma_" + crypto.randomBytes(24).toString("hex");
+const hasSitePermission = (
+  role: string | undefined,
+  permission: Permission
+) => {
+  const normalizedRole =
+    normalizeRole(role);
+
+  const permissions =
+    ROLE_PERMISSIONS[normalizedRole] || [];
+
+  return permissions.includes(
+    permission
+  );
+};
 
 const processFigmaImages = async (
   node: any,
@@ -212,7 +229,22 @@ export const importFigmaRawFromPlugin = async (
         message: "You do not have access to this site"
       });
     }
+const canImportFigma =
+  hasSitePermission(
+    membership.role,
+    PERMISSIONS.PAGE_CREATE
+  ) &&
+  hasSitePermission(
+    membership.role,
+    PERMISSIONS.MEDIA_UPLOAD
+  );
 
+if (!canImportFigma) {
+  return res.status(403).json({
+    success: false,
+    message: "Permission denied: FIGMA_IMPORT"
+  });
+}
     await processFigmaImages(
       payload,
       Number(siteId),
