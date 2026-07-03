@@ -97,26 +97,94 @@ if (settings.forceStrongPasswords === true) {
 };
 
 // 3. REFRESH TOKEN
-export const refreshUserToken = async (refreshToken: string) => {
-  const dbToken = await getToken(refreshToken);
-  
-  if (!dbToken || dbToken.isRevoked) throw new Error("Invalid or expired refresh token");
+export const refreshUserToken = async (
+  refreshToken: string
+) => {
+  const dbToken =
+    await getToken(refreshToken);
 
-  const decoded = verifyToken(refreshToken);
-  if (!decoded) throw new Error("Invalid token");
+  if (
+    !dbToken ||
+    dbToken.isRevoked
+  ) {
+    throw new Error(
+      "Invalid or expired refresh token"
+    );
+  }
 
-  const user = await User.findByPk(dbToken.userId);
-  if (!user) throw new Error("User not found");
+  if (dbToken.type !== "refresh") {
+    throw new Error(
+      "Invalid token type"
+    );
+  }
 
-  await dbToken.update({ isRevoked: true });
+  if (
+    dbToken.expiresAt &&
+    dbToken.expiresAt < new Date()
+  ) {
+    throw new Error(
+      "Refresh token expired"
+    );
+  }
 
-  // 🚀 التعديل: نحينا الـ role
-  const newAccessToken = generateToken({ userId: user.id, type: "access" });
-  const newRefreshToken = generateToken({ userId: user.id, type: "refresh" });
+  const decoded =
+    verifyToken(refreshToken);
 
-  await addToken(newRefreshToken, "refresh", user.id);
+  if (!decoded) {
+    throw new Error(
+      "Invalid token"
+    );
+  }
 
-  return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+  if (decoded.type !== "refresh") {
+    throw new Error(
+      "Invalid token type"
+    );
+  }
+
+  if (decoded.userId !== dbToken.userId) {
+    throw new Error(
+      "Invalid token owner"
+    );
+  }
+
+  const user =
+    await User.findByPk(
+      dbToken.userId
+    );
+
+  if (!user) {
+    throw new Error(
+      "User not found"
+    );
+  }
+
+  await dbToken.update({
+    isRevoked: true,
+  });
+
+  const newAccessToken =
+    generateToken({
+      userId: user.id,
+      type: "access",
+    });
+
+  const newRefreshToken =
+    generateToken({
+      userId: user.id,
+      type: "refresh",
+    });
+
+  await addToken(
+    newRefreshToken,
+    "refresh",
+    user.id
+  );
+
+  return {
+    accessToken: newAccessToken,
+    refreshToken: newRefreshToken,
+  };
 };
 
 // 4. LOGOUT

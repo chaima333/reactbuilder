@@ -47,6 +47,7 @@ import pluginMarketplaceRoutes from "./modules/plugin/plugin.marketplace.routes"
 import { requireSiteAccess } from "./core/middleware/siteGuard";
 import invitationRoutes from "./core/services/invitations/invitation.routes";
 import partnerApplicationRoutes, { publicPartnerApplicationRoutes } from "./modules/partnerApplications/partnerApplication.routes";
+import { rejectOversizedAiContentLength } from "./modules/ia/aiRequestLimits.middleware";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 
@@ -54,6 +55,7 @@ const PORT = Number(process.env.PORT) || 10000;
    GLOBAL MIDDLEWARE
 ======================== */
 app.use(cors());
+app.use(rejectOversizedAiContentLength);
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));

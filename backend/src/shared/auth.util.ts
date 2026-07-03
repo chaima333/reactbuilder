@@ -46,7 +46,6 @@ export const decodeToken = (token: string): JwtPayload | null => {
   }
 };
 
-// 4. العمليات على قاعدة البيانات (Tokens DB Logic)
 export const addToken = async (token: string, type: 'access' | 'refresh', userId: number) => {
   return await Token.create({
     token,
@@ -68,37 +67,71 @@ export const authenticateJWT = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const authHeader = req.header('Authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({ success: false, message: 'Access Denied. No token provided.' });
+    const authHeader =
+      req.header("Authorization");
+
+    if (
+      !authHeader ||
+      !authHeader.startsWith("Bearer ")
+    ) {
+      res.status(401).json({
+        success: false,
+        message: "Access Denied. No token provided.",
+      });
+
       return;
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const verified = verifyToken(token);
+    const token =
+      authHeader.replace("Bearer ", "");
+
+    const verified =
+      verifyToken(token);
 
     if (!verified) {
-      res.status(401).json({ success: false, message: 'Invalid or expired token' });
+      res.status(401).json({
+        success: false,
+        message: "Invalid or expired token",
+      });
+
       return;
     }
 
-    const user = await User.findByPk(verified.userId);
-    
+    if (verified.type !== "access") {
+      res.status(401).json({
+        success: false,
+        message: "Invalid token type",
+      });
+
+      return;
+    }
+
+    const user =
+      await User.findByPk(
+        verified.userId
+      );
+
     if (!user) {
-      res.status(401).json({ success: false, message: 'User not found' });
+      res.status(401).json({
+        success: false,
+        message: "User not found",
+      });
+
       return;
     }
 
-    (req as AuthRequest).user = user;
+    (req as AuthRequest).user =
+      user;
 
     next();
   } catch (error) {
-    res.status(401).json({ success: false, message: 'Authentication failed' });
+    res.status(401).json({
+      success: false,
+      message: "Authentication failed",
+    });
   }
 };
 
-// 6. تنظيف وإبطال الـ Tokens
 export const revokeUserTokens = async (userId: number) => {
   return await Token.update(
     { isRevoked: true },

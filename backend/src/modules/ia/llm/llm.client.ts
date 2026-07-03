@@ -7,6 +7,28 @@ type AiProvider =
   | "openai"
   | "claude";
 
+const LLM_TIMEOUT_MS = 30_000;
+
+const withTimeout = async <T>(
+  operation: Promise<T>
+): Promise<T> => {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error("LLM_REQUEST_TIMEOUT")),
+          LLM_TIMEOUT_MS
+        );
+      })
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+};
+
 export const isLlmEnabled = () =>
   process.env.LLM_ENABLED === "true";
 
@@ -39,8 +61,8 @@ export const generateText = async (
         });
 
       const result =
-        await model.generateContent(
-          prompt
+        await withTimeout(
+          model.generateContent(prompt)
         );
 
       return result.response.text();
@@ -58,12 +80,12 @@ export const generateText = async (
         });
 
       const response =
-        await openai.responses.create({
+        await withTimeout(openai.responses.create({
           model:
             process.env.OPENAI_MODEL ||
             "gpt-4.1-mini",
           input: prompt
-        });
+        }));
 
       return response.output_text;
     }
@@ -80,7 +102,7 @@ export const generateText = async (
         });
 
       const response =
-        await anthropic.messages.create({
+        await withTimeout(anthropic.messages.create({
           model:
             process.env.ANTHROPIC_MODEL ||
             "claude-sonnet-5",
@@ -91,7 +113,7 @@ export const generateText = async (
               content: prompt
             }
           ]
-        });
+        }));
 
       return response.content
         .map((block) =>

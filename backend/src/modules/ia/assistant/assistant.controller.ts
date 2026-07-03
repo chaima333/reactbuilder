@@ -51,7 +51,6 @@ export const editSelectedBlock = async (
       block,
       pageTitle,
       slug,
-      siteId,
       pageId
     } = req.body;
 
@@ -80,7 +79,7 @@ export const editSelectedBlock = async (
         slug
       });
 
-    const activitySiteId = Number(siteId || 0);
+    const activitySiteId = Number(req.siteContext?.siteId || 0);
     const activityUserId = Number(req.user?.id || 0);
     if (activitySiteId && activityUserId) {
       await recordAiActivity({

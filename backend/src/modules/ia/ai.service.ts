@@ -194,7 +194,8 @@ if (
 private static async predictCategory(
   prompt: string
 ): Promise<MlPrediction> {
-  console.log("ML_SERVICE_URL_USED", ML_SERVICE_URL);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
 
   try {
     const response = await fetch(`${ML_SERVICE_URL}/predict`, {
@@ -204,10 +205,9 @@ private static async predictCategory(
       },
       body: JSON.stringify({
         prompt
-      })
+      }),
+      signal: controller.signal
     });
-
-    console.log("ML_RESPONSE_STATUS", response.status);
 
     if (!response.ok) {
       console.error(
@@ -224,8 +224,6 @@ private static async predictCategory(
     }
 
     const result = await response.json();
-
-    console.log("ML_RESPONSE_BODY", result);
 
     const category =
       typeof result.category === "string" &&
@@ -250,8 +248,13 @@ private static async predictCategory(
       category: this.fallbackCategory(prompt),
       confidence: 0,
       source: "fallback",
-      error: "ML_SERVICE_UNAVAILABLE"
+      error:
+        error instanceof Error && error.name === "AbortError"
+          ? "ML_SERVICE_TIMEOUT"
+          : "ML_SERVICE_UNAVAILABLE"
     };
+  } finally {
+    clearTimeout(timeout);
   }
 }
 private static normalizeSupportedCategory(
@@ -479,10 +482,9 @@ private static resolveFinalCategory(
   siteId: number,
   userId: number,
   prompt: string,
-  title?: string
+  title: string | undefined,
+  siteRole: string
 ) {
-  console.log("AI_SERVICE_VERSION", "CONFIG_BUILDER_V1");
-
   if (!prompt?.trim()) {
     throw new Error("PROMPT_REQUIRED");
   }
@@ -500,7 +502,6 @@ const category =
   categoryDecision.category;
 
 console.log("AI_CATEGORY_DECISION", {
-  prompt,
   mlCategory: categoryDecision.mlCategory,
   mlConfidence: categoryDecision.mlConfidence,
   finalCategory: category,
@@ -520,16 +521,6 @@ const siteContext =
     prompt,
     businessProfile
   );
-
-console.log(
-  "BUSINESS_PROFILE",
-  businessProfile
-);
-
-console.log(
-  "SITE_CONTEXT",
-  siteContext
-);
 
 const sitePlan = siteContext.pages.map((page) => ({
   type: page,
@@ -567,13 +558,6 @@ const aiContent =
         );
 
       heroImageUrl = media.url;
-console.log("MEDIA_AI_NOTIFICATION_DISPATCHED", {
-  mediaId: media.id,
-  siteId,
-  userId,
-  originalName: media.originalName
-});
-      console.log("AI_HERO_IMAGE_UPLOADED", heroImageUrl);
     } catch (error) {
       console.error("AI_IMAGE_UPLOAD_FAILED", error);
     }
@@ -634,14 +618,6 @@ const validationBeforeRepair =
     prompt
   );
 
-console.log("AI_PAGE_VALIDATION_BEFORE_REPAIR", {
-  pageType: planPage.type,
-  slug: pageSlug,
-  valid: validationBeforeRepair.valid,
-  score: validationBeforeRepair.score,
-  issues: validationBeforeRepair.issues
-});
-
 pageBlocks =
   repairAiPageBlocks(
     planPage.type,
@@ -656,14 +632,6 @@ const validation =
     prompt
   );
 
-console.log("AI_PAGE_VALIDATION", {
-  pageType: planPage.type,
-  slug: pageSlug,
-  valid: validation.valid,
-  score: validation.score,
-  issues: validation.issues
-});
-
 if (!validation.valid) {
   console.warn("AI_PAGE_VALIDATION_FAILED", {
     pageType: planPage.type,
@@ -673,30 +641,6 @@ if (!validation.valid) {
   });
 }
 
-  console.log("PAGE_TYPE_ASSIGNED", {
-    type: planPage.type,
-    slug: pageSlug,
-    blocksCount: pageBlocks.length,
-    source:
-      planPage.type === "home"
-        ? "generated.blocks"
-        : `generate${planPage.title}Blocks`
-  });
-
-  if (planPage.type === "about") {
-    console.log("ABOUT_BLOCKS_COUNT", pageBlocks.length);
-  }
-
-  console.log("PAGE_BLOCK_TYPES_BEFORE_CREATE", {
-    pageType: planPage.type,
-    slug: pageSlug,
-    blockTypes: pageBlocks.map((block) => block.type),
-    blockIds: pageBlocks.map((block) => block.id)
-  });
-  console.log(
-    "NAVBAR_BLOCK_COUNT",
-    pageBlocks.filter((block) => block.type === "navbar").length
-  );
 const existingPage =
   await Page.findOne({
     where: {
@@ -731,13 +675,12 @@ if (existingPage) {
 
   if (planPage.type === "home") {
     homepagePageId = result.data.id;
-    console.log("HOMEPAGE_PAGE_ID", result.data.id);
   }
 
   const publishedResult = await PageService.publishPage(
     siteId,
     result.data.id,
-    "OWNER",
+    siteRole,
     userId
   );
 
@@ -794,14 +737,6 @@ const publishedHomepage = await Page.findOne({
   }
 });
 
-console.log("PUBLISHED_HOMEPAGE_ID", {
-  expectedId: homepagePageId,
-  publishedId: publishedHomepage?.id,
-  slug: publishedHomepage?.slug,
-  blocksCount: publishedHomepage?.blocks?.length || 0
-});
-
-
 if (!publishedHomepage) {
   throw new Error("PUBLISHED_HOMEPAGE_NOT_FOUND");
 }
@@ -816,28 +751,23 @@ if (
   });
 }
 
-console.log("AI_HISTORY_WILL_SAVE", {
-  siteId,
-  userId,
-  category,
-  mlCategory: categoryDecision.mlCategory,
-  mlConfidence: categoryDecision.mlConfidence,
-  usedFallback: categoryDecision.usedFallback,
-  reason: categoryDecision.reason,
-  pagesGenerated: plannedPages.length
-});
-
-console.log("AI_HISTORY_SAVED");
 await AiGeneration.create({
   siteId,
   userId,
   prompt,
   category,
-  pagesGenerated: plannedPages.length,
+  pagesGenerated: createdPages.length,
   status: "success"
 });
 
-const firstCreatedPage = createdPages[0];
+console.log("AI_HISTORY_SAVED", {
+  siteId,
+  userId,
+  category,
+  pagesGenerated: createdPages.length
+});
+
+const firstCreatedPage = createdPages[0] || publishedHomepage;
 
 if (firstCreatedPage) {
   (firstCreatedPage as any).aiCategory = category;

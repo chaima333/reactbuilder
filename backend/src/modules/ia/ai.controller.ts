@@ -71,19 +71,13 @@ const generatedTitle =
     .slice(0, 6)
     .join(" ");
 
-    console.log("📝 GENERATING_PAGE", {
-      siteId,
-      userId,
-      promptLength: prompt.length,
-      title: generatedTitle
-    });
-
     // Ngeneri l page
     const page = await AiService.generatePage(
       siteId,
       userId,
       prompt,
-      generatedTitle
+      generatedTitle,
+      req.siteContext.role
     );
 
     await recordAiActivity({
@@ -306,13 +300,6 @@ export const designCopilotApply = async (
   res: Response
 ) => {
   try {
-    console.log("DESIGN_COPILOT_APPLY_STARTED", {
-  bodyKeys: Object.keys(req.body || {}),
-  siteContext: req.siteContext,
-  userId: req.user?.id,
-  params: req.params
-});
-
     const validation =
       ApplyDesignCopilotSchema.safeParse(
         req.body
@@ -326,12 +313,6 @@ export const designCopilotApply = async (
         errors: validation.error.issues
       });
     }
-
-    console.log("DESIGN_COPILOT_APPLY_VALIDATED", {
-      siteId: req.siteContext?.siteId || req.params.siteId,
-      userId: req.user?.id,
-      pageId: validation.data.pageId
-    });
 
     const {
       suggestion,
@@ -354,23 +335,14 @@ export const designCopilotApply = async (
       });
     }
 
-    console.log("DESIGN_COPILOT_APPLY_ACTIONS_READY", {
-      actionsCount: designActions.length
-    });
-
     const updatedBlocks =
       applyDesignActions(
         blocks,
         designActions
       );
 
-   const activitySiteId =
-  Number(
-    req.siteContext?.siteId ||
-    req.params.siteId ||
-    (validation.data as any).siteId ||
-    0
-  );
+const activitySiteId =
+  Number(req.siteContext?.siteId || 0);
 
 const activityUserId =
   Number(
@@ -385,12 +357,6 @@ const activityPageId =
     0
   ) || null;
 
-console.log("AI_ACTIVITY_CONTEXT", {
-  activitySiteId,
-  activityUserId,
-  activityPageId
-});
-
 if (
   !activitySiteId ||
   !activityUserId
@@ -398,8 +364,6 @@ if (
   console.warn("AI_ACTIVITY_SKIPPED_CONTEXT_MISSING", {
     activitySiteId,
     activityUserId,
-    bodySiteId:
-      (validation.data as any).siteId,
     paramSiteId:
       req.params.siteId,
     contextSiteId:

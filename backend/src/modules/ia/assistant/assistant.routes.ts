@@ -1,13 +1,13 @@
 import { Router } from "express";
 import {
-  assistant,
-  editSelectedBlock
+  assistant
 } from "./assistant.controller";
+import { enforceAiPayloadLimit } from "../aiRequestLimits.middleware";
 
 const router = Router();
 
-router.post("/", assistant);
+router.use(enforceAiPayloadLimit);
 
-router.post("/edit-block", editSelectedBlock);
+router.post("/", assistant);
 
 export default router;

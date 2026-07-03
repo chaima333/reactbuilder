@@ -319,6 +319,8 @@ export const importHtmlZip = async (
   req: any,
   res: any
 ) => {
+  let zipPath: string | undefined;
+  let extractDir: string | undefined;
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -326,16 +328,14 @@ export const importHtmlZip = async (
         message: "No file uploaded"
       });
     }
+zipPath =
+  req.file.path;
 
-    const zipPath =
-      req.file.path;
-
-    const extractDir =
-      path.join(
-        "temp",
-        `${req.file.filename}_extract`
-      );
-
+extractDir =
+  path.join(
+    "temp",
+    `${req.file.filename}_extract`
+  );
     fs.mkdirSync(
       extractDir,
       { recursive: true }
@@ -619,7 +619,7 @@ footerHtml =
       pages
     });
 
-  } catch (error: any) {
+   } catch (error: any) {
     console.error(
       "IMPORT_ZIP_ERROR",
       error
@@ -630,5 +630,24 @@ footerHtml =
       message: error.message,
       stack: error.stack
     });
+  } finally {
+    if (zipPath) {
+      fs.rmSync(
+        zipPath,
+        {
+          force: true
+        }
+      );
+    }
+
+    if (extractDir) {
+      fs.rmSync(
+        extractDir,
+        {
+          recursive: true,
+          force: true
+        }
+      );
+    }
   }
 };
