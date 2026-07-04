@@ -3,6 +3,7 @@ import { RedirectGraphEngine } from "../engine/redirectGraph.engine";
 import { SEOBuilder } from "../engine/seoBuilder";
 import { renderBlocks, renderFullPage } from "../engine/blockRenderer";
 import { Site } from "../../../models/site";
+import { Seo } from "../../../models/Seo";
 
 export const getPublicPage = async (req: Request, res: Response) => {
   try {
@@ -26,11 +27,29 @@ export const getPublicPage = async (req: Request, res: Response) => {
       return res.redirect(301, `/pages/${siteId}/${result.page.slug}`);
     }
 
-    const { page } =
-      result;
+    const rawPage =
+  typeof result.page.toJSON === "function"
+    ? result.page.toJSON()
+    : result.page;
 
-    const seo =
-      SEOBuilder.build(page);
+const seoRecord =
+  await Seo.findOne({
+    where: {
+      pageId: rawPage.id,
+      siteId: rawPage.siteId,
+    },
+  });
+
+const page = {
+  ...rawPage,
+  seo:
+    typeof seoRecord?.toJSON === "function"
+      ? seoRecord.toJSON()
+      : seoRecord,
+};
+
+const seo =
+  SEOBuilder.build(page);
 
     const host =
       req.get("host");

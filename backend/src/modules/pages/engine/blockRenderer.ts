@@ -248,13 +248,110 @@ export const renderBlocks = (blocks: any[] = []): string => {
  * =========================================================
  */
 
-export const renderFullPage = (page: any, seo: any, canonical: string, blocksHTML: string): string => {
+const safeOptionalURL = (url?: string): string => {
+  const safe = safeURL(url);
+  return safe === "#" ? "" : safe;
+};
+
+const renderMetaName = (
+  name: string,
+  content?: string
+): string => {
+  if (!content) return "";
+
+  return `
+  <meta name="${escapeHTML(name)}" content="${escapeHTML(content)}" />`;
+};
+
+const renderMetaProperty = (
+  property: string,
+  content?: string
+): string => {
+  if (!content) return "";
+
+  return `
+  <meta property="${escapeHTML(property)}" content="${escapeHTML(content)}" />`;
+};
+
+export const renderFullPage = (
+  page: any,
+  seo: any,
+  canonical: string,
+  blocksHTML: string
+): string => {
+  const title =
+    seo?.title ||
+    page?.title ||
+    "Untitled page";
+
+  const description =
+    seo?.description ||
+    "";
+
+  const canonicalUrl =
+    safeOptionalURL(
+      seo?.canonical ||
+      canonical
+    );
+
+  const robots =
+    seo?.robots ||
+    "index,follow";
+
+  const openGraph =
+    seo?.openGraph || {};
+
+  const twitter =
+    seo?.twitter || {};
+
+  const ogTitle =
+    openGraph.title ||
+    title;
+
+  const ogDescription =
+    openGraph.description ||
+    description;
+
+  const ogImage =
+    safeOptionalURL(
+      openGraph.image
+    );
+
+  const twitterTitle =
+    twitter.title ||
+    ogTitle;
+
+  const twitterDescription =
+    twitter.description ||
+    ogDescription;
+
+  const twitterImage =
+    safeOptionalURL(
+      twitter.image ||
+      ogImage
+    );
+
   return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>${escapeHTML(seo?.title || page?.title)}</title>
+  <title>${escapeHTML(title)}</title>
+  ${renderMetaName("description", description)}
+  ${renderMetaName("robots", robots)}
+  ${
+    canonicalUrl
+      ? `<link rel="canonical" href="${escapeHTML(canonicalUrl)}" />`
+      : ""
+  }
+  ${renderMetaProperty("og:title", ogTitle)}
+  ${renderMetaProperty("og:description", ogDescription)}
+  ${ogImage ? renderMetaProperty("og:image", ogImage) : ""}
+  ${renderMetaProperty("og:type", openGraph.type || "website")}
+  ${renderMetaName("twitter:card", twitter.card || "summary_large_image")}
+  ${renderMetaName("twitter:title", twitterTitle)}
+  ${renderMetaName("twitter:description", twitterDescription)}
+  ${twitterImage ? renderMetaName("twitter:image", twitterImage) : ""}
   <style>
     body { font-family: sans-serif; background: #fafafa; padding: 2rem; }
     .container { max-width: 900px; margin: auto; background: white; padding: 2rem; border-radius: 12px; }
