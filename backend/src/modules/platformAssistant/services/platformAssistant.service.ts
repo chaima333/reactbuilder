@@ -51,18 +51,24 @@ const STOP_WORDS =
     "me",
     "my",
     "your",
+
     "comment",
     "quoi",
     "pourquoi",
-    "est",
     "dans",
     "avec",
     "pour",
+    "est",
+    "une",
+    "des",
+    "les",
+
     "كيفاش",
     "شنوة",
     "علاش",
     "انا",
-    "نجم"
+    "نجم",
+    "نحب"
   ]);
 
 const normalizeText = (
@@ -130,21 +136,22 @@ const scoreChunk = (
   questionTokens: string[],
   chunk: KnowledgeChunk
 ) => {
+  const chunkText =
+    `${chunk.title} ${chunk.category} ${chunk.content}`;
+
   const contentTokens =
-    tokenize(
-      `${chunk.title} ${chunk.category} ${chunk.content}`
-    );
+    tokenize(chunkText);
 
   const contentSet =
     new Set(contentTokens);
 
-  const matched =
+  const matchedTokens =
     questionTokens.filter(
       token => contentSet.has(token)
     );
 
   let score =
-    matched.length * 10;
+    matchedTokens.length * 10;
 
   const normalizedTitle =
     normalizeText(chunk.title);
@@ -152,13 +159,20 @@ const scoreChunk = (
   const normalizedCategory =
     normalizeText(chunk.category);
 
+  const normalizedContent =
+    normalizeText(chunk.content);
+
   for (const token of questionTokens) {
     if (normalizedTitle.includes(token)) {
-      score += 6;
+      score += 8;
     }
 
     if (normalizedCategory.includes(token)) {
-      score += 4;
+      score += 5;
+    }
+
+    if (normalizedContent.includes(token)) {
+      score += 2;
     }
   }
 
@@ -210,7 +224,7 @@ export const answerPlatformQuestion = (
         (a, b) =>
           b.score - a.score
       )
-      .slice(0, 4);
+      .slice(0, 8);
 
   if (!ranked.length) {
     return {
@@ -221,8 +235,18 @@ export const answerPlatformQuestion = (
     };
   }
 
+  const uniqueRanked =
+    Array.from(
+      new Map(
+        ranked.map(item => [
+          item.chunk.docId,
+          item
+        ])
+      ).values()
+    ).slice(0, 3);
+
   const sources =
-    ranked.map(
+    uniqueRanked.map(
       item => ({
         docId: item.chunk.docId,
         title: item.chunk.title,
@@ -249,7 +273,7 @@ export const answerPlatformQuestion = (
     answer,
     sources,
     confidence:
-      ranked[0].score >= 20
+      uniqueRanked[0]?.score >= 20
         ? "medium"
         : "low"
   };

@@ -94,5 +94,117 @@ If a page is not visible publicly, check whether the page is published.
 If the backend returns 404, verify that the latest commit is deployed on Render.
 If the frontend does not show changes, rebuild the frontend and verify the latest deployment on Vercel.
     `
-  }
+  },
+  {
+  id: "create-site",
+  title: "Creating a new site",
+  category: "Sites",
+  content: `
+To create a new site in ReactBuilder, open the Sites page and click the Create site button.
+The user enters the site name, domain or subdomain, and optional description.
+After creation, the site appears in the dashboard and becomes the current workspace.
+Each site has its own pages, plugins, members and settings.
+  `
+},
+{
+  id: "edit-page",
+  title: "Editing a page",
+  category: "Builder",
+  content: `
+To edit a page, open a site, choose one of its pages and click Edit.
+ReactBuilder opens the visual builder where the user can modify blocks, text, images, buttons and layout.
+The user can save changes without publishing them immediately.
+The editor keeps the page editable using a block-based structure instead of generating fixed code.
+  `
+},
+{
+  id: "preview-page",
+  title: "Previewing a page",
+  category: "Builder",
+  content: `
+ReactBuilder allows users to preview a page before publishing it.
+The preview helps verify the design, spacing, content and responsive behavior.
+Users can check the page in desktop, tablet and mobile modes before making it public.
+  `
+},
+{
+  id: "plugin-enable-disable",
+  title: "Installing and enabling plugins",
+  category: "Plugins",
+  content: `
+To use a plugin, open the Marketplace of the current site.
+The user can install a plugin and enable it for that site.
+A plugin can also be disabled without deleting it.
+When a plugin is disabled, its public feature should not appear on the published website.
+For example, the AI Site Chatbot appears only when the chatbot plugin is enabled.
+  `
+},
+{
+  id: "chatbot-plugin-usage",
+  title: "Using the AI Site Chatbot plugin",
+  category: "Chatbot",
+  content: `
+The AI Site Chatbot plugin adds a chatbot to a published website.
+It is useful for visitors who want to ask questions about the content of that site.
+The chatbot uses published pages as its knowledge base.
+It retrieves relevant sections from the site and returns an answer with sources.
+The plugin must be installed and enabled from the Marketplace before the widget appears publicly.
+  `
+},
+{
+  id: "ai-design-copilot",
+  title: "Using the Design Copilot",
+  category: "AI",
+  content: `
+The Design Copilot helps improve the design of a page.
+It can suggest actions such as improving spacing, cards, buttons, navbar, footer or layout consistency.
+The user can review suggestions and apply selected improvements.
+AI actions can be tracked in the AI history panel.
+  `
+},
+{
+  id: "versioning",
+  title: "Page versioning",
+  category: "Versioning",
+  content: `
+ReactBuilder can keep versions of a page.
+Versioning helps users restore an older state if a design or content update causes problems.
+A version can be created when saving or publishing page changes.
+This improves safety when editing important pages.
+  `
+},
+{
+  id: "seo-settings",
+  title: "SEO settings",
+  category: "SEO",
+  content: `
+SEO settings help improve how a website appears in search engines.
+A page can have metadata such as title, description and slug.
+Good SEO settings make the page easier to understand for search engines and users.
+SEO can also be extended using plugins in the marketplace.
+  `
+},
+{
+  id: "media-library",
+  title: "Media library",
+  category: "Media",
+  content: `
+The Media Library stores images and files used inside a site.
+Users can upload media and reuse it in page blocks.
+Media permissions should control who can upload, update or delete files.
+A well-organized media library helps users manage website assets.
+  `
+},
+{
+  id: "common-errors",
+  title: "Common errors and fixes",
+  category: "Troubleshooting",
+  content: `
+If a page does not appear publicly, check if it is published.
+If a plugin feature does not appear, check if the plugin is installed and enabled.
+If the frontend does not show recent changes, rebuild and redeploy the frontend.
+If the backend returns 404 for a new route, verify that the latest backend commit is deployed.
+If authentication fails, check that the user is logged in and the JWT token is sent correctly.
+  `
+}
 ];
