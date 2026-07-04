@@ -3,6 +3,7 @@ import {
 } from "express";
 
 import {
+  getPlatformAssistantDocumentation,
   sendPlatformAssistantMessage
 } from "./platformAssistant.controller";
 
@@ -22,6 +23,11 @@ router.post(
   validatePlatformAssistantMessage,
   platformAssistantRateLimit,
   sendPlatformAssistantMessage
+);
+router.get(
+  "/docs",
+  platformAssistantRateLimit,
+  getPlatformAssistantDocumentation
 );
 
 export default router;

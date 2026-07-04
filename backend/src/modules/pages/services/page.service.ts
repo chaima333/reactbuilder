@@ -10,6 +10,7 @@ import crypto from 'crypto';
 import PageVersion from "../../../models/pageVersion";
 import { updatePageHandler } from "../commands/updatePage.handler";
 import { AdminSettingsService } from "../../admin/adminSettings.service";
+import { Seo } from "../../../models";
 
 const { nanoid } = require("nanoid");
 
@@ -277,13 +278,23 @@ static async restoreVersion(siteId: number, pageId: number, versionId: number, u
 }
 
 
-static async getPageById(pageId: number, siteId: number) {
-  const page = await Page.findOne({
-    where: { 
-      id: pageId, 
-      siteId: siteId 
-    }
-  });
+static async getPageById(
+  pageId: number,
+  siteId: number
+) {
+  const page =
+    await Page.findOne({
+      where: {
+        id: pageId,
+        siteId
+      },
+      include: [
+        {
+          model: Seo,
+          required: false
+        }
+      ]
+    });
 
   return page;
 }

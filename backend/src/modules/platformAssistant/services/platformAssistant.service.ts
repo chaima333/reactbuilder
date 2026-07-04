@@ -258,17 +258,21 @@ export const answerPlatformQuestion = (
         score: item.score
       })
     );
-
-  const answer =
-    [
-      "I found this in the ReactBuilder documentation:",
-      "",
-      ...sources.map(
-        source =>
-          `- ${source.excerpt}`
-      )
-    ].join("\n");
-
+const answer =
+  [
+    "Here is what I found in the ReactBuilder documentation:",
+    "",
+    ...sources.map(
+      (source, index) =>
+        `${index + 1}. ${source.excerpt}`
+    ),
+    "",
+    "Sources:",
+    ...sources.map(
+      source =>
+        `- ${source.category}: ${source.title}`
+    )
+  ].join("\n");
   return {
     answer,
     sources,
@@ -278,3 +282,15 @@ export const answerPlatformQuestion = (
         : "low"
   };
 };
+
+export const getPlatformAssistantDocs = () =>
+  PLATFORM_ASSISTANT_DOCS.map(
+    doc => ({
+      id: doc.id,
+      title: doc.title,
+      category: doc.category,
+      content: doc.content
+        .replace(/\s+/g, " ")
+        .trim()
+    })
+  );
