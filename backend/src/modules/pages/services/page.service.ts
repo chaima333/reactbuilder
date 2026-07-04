@@ -298,4 +298,93 @@ static async getPageById(
 
   return page;
 }
+
+static async updatePageSeo(
+  siteId: number,
+  pageId: number,
+  input: any
+) {
+  const page =
+    await Page.findOne({
+      where: {
+        id: pageId,
+        siteId
+      }
+    });
+
+  if (!page) {
+    throw new Error("PAGE_NOT_FOUND");
+  }
+
+  const payload = {
+    metaTitle:
+      input.metaTitle || "",
+
+    metaDescription:
+      input.metaDescription || "",
+
+    metaKeywords:
+      input.metaKeywords || "",
+
+    metaRobots:
+      input.metaRobots || "index,follow",
+
+    canonicalUrl:
+      input.canonicalUrl || "",
+
+    ogTitle:
+      input.ogTitle || input.metaTitle || "",
+
+    ogDescription:
+      input.ogDescription || input.metaDescription || "",
+
+    ogImage:
+      input.ogImage || "",
+
+    ogType:
+      input.ogType || "website",
+
+    twitterCard:
+      input.twitterCard || "summary_large_image",
+
+    twitterTitle:
+      input.twitterTitle || input.ogTitle || input.metaTitle || "",
+
+    twitterDescription:
+      input.twitterDescription ||
+      input.ogDescription ||
+      input.metaDescription ||
+      "",
+
+    twitterImage:
+      input.twitterImage || input.ogImage || ""
+  };
+
+  const existingSeo =
+    await Seo.findOne({
+      where: {
+        pageId,
+        siteId
+      }
+    });
+
+  if (existingSeo) {
+    const updated =
+      await existingSeo.update(
+        payload
+      );
+
+    return updated.toJSON();
+  }
+
+  const created =
+    await Seo.create({
+      pageId,
+      siteId,
+      ...payload
+    });
+
+  return created.toJSON();
 }
+}
+

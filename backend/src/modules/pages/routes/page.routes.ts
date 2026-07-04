@@ -11,7 +11,8 @@ import {
   publishPageController,
   restorePageVersion,
   getPageHistory,
-  getPageById
+  getPageById,
+  updatePageSeo
 } from "../controllers/page.controller";
 
 import {
@@ -23,7 +24,6 @@ const router = Router({ mergeParams: true });
 
 // =========================
 // FIGMA IMPORT
-// لازم قبل dynamic routes للتنظيم
 // =========================
 
 router.post(
@@ -53,7 +53,11 @@ router.post(
   requirePermission(PERMISSIONS.PAGE_CREATE),
   createPage
 );
-
+router.put(
+  "/:pageId/seo",
+  requirePermission(PERMISSIONS.PAGE_UPDATE),
+  updatePageSeo
+);
 router.get(
   "/:pageId",
   requirePermission(PERMISSIONS.PAGE_READ),

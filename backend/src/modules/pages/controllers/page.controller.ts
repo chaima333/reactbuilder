@@ -290,3 +290,38 @@ export const getPageById = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
+export const updatePageSeo = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const seo =
+      await PageService.updatePageSeo(
+        Number(req.siteContext.siteId),
+        Number(req.params.pageId),
+        req.body
+      );
+
+    return res.json({
+      success: true,
+      data: seo
+    });
+  } catch (err: any) {
+    if (err?.message === "PAGE_NOT_FOUND") {
+      return res.status(404).json({
+        success: false,
+        message: "Page not found in this site"
+      });
+    }
+
+    console.error("UPDATE_PAGE_SEO_ERROR", {
+      message: err?.message,
+      errors: err?.errors
+    });
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to update page SEO"
+    });
+  }
+};
