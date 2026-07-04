@@ -3,7 +3,7 @@
 // ==================== HELPERS ====================
 
 import { AiGeneratedContent, SiteContext } from "./ai.types";
-import { generateText } from "./llm/llm.client";
+import {  generateTextWithTelemetry } from "./llm/llm.client";
 import { buildAiContentPrompt } from "./llm/llm.prompt";
 import { sanitizeAiContent } from "./sanitizeAiContent";
 
@@ -952,11 +952,17 @@ try {
       cleanPrompt
     );
 
-  const response =
-    await generateText(promptText);
+ const llmResult =
+  await generateTextWithTelemetry({
+    prompt: promptText,
+    task: "PAGE_GENERATION"
+  });
 
-  llmContent =
-    parseLlmJson(response);
+const aiText =
+  llmResult.text;
+
+llmContent =
+  parseLlmJson(aiText);
 
   if (!llmContent) {
     console.warn(

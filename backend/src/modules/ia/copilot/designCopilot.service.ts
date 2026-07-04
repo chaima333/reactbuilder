@@ -1,4 +1,6 @@
-import { generateText } from "../llm/llm.client";
+import {
+  generateTextWithTelemetry
+} from "../llm/llm.client";
 import {
   DesignAction,
   DesignCopilotRequest,
@@ -289,9 +291,14 @@ JSON format:
   ]
 }
 `;
+const llmResult =
+  await generateTextWithTelemetry({
+    prompt,
+    task: "DESIGN_COPILOT_CHAT"
+  });
 
-    const aiText =
-      await generateText(prompt);
+const aiText =
+  llmResult.text;
 
     const parsed =
       safeJsonParse(aiText);
@@ -301,12 +308,24 @@ JSON format:
         parsed?.suggestions
       );
 
-    if (
-      !parsed ||
-      suggestions.length === 0
-    ) {
-      return fallback;
+   if (
+  !parsed ||
+  suggestions.length === 0
+) {
+  console.warn(
+    "DESIGN_COPILOT_INVALID_AI_OUTPUT",
+    {
+      provider:
+        llmResult.telemetry.provider,
+      model:
+        llmResult.telemetry.model,
+      durationMs:
+        llmResult.telemetry.durationMs
     }
+  );
+
+  return fallback;
+}
 
     return {
       reply:

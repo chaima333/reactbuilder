@@ -2,6 +2,15 @@ import OpenAI from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Anthropic from "@anthropic-ai/sdk";
 
+import {
+  AiTaskName,
+  AiTextResult
+} from "../telemetry/aiTelemetry.types";
+
+import {
+  runAiTaskWithTelemetry
+} from "../telemetry/aiProvider.service";
+
 type AiProvider =
   | "gemini"
   | "openai"
@@ -32,6 +41,37 @@ const withTimeout = async <T>(
 export const isLlmEnabled = () =>
   process.env.LLM_ENABLED === "true";
 
+export const getActiveAiProvider = (): AiProvider =>
+  (process.env.AI_PROVIDER || "gemini") as AiProvider;
+
+export const getActiveAiModel = () => {
+  const provider =
+    getActiveAiProvider();
+
+  switch (provider) {
+    case "gemini":
+      return (
+        process.env.GEMINI_MODEL ||
+        "gemini-2.0-flash"
+      );
+
+    case "openai":
+      return (
+        process.env.OPENAI_MODEL ||
+        "gpt-4.1-mini"
+      );
+
+    case "claude":
+      return (
+        process.env.ANTHROPIC_MODEL ||
+        "claude-sonnet-5"
+      );
+
+    default:
+      return null;
+  }
+};
+
 export const generateText = async (
   prompt: string
 ): Promise<string> => {
@@ -40,7 +80,7 @@ export const generateText = async (
   }
 
   const provider =
-    (process.env.AI_PROVIDER || "gemini") as AiProvider;
+    getActiveAiProvider();
 
   switch (provider) {
     case "gemini": {
@@ -80,12 +120,14 @@ export const generateText = async (
         });
 
       const response =
-        await withTimeout(openai.responses.create({
-          model:
-            process.env.OPENAI_MODEL ||
-            "gpt-4.1-mini",
-          input: prompt
-        }));
+        await withTimeout(
+          openai.responses.create({
+            model:
+              process.env.OPENAI_MODEL ||
+              "gpt-4.1-mini",
+            input: prompt
+          })
+        );
 
       return response.output_text;
     }
@@ -102,18 +144,20 @@ export const generateText = async (
         });
 
       const response =
-        await withTimeout(anthropic.messages.create({
-          model:
-            process.env.ANTHROPIC_MODEL ||
-            "claude-sonnet-5",
-          max_tokens: 1200,
-          messages: [
-            {
-              role: "user",
-              content: prompt
-            }
-          ]
-        }));
+        await withTimeout(
+          anthropic.messages.create({
+            model:
+              process.env.ANTHROPIC_MODEL ||
+              "claude-sonnet-5",
+            max_tokens: 1200,
+            messages: [
+              {
+                role: "user",
+                content: prompt
+              }
+            ]
+          })
+        );
 
       return response.content
         .map((block) =>
@@ -132,14 +176,38 @@ export const generateText = async (
   }
 };
 
+export const generateTextWithTelemetry = async ({
+  prompt,
+  task,
+  fallbackText
+}: {
+  prompt: string;
+  task: AiTaskName;
+  fallbackText?: string;
+}): Promise<AiTextResult> =>
+  runAiTaskWithTelemetry({
+    task,
+    provider:
+      getActiveAiProvider(),
+    model:
+      getActiveAiModel(),
+    fallbackText,
+    execute: () =>
+      generateText(prompt)
+  });
+
 export const testLLM = async () => {
   const response =
-    await generateText(
-      "Say only: LLM connection successful."
-    );
+    await generateTextWithTelemetry({
+      task: "UNKNOWN",
+      prompt:
+        "Say only: LLM connection successful."
+    });
 
   console.log(
     "LLM_TEST:",
-    response
+    response.text
   );
+
+  return response;
 };
