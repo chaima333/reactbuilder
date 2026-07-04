@@ -291,10 +291,17 @@ JSON format:
   ]
 }
 `;
+const fallbackJson =
+  JSON.stringify({
+    reply: fallback.reply,
+    suggestions: fallback.suggestions
+  });
+
 const llmResult =
   await generateTextWithTelemetry({
     prompt,
-    task: "DESIGN_COPILOT_CHAT"
+    task: "DESIGN_COPILOT_CHAT",
+    fallbackText: fallbackJson
   });
 
 const aiText =
@@ -324,18 +331,28 @@ const aiText =
     }
   );
 
-  return fallback;
+return {
+  ...fallback,
+  aiTelemetry: {
+    ...llmResult.telemetry,
+    success: false,
+    usedFallback: true,
+    fallbackReason: "INVALID_JSON"
+  }
+};
 }
 
-    return {
-      reply:
-        String(
-          parsed.reply ||
-            "I understood your design request and prepared safe improvements."
-        ),
-      designProfile: profile,
-      suggestions
-    };
+   return {
+  reply:
+    String(
+      parsed.reply ||
+        "I understood your design request and prepared safe improvements."
+    ),
+  designProfile: profile,
+  suggestions,
+  aiTelemetry:
+    llmResult.telemetry
+};
   } catch (error) {
     console.error(
       "DESIGN_COPILOT_LLM_FAILED",

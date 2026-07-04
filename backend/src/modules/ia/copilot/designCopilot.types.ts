@@ -1,3 +1,5 @@
+import { AiTelemetry } from "../telemetry/aiTelemetry.types";
+
 export type ImprovementAction =
   | "CENTER_LAYOUT"
   | "IMPROVE_SPACING"
@@ -35,5 +37,6 @@ export interface DesignCopilotRequest {
 export interface DesignCopilotResponse {
   reply: string;
   designProfile: string;
+  aiTelemetry?: AiTelemetry;
   suggestions: DesignSuggestion[];
 }

@@ -206,5 +206,30 @@ If the frontend does not show recent changes, rebuild and redeploy the frontend.
 If the backend returns 404 for a new route, verify that the latest backend commit is deployed.
 If authentication fails, check that the user is logged in and the JWT token is sent correctly.
   `
-}
+},
+{
+  id: "drag-and-drop-builder",
+  title: "Drag and drop builder",
+  category: "Builder",
+  content: `
+ReactBuilder includes a drag and drop visual builder.
+Users can add blocks to a page and move them inside valid areas such as sections, containers, flex layouts or grid layouts.
+The drag and drop system helps users build pages without writing code.
+A block can be dropped only in a compatible place to keep the page structure clean and editable.
+For example, text, image and button blocks can be placed inside sections or containers, while layout blocks can organize content into columns or grids.
+If a block cannot be dropped, the selected area may not accept that block type.
+  `
+},
+{
+  id: "drag-and-drop-troubleshooting",
+  title: "Drag and drop troubleshooting",
+  category: "Troubleshooting",
+  content: `
+If drag and drop does not work, first check that the user is inside the page editor.
+A block must be dropped inside a valid droppable area.
+Some blocks cannot be placed directly inside other blocks because the builder protects the page structure.
+If a block returns to its original position, it usually means the drop target is not valid.
+The user can try dropping the block inside a section, container, grid item or flex item.
+  `
+},
 ];

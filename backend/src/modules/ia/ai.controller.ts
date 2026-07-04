@@ -262,19 +262,33 @@ export const designCopilotChat = async (
     pageType,
     blocks
   });
+  const aiTelemetry =
+  (result as any)?.aiTelemetry || null;
 
     await recordAiActivity({
       siteId: Number(req.siteContext.siteId),
       userId: Number(req.user.id),
       pageId: Number(pageId) || null,
       eventType: "DESIGN_COPILOT_CHAT",
-      details: {
-        messagePreview: previewText(finalMessage),
-        suggestionsCount: Array.isArray(result?.suggestions)
-          ? result.suggestions.length
-          : 0,
-        source: "design-copilot"
+     details: {
+  messagePreview: previewText(finalMessage),
+  suggestionsCount: Array.isArray(result?.suggestions)
+    ? result.suggestions.length
+    : 0,
+  source: "design-copilot",
+
+  aiTelemetry: aiTelemetry
+    ? {
+        task: aiTelemetry.task,
+        provider: aiTelemetry.provider,
+        model: aiTelemetry.model,
+        success: aiTelemetry.success,
+        usedFallback: aiTelemetry.usedFallback,
+        fallbackReason: aiTelemetry.fallbackReason,
+        durationMs: aiTelemetry.durationMs
       }
+    : null
+}
     });
 
     return res.json({
