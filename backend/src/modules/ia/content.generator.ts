@@ -1,13 +1,15 @@
 // content.generator.ts
 
-// ==================== HELPERS ====================
-
 import { AiGeneratedContent, SiteContext } from "./ai.types";
-import {  generateTextWithTelemetry } from "./llm/llm.client";
+import { generateTextWithTelemetry } from "./llm/llm.client";
 import { buildAiContentPrompt } from "./llm/llm.prompt";
 import { sanitizeAiContent } from "./sanitizeAiContent";
-import { AiTelemetry } from "./telemetry/aiTelemetry.types";
-
+import type { AiTelemetry } from "./telemetry/aiTelemetry.types";
+import {
+  isPlainObject,
+  safeParseAiJson
+} from "./telemetry/aiJsonGuard";
+import { AiGeneratedContentSchema } from "./content.schema";
 /**
  * Extract keywords from prompt
  * - Supprime les mots communs (stop words)
@@ -625,21 +627,50 @@ const FAQ_BY_CATEGORY: Record<string, string[]> = {
 const parseLlmJson = (
   response: string
 ): Partial<AiGeneratedContent> | undefined => {
-  try {
-    const cleaned =
+  const parsed =
+    safeParseAiJson<unknown>(
       response
-        .trim()
-        .replace(/^```json/i, "")
-        .replace(/^```/i, "")
-        .replace(/```$/i, "")
-        .trim();
+    );
 
-    return JSON.parse(cleaned);
-  } catch {
+  if (
+    !parsed.success ||
+    !isPlainObject(parsed.data)
+  ) {
+    console.warn(
+      "AI_CONTENT_JSON_PARSE_FAILED",
+      {
+        error:
+          parsed.errorMessage ||
+          "Response is not a JSON object"
+      }
+    );
+
     return undefined;
   }
-};
 
+  const validated =
+    AiGeneratedContentSchema.safeParse(
+      parsed.data
+    );
+
+  if (!validated.success) {
+    console.warn(
+      "AI_CONTENT_SCHEMA_INVALID",
+      {
+        issues:
+          validated.error.issues
+            .slice(0, 5)
+            .map((issue) => ({
+              path: issue.path.join("."),
+              message: issue.message
+            }))
+      }
+    );
+
+    return undefined;
+  }
+  return validated.data as unknown as Partial<AiGeneratedContent>;
+};
 const logLlmFailure = (
   error: unknown
 ) => {
