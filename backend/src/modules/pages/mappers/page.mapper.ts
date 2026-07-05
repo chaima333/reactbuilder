@@ -64,7 +64,7 @@ export const PageMapper = {
       views: raw.views,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,
-
+      theme: raw.theme || null,
       seo: mapSeo(raw.seo),
     };
   },

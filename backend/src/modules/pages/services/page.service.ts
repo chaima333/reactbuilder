@@ -1,7 +1,6 @@
 import slugify from "slugify";
 import { PageRepository } from "../repositories/page.repository";
-import { canPublish, canTransition, PAGE_STATUS } from "../domain/rules";
-import { PageVersionRepository } from "../repositories/pageVersion.repository";
+import { canPublish, PAGE_STATUS } from "../domain/rules";
 import { sequelize } from "../../../core/database/connection";
 import { Page } from "../../../models/page";
 import { SlugMap } from "../../../models/slug_map";
@@ -10,7 +9,7 @@ import crypto from 'crypto';
 import PageVersion from "../../../models/pageVersion";
 import { updatePageHandler } from "../commands/updatePage.handler";
 import { AdminSettingsService } from "../../admin/adminSettings.service";
-import { Seo } from "../../../models";
+import { Seo, Site } from "../../../models";
 
 const { nanoid } = require("nanoid");
 
@@ -295,6 +294,24 @@ static async getPageById(
         }
       ]
     });
+
+  if (!page) {
+    return null;
+  }
+
+  const site =
+    await Site.findByPk(siteId);
+
+  const siteSettings =
+    site?.get("settings") as any;
+
+  const siteTheme =
+    siteSettings?.theme || null;
+
+  page.setDataValue(
+    "theme" as any,
+    siteTheme
+  );
 
   return page;
 }
