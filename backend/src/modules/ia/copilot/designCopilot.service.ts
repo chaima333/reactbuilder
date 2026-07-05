@@ -1,6 +1,8 @@
 import {
   generateTextWithTelemetry
 } from "../llm/llm.client";
+import { isPlainObject, safeParseAiJson } from "../telemetry/aiJsonGuard";
+import { DesignCopilotAiResponseSchema } from "./designCopilot.schema";
 import {
   DesignAction,
   DesignCopilotRequest,
@@ -120,77 +122,6 @@ const makeSuggestion = (
 });
 
 
-const safeJsonParse = (value: string) => {
-  try {
-    const cleaned =
-      value
-        .replace(/```json/g, "")
-        .replace(/```/g, "")
-        .trim();
-
-    return JSON.parse(cleaned);
-  } catch {
-    return null;
-  }
-};
-
-const allowedImprovements = new Set([
-  "CENTER_LAYOUT",
-  "IMPROVE_SPACING",
-  "IMPROVE_CARDS",
-  "IMPROVE_BUTTONS",
-  "IMPROVE_IMAGES",
-  "IMPROVE_FORMS",
-  "IMPROVE_STATS",
-  "IMPROVE_NAVBAR",
-  "IMPROVE_FOOTER"
-]);
-
-const sanitizeAiSuggestions = (
-  value: any
-): DesignSuggestion[] => {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value
-    .map((item, index) => ({
-      id:
-        String(item.id || `ai-design-${index}`),
-
-      title:
-        String(item.title || "AI design improvement"),
-
-      description:
-        String(
-          item.description ||
-          "Improve this part of the page."
-        ),
-
-      actions:
-        Array.isArray(item.actions)
-          ? item.actions
-              .map((action: any) => {
-                if (
-                  action.type === "IMPROVE_DESIGN" &&
-                  allowedImprovements.has(action.improvement)
-                ) {
-                  return {
-                    type: "IMPROVE_DESIGN",
-                    improvement: action.improvement,
-                    target: action.target,
-                    payload: action.payload || {}
-                  };
-                }
-
-                return null;
-              })
-              .filter(Boolean)
-          : []
-    }))
-    .filter((item) => item.actions.length > 0);
-};
-
 const summarizeBlocksForAi = (
   blocks: any[]
 ) => {
@@ -204,165 +135,92 @@ const summarizeBlocksForAi = (
     }))
   ).slice(0, 6000);
 };
-export const createDesignCopilotResponse = async (
-  request: DesignCopilotRequest
-): Promise<DesignCopilotResponse> => {
-  const category =
-    inferCategory(request);
 
-  const profile =
-    resolveDesignProfile(category);
-
-  const fallback =
-    createFallbackDesignCopilotResponse(
-      request
+const parseDesignCopilotAiOutput = (
+  value: string
+): Pick<
+  DesignCopilotResponse,
+  "reply" | "suggestions"
+> | null => {
+  const parsed =
+    safeParseAiJson<unknown>(
+      value
     );
 
-  try {
-    const prompt = `
-You are the AI Design Co-Pilot of ReactBuilder.
-
-The user wants to improve the current page design.
-
-You must understand the user's request and return ONLY valid JSON.
-
-Page context:
-- category: ${category}
-- designProfile: ${profile}
-- pageTitle: ${request.pageTitle || ""}
-- slug: ${request.slug || ""}
-
-User message:
-${request.message}
-
-Current page blocks summary:
-${summarizeBlocksForAi(request.blocks)}
-
-Allowed design improvements:
-- CENTER_LAYOUT
-- IMPROVE_SPACING
-- IMPROVE_CARDS
-- IMPROVE_BUTTONS
-- IMPROVE_IMAGES
-- IMPROVE_FORMS
-- IMPROVE_STATS
-- IMPROVE_NAVBAR
-- IMPROVE_FOOTER
-
-Important:
-- Do NOT return APPLY_PROFILE.
-- Do NOT return raw action strings.
-- Every action must use this exact shape:
-  {
-    "type": "IMPROVE_DESIGN",
-    "improvement": "ONE_OF_ALLOWED_IMPROVEMENTS",
-    "target": "page",
-    "payload": {}
-  }
-
-Rules:
-- If the user mentions navbar, return only navbar actions.
-- If the user mentions footer, return only footer actions.
-- If the user mentions stats, numbers, impact, or KPI, return stats actions.
-- If the user asks for general premium/modern design, return global design actions.
-- Never modify content text.
-- Never generate a new page.
-- Return 1 to 3 suggestions maximum.
-- Each suggestion must contain actions.
-- Output JSON only.
-
-JSON format:
-{
-  "reply": "short explanation",
-  "suggestions": [
-    {
-      "id": "short-id",
-      "title": "Suggestion title",
-      "description": "What will be improved",
-      "actions": [
-        {
-  "type": "IMPROVE_DESIGN",
-  "improvement": "IMPROVE_NAVBAR",
-  "target": "navbar",
-  "payload": {}
-}
-      ]
-    }
-  ]
-}
-`;
-const fallbackJson =
-  JSON.stringify({
-    reply: fallback.reply,
-    suggestions: fallback.suggestions
-  });
-
-const llmResult =
-  await generateTextWithTelemetry({
-    prompt,
-    task: "DESIGN_COPILOT_CHAT",
-    fallbackText: fallbackJson
-  });
-
-const aiText =
-  llmResult.text;
-
-    const parsed =
-      safeJsonParse(aiText);
-
-    const suggestions =
-      sanitizeAiSuggestions(
-        parsed?.suggestions
-      );
-
-   if (
-  !parsed ||
-  suggestions.length === 0
-) {
-  console.warn(
-    "DESIGN_COPILOT_INVALID_AI_OUTPUT",
-    {
-      provider:
-        llmResult.telemetry.provider,
-      model:
-        llmResult.telemetry.model,
-      durationMs:
-        llmResult.telemetry.durationMs
-    }
-  );
-
-return {
-  ...fallback,
-  aiTelemetry: {
-    ...llmResult.telemetry,
-    success: false,
-    usedFallback: true,
-    fallbackReason: "INVALID_JSON"
-  }
-};
-}
-
-   return {
-  reply:
-    String(
-      parsed.reply ||
-        "I understood your design request and prepared safe improvements."
-    ),
-  designProfile: profile,
-  suggestions,
-  aiTelemetry:
-    llmResult.telemetry
-};
-  } catch (error) {
-    console.error(
-      "DESIGN_COPILOT_LLM_FAILED",
-      error
+  if (
+    !parsed.success ||
+    !isPlainObject(parsed.data)
+  ) {
+    console.warn(
+      "DESIGN_COPILOT_JSON_PARSE_FAILED",
+      {
+        error:
+          parsed.errorMessage ||
+          "Response is not a JSON object"
+      }
     );
 
-    return fallback;
+    return null;
   }
-};
 
+  const validated =
+    DesignCopilotAiResponseSchema.safeParse(
+      parsed.data
+    );
+
+  if (!validated.success) {
+    console.warn(
+      "DESIGN_COPILOT_SCHEMA_INVALID",
+      {
+        issues:
+          validated.error.issues
+            .slice(0, 5)
+            .map((issue) => ({
+              path: issue.path.join("."),
+              message: issue.message
+            }))
+      }
+    );
+
+    return null;
+  }
+
+  return {
+    reply:
+      validated.data.reply,
+
+    suggestions:
+      validated.data.suggestions.map(
+        (suggestion, index) => ({
+          id:
+            suggestion.id ||
+            `ai-design-${index}`,
+
+          title:
+            suggestion.title,
+
+          description:
+            suggestion.description ||
+            "Improve this part of the page.",
+
+          actions:
+            suggestion.actions.map((action) => ({
+              type:
+                "IMPROVE_DESIGN",
+
+              improvement:
+                action.improvement,
+
+              target:
+                action.target || "page",
+
+              payload:
+                action.payload || {}
+            }))
+        })
+      )
+  };
+};
 
 export const createFallbackDesignCopilotResponse = (
   request: DesignCopilotRequest
@@ -638,4 +496,160 @@ export const createFallbackDesignCopilotResponse = (
     designProfile: profile,
     suggestions
   };
+};
+
+export const createDesignCopilotResponse = async (
+  request: DesignCopilotRequest
+): Promise<DesignCopilotResponse> => {
+  const category =
+    inferCategory(request);
+
+  const profile =
+    resolveDesignProfile(category);
+
+  const fallback =
+    createFallbackDesignCopilotResponse(
+      request
+    );
+
+  try {
+    const prompt = `
+You are the AI Design Co-Pilot of ReactBuilder.
+
+The user wants to improve the current page design.
+
+You must understand the user's request and return ONLY valid JSON.
+
+Page context:
+- category: ${category}
+- designProfile: ${profile}
+- pageTitle: ${request.pageTitle || ""}
+- slug: ${request.slug || ""}
+
+User message:
+${request.message}
+
+Current page blocks summary:
+${summarizeBlocksForAi(request.blocks)}
+
+Allowed design improvements:
+- CENTER_LAYOUT
+- IMPROVE_SPACING
+- IMPROVE_CARDS
+- IMPROVE_BUTTONS
+- IMPROVE_IMAGES
+- IMPROVE_FORMS
+- IMPROVE_STATS
+- IMPROVE_NAVBAR
+- IMPROVE_FOOTER
+
+Important:
+- Do NOT return APPLY_PROFILE.
+- Do NOT return raw action strings.
+- Every action must use this exact shape:
+  {
+    "type": "IMPROVE_DESIGN",
+    "improvement": "ONE_OF_ALLOWED_IMPROVEMENTS",
+    "target": "page",
+    "payload": {}
+  }
+
+Rules:
+- If the user mentions navbar, return only navbar actions.
+- If the user mentions footer, return only footer actions.
+- If the user mentions stats, numbers, impact, or KPI, return stats actions.
+- If the user asks for general premium/modern design, return global design actions.
+- Never modify content text.
+- Never generate a new page.
+- Return 1 to 3 suggestions maximum.
+- Each suggestion must contain actions.
+- Output JSON only.
+
+JSON format:
+{
+  "reply": "short explanation",
+  "suggestions": [
+    {
+      "id": "short-id",
+      "title": "Suggestion title",
+      "description": "What will be improved",
+      "actions": [
+        {
+          "type": "IMPROVE_DESIGN",
+          "improvement": "IMPROVE_NAVBAR",
+          "target": "navbar",
+          "payload": {}
+        }
+      ]
+    }
+  ]
+}
+`;
+
+    const fallbackJson =
+      JSON.stringify({
+        reply:
+          fallback.reply,
+        suggestions:
+          fallback.suggestions
+      });
+
+    const llmResult =
+      await generateTextWithTelemetry({
+        prompt,
+        task: "DESIGN_COPILOT_CHAT",
+        fallbackText:
+          fallbackJson
+      });
+
+    const aiText =
+      llmResult.text;
+
+    const parsed =
+      parseDesignCopilotAiOutput(
+        aiText
+      );
+
+    if (!parsed) {
+      console.warn(
+        "DESIGN_COPILOT_INVALID_AI_OUTPUT",
+        {
+          provider:
+            llmResult.telemetry.provider,
+          model:
+            llmResult.telemetry.model,
+          durationMs:
+            llmResult.telemetry.durationMs
+        }
+      );
+
+      return {
+        ...fallback,
+        aiTelemetry: {
+          ...llmResult.telemetry,
+          success: false,
+          usedFallback: true,
+          fallbackReason: "INVALID_JSON"
+        }
+      };
+    }
+
+    return {
+      reply:
+        parsed.reply,
+      designProfile:
+        profile,
+      suggestions:
+        parsed.suggestions,
+      aiTelemetry:
+        llmResult.telemetry
+    };
+  } catch (error) {
+    console.error(
+      "DESIGN_COPILOT_LLM_FAILED",
+      error
+    );
+
+    return fallback;
+  }
 };

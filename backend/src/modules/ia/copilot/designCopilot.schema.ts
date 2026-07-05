@@ -68,3 +68,17 @@ export const ApplyDesignCopilotSchema =
           "A suggestion or actions are required"
       }
     );
+export const DesignCopilotAiResponseSchema =
+  z.object({
+    reply:
+      z.string()
+        .trim()
+        .min(1)
+        .max(1000),
+
+    suggestions:
+      z.array(DesignSuggestionSchema)
+        .min(1)
+        .max(3)
+  })
+    .strict();

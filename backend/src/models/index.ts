@@ -20,15 +20,20 @@ import { AiGeneration } from "./AiGeneration";
 import SiteInvitation from "./SiteInvitation";
 import { AiActivityEvent } from "./AiActivityEvent";
 import { PartnerApplication } from "./PartnerApplication";
+import { CmsEntry } from "./CmsEntry.model";
+import { CmsCollection } from "./CmsCollection.model";
+import { CmsField } from "./CmsField.model";
 
 export const models = [
   User, Token, Page, Site, ActivityLog, Media, 
   Seo, Plugin, SitePlugin, SiteMember, 
   PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken,PlatformSetting,Notification,AiGeneration,SiteInvitation,AiActivityEvent,PartnerApplication
+  ,CmsEntry, CmsCollection,CmsField
 ];
 
 export { 
   User, Token, Page, Site, ActivityLog, 
   Media, Seo, Plugin, SitePlugin, SiteMember, 
   PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken,PlatformSetting,Notification,AiGeneration,SiteInvitation,AiActivityEvent,PartnerApplication
+  ,CmsEntry, CmsCollection,CmsField
 };
