@@ -6,6 +6,7 @@ import { createDesignCopilotResponse } from "./copilot/designCopilot.service";
 import { applyDesignActions } from "./copilot/designActions.transformer";
 import { ApplyDesignCopilotSchema } from "./copilot/designCopilot.schema";
 import { getAiActivityHistory, recordAiActivity } from "./history/aiActivity.service";
+import { getAiAnalyticsSummary } from "./analytics/aiAnalytics.service";
 
 const previewText = (value: unknown) =>
   typeof value === "string" ? value.trim().slice(0, 200) : "";
@@ -229,6 +230,44 @@ export const getActivityHistory = async (
     });
   }
 };
+
+export const getAiAnalytics = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const siteId =
+      Number(req.siteContext?.siteId || req.params.siteId);
+
+    if (!siteId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing site context",
+        code: "SITE_CONTEXT_REQUIRED"
+      });
+    }
+
+    const analytics =
+      await getAiAnalyticsSummary(siteId);
+
+    return res.json({
+      success: true,
+      data: analytics
+    });
+  } catch (error: any) {
+    console.error("AI_ANALYTICS_ERROR", {
+      message: error.message,
+      stack: error.stack
+    });
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to load AI analytics",
+      code: "AI_ANALYTICS_FAILED"
+    });
+  }
+};
+
 export const designCopilotChat = async (
   req: AuthRequest,
   res: Response
