@@ -5,7 +5,7 @@ import { AiHistoryService } from "./ai.history.service";
 import { createDesignCopilotResponse } from "./copilot/designCopilot.service";
 import { applyDesignActions } from "./copilot/designActions.transformer";
 import { ApplyDesignCopilotSchema } from "./copilot/designCopilot.schema";
-import { getAiActivityHistory, recordAiActivity } from "./history/aiActivity.service";
+import { getAiActivityHistory, recordAiActivity, recordAiFeedback } from "./history/aiActivity.service";
 import { getAiAnalyticsSummary } from "./analytics/aiAnalytics.service";
 
 const previewText = (value: unknown) =>
@@ -142,8 +142,6 @@ const generatedTitle =
       });
     }
     
-    // TODO: replace string-based error matching with AppError classes after demo stabilization.
-
     if (error.message === "PROMPT_REQUIRED") {
       return res.status(400).json({
         success: false,
@@ -350,6 +348,88 @@ export const designCopilotChat = async (
       success: false,
       message: "Design Co-Pilot failed",
       code: "DESIGN_COPILOT_FAILED"
+    });
+  }
+};
+export const submitAiFeedback = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const siteId =
+      Number(req.siteContext?.siteId || req.params.siteId);
+
+    const userId =
+      Number(req.user?.id || 0);
+
+    if (
+      !siteId ||
+      !userId
+    ) {
+      return res.status(401).json({
+        success: false,
+        message: "Missing site or user context",
+        code: "CONTEXT_REQUIRED"
+      });
+    }
+
+    const {
+      rating,
+      comment,
+      pageId,
+      generationId,
+      targetActivityId,
+      targetEventType
+    } = req.body || {};
+
+    if (
+      rating !== "positive" &&
+      rating !== "negative"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Rating must be positive or negative",
+        code: "INVALID_FEEDBACK_RATING"
+      });
+    }
+
+    await recordAiFeedback({
+      siteId,
+      userId,
+      pageId:
+        Number(pageId) || null,
+      generationId:
+        Number(generationId) || null,
+      targetActivityId:
+        Number(targetActivityId) || null,
+      targetEventType:
+        targetEventType
+          ? String(targetEventType)
+          : null,
+      rating,
+      comment:
+        typeof comment === "string"
+          ? comment
+          : ""
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "AI feedback recorded"
+    });
+  } catch (error: any) {
+    console.error(
+      "AI_FEEDBACK_ERROR",
+      {
+        message: error.message,
+        stack: error.stack
+      }
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to record AI feedback",
+      code: "AI_FEEDBACK_FAILED"
     });
   }
 };

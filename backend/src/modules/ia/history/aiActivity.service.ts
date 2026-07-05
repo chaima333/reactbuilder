@@ -38,6 +38,56 @@ export const recordAiActivity = async (
   }
 };
 
+
+type AiFeedbackRating =
+  | "positive"
+  | "negative";
+
+type RecordAiFeedbackInput = {
+  siteId: number;
+  userId: number;
+  pageId?: number | null;
+  generationId?: number | null;
+  targetActivityId?: number | null;
+  targetEventType?: string | null;
+  rating: AiFeedbackRating;
+  comment?: string;
+  details?: Record<string, any>;
+};
+
+export const recordAiFeedback = async (
+  input: RecordAiFeedbackInput
+) => {
+  const rating: AiFeedbackRating =
+    input.rating === "negative"
+      ? "negative"
+      : "positive";
+
+  await recordAiActivity({
+    siteId: input.siteId,
+    userId: input.userId,
+    pageId: input.pageId || null,
+    generationId: input.generationId || null,
+    eventType: "AI_FEEDBACK",
+    details: {
+      targetActivityId:
+        input.targetActivityId || null,
+
+      targetEventType:
+        input.targetEventType || null,
+
+      rating,
+
+      comment:
+        input.comment
+          ? input.comment.slice(0, 500)
+          : "",
+
+      ...(input.details || {})
+    }
+  });
+};
+
 export const getAiActivityHistory = async (
   siteId: number,
   limit = 20

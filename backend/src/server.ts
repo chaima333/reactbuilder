@@ -51,6 +51,7 @@ import { rejectOversizedAiContentLength } from "./modules/ia/aiRequestLimits.mid
 import chatbotPublicRoutes from "./modules/chatbot/chatbot.public.routes";
 import { rejectOversizedChatbotContentLength } from "./modules/chatbot/chatbot.payloadLimit";
 import platformAssistantRoutes from "./modules/platformAssistant/services/platformAssistant.routes";
+import cmsRoutes from "./modules/cms/cms.routes";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 const authStack = [authenticateJWT, maintenanceMode];
@@ -113,6 +114,7 @@ app.use("/api/sites/:siteId/pages", tenantStack, pageRoutes);
 app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
 app.use("/api/sites/:siteId/partner-applications", tenantStack,partnerApplicationRoutes);
 app.use("/api/sites/:siteId/import",tenantStack,importRoutes);
+app.use("/api/sites/:siteId/cms", tenantStack, cmsRoutes);
 app.use("/api/figma-plugin", figmaPluginRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/sites/:siteId/ia", tenantStack, iaRoutes);

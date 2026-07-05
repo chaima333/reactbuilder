@@ -6,7 +6,8 @@ import {
   generatePage,
   getActivityHistory,
   getAiAnalytics,
-  getHistory
+  getHistory,
+  submitAiFeedback
 } from "./ai.controller";
 
 import { requirePermission } from "../../core/middleware/role.middleware";
@@ -56,7 +57,11 @@ router.post(
   requirePermission(PERMISSIONS.PAGE_UPDATE),
   designCopilotApply
 );
-
+router.post(
+  "/feedback",
+  requirePermission(PERMISSIONS.PAGE_READ),
+  submitAiFeedback
+);
 router.post(
   "/assistant/edit-block",
   requirePermission(PERMISSIONS.PAGE_UPDATE),
