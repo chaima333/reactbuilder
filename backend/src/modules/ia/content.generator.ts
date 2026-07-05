@@ -6,6 +6,7 @@ import { AiGeneratedContent, SiteContext } from "./ai.types";
 import {  generateTextWithTelemetry } from "./llm/llm.client";
 import { buildAiContentPrompt } from "./llm/llm.prompt";
 import { sanitizeAiContent } from "./sanitizeAiContent";
+import { AiTelemetry } from "./telemetry/aiTelemetry.types";
 
 /**
  * Extract keywords from prompt
@@ -941,9 +942,14 @@ const fallbackContent: AiGeneratedContent = {
     ? `Turn your ${dynamicServices[0].toLowerCase()} vision into a scalable digital experience.`
     : ctaTextByCategory[category] || "Create a modern digital presence with AI."
 };
+
 let llmContent:
   | Partial<AiGeneratedContent>
   | undefined;
+
+let aiTelemetry:
+  | AiTelemetry
+  | null = null;
 
 try {
   const promptText =
@@ -955,8 +961,13 @@ try {
  const llmResult =
   await generateTextWithTelemetry({
     prompt: promptText,
-    task: "PAGE_GENERATION"
+    task: "PAGE_GENERATION",
+    fallbackText:
+      JSON.stringify(fallbackContent)
   });
+
+aiTelemetry =
+  llmResult.telemetry;
 
 const aiText =
   llmResult.text;
@@ -965,10 +976,20 @@ llmContent =
   parseLlmJson(aiText);
 
   if (!llmContent) {
-    console.warn(
-      "LLM_INVALID_JSON_USING_FALLBACK"
-    );
-  } else {
+  if (aiTelemetry) {
+    aiTelemetry = {
+      ...aiTelemetry,
+      success: false,
+      usedFallback: true,
+      fallbackReason: "INVALID_JSON"
+    };
+  }
+
+  console.warn(
+    "LLM_INVALID_JSON_USING_FALLBACK"
+  );
+}
+ else {
     console.log("LLM_JSON_CONTENT_USED", {
       title: llmContent.title,
       services:
@@ -985,8 +1006,18 @@ llmContent =
   logLlmFailure(error);
 }
 
-return sanitizeAiContent(
-  fallbackContent,
-  llmContent
-);
+const sanitizedContent =
+  sanitizeAiContent(
+    fallbackContent,
+    llmContent
+  );
+
+return {
+  ...sanitizedContent,
+  aiTelemetry
+} as AiGeneratedContent & {
+  aiTelemetry:
+    | AiTelemetry
+    | null;
+};
 };

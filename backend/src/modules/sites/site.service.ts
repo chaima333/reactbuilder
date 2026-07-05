@@ -83,4 +83,35 @@ if (userRole !== "ADMIN") {
       }
     });
   }
+    static async updateThemeService(
+    siteId: number,
+    theme: any
+  ) {
+    const site =
+      await Site.findByPk(siteId);
+
+    if (!site) {
+      throw new Error("SITE_NOT_FOUND");
+    }
+
+    const currentSettings =
+      site.get("settings") || {};
+
+    const updatedSite =
+      await site.update({
+        settings: {
+          ...currentSettings,
+          theme: theme || {}
+        }
+      });
+
+    const raw =
+      updatedSite.toJSON();
+
+    return {
+      ...raw,
+      theme:
+        raw.settings?.theme || {}
+    };
+  }
 }

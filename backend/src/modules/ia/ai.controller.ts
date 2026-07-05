@@ -85,13 +85,19 @@ const generatedTitle =
       userId,
       pageId: page?.id || null,
       eventType: "AI_PAGE_GENERATED",
-      details: {
-        title: page?.title || generatedTitle,
-        promptPreview: previewText(prompt),
-        pageId: page?.id || null,
-        ...((page as any)?.aiCategory ? { category: (page as any).aiCategory } : {}),
-        source: "ai-page-generator"
-      }
+     details: {
+  title: page?.title || generatedTitle,
+  promptPreview: previewText(prompt),
+  pageId: page?.id || null,
+  ...((page as any)?.aiCategory
+    ? { category: (page as any).aiCategory }
+    : {}),
+  aiTelemetry:
+    (page as any)?.aiTelemetry || null,
+  aiGenerationMeta:
+    (page as any)?.aiGenerationMeta || null,
+  source: "ai-page-generator"
+}
     });
 
     console.log("✅ PAGE_GENERATED_SUCCESSFULLY", {

@@ -536,6 +536,10 @@ const aiContent =
     siteContext,
     prompt
   );
+
+const aiTelemetry =
+  (aiContent as any)?.aiTelemetry || null;
+
   const template =
     CATEGORY_TEMPLATES[category] ??
     CATEGORY_TEMPLATES["Corporate"];
@@ -704,7 +708,8 @@ if (existingPage) {
   categoryDecisionReason: categoryDecision.reason,
   validationScore: validation.score,
   validationValid: validation.valid,
-  validationIssues: validation.issues
+  validationIssues: validation.issues,
+  aiTelemetry,
 }
   });
 
@@ -770,7 +775,24 @@ console.log("AI_HISTORY_SAVED", {
 const firstCreatedPage = createdPages[0] || publishedHomepage;
 
 if (firstCreatedPage) {
-  (firstCreatedPage as any).aiCategory = category;
+  (firstCreatedPage as any).aiCategory =
+    category;
+
+  (firstCreatedPage as any).aiTelemetry =
+    aiTelemetry;
+
+  (firstCreatedPage as any).aiGenerationMeta = {
+    mlCategory:
+      categoryDecision.mlCategory,
+    mlConfidence:
+      categoryDecision.mlConfidence,
+    usedCategoryFallback:
+      categoryDecision.usedFallback,
+    categoryDecisionReason:
+      categoryDecision.reason,
+    pagesGenerated:
+      createdPages.length
+  };
 }
 
 return firstCreatedPage;

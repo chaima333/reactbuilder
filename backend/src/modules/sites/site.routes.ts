@@ -8,7 +8,8 @@ import {
   getSiteById,
   getSites,
   getSiteAccess,
-  getDefaultSite
+  getDefaultSite,
+  updateSiteTheme
 } from "./site.controller";
 
 import { tenantResolver } from "../../core/middleware/tenantResolver";
@@ -28,7 +29,6 @@ const siteAccessStack = [
 router.post("/", createSite);
 router.get("/", getSites);
 
-// مهم: لازم قبل /:siteId
 router.get("/default", getDefaultSite);
 
 // SITE ACCESS
@@ -59,7 +59,12 @@ router.put(
   requirePermission(PERMISSIONS.SITE_UPDATE),
   updateGlobalLayout
 );
-
+router.put(
+  "/:siteId/theme",
+  siteAccessStack,
+  requirePermission(PERMISSIONS.SITE_UPDATE),
+  updateSiteTheme
+);
 router.delete(
   "/:siteId",
   siteAccessStack,

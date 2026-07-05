@@ -145,7 +145,42 @@ export const updateGlobalLayout = async (
     });
   }
 };
+export const updateSiteTheme = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const siteId =
+      Number(req.params.siteId);
 
+    const theme =
+      req.body?.theme || req.body || {};
+
+    const updatedSite =
+      await SiteService.updateThemeService(
+        siteId,
+        theme
+      );
+
+    return res.json({
+      success: true,
+      data: updatedSite
+    });
+
+  } catch (error: any) {
+    if (error.message === "SITE_NOT_FOUND") {
+      return res.status(404).json({
+        success: false,
+        message: "Site not found"
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Theme update failed"
+    });
+  }
+};
 // =========================
 // GET SITES
 // =========================
@@ -255,7 +290,6 @@ export const getSiteById = async (req: AuthRequest, res: Response) => {
     const siteId = Number(req.params.siteId);
     const userId = req.user.id;
 
-    // 🔥 CHECK ACCESS
     const member = await SiteMember.findOne({
       where: { siteId, userId }
     });
@@ -278,10 +312,17 @@ export const getSiteById = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    return res.json({
-      success: true,
-      data: site
-    });
+  const raw =
+  site.toJSON();
+
+return res.json({
+  success: true,
+  data: {
+    ...raw,
+    theme:
+      raw.settings?.theme || {}
+  }
+});
 
   } catch (error) {
     return res.status(500).json({
