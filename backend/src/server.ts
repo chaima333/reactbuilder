@@ -52,6 +52,7 @@ import chatbotPublicRoutes from "./modules/chatbot/chatbot.public.routes";
 import { rejectOversizedChatbotContentLength } from "./modules/chatbot/chatbot.payloadLimit";
 import platformAssistantRoutes from "./modules/platformAssistant/services/platformAssistant.routes";
 import cmsRoutes from "./modules/cms/cms.routes";
+import cmsPublicRoutes from "./modules/cms/cms.public.routes";
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 const authStack = [authenticateJWT, maintenanceMode];
@@ -98,6 +99,7 @@ app.use("/p/public",publicSiteRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/platform", platformRoutes);
 app.use( "/api/public/sites/:siteId/partner-applications", publicPartnerApplicationRoutes);
+app.use("/api/public/sites/:siteId/cms",cmsPublicRoutes);
 
 /* ========================
    GLOBAL (IMPORTANT FIX )
@@ -125,6 +127,7 @@ app.use("/api/ai/assistant", authStack, assistantRoutes);
 app.use("/api/users", authStack, userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/export", exportRoutes);
+
 
 /* ========================
    COMMANDS / PLUGINS

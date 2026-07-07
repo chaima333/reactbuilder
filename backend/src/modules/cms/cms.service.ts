@@ -645,4 +645,38 @@ export class CmsService {
 
     return true;
   }
+
+  static async getPublishedEntriesByCollectionSlug(
+  siteId: number,
+  slug: string
+) {
+  const collection =
+    await CmsCollection.findOne({
+      where: {
+        siteId,
+        slug
+      }
+    });
+
+  if (!collection) {
+    throw new Error("COLLECTION_NOT_FOUND");
+  }
+
+  const entries =
+    await CmsEntry.findAll({
+      where: {
+        siteId,
+        collectionId: collection.id,
+        status: "published"
+      },
+      order: [
+        ["createdAt", "DESC"]
+      ]
+    });
+
+  return entries.map((entry) => ({
+    id: entry.id,
+    ...entry.data
+  }));
+}
 }
