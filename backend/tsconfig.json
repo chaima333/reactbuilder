@@ -21,7 +21,14 @@
 
     "ignoreDeprecations": "6.0"
   },
-  "include": ["src/**/*", "../frontend/src/modules/pageBuilder/pages/aiAssistant/analyzers", "../frontend/src/modules/platformAssistant/components/pages"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts",
+    "src/**/__tests__/**"
+  ]
 }
-
