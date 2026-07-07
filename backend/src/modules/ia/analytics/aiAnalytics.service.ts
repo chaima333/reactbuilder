@@ -80,12 +80,32 @@ export const getAiAnalyticsSummary = async (
   let fallbackCount = 0;
   let totalDuration = 0;
   let durationCount = 0;
+  let feedbackEvents = 0;
+  let positiveFeedback = 0;
+  let negativeFeedback = 0;
 
-  for (const event of events) {
-    increment(
-      byEventType,
-      event.eventType || "UNKNOWN"
-    );
+ for (const event of events) {
+  if (event.eventType === "AI_FEEDBACK") {
+    feedbackEvents += 1;
+
+    const rating =
+      event.details?.rating;
+
+    if (rating === "positive") {
+      positiveFeedback += 1;
+    }
+
+    if (rating === "negative") {
+      negativeFeedback += 1;
+    }
+
+    continue;
+  }
+
+  increment(
+    byEventType,
+    event.eventType || "UNKNOWN"
+  );
 
     const telemetry =
       getTelemetry(event);
@@ -151,9 +171,25 @@ export const getAiAnalyticsSummary = async (
     telemetryEvents > 0
       ? Math.round((fallbackCount / telemetryEvents) * 100)
       : 0;
+      const feedbackRate =
+  events.length > 0
+    ? Math.round((feedbackEvents / events.length) * 100)
+    : 0;
 
-  const recentEvents =
-    events.slice(0, 20).map((event) => {
+const positiveFeedbackRate =
+  feedbackEvents > 0
+    ? Math.round((positiveFeedback / feedbackEvents) * 100)
+    : 0;
+
+const negativeFeedbackRate =
+  feedbackEvents > 0
+    ? Math.round((negativeFeedback / feedbackEvents) * 100)
+    : 0;
+const recentEvents =
+  events
+    .filter((event) => event.eventType !== "AI_FEEDBACK")
+    .slice(0, 20)
+    .map((event) => {
       const telemetry =
         getTelemetry(event);
 
@@ -183,15 +219,21 @@ export const getAiAnalyticsSummary = async (
 
   return {
     totals: {
-      totalEvents: events.length,
-      telemetryEvents,
-      successCount,
-      failedCount,
-      fallbackCount,
-      successRate,
-      fallbackRate,
-      averageDurationMs
-    },
+  totalEvents: events.length,
+  telemetryEvents,
+  successCount,
+  failedCount,
+  fallbackCount,
+  successRate,
+  fallbackRate,
+  averageDurationMs,
+  feedbackEvents,
+  positiveFeedback,
+  negativeFeedback,
+  feedbackRate,
+  positiveFeedbackRate,
+  negativeFeedbackRate
+},
     byEventType:
       toSortedItems(byEventType),
     byTask:
