@@ -389,9 +389,11 @@ export class CmsService {
       order: [["createdAt", "DESC"]]
     });
 
-    return entries.map((entry) => ({
-      id: entry.id,
-      ...entry.data
-    }));
+   return entries.map((entry)=>({
+  id: entry.id,
+  slug: entry.slug,
+  status: entry.status,
+  data: entry.data
+}));
   }
 }
