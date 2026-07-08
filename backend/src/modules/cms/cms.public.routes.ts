@@ -11,4 +11,9 @@ router.get(
   CmsPublicController.getPublishedEntries
 );
 
+router.get(
+  "/collections/:collectionSlug/entries/:entrySlug",
+  CmsPublicController.getPublishedEntry
+);
+
 export default router;

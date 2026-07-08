@@ -396,4 +396,41 @@ export class CmsService {
   data: entry.data
 }));
   }
+
+  static async getPublishedEntryBySlug(
+  siteId: number,
+  collectionSlug: string,
+  entrySlug: string
+) {
+  const collection = await CmsCollection.findOne({
+    where: {
+      siteId,
+      slug: collectionSlug
+    }
+  });
+
+  if (!collection) {
+    throw new Error("COLLECTION_NOT_FOUND");
+  }
+
+  const entry = await CmsEntry.findOne({
+    where: {
+      siteId,
+      collectionId: collection.id,
+      slug: entrySlug,
+      status: "published"
+    }
+  });
+
+  if (!entry) {
+    throw new Error("ENTRY_NOT_FOUND");
+  }
+
+  return {
+    id: entry.id,
+    slug: entry.slug,
+    status: entry.status,
+    data: entry.data
+  };
+}
 }

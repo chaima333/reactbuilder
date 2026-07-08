@@ -40,4 +40,53 @@ export class CmsPublicController {
       });
     }
   };
+
+  static getPublishedEntry = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const siteId = Number(req.params.siteId);
+
+    const collectionSlug = String(
+      req.params.collectionSlug || ""
+    ).trim();
+
+    const entrySlug = String(
+      req.params.entrySlug || ""
+    ).trim();
+
+    const data =
+      await CmsService.getPublishedEntryBySlug(
+        siteId,
+        collectionSlug,
+        entrySlug
+      );
+
+    return res.json({
+      success: true,
+      data
+    });
+  } catch (error) {
+
+    if (
+      error instanceof Error &&
+      (
+        error.message === "COLLECTION_NOT_FOUND" ||
+        error.message === "ENTRY_NOT_FOUND"
+      )
+    ) {
+      return res.status(404).json({
+        success: false
+      });
+    }
+
+    console.error(error);
+
+    return res.status(500).json({
+      success: false
+    });
+  }
+};
 }
+
