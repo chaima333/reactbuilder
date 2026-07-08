@@ -538,12 +538,37 @@ export class CmsService {
         ? "published"
         : "draft";
 
-    return CmsEntry.create({
+   const baseSlug =
+  slugify(
+    String(
+      data.title ||
+      data.name ||
+      `entry-${Date.now()}`
+    )
+  );
+
+let slug = baseSlug;
+
+const existing =
+  await CmsEntry.findOne({
+    where: {
       siteId,
       collectionId,
-      status,
-      data
-    });
+      slug
+    }
+  });
+
+if (existing) {
+  slug = `${baseSlug}-${Date.now()}`;
+}
+
+return CmsEntry.create({
+  siteId,
+  collectionId,
+  slug,
+  status,
+  data
+});
   }
 
   static async updateEntry(

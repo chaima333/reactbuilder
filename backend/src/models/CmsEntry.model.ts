@@ -46,6 +46,12 @@ export class CmsEntry extends Model {
   })
   collectionId!: number;
 
+  @Column({
+  type: DataType.STRING,
+  allowNull: true
+  })
+  slug!: string;
+
   @BelongsTo(() => CmsCollection)
   collection!: CmsCollection;
 
