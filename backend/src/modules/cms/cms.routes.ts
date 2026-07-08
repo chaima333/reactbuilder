@@ -54,8 +54,9 @@ router.delete(
   "/fields/:fieldId",
   CmsController.deleteField
 );
+
 router.get(
-  "/collections/:collectionId/entries",
+  "/collections/:collectionSlug/entries",
   CmsController.getEntries
 );
 
