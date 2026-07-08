@@ -1,66 +1,44 @@
-import {
-  Request,
-  Response
-} from "express";
+// cms.controller.ts
+import { Request, Response } from "express";
+import { CmsService } from "./cms.service";
 
-import {
-  CmsService
-} from "./cms.service";
-
-const getSiteId = (
-  req: Request
-) =>
-  Number(req.params.siteId);
-
-const getCollectionId = (
-  req: Request
-) =>
-  Number(req.params.collectionId);
+const getSiteId = (req: Request) => Number(req.params.siteId);
+const getCollectionId = (req: Request) => Number(req.params.collectionId);
+const getCollectionSlug = (req: Request) => String(req.params.collectionSlug || "").trim();
+const getFieldId = (req: Request) => Number(req.params.fieldId);
+const getEntryId = (req: Request) => Number(req.params.entryId);
 
 export class CmsController {
-  static async getCollections(
-    req: Request,
-    res: Response
-  ) {
+  // =====================================
+  // COLLECTIONS
+  // =====================================
+
+  static async getCollections(req: Request, res: Response) {
     try {
-      const siteId =
-        getSiteId(req);
-
-      const data =
-        await CmsService.getCollections(
-          siteId
-        );
-
-      return res.json({
-        success: true,
-        data
-      });
+      const siteId = getSiteId(req);
+      const data = await CmsService.getCollections(siteId);
+      return res.json({ success: true, data });
     } catch (error: any) {
       return res.status(500).json({
         success: false,
-        message:
-          error.message ||
-          "Failed to load CMS collections"
+        message: error.message || "Failed to load CMS collections"
       });
     }
   }
 
-  static async getCollectionById(
-    req: Request,
-    res: Response
-  ) {
+  static async getCollectionBySlug(req: Request, res: Response) {
     try {
-      const siteId =
-        getSiteId(req);
+      const siteId = getSiteId(req);
+      const slug = getCollectionSlug(req);
 
-      const collectionId =
-        getCollectionId(req);
+      if (!slug) {
+        return res.status(400).json({
+          success: false,
+          message: "Collection slug is required"
+        });
+      }
 
-      const data =
-        await CmsService.getCollectionById(
-          siteId,
-          collectionId
-        );
+      const data = await CmsService.getCollectionBySlug(siteId, slug);
 
       if (!data) {
         return res.status(404).json({
@@ -69,587 +47,427 @@ export class CmsController {
         });
       }
 
-      return res.json({
-        success: true,
-        data
-      });
+      return res.json({ success: true, data });
     } catch (error: any) {
       return res.status(500).json({
         success: false,
-        message:
-          error.message ||
-          "Failed to load CMS collection"
+        message: error.message || "Failed to load CMS collection"
       });
     }
   }
 
-  static async createCollection(
-    req: Request,
-    res: Response
-  ) {
+  static async createCollection(req: Request, res: Response) {
     try {
-      const siteId =
-        getSiteId(req);
-
-      const data =
-        await CmsService.createCollection(
-          siteId,
-          req.body || {}
-        );
-
-      return res.status(201).json({
-        success: true,
-        data
-      });
+      const siteId = getSiteId(req);
+      const data = await CmsService.createCollection(siteId, req.body || {});
+      return res.status(201).json({ success: true, data });
     } catch (error: any) {
-      if (
-        error.message ===
-        "COLLECTION_NAME_REQUIRED"
-      ) {
+      if (error.message === "COLLECTION_NAME_REQUIRED") {
         return res.status(400).json({
           success: false,
           message: "Collection name is required"
         });
       }
+      if (error.message === "COLLECTION_SLUG_REQUIRED") {
+        return res.status(400).json({
+          success: false,
+          message: "Collection slug is required"
+        });
+      }
+      if (error.message === "COLLECTION_SLUG_EXISTS") {
+        return res.status(409).json({
+          success: false,
+          message: "Collection slug already exists"
+        });
+      }
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to create CMS collection"
+      });
+    }
+  }
 
-      if (
-        error.message ===
-        "COLLECTION_SLUG_REQUIRED"
-      ) {
+  static async updateCollectionBySlug(req: Request, res: Response) {
+    try {
+      const siteId = getSiteId(req);
+      const slug = getCollectionSlug(req);
+
+      if (!slug) {
         return res.status(400).json({
           success: false,
           message: "Collection slug is required"
         });
       }
 
-      if (
-        error.message ===
-        "COLLECTION_SLUG_EXISTS"
-      ) {
-        return res.status(409).json({
-          success: false,
-          message:
-            "Collection slug already exists"
-        });
-      }
+      const collection = await CmsService.getCollectionBySlug(siteId, slug);
 
-      return res.status(500).json({
-        success: false,
-        message:
-          error.message ||
-          "Failed to create CMS collection"
-      });
-    }
-  }
-
-  static async updateCollection(
-    req: Request,
-    res: Response
-  ) {
-    try {
-      const siteId =
-        getSiteId(req);
-
-      const collectionId =
-        getCollectionId(req);
-
-      const data =
-        await CmsService.updateCollection(
-          siteId,
-          collectionId,
-          req.body || {}
-        );
-
-      return res.json({
-        success: true,
-        data
-      });
-    } catch (error: any) {
-      if (
-        error.message ===
-        "COLLECTION_NOT_FOUND"
-      ) {
+      if (!collection) {
         return res.status(404).json({
           success: false,
           message: "Collection not found"
         });
       }
 
-      if (
-        error.message ===
-        "COLLECTION_SLUG_EXISTS"
-      ) {
-        return res.status(409).json({
-          success: false,
-          message:
-            "Collection slug already exists"
-        });
-      }
-
-      return res.status(500).json({
-        success: false,
-        message:
-          error.message ||
-          "Failed to update CMS collection"
-      });
-    }
-  }
-
-  static async deleteCollection(
-    req: Request,
-    res: Response
-  ) {
-    try {
-      const siteId =
-        getSiteId(req);
-
-      const collectionId =
-        getCollectionId(req);
-
-      await CmsService.deleteCollection(
+      const data = await CmsService.updateCollection(
         siteId,
-        collectionId
+        collection.id,
+        req.body || {}
       );
 
-      return res.json({
-        success: true,
-        data: true
-      });
+      return res.json({ success: true, data });
     } catch (error: any) {
-      if (
-        error.message ===
-        "COLLECTION_NOT_FOUND"
-      ) {
+      if (error.message === "COLLECTION_NOT_FOUND") {
         return res.status(404).json({
           success: false,
           message: "Collection not found"
         });
       }
-
-      return res.status(500).json({
-        success: false,
-        message:
-          error.message ||
-          "Failed to delete CMS collection"
-      });
-    }
-  }
-    static async getFields(
-    req: Request,
-    res: Response
-  ) {
-    try {
-      const siteId =
-        getSiteId(req);
-
-      const collectionId =
-        getCollectionId(req);
-
-      const data =
-        await CmsService.getFields(
-          siteId,
-          collectionId
-        );
-
-      return res.json({
-        success: true,
-        data
-      });
-    } catch (error: any) {
-      if (
-        error.message ===
-        "COLLECTION_NOT_FOUND"
-      ) {
-        return res.status(404).json({
+      if (error.message === "COLLECTION_SLUG_EXISTS") {
+        return res.status(409).json({
           success: false,
-          message: "Collection not found"
+          message: "Collection slug already exists"
         });
       }
-
       return res.status(500).json({
         success: false,
-        message:
-          error.message ||
-          "Failed to load CMS fields"
+        message: error.message || "Failed to update CMS collection"
       });
     }
   }
 
-  static async createField(
-    req: Request,
-    res: Response
-  ) {
+  static async deleteCollectionBySlug(req: Request, res: Response) {
     try {
-      const siteId =
-        getSiteId(req);
+      const siteId = getSiteId(req);
+      const slug = getCollectionSlug(req);
 
-      const collectionId =
-        getCollectionId(req);
+      if (!slug) {
+        return res.status(400).json({
+          success: false,
+          message: "Collection slug is required"
+        });
+      }
 
-      const data =
-        await CmsService.createField(
-          siteId,
-          collectionId,
-          req.body || {}
-        );
+      const collection = await CmsService.getCollectionBySlug(siteId, slug);
 
-      return res.status(201).json({
-        success: true,
-        data
-      });
-    } catch (error: any) {
-      if (
-        error.message ===
-        "COLLECTION_NOT_FOUND"
-      ) {
+      if (!collection) {
         return res.status(404).json({
           success: false,
           message: "Collection not found"
         });
       }
 
-      if (
-        error.message ===
-        "FIELD_KEY_EXISTS"
-      ) {
+      await CmsService.deleteCollection(siteId, collection.id);
+
+      return res.json({ success: true, data: true });
+    } catch (error: any) {
+      if (error.message === "COLLECTION_NOT_FOUND") {
+        return res.status(404).json({
+          success: false,
+          message: "Collection not found"
+        });
+      }
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to delete CMS collection"
+      });
+    }
+  }
+
+  // =====================================
+  // FIELDS
+  // =====================================
+
+  static async getFields(req: Request, res: Response) {
+    try {
+      const siteId = getSiteId(req);
+      const slug = getCollectionSlug(req);
+
+      if (!slug) {
+        return res.status(400).json({
+          success: false,
+          message: "Collection slug is required"
+        });
+      }
+
+      const collection = await CmsService.getCollectionBySlug(siteId, slug);
+
+      if (!collection) {
+        return res.status(404).json({
+          success: false,
+          message: "Collection not found"
+        });
+      }
+
+      const data = await CmsService.getFields(siteId, collection.id);
+
+      return res.json({ success: true, data });
+    } catch (error: any) {
+      if (error.message === "COLLECTION_NOT_FOUND") {
+        return res.status(404).json({
+          success: false,
+          message: "Collection not found"
+        });
+      }
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to load CMS fields"
+      });
+    }
+  }
+
+  static async createField(req: Request, res: Response) {
+    try {
+      const siteId = getSiteId(req);
+      const slug = getCollectionSlug(req);
+
+      if (!slug) {
+        return res.status(400).json({
+          success: false,
+          message: "Collection slug is required"
+        });
+      }
+
+      const collection = await CmsService.getCollectionBySlug(siteId, slug);
+
+      if (!collection) {
+        return res.status(404).json({
+          success: false,
+          message: "Collection not found"
+        });
+      }
+
+      const data = await CmsService.createField(siteId, collection.id, req.body || {});
+
+      return res.status(201).json({ success: true, data });
+    } catch (error: any) {
+      if (error.message === "COLLECTION_NOT_FOUND") {
+        return res.status(404).json({
+          success: false,
+          message: "Collection not found"
+        });
+      }
+      if (error.message === "FIELD_KEY_EXISTS") {
         return res.status(409).json({
           success: false,
           message: "Field key already exists"
         });
       }
-
       return res.status(400).json({
         success: false,
-        message:
-          error.message ||
-          "Failed to create CMS field"
+        message: error.message || "Failed to create CMS field"
       });
     }
   }
 
-  static async updateField(
-    req: Request,
-    res: Response
-  ) {
+  static async updateField(req: Request, res: Response) {
     try {
-      const siteId =
-        getSiteId(req);
+      const siteId = getSiteId(req);
+      const fieldId = getFieldId(req);
+      const data = await CmsService.updateField(siteId, fieldId, req.body || {});
 
-      const fieldId =
-        Number(req.params.fieldId);
-
-      const data =
-        await CmsService.updateField(
-          siteId,
-          fieldId,
-          req.body || {}
-        );
-
-      return res.json({
-        success: true,
-        data
-      });
+      return res.json({ success: true, data });
     } catch (error: any) {
-      if (
-        error.message ===
-        "FIELD_NOT_FOUND"
-      ) {
+      if (error.message === "FIELD_NOT_FOUND") {
         return res.status(404).json({
           success: false,
           message: "Field not found"
         });
       }
-
-      if (
-        error.message ===
-        "FIELD_KEY_EXISTS"
-      ) {
+      if (error.message === "FIELD_KEY_EXISTS") {
         return res.status(409).json({
           success: false,
           message: "Field key already exists"
         });
       }
-
       return res.status(400).json({
         success: false,
-        message:
-          error.message ||
-          "Failed to update CMS field"
+        message: error.message || "Failed to update CMS field"
       });
     }
   }
 
-  static async deleteField(
-    req: Request,
-    res: Response
-  ) {
+  static async deleteField(req: Request, res: Response) {
     try {
-      const siteId =
-        getSiteId(req);
+      const siteId = getSiteId(req);
+      const fieldId = getFieldId(req);
 
-      const fieldId =
-        Number(req.params.fieldId);
+      await CmsService.deleteField(siteId, fieldId);
 
-      await CmsService.deleteField(
-        siteId,
-        fieldId
-      );
-
-      return res.json({
-        success: true,
-        data: true
-      });
+      return res.json({ success: true, data: true });
     } catch (error: any) {
-      if (
-        error.message ===
-        "FIELD_NOT_FOUND"
-      ) {
+      if (error.message === "FIELD_NOT_FOUND") {
         return res.status(404).json({
           success: false,
           message: "Field not found"
         });
       }
-
       return res.status(500).json({
         success: false,
-        message:
-          error.message ||
-          "Failed to delete CMS field"
+        message: error.message || "Failed to delete CMS field"
       });
     }
   }
-    static async getEntries(
-    req: Request,
-    res: Response
-  ) {
+
+  // =====================================
+  // ENTRIES
+  // =====================================
+
+  static async getEntries(req: Request, res: Response) {
     try {
-      const siteId =
-        getSiteId(req);
+      const siteId = getSiteId(req);
+      const slug = getCollectionSlug(req);
 
-      const collectionId =
-        getCollectionId(req);
+      if (!slug) {
+        return res.status(400).json({
+          success: false,
+          message: "Collection slug is required"
+        });
+      }
 
-      const data =
-        await CmsService.getEntries(
-          siteId,
-          collectionId
-        );
+      const collection = await CmsService.getCollectionBySlug(siteId, slug);
 
-      return res.json({
-        success: true,
-        data
-      });
-    } catch (error: any) {
-      if (
-        error.message ===
-        "COLLECTION_NOT_FOUND"
-      ) {
+      if (!collection) {
         return res.status(404).json({
           success: false,
           message: "Collection not found"
         });
       }
 
+      const data = await CmsService.getEntries(siteId, collection.id);
+
+      return res.json({ success: true, data });
+    } catch (error: any) {
+      if (error.message === "COLLECTION_NOT_FOUND") {
+        return res.status(404).json({
+          success: false,
+          message: "Collection not found"
+        });
+      }
       return res.status(500).json({
         success: false,
-        message:
-          error.message ||
-          "Failed to load CMS entries"
+        message: error.message || "Failed to load CMS entries"
       });
     }
   }
 
-  static async getEntryById(
-    req: Request,
-    res: Response
-  ) {
+  static async getEntryById(req: Request, res: Response) {
     try {
-      const siteId =
-        getSiteId(req);
+      const siteId = getSiteId(req);
+      const entryId = getEntryId(req);
 
-      const entryId =
-        Number(req.params.entryId);
+      const data = await CmsService.getEntryById(siteId, entryId);
 
-      const data =
-        await CmsService.getEntryById(
-          siteId,
-          entryId
-        );
-
-      return res.json({
-        success: true,
-        data
-      });
-    } catch (error: any) {
-      if (
-        error.message ===
-        "ENTRY_NOT_FOUND"
-      ) {
+      if (!data) {
         return res.status(404).json({
           success: false,
           message: "Entry not found"
         });
       }
 
+      return res.json({ success: true, data });
+    } catch (error: any) {
+      if (error.message === "ENTRY_NOT_FOUND") {
+        return res.status(404).json({
+          success: false,
+          message: "Entry not found"
+        });
+      }
       return res.status(500).json({
         success: false,
-        message:
-          error.message ||
-          "Failed to load CMS entry"
+        message: error.message || "Failed to load CMS entry"
       });
     }
   }
 
-  static async createEntry(
-    req: Request,
-    res: Response
-  ) {
+  static async createEntry(req: Request, res: Response) {
     try {
-      const siteId =
-        getSiteId(req);
+      const siteId = getSiteId(req);
+      const slug = getCollectionSlug(req);
 
-      const collectionId =
-        getCollectionId(req);
+      if (!slug) {
+        return res.status(400).json({
+          success: false,
+          message: "Collection slug is required"
+        });
+      }
 
-      const data =
-        await CmsService.createEntry(
-          siteId,
-          collectionId,
-          req.body || {}
-        );
+      const collection = await CmsService.getCollectionBySlug(siteId, slug);
 
-      return res.status(201).json({
-        success: true,
-        data
-      });
-    } catch (error: any) {
-      if (
-        error.message ===
-        "COLLECTION_NOT_FOUND"
-      ) {
+      if (!collection) {
         return res.status(404).json({
           success: false,
           message: "Collection not found"
         });
       }
 
-      if (
-        String(error.message).startsWith(
-          "REQUIRED_FIELD_MISSING:"
-        )
-      ) {
-        return res.status(400).json({
+      const data = await CmsService.createEntry(siteId, collection.id, req.body || {});
+
+      return res.status(201).json({ success: true, data });
+    } catch (error: any) {
+      if (error.message === "COLLECTION_NOT_FOUND") {
+        return res.status(404).json({
           success: false,
-          message:
-            error.message.replace(
-              "REQUIRED_FIELD_MISSING:",
-              "Required field missing: "
-            )
+          message: "Collection not found"
         });
       }
-
+      if (String(error.message).startsWith("REQUIRED_FIELD_MISSING:")) {
+        return res.status(400).json({
+          success: false,
+          message: error.message.replace("REQUIRED_FIELD_MISSING:", "Required field missing: ")
+        });
+      }
       return res.status(500).json({
         success: false,
-        message:
-          error.message ||
-          "Failed to create CMS entry"
+        message: error.message || "Failed to create CMS entry"
       });
     }
   }
 
-  static async updateEntry(
-    req: Request,
-    res: Response
-  ) {
+  static async updateEntry(req: Request, res: Response) {
     try {
-      const siteId =
-        getSiteId(req);
+      const siteId = getSiteId(req);
+      const entryId = getEntryId(req);
+      const data = await CmsService.updateEntry(siteId, entryId, req.body || {});
 
-      const entryId =
-        Number(req.params.entryId);
-
-      const data =
-        await CmsService.updateEntry(
-          siteId,
-          entryId,
-          req.body || {}
-        );
-
-      return res.json({
-        success: true,
-        data
-      });
+      return res.json({ success: true, data });
     } catch (error: any) {
-      if (
-        error.message ===
-        "ENTRY_NOT_FOUND"
-      ) {
+      if (error.message === "ENTRY_NOT_FOUND") {
         return res.status(404).json({
           success: false,
           message: "Entry not found"
         });
       }
-
-      if (
-        String(error.message).startsWith(
-          "REQUIRED_FIELD_MISSING:"
-        )
-      ) {
+      if (String(error.message).startsWith("REQUIRED_FIELD_MISSING:")) {
         return res.status(400).json({
           success: false,
-          message:
-            error.message.replace(
-              "REQUIRED_FIELD_MISSING:",
-              "Required field missing: "
-            )
+          message: error.message.replace("REQUIRED_FIELD_MISSING:", "Required field missing: ")
         });
       }
-
       return res.status(500).json({
         success: false,
-        message:
-          error.message ||
-          "Failed to update CMS entry"
+        message: error.message || "Failed to update CMS entry"
       });
     }
   }
 
-  static async deleteEntry(
-    req: Request,
-    res: Response
-  ) {
+  static async deleteEntry(req: Request, res: Response) {
     try {
-      const siteId =
-        getSiteId(req);
+      const siteId = getSiteId(req);
+      const entryId = getEntryId(req);
 
-      const entryId =
-        Number(req.params.entryId);
+      await CmsService.deleteEntry(siteId, entryId);
 
-      await CmsService.deleteEntry(
-        siteId,
-        entryId
-      );
-
-      return res.json({
-        success: true,
-        data: true
-      });
+      return res.json({ success: true, data: true });
     } catch (error: any) {
-      if (
-        error.message ===
-        "ENTRY_NOT_FOUND"
-      ) {
+      if (error.message === "ENTRY_NOT_FOUND") {
         return res.status(404).json({
           success: false,
           message: "Entry not found"
         });
       }
-
       return res.status(500).json({
         success: false,
-        message:
-          error.message ||
-          "Failed to delete CMS entry"
+        message: error.message || "Failed to delete CMS entry"
       });
     }
   }

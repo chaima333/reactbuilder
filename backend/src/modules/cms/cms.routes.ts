@@ -1,83 +1,29 @@
-import {
-  Router
-} from "express";
+// cms.routes.ts
+import { Router } from "express";
+import { CmsController } from "./cms.controller"; // ✅ أضف هذا السطر
 
-import {
-  CmsController
-} from "./cms.controller";
+const router = Router({
+  mergeParams: true
+});
 
-const router =
-  Router({
-    mergeParams: true
-  });
+// Collections
+router.get("/collections", CmsController.getCollections);
+router.post("/collections", CmsController.createCollection);
+router.get("/collections/:collectionSlug", CmsController.getCollectionBySlug);
+router.put("/collections/:collectionSlug", CmsController.updateCollectionBySlug);
+router.delete("/collections/:collectionSlug", CmsController.deleteCollectionBySlug);
 
-router.get(
-  "/collections",
-  CmsController.getCollections
-);
+// Fields
+router.get("/collections/:collectionSlug/fields", CmsController.getFields);
+router.post("/collections/:collectionSlug/fields", CmsController.createField);
+router.put("/fields/:fieldId", CmsController.updateField);
+router.delete("/fields/:fieldId", CmsController.deleteField);
 
-router.post(
-  "/collections",
-  CmsController.createCollection
-);
-
-router.get(
-  "/collections/:collectionId",
-  CmsController.getCollectionById
-);
-
-router.put(
-  "/collections/:collectionId",
-  CmsController.updateCollection
-);
-
-router.delete(
-  "/collections/:collectionId",
-  CmsController.deleteCollection
-);
-router.get(
-  "/collections/:collectionId/fields",
-  CmsController.getFields
-);
-
-router.post(
-  "/collections/:collectionId/fields",
-  CmsController.createField
-);
-
-router.put(
-  "/fields/:fieldId",
-  CmsController.updateField
-);
-
-router.delete(
-  "/fields/:fieldId",
-  CmsController.deleteField
-);
-
-router.get(
-  "/collections/:collectionSlug/entries",
-  CmsController.getEntries
-);
-
-router.post(
-  "/collections/:collectionId/entries",
-  CmsController.createEntry
-);
-
-router.get(
-  "/entries/:entryId",
-  CmsController.getEntryById
-);
-
-router.put(
-  "/entries/:entryId",
-  CmsController.updateEntry
-);
-
-router.delete(
-  "/entries/:entryId",
-  CmsController.deleteEntry
-);
+// Entries
+router.get("/collections/:collectionSlug/entries", CmsController.getEntries);
+router.post("/collections/:collectionSlug/entries", CmsController.createEntry);
+router.get("/entries/:entryId", CmsController.getEntryById);
+router.put("/entries/:entryId", CmsController.updateEntry);
+router.delete("/entries/:entryId", CmsController.deleteEntry);
 
 export default router;

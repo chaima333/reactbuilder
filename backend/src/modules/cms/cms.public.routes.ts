@@ -1,18 +1,13 @@
-import {
-  Router
-} from "express";
+// cms.public.routes.ts
+import { Router } from "express";
+import { CmsPublicController } from "./cms.public.controller";
 
-import {
-  CmsPublicController
-} from "./cms.public.controller";
-
-const router =
-  Router({
-    mergeParams: true
-  });
+const router = Router({
+  mergeParams: true
+});
 
 router.get(
-  "/collections/:slug/entries",
+  "/collections/:collectionSlug/entries",
   CmsPublicController.getPublishedEntries
 );
 
