@@ -26,6 +26,37 @@ export class CmsController {
     }
   }
 
+  // ✅ أضف هذه الدالة
+  static async getCollectionById(req: Request, res: Response) {
+    try {
+      const siteId = getSiteId(req);
+      const collectionId = getCollectionId(req);
+
+      if (!collectionId) {
+        return res.status(400).json({
+          success: false,
+          message: "Collection ID is required"
+        });
+      }
+
+      const data = await CmsService.getCollectionById(siteId, collectionId);
+
+      if (!data) {
+        return res.status(404).json({
+          success: false,
+          message: "Collection not found"
+        });
+      }
+
+      return res.json({ success: true, data });
+    } catch (error: any) {
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to load CMS collection"
+      });
+    }
+  }
+
   static async getCollectionBySlug(req: Request, res: Response) {
     try {
       const siteId = getSiteId(req);
@@ -87,6 +118,46 @@ export class CmsController {
     }
   }
 
+  // ✅ أضف هذه الدالة
+  static async updateCollection(req: Request, res: Response) {
+    try {
+      const siteId = getSiteId(req);
+      const collectionId = getCollectionId(req);
+
+      if (!collectionId) {
+        return res.status(400).json({
+          success: false,
+          message: "Collection ID is required"
+        });
+      }
+
+      const data = await CmsService.updateCollection(
+        siteId,
+        collectionId,
+        req.body || {}
+      );
+
+      return res.json({ success: true, data });
+    } catch (error: any) {
+      if (error.message === "COLLECTION_NOT_FOUND") {
+        return res.status(404).json({
+          success: false,
+          message: "Collection not found"
+        });
+      }
+      if (error.message === "COLLECTION_SLUG_EXISTS") {
+        return res.status(409).json({
+          success: false,
+          message: "Collection slug already exists"
+        });
+      }
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to update CMS collection"
+      });
+    }
+  }
+
   static async updateCollectionBySlug(req: Request, res: Response) {
     try {
       const siteId = getSiteId(req);
@@ -131,6 +202,36 @@ export class CmsController {
       return res.status(500).json({
         success: false,
         message: error.message || "Failed to update CMS collection"
+      });
+    }
+  }
+
+  // ✅ أضف هذه الدالة
+  static async deleteCollection(req: Request, res: Response) {
+    try {
+      const siteId = getSiteId(req);
+      const collectionId = getCollectionId(req);
+
+      if (!collectionId) {
+        return res.status(400).json({
+          success: false,
+          message: "Collection ID is required"
+        });
+      }
+
+      await CmsService.deleteCollection(siteId, collectionId);
+
+      return res.json({ success: true, data: true });
+    } catch (error: any) {
+      if (error.message === "COLLECTION_NOT_FOUND") {
+        return res.status(404).json({
+          success: false,
+          message: "Collection not found"
+        });
+      }
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to delete CMS collection"
       });
     }
   }

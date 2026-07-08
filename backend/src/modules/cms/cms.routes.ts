@@ -1,6 +1,6 @@
 // cms.routes.ts
 import { Router } from "express";
-import { CmsController } from "./cms.controller"; // ✅ أضف هذا السطر
+import { CmsController } from "./cms.controller";
 
 const router = Router({
   mergeParams: true
@@ -9,6 +9,11 @@ const router = Router({
 // Collections
 router.get("/collections", CmsController.getCollections);
 router.post("/collections", CmsController.createCollection);
+
+router.get("/collections/:collectionId", CmsController.getCollectionById);
+router.put("/collections/:collectionId", CmsController.updateCollection);
+router.delete("/collections/:collectionId", CmsController.deleteCollection);
+
 router.get("/collections/:collectionSlug", CmsController.getCollectionBySlug);
 router.put("/collections/:collectionSlug", CmsController.updateCollectionBySlug);
 router.delete("/collections/:collectionSlug", CmsController.deleteCollectionBySlug);
