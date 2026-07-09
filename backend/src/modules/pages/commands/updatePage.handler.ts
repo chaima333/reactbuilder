@@ -1,4 +1,4 @@
-// modules/pages/commands/updatePage.handler.ts
+// backend/src/modules/pages/commands/updatePage.handler.ts
 
 import { Page } from "../../../models/page";
 import { emitDomainEvent, getSemanticDiff } from "../domain/diff";
@@ -21,88 +21,65 @@ export const updatePageHandler = async (command: any) => {
       return { success: false, error: "invalid context" };
     }
 
-    const allowedFields = ["title", "content", "blocks"];
+    // ✅ أضف slug و theme إلى allowedFields
+    const allowedFields = ["title", "content", "blocks", "slug", "theme"];
     const safePayload: any = {};
 
-    const blocks =
-  payload?.blocks || [];
+    const blocks = payload?.blocks || [];
 
-const findNavbar = (
-  items: any[]
-): any => {
+    // ✅ خيار: استخراج Navbar اختياري (افتراضي: true)
+    const extractNavbar = payload?.extractNavbar !== false;
 
-  for (const item of items) {
+    let filteredBlocks = blocks;
+    let navbar = null;
 
-    if (
-      item.type === "navbar"
-    ) {
-      return item;
+    if (extractNavbar) {
+      const findNavbar = (items: any[]): any => {
+        for (const item of items) {
+          if (item.type === "navbar") {
+            return item;
+          }
+          if (item.children?.length) {
+            const nested = findNavbar(item.children);
+            if (nested) {
+              return nested;
+            }
+          }
+        }
+        return null;
+      };
+
+      const removeNavbar = (items: any[]): any[] => {
+        return items
+          .filter((item) => item.type !== "navbar")
+          .map((item) => ({
+            ...item,
+            children: item.children ? removeNavbar(item.children) : []
+          }));
+      };
+
+      navbar = findNavbar(blocks);
+      filteredBlocks = removeNavbar(blocks);
     }
 
-    if (
-      item.children?.length
-    ) {
-
-      const nested =
-        findNavbar(
-          item.children
-        );
-
-      if (nested) {
-        return nested;
-      }
-    }
-  }
-
-  return null;
-};
-
-const navbar =
-  findNavbar(blocks);
-
-const removeNavbar = (
-  items: any[]
-): any[] => {
-
-  return items
-    .filter(
-      (item) =>
-        item.type !== "navbar"
-    )
-    .map((item) => ({
-
-      ...item,
-
-      children:
-        item.children
-
-          ? removeNavbar(
-              item.children
-            )
-
-          : []
-    }));
-};
-
-const filteredBlocks =
-
-  removeNavbar(blocks);
     for (const field of allowedFields) {
       if (payload[field] !== undefined) {
-        if (
-  field === "blocks"
-) {
-
-  safePayload.blocks =
-    filteredBlocks;
-
-} else {
-
-  safePayload[field] =
-    payload[field];
-}
+        if (field === "blocks") {
+          safePayload.blocks = filteredBlocks;
+        } else {
+          safePayload[field] = payload[field];
+        }
       }
     }
+
+    if (!safePayload.slug && payload.title) {
+      safePayload.slug = payload.title
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    }
+
     const updateResult = await sequelize.transaction(async (transaction) => {
       const page = await Page.findOne({
         where: {
@@ -124,16 +101,17 @@ const filteredBlocks =
       });
       const changes = getSemanticDiff(oldPage, nextPage);
 
-      if (navbar) {
+      if (navbar && extractNavbar) {
         const site = await Site.findByPk(
           context.siteId,
           { transaction }
         );
 
         if (site) {
+          const existingLayout = site.get("globalLayout") || {};
           await site.update({
             globalLayout: {
-              ...(site.get("globalLayout") || {}),
+              ...existingLayout,
               navbar
             }
           }, { transaction });
@@ -195,17 +173,16 @@ const filteredBlocks =
         depth: 0,
         traceId: context.traceId
       }
-      
     );
 
-    
     await ActivityService.log({
-     userId: context.userId,
-     siteId: updateResult.data.siteId,
-  action: "page_updated",
-  entityType: "page",
-  entityId: updateResult.data.id
-});
+      userId: context.userId,
+      siteId: updateResult.data.siteId,
+      action: "page_updated",
+      entityType: "page",
+      entityId: updateResult.data.id
+    });
+
     return {
       success: true,
       updated: true,
