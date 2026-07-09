@@ -73,7 +73,7 @@ static async createPage(
       slug,
       siteId,
       userId,
-      status: PAGE_STATUS.DRAFT,
+      status: data.status || PAGE_STATUS.DRAFT,
       isHomepage: requestedHomepage
     });
 
@@ -156,14 +156,11 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
             type: PAGE_EVENTS.PUBLISHED,
             shouldEmit: false,
             payload: {
-              payload: {
-  page: page.toJSON(),
-  current: page.toJSON(),
-  siteId,
-  userId,
-  alreadyPublished: true
-}
-             
+               page: page.toJSON(),
+               current: page.toJSON(),
+               siteId,
+                userId,
+               alreadyPublished: true         
             }
           }
         };

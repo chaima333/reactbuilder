@@ -1,3 +1,5 @@
+// backend/src/modules/ia/ai.service.ts
+
 import { ActivityLog } from "../../models/activityLog";
 import { AiGeneration } from "../../models/AiGeneration";
 import { Page } from "../../models/page";
@@ -16,7 +18,7 @@ import { generateSitePlan } from "./site.plan";
 const ML_SERVICE_URL =
   process.env.ML_SERVICE_URL || "http://localhost:5000";
 
-  const MIN_ML_CONFIDENCE = 0.55;
+const MIN_ML_CONFIDENCE = 0.55;
 
 type MlPrediction = {
   category: string;
@@ -90,68 +92,67 @@ export class AiService {
       return "Finance";
     }
     if (
-  [
-    "cybersecurity",
-    "cyber security",
-    "threat detection",
-    "compliance",
-    "ethical hacking",
-    "penetration testing",
-    "incident response",
-    "security awareness",
-    "soc",
-    "siem"
-  ].some((keyword) => text.includes(keyword))
-) {
-    return "Cybersecurity";
-
-}
-if (
-  [
-    "school",
-    "university",
-    "course",
-    "courses",
-    "academy",
-    "training",
-    "student",
-    "students",
-    "education",
-    "teacher",
-    "teachers",
-    "learning",
-    "learners",
-    "classroom",
-    "classrooms",
-    "certification",
-    "instructor",
-    "instructors"
-  ].some((keyword) => text.includes(keyword))
-) {
-  return "Education";
-}
-      if (
-  [
-    "software",
-    "technology",
-    "tech",
-    "ai",
-    "cloud",
-    "saas",
-    "application",
-    "platform",
-    "automation",
-    "machine learning",
-    "api",
-    "apis",
-    "devops",
-    "infrastructure",
-    "workflow",
-    "workflows"
-  ].some((keyword) => text.includes(keyword))
-) {
-  return "Technology";
-}
+      [
+        "cybersecurity",
+        "cyber security",
+        "threat detection",
+        "compliance",
+        "ethical hacking",
+        "penetration testing",
+        "incident response",
+        "security awareness",
+        "soc",
+        "siem"
+      ].some((keyword) => text.includes(keyword))
+    ) {
+      return "Cybersecurity";
+    }
+    if (
+      [
+        "school",
+        "university",
+        "course",
+        "courses",
+        "academy",
+        "training",
+        "student",
+        "students",
+        "education",
+        "teacher",
+        "teachers",
+        "learning",
+        "learners",
+        "classroom",
+        "classrooms",
+        "certification",
+        "instructor",
+        "instructors"
+      ].some((keyword) => text.includes(keyword))
+    ) {
+      return "Education";
+    }
+    if (
+      [
+        "software",
+        "technology",
+        "tech",
+        "ai",
+        "cloud",
+        "saas",
+        "application",
+        "platform",
+        "automation",
+        "machine learning",
+        "api",
+        "apis",
+        "devops",
+        "infrastructure",
+        "workflow",
+        "workflows"
+      ].some((keyword) => text.includes(keyword))
+    ) {
+      return "Technology";
+    }
     if (
       [
         "portfolio",
@@ -191,613 +192,637 @@ if (
 
     return "Corporate";
   }
-private static async predictCategory(
-  prompt: string
-): Promise<MlPrediction> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8_000);
+  
+  private static async predictCategory(
+    prompt: string
+  ): Promise<MlPrediction> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8_000);
 
-  try {
-    const response = await fetch(`${ML_SERVICE_URL}/predict`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        prompt
-      }),
-      signal: controller.signal
-    });
+    try {
+      const response = await fetch(`${ML_SERVICE_URL}/predict`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          prompt
+        }),
+        signal: controller.signal
+      });
 
-    if (!response.ok) {
-      console.error(
-        "ML service returned error status:",
-        response.status
-      );
+      if (!response.ok) {
+        console.error(
+          "ML service returned error status:",
+          response.status
+        );
+
+        return {
+          category: this.fallbackCategory(prompt),
+          confidence: 0,
+          source: "fallback",
+          error: `ML_HTTP_${response.status}`
+        };
+      }
+
+      const result = await response.json();
+
+      const category =
+        typeof result.category === "string" &&
+        result.category.trim()
+          ? result.category
+          : this.fallbackCategory(prompt);
+
+      const confidence =
+        typeof result.confidence === "number"
+          ? result.confidence
+          : 0;
+
+      return {
+        category,
+        confidence,
+        source: "ml"
+      };
+    } catch (error) {
+      console.error("ML service error:", error);
 
       return {
         category: this.fallbackCategory(prompt),
         confidence: 0,
         source: "fallback",
-        error: `ML_HTTP_${response.status}`
+        error:
+          error instanceof Error && error.name === "AbortError"
+            ? "ML_SERVICE_TIMEOUT"
+            : "ML_SERVICE_UNAVAILABLE"
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+  
+  private static normalizeSupportedCategory(
+    category: string
+  ): string {
+    if (CATEGORY_TEMPLATES[category]) {
+      return category;
+    }
+
+    if (category === "Cybersecurity") {
+      return CATEGORY_TEMPLATES["Cybersecurity"]
+        ? "Cybersecurity"
+        : "Technology";
+    }
+
+    return "Corporate";
+  }
+
+  private static resolveFinalCategory(
+    prediction: MlPrediction,
+    prompt: string
+  ): CategoryDecision {
+    const text = prompt.toLowerCase();
+
+    const scores: Record<string, number> = {
+      Technology: 0,
+      RealEstate: 0,
+      Education: 0,
+      Medical: 0,
+      Finance: 0,
+      Ecommerce: 0,
+      Restaurant: 0,
+      Agency: 0,
+      Consulting: 0,
+      Portfolio: 0,
+      Corporate: 0
+    };
+
+    const addScore = (
+      category: string,
+      keywords: string[],
+      points = 1
+    ) => {
+      for (const keyword of keywords) {
+        if (text.includes(keyword)) {
+          scores[category] += points;
+        }
+      }
+    };
+
+    addScore("Finance", [
+      "fintech",
+      "finance",
+      "financial",
+      "bank",
+      "banking",
+      "investment",
+      "investor",
+      "investors",
+      "wealth",
+      "trading",
+      "loan",
+      "portfolio",
+      "robo-advisor",
+      "advisory"
+    ]);
+
+    addScore("Medical", [
+      "clinic",
+      "doctor",
+      "medical",
+      "healthcare",
+      "hospital",
+      "appointment",
+      "telemedicine"
+    ]);
+
+    addScore("Ecommerce", [
+      "shop",
+      "store",
+      "ecommerce",
+      "product",
+      "cart",
+      "checkout"
+    ]);
+
+    addScore("Restaurant", [
+      "restaurant",
+      "menu",
+      "reservation",
+      "food",
+      "table"
+    ]);
+
+    addScore("RealEstate", [
+      "real estate",
+      "property",
+      "properties",
+      "rent",
+      "rental",
+      "buying",
+      "selling",
+      "homes",
+      "agents",
+      "valuation",
+      "villa",
+      "apartment"
+    ]);
+
+    addScore("Technology", [
+      "saas",
+      "software",
+      "workflow",
+      "automation",
+      "api",
+      "apis",
+      "integration",
+      "analytics",
+      "dashboard",
+      "cloud",
+      "platform",
+      "ai",
+      "machine learning",
+      "cybersecurity",
+      "cyber security",
+      "penetration testing",
+      "soc",
+      "siem"
+    ]);
+
+    addScore("Education", [
+      "school",
+      "academy",
+      "course",
+      "training",
+      "student",
+      "learning",
+      "certification",
+      "university"
+    ]);
+
+    addScore("Agency", [
+      "agency",
+      "marketing",
+      "branding",
+      "campaign",
+      "advertising"
+    ]);
+
+    addScore("Consulting", [
+      "consulting",
+      "consultant",
+      "strategy",
+      "business development"
+    ]);
+
+    addScore("Portfolio", [
+      "portfolio",
+      "designer",
+      "photographer",
+      "creative",
+      "gallery",
+      "projects"
+    ]);
+
+    const [ruleCategory, ruleScore] =
+      Object.entries(scores).sort(
+        (a, b) => b[1] - a[1]
+      )[0];
+
+    const mlCategory =
+      this.normalizeSupportedCategory(
+        prediction.category
+      );
+
+    const mlConfidence =
+      prediction.confidence;
+
+    if (
+      prediction.source === "fallback" ||
+      mlConfidence < MIN_ML_CONFIDENCE
+    ) {
+      const fallbackCategory =
+        ruleScore >= 1
+          ? this.normalizeSupportedCategory(ruleCategory)
+          : this.fallbackCategory(prompt);
+
+      return {
+        category: fallbackCategory,
+        mlCategory,
+        mlConfidence,
+        usedFallback: true,
+        reason:
+          prediction.source === "fallback"
+            ? "ML_SERVICE_FALLBACK"
+            : "LOW_ML_CONFIDENCE"
       };
     }
 
-    const result = await response.json();
+    if (
+      ruleScore >= 2 &&
+      ruleCategory !== mlCategory &&
+      mlConfidence < 0.75
+    ) {
+      return {
+        category: this.normalizeSupportedCategory(ruleCategory),
+        mlCategory,
+        mlConfidence,
+        usedFallback: true,
+        reason: "RULE_OVERRIDE"
+      };
+    }
+
+    return {
+      category: mlCategory,
+      mlCategory,
+      mlConfidence,
+      usedFallback: false,
+      reason: "ML_CONFIDENT"
+    };
+  }
+
+  static async generatePage(
+    siteId: number,
+    userId: number,
+    prompt: string,
+    title: string | undefined,
+    siteRole: string
+  ) {
+    if (!prompt?.trim()) {
+      throw new Error("PROMPT_REQUIRED");
+    }
+
+    const prediction =
+      await this.predictCategory(prompt);
+
+    const categoryDecision =
+      this.resolveFinalCategory(
+        prediction,
+        prompt
+      );
 
     const category =
-      typeof result.category === "string" &&
-      result.category.trim()
-        ? result.category
-        : this.fallbackCategory(prompt);
+      categoryDecision.category;
 
-    const confidence =
-      typeof result.confidence === "number"
-        ? result.confidence
-        : 0;
+    console.log("AI_CATEGORY_DECISION", {
+      mlCategory: categoryDecision.mlCategory,
+      mlConfidence: categoryDecision.mlConfidence,
+      finalCategory: category,
+      usedFallback: categoryDecision.usedFallback,
+      reason: categoryDecision.reason
+    });
 
-    return {
-      category,
-      confidence,
-      source: "ml"
-    };
-  } catch (error) {
-    console.error("ML service error:", error);
+    const businessProfile =
+      buildBusinessProfile(
+        category,
+        prompt
+      );
 
-    return {
-      category: this.fallbackCategory(prompt),
-      confidence: 0,
-      source: "fallback",
-      error:
-        error instanceof Error && error.name === "AbortError"
-          ? "ML_SERVICE_TIMEOUT"
-          : "ML_SERVICE_UNAVAILABLE"
-    };
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-private static normalizeSupportedCategory(
-  category: string
-): string {
-  if (CATEGORY_TEMPLATES[category]) {
-    return category;
-  }
+    const siteContext =
+      buildSiteContext(
+        category,
+        prompt,
+        businessProfile
+      );
 
-  if (category === "Cybersecurity") {
-    return CATEGORY_TEMPLATES["Cybersecurity"]
-      ? "Cybersecurity"
-      : "Technology";
-  }
+    const sitePlan = siteContext.pages.map((page) => ({
+      type: page,
+      title:
+        page === "home"
+          ? "Home"
+          : page.charAt(0).toUpperCase() + page.slice(1),
+      slug: page
+    }));
 
-  return "Corporate";
-}
+    const aiContent =
+      await generateAiContent(
+        siteContext,
+        prompt
+      );
 
-private static resolveFinalCategory(
-  prediction: MlPrediction,
-  prompt: string
-): CategoryDecision {
-  const text = prompt.toLowerCase();
+    const aiTelemetry =
+      (aiContent as any)?.aiTelemetry || null;
 
-  const scores: Record<string, number> = {
-    Technology: 0,
-    RealEstate: 0,
-    Education: 0,
-    Medical: 0,
-    Finance: 0,
-    Ecommerce: 0,
-    Restaurant: 0,
-    Agency: 0,
-    Consulting: 0,
-    Portfolio: 0,
-    Corporate: 0
-  };
+    const template =
+      CATEGORY_TEMPLATES[category] ??
+      CATEGORY_TEMPLATES["Corporate"];
 
-  const addScore = (
-    category: string,
-    keywords: string[],
-    points = 1
-  ) => {
-    for (const keyword of keywords) {
-      if (text.includes(keyword)) {
-        scores[category] += points;
+    const heroSection =
+      template.sections.find(
+        (section) => section.kind === "hero"
+      );
+
+    let heroImageUrl: string | undefined;
+
+    if (heroSection?.image) {
+      try {
+        const media =
+          await MediaService.uploadImageFromUrl(
+            heroSection.image,
+            String(siteId),
+            String(userId),
+            `${category} hero image`
+          );
+
+        heroImageUrl = media.url;
+      } catch (error) {
+        console.error("AI_IMAGE_UPLOAD_FAILED", error);
       }
     }
-  };
 
-  addScore("Finance", [
-    "fintech",
-    "finance",
-    "financial",
-    "bank",
-    "banking",
-    "investment",
-    "investor",
-    "investors",
-    "wealth",
-    "trading",
-    "loan",
-    "portfolio",
-    "robo-advisor",
-    "advisory"
-  ]);
+    const selectedPages =
+      sitePlan.slice(0, 6);
 
-  addScore("Medical", [
-    "clinic",
-    "doctor",
-    "medical",
-    "healthcare",
-    "hospital",
-    "appointment",
-    "telemedicine"
-  ]);
+    const plannedPages = selectedPages.map((page) => ({
+      ...page,
+      finalSlug:
+        page.type === "home"
+          ? "home"
+          : page.slug
+    }));
+    
+    const navigationItems = plannedPages.map((page) => ({
+      label: page.title,
+      href:
+        page.type === "home"
+          ? `/site/${siteId}`
+          : `/site/${siteId}/${page.finalSlug}`
+    }));
 
-  addScore("Ecommerce", [
-    "shop",
-    "store",
-    "ecommerce",
-    "product",
-    "cart",
-    "checkout"
-  ]);
-
-  addScore("Restaurant", [
-    "restaurant",
-    "menu",
-    "reservation",
-    "food",
-    "table"
-  ]);
-
-  addScore("RealEstate", [
-    "real estate",
-    "property",
-    "properties",
-    "rent",
-    "rental",
-    "buying",
-    "selling",
-    "homes",
-    "agents",
-    "valuation",
-    "villa",
-    "apartment"
-  ]);
-
-  addScore("Technology", [
-    "saas",
-    "software",
-    "workflow",
-    "automation",
-    "api",
-    "apis",
-    "integration",
-    "analytics",
-    "dashboard",
-    "cloud",
-    "platform",
-    "ai",
-    "machine learning",
-    "cybersecurity",
-    "cyber security",
-    "penetration testing",
-    "soc",
-    "siem"
-  ]);
-
-  addScore("Education", [
-    "school",
-    "academy",
-    "course",
-    "training",
-    "student",
-    "learning",
-    "certification",
-    "university"
-  ]);
-
-  addScore("Agency", [
-    "agency",
-    "marketing",
-    "branding",
-    "campaign",
-    "advertising"
-  ]);
-
-  addScore("Consulting", [
-    "consulting",
-    "consultant",
-    "strategy",
-    "business development"
-  ]);
-
-  addScore("Portfolio", [
-    "portfolio",
-    "designer",
-    "photographer",
-    "creative",
-    "gallery",
-    "projects"
-  ]);
-
-  const [ruleCategory, ruleScore] =
-    Object.entries(scores).sort(
-      (a, b) => b[1] - a[1]
-    )[0];
-
-  const mlCategory =
-    this.normalizeSupportedCategory(
-      prediction.category
-    );
-
-  const mlConfidence =
-    prediction.confidence;
-
-  if (
-    prediction.source === "fallback" ||
-    mlConfidence < MIN_ML_CONFIDENCE
-  ) {
-    const fallbackCategory =
-      ruleScore >= 1
-        ? this.normalizeSupportedCategory(ruleCategory)
-        : this.fallbackCategory(prompt);
-
-    return {
-      category: fallbackCategory,
-      mlCategory,
-      mlConfidence,
-      usedFallback: true,
-      reason:
-        prediction.source === "fallback"
-          ? "ML_SERVICE_FALLBACK"
-          : "LOW_ML_CONFIDENCE"
+    const generated = {
+      title: aiContent.title,
+      blocks: generateHomeBlocks(
+        category,
+        aiContent,
+        heroImageUrl,
+        navigationItems
+      )
     };
-  }
 
-  if (
-    ruleScore >= 2 &&
-    ruleCategory !== mlCategory &&
-    mlConfidence < 0.75
-  ) {
-    return {
-      category: this.normalizeSupportedCategory(ruleCategory),
-      mlCategory,
-      mlConfidence,
-      usedFallback: true,
-      reason: "RULE_OVERRIDE"
-    };
-  }
+    const createdPages: any[] = [];
+    let homepagePageId: number | undefined;
 
-  return {
-    category: mlCategory,
-    mlCategory,
-    mlConfidence,
-    usedFallback: false,
-    reason: "ML_CONFIDENT"
-  };
-};
+    for (const planPage of plannedPages) {
+      const pageTitle =
+        planPage.type === "home"
+          ? `${generated.title || category} Home`
+          : `${generated.title || category} ${planPage.title}`;
 
+      const pageSlug = planPage.finalSlug;
+      let pageBlocks = generatePageBlocksByType(
+        planPage.type,
+        category,
+        aiContent,
+        heroImageUrl,
+        navigationItems,
+        planPage.title,
+        generated.blocks
+      );
 
- static async generatePage(
-  siteId: number,
-  userId: number,
-  prompt: string,
-  title: string | undefined,
-  siteRole: string
-) {
-  if (!prompt?.trim()) {
-    throw new Error("PROMPT_REQUIRED");
-  }
-
-const prediction =
-  await this.predictCategory(prompt);
-
-const categoryDecision =
-  this.resolveFinalCategory(
-    prediction,
-    prompt
-  );
-
-const category =
-  categoryDecision.category;
-
-console.log("AI_CATEGORY_DECISION", {
-  mlCategory: categoryDecision.mlCategory,
-  mlConfidence: categoryDecision.mlConfidence,
-  finalCategory: category,
-  usedFallback: categoryDecision.usedFallback,
-  reason: categoryDecision.reason
-});
-
-const businessProfile =
-  buildBusinessProfile(
-    category,
-    prompt
-  );
-
-const siteContext =
-  buildSiteContext(
-    category,
-    prompt,
-    businessProfile
-  );
-
-const sitePlan = siteContext.pages.map((page) => ({
-  type: page,
-  title:
-    page === "home"
-      ? "Home"
-      : page.charAt(0).toUpperCase() + page.slice(1),
-  slug: page
-}));
-
-const aiContent =
-  await generateAiContent(
-    siteContext,
-    prompt
-  );
-
-const aiTelemetry =
-  (aiContent as any)?.aiTelemetry || null;
-
-  const template =
-    CATEGORY_TEMPLATES[category] ??
-    CATEGORY_TEMPLATES["Corporate"];
-
-  const heroSection =
-    template.sections.find(
-      (section) => section.kind === "hero"
-    );
-
-  let heroImageUrl: string | undefined;
-
-  if (heroSection?.image) {
-    try {
-      const media =
-        await MediaService.uploadImageFromUrl(
-          heroSection.image,
-          String(siteId),
-          String(userId),
-          `${category} hero image`
+      const validationBeforeRepair =
+        validateAiPageBlocks(
+          planPage.type,
+          pageBlocks,
+          prompt
         );
 
-      heroImageUrl = media.url;
-    } catch (error) {
-      console.error("AI_IMAGE_UPLOAD_FAILED", error);
+      pageBlocks =
+        repairAiPageBlocks(
+          planPage.type,
+          pageBlocks,
+          validationBeforeRepair.issues
+        );
+
+      const validation =
+        validateAiPageBlocks(
+          planPage.type,
+          pageBlocks,
+          prompt
+        );
+
+      const shouldPublish = validation.valid;
+
+      if (!validation.valid) {
+        console.warn("AI_PAGE_VALIDATION_FAILED", {
+          pageType: planPage.type,
+          slug: pageSlug,
+          score: validation.score,
+          issues: validation.issues,
+          validationErrors: validation.issues
+        });
+      }
+
+      const existingPage =
+        await Page.findOne({
+          where: {
+            siteId,
+            slug: pageSlug
+          }
+        });
+
+      if (existingPage) {
+        console.warn("AI_PAGE_ALREADY_EXISTS_SKIPPING", {
+          siteId,
+          slug: pageSlug,
+          pageId: existingPage.id
+        });
+
+        if (planPage.type === "home") {
+          homepagePageId = existingPage.id;
+        }
+
+        continue;
+      }
+
+      const result = await PageService.createPage(
+        siteId,
+        userId,
+        {
+          title: pageTitle,
+          slug: pageSlug,
+          blocks: pageBlocks,
+          isHomepage: planPage.type === "home",
+          status: "draft"
+        }
+      );
+
+      if (planPage.type === "home") {
+        homepagePageId = result.data.id;
+      }
+
+      if (shouldPublish) {
+        const publishedResult = await PageService.publishPage(
+          siteId,
+          result.data.id,
+          siteRole,
+          userId
+        );
+        createdPages.push(publishedResult.data);
+      } else {
+        console.warn("AI_PAGE_SAVED_AS_DRAFT", {
+          pageId: result.data.id,
+          slug: pageSlug,
+          issues: validation.issues
+        });
+        createdPages.push(result.data);
+      }
+
+      // ✅ تسجيل النشاط
+      await ActivityLog.create({
+        userId,
+        siteId,
+        action: "ai_page_generated",
+        entityType: "page",
+        entityId: result.data.id,
+        details: {
+          category,
+          prompt,
+          pageTitle,
+          pageType: planPage.type,
+          slug: pageSlug,
+          mlCategory: categoryDecision.mlCategory,
+          mlConfidence: categoryDecision.mlConfidence,
+          usedFallback: categoryDecision.usedFallback,
+          categoryDecisionReason: categoryDecision.reason,
+          validationScore: validation.score,
+          validationValid: validation.valid,
+          validationIssues: validation.issues,
+          aiTelemetry,
+        }
+      });
+
+      // ✅ SEO
+      const seo = generateSeo(
+        category,
+        pageTitle,
+        heroImageUrl
+      );
+
+      await Seo.create({
+        pageId: result.data.id,
+        siteId,
+        metaTitle: seo.metaTitle,
+        metaDescription: seo.metaDescription,
+        metaKeywords: seo.metaKeywords,
+        ogTitle: seo.ogTitle,
+        ogDescription: seo.ogDescription,
+        ogImage: seo.ogImage,
+        twitterTitle: seo.twitterTitle,
+        twitterDescription: seo.twitterDescription,
+        twitterImage: seo.twitterImage
+      });
     }
-  }
 
-const selectedPages =
-  sitePlan.slice(0, 6);
+    const publishedHomepage = await Page.findOne({
+      where: {
+        siteId,
+        isHomepage: true,
+        status: "published"
+      }
+    });
 
-const plannedPages = selectedPages.map((page) => ({
-  ...page,
-  finalSlug:
-    page.type === "home"
-      ? "home"
-      : page.slug
-}));
-const navigationItems = plannedPages.map((page) => ({
-  label: page.title,
-  href:
-    page.type === "home"
-      ? `/site/${siteId}`
-      : `/site/${siteId}/${page.finalSlug}`
-}));
+    const finalHomepage =
+      publishedHomepage ||
+      createdPages.find(
+      (page) => page.isHomepage
+      ) ||
+      createdPages[0];
 
-const generated = {
-  title: aiContent.title,
-  blocks: generateHomeBlocks(
-    category,
-    aiContent,
-    heroImageUrl,
-    navigationItems
-  )
-};
+     if (!finalHomepage) {
+     throw new Error("AI_GENERATION_EMPTY");
+     }
 
-const createdPages: any[] = [];
-let homepagePageId: number | undefined;
+    if (
+      homepagePageId &&
+      publishedHomepage.id !== homepagePageId
+    ) {
+      console.warn("PUBLISHED_HOMEPAGE_DIFFERENT", {
+        expectedId: homepagePageId,
+        publishedId: publishedHomepage.id
+      });
+    }
 
-for (const planPage of plannedPages) {
-const pageTitle =
-  planPage.type === "home"
-    ? `${generated.title || category} Home`
-    : `${generated.title || category} ${planPage.title}`;
-
-  const pageSlug = planPage.finalSlug;
-  let pageBlocks = generatePageBlocksByType(
-  planPage.type,
-  category,
-  aiContent,
-  heroImageUrl,
-  navigationItems,
-  planPage.title,
-  generated.blocks
-);
-
-const validationBeforeRepair =
-  validateAiPageBlocks(
-    planPage.type,
-    pageBlocks,
-    prompt
-  );
-
-pageBlocks =
-  repairAiPageBlocks(
-    planPage.type,
-    pageBlocks,
-    validationBeforeRepair.issues
-  );
-
-const validation =
-  validateAiPageBlocks(
-    planPage.type,
-    pageBlocks,
-    prompt
-  );
-
-if (!validation.valid) {
-  console.warn("AI_PAGE_VALIDATION_FAILED", {
-    pageType: planPage.type,
-    slug: pageSlug,
-    score: validation.score,
-    issues: validation.issues
-  });
-}
-
-const existingPage =
-  await Page.findOne({
-    where: {
+    await AiGeneration.create({
       siteId,
-      slug: pageSlug
+      userId,
+      prompt,
+      category,
+      pagesGenerated: createdPages.length,
+      status: "success"
+    });
+
+    console.log("AI_HISTORY_SAVED", {
+      siteId,
+      userId,
+      category,
+      pagesGenerated: createdPages.length
+    });
+
+    const firstCreatedPage = createdPages[0] || publishedHomepage;
+
+    if (firstCreatedPage) {
+      (firstCreatedPage as any).aiCategory =
+        category;
+
+      (firstCreatedPage as any).aiTelemetry =
+        aiTelemetry;
+
+      (firstCreatedPage as any).aiGenerationMeta = {
+        mlCategory:
+          categoryDecision.mlCategory,
+        mlConfidence:
+          categoryDecision.mlConfidence,
+        usedCategoryFallback:
+          categoryDecision.usedFallback,
+        categoryDecisionReason:
+          categoryDecision.reason,
+        pagesGenerated:
+          createdPages.length
+      };
     }
-  });
 
-if (existingPage) {
-  console.warn("AI_PAGE_ALREADY_EXISTS_SKIPPING", {
-    siteId,
-    slug: pageSlug,
-    pageId: existingPage.id
-  });
-
-  if (planPage.type === "home") {
-    homepagePageId = existingPage.id;
+    return firstCreatedPage;
   }
-
-  continue;
 }
-  const result = await PageService.createPage(
-    siteId,
-    userId,
-    {
-      title: pageTitle,
-      slug: pageSlug,
-      blocks: pageBlocks,
-      isHomepage: planPage.type === "home"
-    }
-  );
-
-  if (planPage.type === "home") {
-    homepagePageId = result.data.id;
-  }
-
-  const publishedResult = await PageService.publishPage(
-    siteId,
-    result.data.id,
-    siteRole,
-    userId
-  );
-
-  createdPages.push(publishedResult.data);
-
-  await ActivityLog.create({
-    userId,
-    siteId,
-    action: "ai_page_generated",
-    entityType: "page",
-    entityId: result.data.id,
-  details: {
-  category,
-  prompt,
-  pageTitle,
-  pageType: planPage.type,
-  slug: pageSlug,
-  mlCategory: categoryDecision.mlCategory,
-  mlConfidence: categoryDecision.mlConfidence,
-  usedFallback: categoryDecision.usedFallback,
-  categoryDecisionReason: categoryDecision.reason,
-  validationScore: validation.score,
-  validationValid: validation.valid,
-  validationIssues: validation.issues,
-  aiTelemetry,
-}
-  });
-
-  const seo = generateSeo(
-    category,
-    pageTitle,
-    heroImageUrl
-  );
-
-  await Seo.create({
-    pageId: result.data.id,
-    siteId,
-    metaTitle: seo.metaTitle,
-    metaDescription: seo.metaDescription,
-    metaKeywords: seo.metaKeywords,
-    ogTitle: seo.ogTitle,
-    ogDescription: seo.ogDescription,
-    ogImage: seo.ogImage,
-    twitterTitle: seo.twitterTitle,
-    twitterDescription: seo.twitterDescription,
-    twitterImage: seo.twitterImage
-  });
-}
-
-const publishedHomepage = await Page.findOne({
-  where: {
-    siteId,
-    isHomepage: true,
-    status: "published"
-  }
-});
-
-if (!publishedHomepage) {
-  throw new Error("PUBLISHED_HOMEPAGE_NOT_FOUND");
-}
-
-if (
-  homepagePageId &&
-  publishedHomepage.id !== homepagePageId
-) {
-  console.warn("PUBLISHED_HOMEPAGE_DIFFERENT", {
-    expectedId: homepagePageId,
-    publishedId: publishedHomepage.id
-  });
-}
-
-await AiGeneration.create({
-  siteId,
-  userId,
-  prompt,
-  category,
-  pagesGenerated: createdPages.length,
-  status: "success"
-});
-
-console.log("AI_HISTORY_SAVED", {
-  siteId,
-  userId,
-  category,
-  pagesGenerated: createdPages.length
-});
-
-const firstCreatedPage = createdPages[0] || publishedHomepage;
-
-if (firstCreatedPage) {
-  (firstCreatedPage as any).aiCategory =
-    category;
-
-  (firstCreatedPage as any).aiTelemetry =
-    aiTelemetry;
-
-  (firstCreatedPage as any).aiGenerationMeta = {
-    mlCategory:
-      categoryDecision.mlCategory,
-    mlConfidence:
-      categoryDecision.mlConfidence,
-    usedCategoryFallback:
-      categoryDecision.usedFallback,
-    categoryDecisionReason:
-      categoryDecision.reason,
-    pagesGenerated:
-      createdPages.length
-  };
-}
-
-return firstCreatedPage;
-}};
-
 
 export class AiHistoryService {
   static async getHistory(

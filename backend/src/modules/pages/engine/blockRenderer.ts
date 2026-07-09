@@ -40,6 +40,70 @@ const renderHeroBlock = (data: any) => `
     ${data.props?.subtext ? `<p>${escapeHTML(data.props.subtext)}</p>` : ""}
   </section>`;
 
+const renderCTABlock = (data: any) => `
+  <section class="cta" style="padding:50px; text-align:center; background:#00C49A; color:white; border-radius:10px; margin:20px 0;">
+    <h3 style="font-size:2rem;margin:0 0 16px 0;">
+      ${escapeHTML(data.props?.title || data.title || "Ready to start?")}
+    </h3>
+    ${data.props?.subtext ? `<p style="font-size:1.1rem;opacity:0.9;">${escapeHTML(data.props.subtext)}</p>` : ''}
+    ${data.props?.buttonText ? `
+      <a href="${safeURL(data.props?.buttonUrl || '#')}" style="
+        display:inline-block;
+        padding:12px 32px;
+        background:white;
+        color:#00C49A;
+        border-radius:50px;
+        text-decoration:none;
+        font-weight:600;
+        margin-top:16px;
+      ">
+        ${escapeHTML(data.props.buttonText)}
+      </a>
+    ` : ''}
+  </section>
+`;
+
+const renderFeaturesBlock = (data: any) => {
+  const features = data.props?.features || data.features || [];
+  
+  return `
+    <section class="features" style="padding:50px 0; text-align:center;">
+      <h3 style="font-size:2rem;margin:0 0 40px 0;">
+        ${escapeHTML(data.props?.title || data.title || "Our Features")}
+      </h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:24px;">
+        ${features.map((feature: any, i: number) => `
+          <div style="padding:20px;border:1px solid #e0e0e0;border-radius:12px;">
+            ${feature.icon ? `<div style="font-size:2rem;">${feature.icon}</div>` : ''}
+            <h4 style="margin:12px 0 8px 0;">${escapeHTML(feature.title || `Feature ${i+1}`)}</h4>
+            ${feature.description ? `<p style="color:#666;font-size:0.95rem;">${escapeHTML(feature.description)}</p>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </section>
+  `;
+};
+
+const renderFAQBlock = (data: any) => {
+  const items = data.props?.items || data.items || [];
+  
+  return `
+    <section class="faq" style="padding:50px 0; text-align:center;">
+      <h3 style="font-size:2rem;margin:0 0 40px 0;">
+        ${escapeHTML(data.props?.title || data.title || "Frequently Asked Questions")}
+      </h3>
+      <div style="max-width:800px;margin:0 auto;text-align:left;">
+        ${items.map((item: any, i: number) => `
+          <div style="padding:16px 20px;border-bottom:1px solid #e0e0e0;">
+            <h4 style="margin:0 0 8px 0;font-weight:600;">${escapeHTML(item.question || `Question ${i+1}`)}</h4>
+            <p style="margin:0;color:#666;">${escapeHTML(item.answer || 'Answer here...')}</p>
+          </div>
+        `).join('')}
+      </div>
+    </section>
+  `;
+};
+
 const renderButtonBlock = (data: any) => `
   <div class="button-wrapper" style="text-align:center; margin:20px 0;">
     <a href="${safeURL(data.props?.url || data.url)}" class="btn-primary" 
@@ -103,8 +167,6 @@ const renderFlexBlock = (
       ${childrenHTML}
     </div>`;
 };
-
-  
 
 const renderFlexItemBlock = (
   data: any,
@@ -189,6 +251,101 @@ const renderTextBlock = (data: any) => `
 
 const renderImageBlock = (data: any) => `<img src="${data.props?.src || ''}" alt="Image" style="width:100%; max-width:100%;" />`;
 
+const renderLinkBlock = (data: any) => `
+  <a href="${safeURL(data.props?.href || data.props?.url)}">
+    ${escapeHTML(data.props?.label || data.props?.text || "Link")}
+  </a>
+`;
+
+const renderInputBlock = (data: any) => `
+  <input
+    type="${escapeHTML(data.props?.type || "text")}"
+    name="${escapeHTML(data.props?.name || "")}"
+    placeholder="${escapeHTML(data.props?.placeholder || "")}"
+    style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:12px;"
+  />
+`;
+
+const renderTextareaBlock = (data: any) => `
+  <textarea
+    name="${escapeHTML(data.props?.name || "")}"
+    placeholder="${escapeHTML(data.props?.placeholder || "")}"
+    style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:12px;min-height:120px;"
+  ></textarea>
+`;
+
+const renderSelectBlock = (data: any) => `
+  <select style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:12px;">
+    <option>${escapeHTML(data.props?.placeholder || "Select option")}</option>
+  </select>
+`;
+
+/**
+ * =========================================================
+ * COLLECTION LIST RENDERER (CMS)
+ * =========================================================
+ */
+
+const renderCollectionListBlock = (data: any) => {
+  const items = data.props?.items || data.items || [];
+  const titleField = data.props?.titleField || 'title';
+  const descriptionField = data.props?.descriptionField || 'description';
+  const columns = data.props?.columns || 3;
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return `
+      <div class="collection-list-empty" style="padding:40px;text-align:center;color:#999;">
+        No items to display
+      </div>
+    `;
+  }
+
+  return `
+    <div class="collection-list" style="
+      display:grid;
+      grid-template-columns:repeat(${columns}, 1fr);
+      gap:24px;
+      padding:20px 0;
+      max-width:1200px;
+      margin:0 auto;
+    ">
+      ${items.map((item: any) => {
+        const title = item[titleField] || item.title || 'Untitled';
+        const description = item[descriptionField] || item.description || '';
+        
+        return `
+          <div class="collection-item" style="
+            padding:20px;
+            border:1px solid #e0e0e0;
+            border-radius:12px;
+            background:#ffffff;
+            transition:transform 0.2s;
+          ">
+            <h3 style="
+              margin:0 0 8px 0;
+              font-size:1.2rem;
+              font-weight:600;
+              color:#0D0D0D;
+            ">
+              ${escapeHTML(title)}
+            </h3>
+            ${description ? `
+              <p style="
+                margin:0;
+                color:#666;
+                font-size:0.95rem;
+                line-height:1.5;
+              ">
+                ${escapeHTML(description)}
+              </p>
+            ` : ''}
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+};
+
 /**
  * =========================================================
  * BLOCK REGISTRY
@@ -197,6 +354,9 @@ const renderImageBlock = (data: any) => `<img src="${data.props?.src || ''}" alt
 
 const BLOCK_RENDERERS: Record<string, (data: any, childrenHTML: string) => string> = {
   hero: (data, children) => renderHeroBlock(data),
+  cta: (data, children) => renderCTABlock(data),
+  features: (data, children) => renderFeaturesBlock(data),
+  faq: (data, children) => renderFAQBlock(data),
   button: (data, children) => renderButtonBlock(data),
   section: renderSectionBlock,
   flex: renderFlexBlock,
@@ -212,6 +372,7 @@ const BLOCK_RENDERERS: Record<string, (data: any, childrenHTML: string) => strin
   select: (data) => renderSelectBlock(data),
   navbar: renderFlexBlock,
   footer: renderFooterBlock,
+  collectionList: (data, children) => renderCollectionListBlock(data),
 };
 
 /**
@@ -365,31 +526,3 @@ export const renderFullPage = (
 </body>
 </html>`;
 };
-const renderLinkBlock = (data: any) => `
-  <a href="${safeURL(data.props?.href || data.props?.url)}">
-    ${escapeHTML(data.props?.label || data.props?.text || "Link")}
-  </a>
-`;
-
-const renderInputBlock = (data: any) => `
-  <input
-    type="${escapeHTML(data.props?.type || "text")}"
-    name="${escapeHTML(data.props?.name || "")}"
-    placeholder="${escapeHTML(data.props?.placeholder || "")}"
-    style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:12px;"
-  />
-`;
-
-const renderTextareaBlock = (data: any) => `
-  <textarea
-    name="${escapeHTML(data.props?.name || "")}"
-    placeholder="${escapeHTML(data.props?.placeholder || "")}"
-    style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:12px;min-height:120px;"
-  ></textarea>
-`;
-
-const renderSelectBlock = (data: any) => `
-  <select style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:12px;">
-    <option>${escapeHTML(data.props?.placeholder || "Select option")}</option>
-  </select>
-`;
