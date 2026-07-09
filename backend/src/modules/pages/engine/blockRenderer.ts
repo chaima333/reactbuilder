@@ -398,34 +398,34 @@ const BLOCK_RENDERERS: Record<string, (data: any, childrenHTML: string, siteId?:
     return await renderCollectionListBlock(data, siteId || 0);
   },
 };
-
 /**
  * =========================================================
  * RECURSIVE ENGINE
  * =========================================================
  */
 
-export const renderBlocks = (blocks: any[] = [], siteId?: number): string => {
+export const renderBlocks = async (blocks: any[] = [], siteId?: number): Promise<string> => {
   if (!Array.isArray(blocks)) return "";
 
-  return blocks
-    .map((block) => {
-      const renderer = BLOCK_RENDERERS[block.type];
-      if (!renderer) {
-        console.warn(`⚠ Unknown block type: ${block.type}`);
-        return "";
-      }
+  let html = "";
 
-      const childrenHTML = (block.children && block.children.length > 0) 
-        ? renderBlocks(block.children, siteId) 
-        : "";
+  for (const block of blocks) {
+    const renderer = BLOCK_RENDERERS[block.type];
+    if (!renderer) {
+      console.warn(`⚠ Unknown block type: ${block.type}`);
+      continue;
+    }
 
-      // ✅ Appel du renderer avec siteId
-      return renderer(block.data || {}, childrenHTML, siteId);
-    })
-    .join("");
+    const childrenHTML = (block.children && block.children.length > 0) 
+      ? await renderBlocks(block.children, siteId) 
+      : "";
+
+    const result = await renderer(block.data || {}, childrenHTML, siteId);
+    html += result || "";
+  }
+
+  return html;
 };
-
 /**
  * =========================================================
  * FULL PAGE RENDERER
