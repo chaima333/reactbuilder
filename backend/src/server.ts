@@ -1,3 +1,5 @@
+// backend/src/server.ts
+
 import * as dotenv from "dotenv";
 dotenv.config();
 
@@ -53,6 +55,10 @@ import { rejectOversizedChatbotContentLength } from "./modules/chatbot/chatbot.p
 import platformAssistantRoutes from "./modules/platformAssistant/services/platformAssistant.routes";
 import cmsRoutes from "./modules/cms/cms.routes";
 import cmsPublicRoutes from "./modules/cms/cms.public.routes";
+
+// ✅ استورد getPublicPageById
+import { getPublicPageById } from "./modules/pages/controllers/page.controller";
+
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
 const authStack = [authenticateJWT, maintenanceMode];
@@ -81,6 +87,7 @@ app.use(
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
 /* ========================
    HEALTH CHECK
 ======================== */
@@ -92,35 +99,37 @@ app.get("/api/health", (_req: Request, res: Response) => {
    PUBLIC ROUTES
 ======================== */
 app.use("/p", publicRoutes);
-app.use("/p/public",publicSiteRoutes);
+app.use("/p/public", publicSiteRoutes);
+
 /* ========================
    AUTH
 ======================== */
 app.use("/api/auth", authRoutes);
 app.use("/api/platform", platformRoutes);
-app.use( "/api/public/sites/:siteId/partner-applications", publicPartnerApplicationRoutes);
-app.use("/api/public/sites/:siteId/cms",cmsPublicRoutes);
+app.use("/api/public/sites/:siteId/partner-applications", publicPartnerApplicationRoutes);
+app.use("/api/public/sites/:siteId/cms", cmsPublicRoutes);
 
 /* ========================
-   GLOBAL (IMPORTANT FIX )
+   GLOBAL (IMPORTANT FIX)
 ======================== */
-app.use("/api/invitations",authStack,invitationRoutes);
+app.use("/api/invitations", authStack, invitationRoutes);
 app.use("/api/sites", authStack, siteRoutes);
 
 /* ========================
    TENANT ROUTES (SaaS CORE)
 ======================== */
-const tenantStack = [authenticateJWT, maintenanceMode, tenantResolver,requireSiteAccess];
-app.use("/api/sites/:siteId/dashboard",tenantStack , dashboardRoutes);
+const tenantStack = [authenticateJWT, maintenanceMode, tenantResolver, requireSiteAccess];
+app.use("/api/sites/:siteId/dashboard", tenantStack, dashboardRoutes);
 app.use("/api/sites/:siteId/pages", tenantStack, pageRoutes);
 app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
-app.use("/api/sites/:siteId/partner-applications", tenantStack,partnerApplicationRoutes);
-app.use("/api/sites/:siteId/import",tenantStack,importRoutes);
+app.use("/api/sites/:siteId/partner-applications", tenantStack, partnerApplicationRoutes);
+app.use("/api/sites/:siteId/import", tenantStack, importRoutes);
 app.use("/api/sites/:siteId/cms", tenantStack, cmsRoutes);
 app.use("/api/figma-plugin", figmaPluginRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/sites/:siteId/ia", tenantStack, iaRoutes);
 app.use("/api/ai/assistant", authStack, assistantRoutes);
+
 /* ========================
    ADMIN / USERS
 ======================== */
@@ -128,14 +137,23 @@ app.use("/api/users", authStack, userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/export", exportRoutes);
 
-
 /* ========================
    COMMANDS / PLUGINS
 ======================== */
-
 registerCommands();
 app.use("/api/sites/:siteId/commands", tenantStack, commandRoutes);
-app.use( "/api/sites/:siteId/plugins", tenantStack,pluginMarketplaceRoutes);
+app.use("/api/sites/:siteId/plugins", tenantStack, pluginMarketplaceRoutes);
+
+/* ========================
+   PUBLIC PAGE ROUTES (NO AUTH) ✅ NEW
+======================== */
+
+// ✅ Route للـ Public Page by ID (بدون Auth)
+app.get(
+  "/api/sites/:siteId/pages/:pageId/public",
+  getPublicPageById
+);
+
 /* ========================
    404 HANDLER
 ======================== */
