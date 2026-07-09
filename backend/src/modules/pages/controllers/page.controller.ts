@@ -1,9 +1,9 @@
-import { Response } from "express";
 import { AuthRequest } from "../../../shared/auth.util";
 import { PageService } from "../services/page.service";
 import { PageVersionService } from "../services/pageVersion.service";
 import { PageMapper } from "../mappers/page.mapper";
 import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
+import { Request, Response } from "express";
 
 
 export const handleEventDispatch = async (
@@ -323,5 +323,71 @@ export const updatePageSeo = async (
       success: false,
       message: "Unable to update page SEO"
     });
+  }
+};
+
+// backend/src/modules/pages/controllers/page.controller.ts
+
+export const getPublicPageById = async (req: Request, res: Response) => {
+  try {
+    const siteId = Number(req.params.siteId);
+    const pageId = Number(req.params.pageId);
+
+    if (!siteId || !pageId) {
+      return res.status(400).json({
+        success: false,
+        message: "siteId and pageId are required"
+      });
+    }
+
+    const { Page, Seo, Site } = require("../../../models");
+    
+    const page = await Page.findOne({
+      where: {
+        id: pageId,
+        siteId,
+        status: "published"
+      },
+      include: [{ model: Seo, required: false }]
+    });
+
+    if (!page) {
+      return res.status(404).json({
+        success: false,
+        message: "Page not found"
+      });
+    }
+
+    const site = await Site.findByPk(siteId);
+    const globalLayout = site?.get("globalLayout") || {};
+
+    const seoRecord = page.seo;
+    const pageData = {
+      ...page.toJSON(),
+      seo: seoRecord?.toJSON() || null,
+    };
+
+    const { renderBlocks, renderFullPage } = require("../engine/blockRenderer");
+    const { SEOBuilder } = require("../engine/seoBuilder");
+
+    const seo = SEOBuilder.build(pageData);
+    const host = req.get("host");
+    const protocol = req.protocol;
+    const canonical = `${protocol}://${host}/pages/${siteId}/${pageData.slug}`;
+
+    const pageBlocks = Array.isArray(pageData.blocks) ? pageData.blocks : [];
+    const allBlocks = [
+      ...(globalLayout.navbar ? [globalLayout.navbar] : []),
+      ...pageBlocks,
+      ...(globalLayout.footer ? [globalLayout.footer] : [])
+    ];
+
+    const blocksHTML = renderBlocks(allBlocks, siteId);
+    const html = renderFullPage(pageData, seo, canonical, blocksHTML);
+
+    return res.status(200).send(html);
+  } catch (error: any) {
+    console.error("[PUBLIC_PAGE_BY_ID_ERROR]:", error.message);
+    return res.status(500).send("<h1>500 - Internal Server Error</h1>");
   }
 };

@@ -12,7 +12,8 @@ import {
   restorePageVersion,
   getPageHistory,
   getPageById,
-  updatePageSeo
+  updatePageSeo,
+  getPublicPageById
 } from "../controllers/page.controller";
 
 import {
@@ -101,5 +102,16 @@ router.post(
   requirePermission(PERMISSIONS.PAGE_RESTORE),
   restorePageVersion
 );
+
+
+// =========================
+// PUBLIC (NO AUTH REQUIRED)
+// =========================
+
+router.get(
+  "/:pageId/public",
+  getPublicPageById
+);
+
 
 export default router;
