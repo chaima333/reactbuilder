@@ -110,6 +110,16 @@ app.use("/api/public/sites/:siteId/partner-applications", publicPartnerApplicati
 app.use("/api/public/sites/:siteId/cms", cmsPublicRoutes);
 
 /* ========================
+   PUBLIC PAGE ROUTES (NO AUTH) ✅ MUST BE BEFORE TENANT
+======================== */
+
+// ✅ Route للـ Public Page by ID (بدون Auth)
+app.get(
+  "/api/sites/:siteId/pages/:pageId/public",
+  getPublicPageById
+);
+
+/* ========================
    GLOBAL (IMPORTANT FIX)
 ======================== */
 app.use("/api/invitations", authStack, invitationRoutes);
@@ -143,16 +153,6 @@ app.use("/api/export", exportRoutes);
 registerCommands();
 app.use("/api/sites/:siteId/commands", tenantStack, commandRoutes);
 app.use("/api/sites/:siteId/plugins", tenantStack, pluginMarketplaceRoutes);
-
-/* ========================
-   PUBLIC PAGE ROUTES (NO AUTH) ✅ NEW
-======================== */
-
-// ✅ Route للـ Public Page by ID (بدون Auth)
-app.get(
-  "/api/sites/:siteId/pages/:pageId/public",
-  getPublicPageById
-);
 
 /* ========================
    404 HANDLER
