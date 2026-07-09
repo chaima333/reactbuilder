@@ -391,11 +391,19 @@ export class CmsService {
       order: [["createdAt", "DESC"]]
     });
 
-   return entries.map((entry)=>({
+    return entries.map(entry => ({
   id: entry.id,
+  siteId: entry.siteId,
   slug: entry.slug,
   status: entry.status,
-  data: entry.data
+  data: entry.data,
+  createdAt: entry.createdAt,
+  updatedAt: entry.updatedAt,
+  collection: {
+    id: collection.id,
+    name: collection.name,
+    slug: collection.slug
+  }
 }));
   }
 
@@ -414,25 +422,38 @@ export class CmsService {
   if (!collection) {
     throw new Error("COLLECTION_NOT_FOUND");
   }
-
-  const entry = await CmsEntry.findOne({
-    where: {
-      siteId,
-      collectionId: collection.id,
-      slug: entrySlug,
-      status: "published"
+const entry = await CmsEntry.findOne({
+  where: {
+    siteId,
+    collectionId: collection.id,
+    slug: entrySlug,
+    status: "published"
+  },
+  include: [
+    {
+      model: CmsCollection,
+      attributes: ["id", "name", "slug"]
     }
-  });
+  ]
+});
 
   if (!entry) {
     throw new Error("ENTRY_NOT_FOUND");
   }
 
-  return {
-    id: entry.id,
-    slug: entry.slug,
-    status: entry.status,
-    data: entry.data
-  };
+ return {
+  id: entry.id,
+  siteId: entry.siteId,
+  slug: entry.slug,
+  status: entry.status,
+  data: entry.data,
+  createdAt: entry.createdAt,
+  updatedAt: entry.updatedAt,
+  collection: {
+    id: collection.id,
+    name: collection.name,
+    slug: collection.slug
+  }
+};
 }
 }
