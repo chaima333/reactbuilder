@@ -285,65 +285,87 @@ const renderSelectBlock = (data: any) => `
  * COLLECTION LIST RENDERER (CMS)
  * =========================================================
  */
-
-const renderCollectionListBlock = (data: any) => {
-  const items = data.props?.items || data.items || [];
+const renderCollectionListBlock = async (data: any, siteId: number) => {
+  const collectionSlug = data.props?.collectionSlug;
   const titleField = data.props?.titleField || 'title';
   const descriptionField = data.props?.descriptionField || 'description';
   const columns = data.props?.columns || 3;
 
-  if (!Array.isArray(items) || items.length === 0) {
+  if (!collectionSlug || !siteId) {
     return `
-      <div class="collection-list-empty" style="padding:40px;text-align:center;color:#999;">
-        No items to display
+      <div class="collection-list-error" style="padding:20px;text-align:center;color:#999;">
+        Collection not configured
       </div>
     `;
   }
 
-  return `
-    <div class="collection-list" style="
-      display:grid;
-      grid-template-columns:repeat(${columns}, 1fr);
-      gap:24px;
-      padding:20px 0;
-      max-width:1200px;
-      margin:0 auto;
-    ">
-      ${items.map((item: any) => {
-        const title = item[titleField] || item.title || 'Untitled';
-        const description = item[descriptionField] || item.description || '';
-        
-        return `
-          <div class="collection-item" style="
-            padding:20px;
-            border:1px solid #e0e0e0;
-            border-radius:12px;
-            background:#ffffff;
-            transition:transform 0.2s;
-          ">
-            <h3 style="
-              margin:0 0 8px 0;
-              font-size:1.2rem;
-              font-weight:600;
-              color:#0D0D0D;
+  try {
+    const { CmsService } = require('../../cms/cms.service');
+    const entries = await CmsService.getPublishedEntriesByCollectionSlug(
+      Number(siteId),
+      collectionSlug
+    );
+
+    if (!entries || entries.length === 0) {
+      return `
+        <div class="collection-list-empty" style="padding:40px;text-align:center;color:#999;">
+          No entries found
+        </div>
+      `;
+    }
+
+    return `
+      <div class="collection-list" style="
+        display:grid;
+        grid-template-columns:repeat(${columns}, 1fr);
+        gap:24px;
+        padding:20px 0;
+        max-width:1200px;
+        margin:0 auto;
+      ">
+        ${entries.map((entry: any) => {
+          const title = entry.data?.[titleField] || entry.slug || 'Untitled';
+          const description = entry.data?.[descriptionField] || '';
+          
+          return `
+            <div class="collection-item" style="
+              padding:20px;
+              border:1px solid #e0e0e0;
+              border-radius:12px;
+              background:#ffffff;
+              transition:transform 0.2s;
             ">
-              ${escapeHTML(title)}
-            </h3>
-            ${description ? `
-              <p style="
-                margin:0;
-                color:#666;
-                font-size:0.95rem;
-                line-height:1.5;
+              <h3 style="
+                margin:0 0 8px 0;
+                font-size:1.2rem;
+                font-weight:600;
+                color:#0D0D0D;
               ">
-                ${escapeHTML(description)}
-              </p>
-            ` : ''}
-          </div>
-        `;
-      }).join('')}
-    </div>
-  `;
+                ${escapeHTML(title)}
+              </h3>
+              ${description ? `
+                <p style="
+                  margin:0;
+                  color:#666;
+                  font-size:0.95rem;
+                  line-height:1.5;
+                ">
+                  ${escapeHTML(description)}
+                </p>
+              ` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  } catch (error) {
+    console.error('CollectionList render error:', error);
+    return `
+      <div class="collection-list-error" style="padding:20px;text-align:center;color:#e74c3c;">
+        Failed to load collection entries
+      </div>
+    `;
+  }
 };
 
 /**
@@ -352,7 +374,7 @@ const renderCollectionListBlock = (data: any) => {
  * =========================================================
  */
 
-const BLOCK_RENDERERS: Record<string, (data: any, childrenHTML: string) => string> = {
+const BLOCK_RENDERERS: Record<string, (data: any, childrenHTML: string, siteId?: number) => string | Promise<string>> = {
   hero: (data, children) => renderHeroBlock(data),
   cta: (data, children) => renderCTABlock(data),
   features: (data, children) => renderFeaturesBlock(data),
@@ -372,7 +394,9 @@ const BLOCK_RENDERERS: Record<string, (data: any, childrenHTML: string) => strin
   select: (data) => renderSelectBlock(data),
   navbar: renderFlexBlock,
   footer: renderFooterBlock,
-  collectionList: (data, children) => renderCollectionListBlock(data),
+  collectionList: async (data, children, siteId) => {
+    return await renderCollectionListBlock(data, siteId || 0);
+  },
 };
 
 /**
@@ -381,7 +405,7 @@ const BLOCK_RENDERERS: Record<string, (data: any, childrenHTML: string) => strin
  * =========================================================
  */
 
-export const renderBlocks = (blocks: any[] = []): string => {
+export const renderBlocks = (blocks: any[] = [], siteId?: number): string => {
   if (!Array.isArray(blocks)) return "";
 
   return blocks
@@ -392,13 +416,12 @@ export const renderBlocks = (blocks: any[] = []): string => {
         return "";
       }
 
-      // 1. Recursive call for children
       const childrenHTML = (block.children && block.children.length > 0) 
-        ? renderBlocks(block.children) 
+        ? renderBlocks(block.children, siteId) 
         : "";
 
-      // 2. Render current block with its children
-      return renderer(block.data || {}, childrenHTML);
+      // ✅ Appel du renderer avec siteId
+      return renderer(block.data || {}, childrenHTML, siteId);
     })
     .join("");
 };
