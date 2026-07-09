@@ -325,9 +325,6 @@ export const updatePageSeo = async (
     });
   }
 };
-
-// backend/src/modules/pages/controllers/page.controller.ts
-
 export const getPublicPageById = async (req: Request, res: Response) => {
   try {
     const siteId = Number(req.params.siteId);
@@ -382,7 +379,7 @@ export const getPublicPageById = async (req: Request, res: Response) => {
       ...(globalLayout.footer ? [globalLayout.footer] : [])
     ];
 
-    const blocksHTML = renderBlocks(allBlocks, siteId);
+    const blocksHTML = await renderBlocks(allBlocks, siteId);
     const html = renderFullPage(pageData, seo, canonical, blocksHTML);
 
     return res.status(200).send(html);

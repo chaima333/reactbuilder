@@ -100,20 +100,11 @@ const seo =
         : [])
     ];
 
-    const blocksHTML =
-      renderBlocks(
-        allBlocks
-      );
+const blocksHTML = await renderBlocks(allBlocks, siteId);
 
-    const html =
-      renderFullPage(
-        page,
-        seo,
-        canonical,
-        blocksHTML
-      );
+const html = renderFullPage(page, seo, canonical, blocksHTML);
 
-    return res.status(200).send(html);
+return res.status(200).send(html);
 
   } catch (error: any) {
     console.error("[RENDER_ERROR]:", error.message);
