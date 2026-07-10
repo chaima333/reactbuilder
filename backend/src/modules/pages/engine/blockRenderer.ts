@@ -4,6 +4,8 @@
  * =========================================================
  */
 
+import { resolveBindings } from "../../cms/utils/binding.resolver";
+
 export const escapeHTML = (str: string = ""): string => {
   return String(str)
     .replace(/&/g, "&amp;")
@@ -229,25 +231,27 @@ const renderGridItemBlock = (data: any, childrenHTML: string) => `
     ${childrenHTML}
   </div>`;
 
-const renderTitleBlock = (data: any) => `
-  <h2>
-    ${escapeHTML(
-      data.props?.content ||
-      data.props?.text ||
-      "Title"
-    )}
-  </h2>
-`;
+const renderTitleBlock = (data: any) => {
+  const resolvedData = resolveBindings(data, data);
+  const text = resolvedData?.props?.text || resolvedData?.props?.content || "Title";
+  
+  return `
+    <h2>
+      ${escapeHTML(text)}
+    </h2>
+  `;
+};
 
-const renderTextBlock = (data: any) => `
-  <p>
-    ${escapeHTML(
-      data.props?.content ||
-      data.props?.text ||
-      "Text"
-    )}
-  </p>
-`;
+const renderTextBlock = (data: any) => {
+  const resolvedData = resolveBindings(data, data);
+  const text = resolvedData?.props?.text || resolvedData?.props?.content || "Text";
+  
+  return `
+    <p>
+      ${escapeHTML(text)}
+    </p>
+  `;
+};
 
 const renderImageBlock = (data: any) => `<img src="${data.props?.src || ''}" alt="Image" style="width:100%; max-width:100%;" />`;
 
