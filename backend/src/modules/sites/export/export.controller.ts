@@ -619,105 +619,163 @@ ${sitemapEntries.join("")}
     );
 
     const archive =
-     archiver(
-    "zip",
-    {
-      zlib: {
-        level: 9,
-      },
-    }
-  );
+      archiver("zip", {
+        zlib: {
+          level: 9,
+        },
+      });
 
-  archive.on(
-  "warning",
-  (warning: Error) => {
-    console.warn(
-      "EXPORT_ARCHIVE_WARNING",
-      warning
-    );
-  }
-);
+    await new Promise<void>(
+      (resolve, reject) => {
+        let settled = false;
 
-archive.on(
-  "error",
-  (
-    archiveError: Error
-  ) => {
-    console.error(
-      "EXPORT_ARCHIVE_ERROR",
-      archiveError
-    );
+        const fail = (
+          error: unknown
+        ) => {
+          if (settled) {
+            return;
+          }
 
-    if (!res.destroyed) {
-      res.destroy(
-        archiveError
-      );
-    }
-  }
-);
+          settled = true;
 
-archive.pipe(res);
+          reject(
+            error instanceof Error
+              ? error
+              : new Error(
+                  String(error)
+                )
+          );
+        };
 
-    archive.pipe(res);
+        const succeed = () => {
+          if (settled) {
+            return;
+          }
 
-    for (
-      const [
-        filename,
-        html,
-      ] of Object.entries(
-        htmlPages
-      )
-    ) {
-      archive.append(
-        html,
-        {
-          name:
+          settled = true;
+          resolve();
+        };
+
+        archive.on(
+          "warning",
+          (warning: any) => {
+            if (
+              warning?.code ===
+              "ENOENT"
+            ) {
+              console.warn(
+                "EXPORT_ARCHIVE_WARNING",
+                warning
+              );
+
+              return;
+            }
+
+            fail(warning);
+          }
+        );
+
+        archive.once(
+          "error",
+          fail
+        );
+
+        res.once(
+          "error",
+          fail
+        );
+
+        res.once(
+          "finish",
+          succeed
+        );
+
+        res.once(
+          "close",
+          () => {
+            if (
+               !res.writableFinished
+            ) {
+              fail(
+                new Error(
+                  "Export response closed before ZIP generation completed"
+                )
+              );
+            }
+          }
+        );
+
+        archive.pipe(res);
+
+        for (
+          const [
             filename,
+            html,
+          ] of Object.entries(
+            htmlPages
+          )
+        ) {
+          archive.append(
+            html,
+            {
+              name: filename,
+            }
+          );
         }
-      );
-    }
 
-    archive.append(
-      robotsContent,
-      {
-        name:
-          "robots.txt",
+        archive.append(
+          robotsContent,
+          {
+            name:
+              "robots.txt",
+          }
+        );
+
+        if (baseUrl) {
+          archive.append(
+            sitemapContent,
+            {
+              name:
+                "sitemap.xml",
+            }
+          );
+        }
+
+        archive.append(
+          JSON.stringify(
+            manifest,
+            null,
+            2
+          ),
+          {
+            name:
+              "export-manifest.json",
+          }
+        );
+
+        archive
+          .finalize()
+          .catch(fail);
       }
     );
-
-    if (baseUrl) {
-      archive.append(
-        sitemapContent,
-        {
-          name:
-            "sitemap.xml",
-        }
-      );
-    }
-
-    archive.append(
-      JSON.stringify(
-        manifest,
-        null,
-        2
-      ),
-      {
-        name:
-          "export-manifest.json",
-      }
-    );
-
-    await archive.finalize();
   } catch (error) {
     console.error(
       "EXPORT_SITE_ERROR",
       error
     );
 
-    if (
-      res.headersSent
-    ) {
-      return res.end();
+    if (res.headersSent) {
+      if (!res.destroyed) {
+        res.destroy(
+          error instanceof Error
+            ? error
+            : new Error(
+                String(error)
+              )
+        );
+      }
+
+      return;
     }
 
     return res
