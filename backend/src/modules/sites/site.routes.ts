@@ -17,6 +17,7 @@ import { requireSiteAccess } from "../../core/middleware/siteGuard";
 import { requirePermission } from "../../core/middleware/role.middleware";
 import { PERMISSIONS } from "../../core/constants/permissions";
 import siteMembersRoutes from "./members/siteMembers.routes";
+import { exportSite } from "./export/export.controller";
 
 const router = Router({ mergeParams: true });
 
@@ -75,5 +76,12 @@ router.use(
   "/:siteId/members",
   siteAccessStack,
   siteMembersRoutes
+);
+
+router.get(
+  "/:siteId/export",
+  siteAccessStack,
+  requirePermission(PERMISSIONS.SITE_READ),
+  exportSite
 );
 export default router;
