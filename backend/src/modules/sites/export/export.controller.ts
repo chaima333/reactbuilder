@@ -1,98 +1,731 @@
-// backend/src/modules/sites/site.export.controller.ts
+import {
+  Request,
+  Response,
+} from "express";
 
-import { Request, Response } from "express";
-import { CmsCollection, CmsEntry, Page, Site } from "../../../models";
-import { resolveBindings } from "../../cms/utils/binding.resolver";
-import { SEOBuilder } from "../../pages/engine/seoBuilder";
-import { renderBlocks, renderFullPage } from "../../pages/engine/blockRenderer";
+import archiver = require("archiver");
+import {
+  Page,
+  Site,
+} from "../../../models";
 
-// ✅ استعمل require بدل import
-const archiver = require('archiver');
+import {
+  Seo,
+} from "../../../models/Seo";
 
-export const exportSite = async (req: Request, res: Response) => {
+import {
+  resolveBindings,
+} from "../../cms/utils/binding.resolver";
+
+import {
+  SEOBuilder,
+} from "../../pages/engine/seoBuilder";
+
+import {
+  renderBlocks,
+  renderFullPage,
+} from "../../pages/engine/blockRenderer";
+
+type ExportedPageInfo = {
+  id: number;
+  title: string;
+  slug: string;
+  file: string;
+  url: string | null;
+};
+
+const normalizeBaseUrl = (
+  value: unknown
+): string => {
+  const raw =
+    String(value || "")
+      .trim();
+
+  if (!raw) {
+    return "";
+  }
+
   try {
-    const siteId = Number(req.params.siteId);
+    const parsed =
+      new URL(raw);
 
-    if (!siteId) {
-      return res.status(400).json({
-        success: false,
-        message: "siteId is required"
-      });
+    if (
+      parsed.protocol !== "http:" &&
+      parsed.protocol !== "https:"
+    ) {
+      return "";
     }
 
-    const site = await Site.findByPk(siteId);
-    if (!site) {
-      return res.status(404).json({
-        success: false,
-        message: "Site not found"
-      });
-    }
+    return `${parsed.protocol}//${parsed.host}`;
+  } catch {
+    return "";
+  }
+};
 
-    const pages = await Page.findAll({
-      where: {
-        siteId,
-        status: "published"
-      }
-    });
-
-    const collections = await CmsCollection.findAll({
-      where: { siteId },
-      include: [{ model: CmsEntry, required: false }]
-    });
-
-    const htmlPages: Record<string, string> = {};
-
-    for (const page of pages) {
-      const pageData = page.toJSON();
-      
-      const resolvedBlocks = resolveBindings(pageData.blocks || [], pageData);
-      
-      const seo = SEOBuilder.build(pageData);
-      const blocksHTML = await renderBlocks(resolvedBlocks, siteId);
-      const html = renderFullPage(
-        pageData,
-        seo,
-        `/site/${siteId}/${pageData.slug}`,
-        blocksHTML
+const normalizeSlug = (
+  value: unknown,
+  fallback: string
+): string => {
+  const raw =
+    String(value || "")
+      .trim()
+      .replace(
+        /^\/+|\/+$/g,
+        ""
       );
-      
-      const filename = pageData.slug === "home" ? "index" : pageData.slug;
-      htmlPages[`${filename}.html`] = html;
+
+  if (!raw) {
+    return fallback;
+  }
+
+  const safeSegments =
+    raw
+      .split("/")
+      .map((segment) =>
+        segment
+          .replace(
+            /[<>:"\\|?*\u0000-\u001F]/g,
+            "-"
+          )
+          .replace(
+            /\.+$/g,
+            ""
+          )
+          .trim()
+      )
+      .filter(Boolean);
+
+  return (
+    safeSegments.join("/") ||
+    fallback
+  );
+};
+
+const isHomeSlug = (
+  slug: string
+): boolean => {
+  return (
+    slug === "home" ||
+    slug === "index"
+  );
+};
+
+const getArchivePath = (
+  slug: string
+): string => {
+  if (isHomeSlug(slug)) {
+    return "index.html";
+  }
+
+  return `${slug}/index.html`;
+};
+
+const getPublicPath = (
+  slug: string
+): string => {
+  if (isHomeSlug(slug)) {
+    return "/";
+  }
+
+  return `/${slug}/`;
+};
+
+const buildAbsoluteUrl = (
+  baseUrl: string,
+  publicPath: string
+): string => {
+  if (!baseUrl) {
+    return "";
+  }
+
+  return `${baseUrl}${publicPath}`;
+};
+
+const escapeXml = (
+  value: unknown
+): string => {
+  return String(value ?? "")
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&apos;"
+    );
+};
+
+const normalizePriority = (
+  value: unknown
+): number => {
+  const numericValue =
+    Number(value);
+
+  if (
+    !Number.isFinite(
+      numericValue
+    )
+  ) {
+    return 0.5;
+  }
+
+  return Math.min(
+    1,
+    Math.max(
+      0,
+      numericValue
+    )
+  );
+};
+
+const sanitizeDownloadName = (
+  value: unknown
+): string => {
+  const result =
+    String(value || "site")
+      .trim()
+      .replace(
+        /[^a-zA-Z0-9-_]+/g,
+        "-"
+      )
+      .replace(
+        /-+/g,
+        "-"
+      )
+      .replace(
+        /^-|-$/g,
+        ""
+      );
+
+  return result || "site";
+};
+
+const isFooterBlock = (
+  block: any
+): boolean => {
+  const semanticType =
+    block?.meta?.semanticType ||
+    block?.data?.meta?.semanticType;
+
+  return (
+    block?.type === "footer" ||
+    block?.id?.startsWith("footer-section-") ||
+    semanticType === "FOOTER" ||
+    semanticType === "FOOTER_SECTION"
+  );
+};
+
+const composePageBlocksWithGlobalLayout = (
+  pageBlocks: any[],
+  globalLayout: any
+): any[] => {
+  const blocks =
+    Array.isArray(pageBlocks)
+      ? pageBlocks
+      : [];
+
+  const pageOwnsNavbar =
+    blocks.some(
+      (block: any) => block?.type === "navbar"
+    );
+
+  const pageOwnsFooter =
+    blocks.some(isFooterBlock);
+
+  return [
+    ...(
+      globalLayout?.navbar &&
+      !pageOwnsNavbar
+        ? [globalLayout.navbar]
+        : []
+    ),
+    ...blocks,
+    ...(
+      globalLayout?.footer &&
+      !pageOwnsFooter
+        ? [globalLayout.footer]
+        : []
+    ),
+  ];
+};
+
+export const exportSite = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const siteId =
+      Number(
+        req.params.siteId
+      );
+
+    if (
+      !Number.isInteger(siteId) ||
+      siteId <= 0
+    ) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "A valid siteId is required",
+        });
     }
 
-    const cmsData = {
-      collections: collections.map(c => c.toJSON())
+    const baseUrl =
+      normalizeBaseUrl(
+        req.query.baseUrl
+      );
+
+    const site =
+      await Site.findByPk(
+        siteId
+      );
+
+    if (!site) {
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message:
+            "Site not found",
+        });
+    }
+
+    const pages =
+      await Page.findAll({
+        where: {
+          siteId,
+          status: "published",
+        },
+
+        include: [
+          {
+            model: Seo,
+            required: false,
+          },
+        ],
+
+        order: [
+          [
+            "createdAt",
+            "ASC",
+          ],
+        ],
+      });
+
+    if (
+      pages.length === 0
+    ) {
+      return res
+        .status(422)
+        .json({
+          success: false,
+          message:
+            "The site has no published pages to export",
+        });
+    }
+
+    const htmlPages:
+      Record<string, string> =
+        {};
+
+    const exportedPages:
+      ExportedPageInfo[] = [];
+
+    const sitemapEntries:
+      string[] = [];
+
+    const siteData =
+      typeof site.toJSON === "function"
+        ? site.toJSON() as any
+        : site as any;
+
+    const globalLayout =
+      site.get("globalLayout") || {};
+
+    const siteSettings =
+      site.get("settings") as any;
+
+    const siteTheme =
+      siteData?.theme ||
+      siteSettings?.theme ||
+      siteData?.settings?.theme;
+
+    for (
+      const page of pages
+    ) {
+      const pageData =
+        page.toJSON() as any;
+
+      const slug =
+        normalizeSlug(
+          pageData.slug,
+          `page-${pageData.id}`
+        );
+
+      const archivePath =
+        getArchivePath(
+          slug
+        );
+
+      const publicPath =
+        getPublicPath(
+          slug
+        );
+
+      const exportedCanonical =
+        buildAbsoluteUrl(
+          baseUrl,
+          publicPath
+        );
+
+      const exportPageData = {
+        ...pageData,
+
+        site:
+          siteData,
+
+        globalLayout,
+
+        theme:
+          pageData.theme ||
+          siteTheme,
+
+        seo: {
+          ...(
+            pageData.seo ||
+            {}
+          ),
+
+          canonicalUrl:
+            exportedCanonical ||
+            pageData.seo
+              ?.canonicalUrl ||
+            "",
+        },
+      };
+
+      const resolvedBlocks =
+        resolveBindings(
+          composePageBlocksWithGlobalLayout(
+            exportPageData.blocks,
+            globalLayout
+          ),
+          exportPageData
+        );
+
+      const seo =
+        SEOBuilder.build(
+          exportPageData
+        );
+
+      const blocksHTML =
+        await renderBlocks(
+          resolvedBlocks,
+          siteId
+        );
+
+      const html =
+        renderFullPage(
+          exportPageData,
+          seo,
+          exportedCanonical,
+          blocksHTML
+        );
+
+      htmlPages[
+        archivePath
+      ] = html;
+
+      exportedPages.push({
+        id:
+          pageData.id,
+
+        title:
+          pageData.title ||
+          "Untitled page",
+
+        slug,
+
+        file:
+          archivePath,
+
+        url:
+          exportedCanonical ||
+          null,
+      });
+
+      if (
+        exportedCanonical
+      ) {
+        const priority =
+          normalizePriority(
+            seo?.sitemap
+              ?.priority
+          );
+
+        const changefreq =
+          seo?.sitemap
+            ?.changefreq ||
+          "weekly";
+
+        const updatedAt =
+          pageData.updatedAt
+            ? new Date(
+                pageData
+                  .updatedAt
+              )
+                .toISOString()
+            : new Date()
+                .toISOString();
+
+        sitemapEntries.push(`
+  <url>
+    <loc>${escapeXml(
+      exportedCanonical
+    )}</loc>
+    <lastmod>${escapeXml(
+      updatedAt
+    )}</lastmod>
+    <changefreq>${escapeXml(
+      changefreq
+    )}</changefreq>
+    <priority>${priority.toFixed(
+      1
+    )}</priority>
+  </url>`);
+      }
+    }
+
+    const warnings:
+      string[] = [];
+
+    if (!baseUrl) {
+      warnings.push(
+        "No baseUrl was supplied. sitemap.xml was not generated and canonical URLs may remain empty."
+      );
+    }
+
+    warnings.push(
+      "Media files are not localized yet. Remote media URLs may still depend on ReactBuilder storage."
+    );
+
+    warnings.push(
+      "This is a static export. A standalone CMS backend and database are not included yet."
+    );
+
+    const manifest = {
+      version: 1,
+
+      mode:
+        "static",
+
+      exportedAt:
+        new Date()
+          .toISOString(),
+
+      site: {
+        id:
+          site.id,
+
+        name:
+          site.get(
+            "name"
+          ),
+
+        baseUrl:
+          baseUrl ||
+          null,
+      },
+
+      pages:
+        exportedPages,
+
+      features: {
+        staticHtml:
+          true,
+
+        seo:
+          true,
+
+        sitemap:
+          Boolean(
+            baseUrl
+          ),
+
+        robots:
+          true,
+
+        localMedia:
+          false,
+
+        cmsRuntime:
+          false,
+
+        formsRuntime:
+          false,
+      },
+
+      warnings,
     };
 
-    // ✅ archiver يخدم مع require
-    const archive = archiver("zip", { zlib: { level: 9 } });
-    
-    const siteName = site.get("name") || "site";
-    res.attachment(`${siteName}-export.zip`);
+    const robotsContent =
+      [
+        "User-agent: *",
+        "Allow: /",
+
+        baseUrl
+          ? `Sitemap: ${baseUrl}/sitemap.xml`
+          : "",
+
+        "",
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+    const sitemapContent =
+      `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${sitemapEntries.join("")}
+</urlset>`;
+
+    const siteName =
+      sanitizeDownloadName(
+        site.get(
+          "name"
+        )
+      );
+
+    res.attachment(
+      `${siteName}-static-export.zip`
+    );
+
+    res.setHeader(
+      "Content-Type",
+      "application/zip"
+    );
+
+    const archive =
+     archiver(
+    "zip",
+    {
+      zlib: {
+        level: 9,
+      },
+    }
+  );
+
+  archive.on(
+  "warning",
+  (warning: Error) => {
+    console.warn(
+      "EXPORT_ARCHIVE_WARNING",
+      warning
+    );
+  }
+);
+
+archive.on(
+  "error",
+  (
+    archiveError: Error
+  ) => {
+    console.error(
+      "EXPORT_ARCHIVE_ERROR",
+      archiveError
+    );
+
+    if (!res.destroyed) {
+      res.destroy(
+        archiveError
+      );
+    }
+  }
+);
+
+archive.pipe(res);
+
     archive.pipe(res);
 
-    for (const [filename, html] of Object.entries(htmlPages)) {
-      archive.append(html, { name: filename });
+    for (
+      const [
+        filename,
+        html,
+      ] of Object.entries(
+        htmlPages
+      )
+    ) {
+      archive.append(
+        html,
+        {
+          name:
+            filename,
+        }
+      );
     }
 
-    archive.append(JSON.stringify(cmsData, null, 2), { name: "cms-data.json" });
-
-    archive.append(JSON.stringify({
-      site: {
-        id: site.id,
-        name: site.get("name"),
-        slug: site.get("slug"),
-        exportedAt: new Date().toISOString()
+    archive.append(
+      robotsContent,
+      {
+        name:
+          "robots.txt",
       }
-    }, null, 2), { name: "site-info.json" });
+    );
+
+    if (baseUrl) {
+      archive.append(
+        sitemapContent,
+        {
+          name:
+            "sitemap.xml",
+        }
+      );
+    }
+
+    archive.append(
+      JSON.stringify(
+        manifest,
+        null,
+        2
+      ),
+      {
+        name:
+          "export-manifest.json",
+      }
+    );
 
     await archive.finalize();
-
   } catch (error) {
-    console.error("EXPORT_SITE_ERROR:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to export site"
-    });
+    console.error(
+      "EXPORT_SITE_ERROR",
+      error
+    );
+
+    if (
+      res.headersSent
+    ) {
+      return res.end();
+    }
+
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message:
+          "Failed to export site",
+      });
   }
 };
