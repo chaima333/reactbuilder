@@ -10,6 +10,169 @@ const slugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
+const isEmptyValue = (value: unknown) =>
+  value === undefined ||
+  value === null ||
+  value === "";
+
+const validateEntryData = (
+  fields: any[],
+  data: Record<string, any>
+) => {
+  const normalizedData: Record<string, any> = {
+    ...data
+  };
+
+  for (const field of fields) {
+    const value = normalizedData[field.key];
+
+    if (field.required && isEmptyValue(value)) {
+      throw new Error(
+        `REQUIRED_FIELD_MISSING:${field.key}`
+      );
+    }
+
+    // الحقل الاختياري الفارغ ما يحتاجش validation
+    if (isEmptyValue(value)) {
+      continue;
+    }
+
+    switch (field.type) {
+      case "text":
+      case "textarea": {
+        if (typeof value !== "string") {
+          throw new Error(
+            `INVALID_FIELD_TYPE:${field.key}:string`
+          );
+        }
+
+        normalizedData[field.key] =
+          value.trim();
+
+        break;
+      }
+
+      case "number": {
+        const parsed =
+          typeof value === "number"
+            ? value
+            : Number(value);
+
+        if (!Number.isFinite(parsed)) {
+          throw new Error(
+            `INVALID_FIELD_TYPE:${field.key}:number`
+          );
+        }
+
+        normalizedData[field.key] =
+          parsed;
+
+        break;
+      }
+
+      case "boolean": {
+        if (typeof value === "boolean") {
+          break;
+        }
+
+        if (value === "true") {
+          normalizedData[field.key] = true;
+          break;
+        }
+
+        if (value === "false") {
+          normalizedData[field.key] = false;
+          break;
+        }
+
+        throw new Error(
+          `INVALID_FIELD_TYPE:${field.key}:boolean`
+        );
+      }
+
+      case "date": {
+        if (
+          typeof value !== "string" ||
+          Number.isNaN(
+            Date.parse(value)
+          )
+        ) {
+          throw new Error(
+            `INVALID_FIELD_TYPE:${field.key}:date`
+          );
+        }
+
+        normalizedData[field.key] =
+          value;
+
+        break;
+      }
+
+      case "select": {
+        const options =
+          Array.isArray(
+            field.settings?.options
+          )
+            ? field.settings.options
+            : [];
+
+        if (
+          options.length === 0
+        ) {
+          throw new Error(
+            `SELECT_OPTIONS_MISSING:${field.key}`
+          );
+        }
+
+        if (
+          !options.includes(value)
+        ) {
+          throw new Error(
+            `INVALID_SELECT_OPTION:${field.key}`
+          );
+        }
+
+        break;
+      }
+
+      case "image": {
+        if (typeof value !== "string") {
+          throw new Error(
+            `INVALID_FIELD_TYPE:${field.key}:image`
+          );
+        }
+
+        const imageValue =
+          value.trim();
+
+        const validImage =
+          imageValue.startsWith("http://") ||
+          imageValue.startsWith("https://") ||
+          imageValue.startsWith("/") ||
+          imageValue.startsWith("data:image/");
+
+        if (!validImage) {
+          throw new Error(
+            `INVALID_IMAGE:${field.key}`
+          );
+        }
+
+        normalizedData[field.key] =
+          imageValue;
+
+        break;
+      }
+
+      default:
+        throw new Error(
+          `UNSUPPORTED_FIELD_TYPE:${field.key}:${field.type}`
+        );
+    }
+  }
+
+  return normalizedData;
+};
+
 export class CmsService {
   // =====================================
   // COLLECTIONS
@@ -33,7 +196,6 @@ export class CmsService {
     });
   }
 
-  // ✅ الدالة الجديدة
   static async getCollectionBySlug(siteId: number, slug: string) {
     return CmsCollection.findOne({
       where: { siteId, slug },
@@ -282,20 +444,16 @@ export class CmsService {
     const data = payload.data || {};
     const fields = collection.fields || [];
 
-    const missingRequired = fields.find((field: any) => {
-      if (!field.required) return false;
-      const value = data[field.key];
-      return value === undefined || value === null || value === "";
-    });
-
-    if (missingRequired) {
-      throw new Error(`REQUIRED_FIELD_MISSING:${missingRequired.key}`);
-    }
+    const validatedData = validateEntryData(fields, data);
 
     const status = payload.status === "published" ? "published" : "draft";
 
     const baseSlug = slugify(
-      String(data.title || data.name || `entry-${Date.now()}`)
+      String(
+        validatedData.title ||
+        validatedData.name ||
+        `entry-${Date.now()}`
+      )
     );
 
     let slug = baseSlug;
@@ -312,7 +470,7 @@ export class CmsService {
       collectionId,
       slug,
       status,
-      data
+      data: validatedData
     });
   }
 
@@ -338,15 +496,7 @@ export class CmsService {
     const collection = (entry as any).collection;
     const fields = collection?.fields || [];
 
-    const missingRequired = fields.find((field: any) => {
-      if (!field.required) return false;
-      const value = nextData[field.key];
-      return value === undefined || value === null || value === "";
-    });
-
-    if (missingRequired) {
-      throw new Error(`REQUIRED_FIELD_MISSING:${missingRequired.key}`);
-    }
+    const validatedData = validateEntryData(fields, nextData);
 
     const nextStatus = payload.status === "published" || payload.status === "draft"
       ? payload.status
@@ -354,7 +504,7 @@ export class CmsService {
 
     await entry.update({
       status: nextStatus,
-      data: nextData
+      data: validatedData
     });
 
     return entry;
@@ -392,68 +542,69 @@ export class CmsService {
     });
 
     return entries.map(entry => ({
-  id: entry.id,
-  siteId: entry.siteId,
-  slug: entry.slug,
-  status: entry.status,
-  data: entry.data,
-  createdAt: entry.createdAt,
-  updatedAt: entry.updatedAt,
-  collection: {
-    id: collection.id,
-    name: collection.name,
-    slug: collection.slug
-  }
-}));
+      id: entry.id,
+      siteId: entry.siteId,
+      slug: entry.slug,
+      status: entry.status,
+      data: entry.data,
+      createdAt: entry.createdAt,
+      updatedAt: entry.updatedAt,
+      collection: {
+        id: collection.id,
+        name: collection.name,
+        slug: collection.slug
+      }
+    }));
   }
 
   static async getPublishedEntryBySlug(
-  siteId: number,
-  collectionSlug: string,
-  entrySlug: string
-) {
-  const collection = await CmsCollection.findOne({
-    where: {
-      siteId,
-      slug: collectionSlug
+    siteId: number,
+    collectionSlug: string,
+    entrySlug: string
+  ) {
+    const collection = await CmsCollection.findOne({
+      where: {
+        siteId,
+        slug: collectionSlug
+      }
+    });
+
+    if (!collection) {
+      throw new Error("COLLECTION_NOT_FOUND");
     }
-  });
 
-  if (!collection) {
-    throw new Error("COLLECTION_NOT_FOUND");
-  }
-const entry = await CmsEntry.findOne({
-  where: {
-    siteId,
-    collectionId: collection.id,
-    slug: entrySlug,
-    status: "published"
-  },
-  include: [
-    {
-      model: CmsCollection,
-      attributes: ["id", "name", "slug"]
+    const entry = await CmsEntry.findOne({
+      where: {
+        siteId,
+        collectionId: collection.id,
+        slug: entrySlug,
+        status: "published"
+      },
+      include: [
+        {
+          model: CmsCollection,
+          attributes: ["id", "name", "slug"]
+        }
+      ]
+    });
+
+    if (!entry) {
+      throw new Error("ENTRY_NOT_FOUND");
     }
-  ]
-});
 
-  if (!entry) {
-    throw new Error("ENTRY_NOT_FOUND");
+    return {
+      id: entry.id,
+      siteId: entry.siteId,
+      slug: entry.slug,
+      status: entry.status,
+      data: entry.data,
+      createdAt: entry.createdAt,
+      updatedAt: entry.updatedAt,
+      collection: {
+        id: collection.id,
+        name: collection.name,
+        slug: collection.slug
+      }
+    };
   }
-
- return {
-  id: entry.id,
-  siteId: entry.siteId,
-  slug: entry.slug,
-  status: entry.status,
-  data: entry.data,
-  createdAt: entry.createdAt,
-  updatedAt: entry.updatedAt,
-  collection: {
-    id: collection.id,
-    name: collection.name,
-    slug: collection.slug
-  }
-};
-}
 }

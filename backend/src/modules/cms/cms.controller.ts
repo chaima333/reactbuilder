@@ -337,18 +337,34 @@ export class CmsController {
       const data = await CmsService.createEntry(siteId, collectionId, req.body || {});
       return res.status(201).json({ success: true, data });
     } catch (error: any) {
+      const message = String(error.message);
+
       if (error.message === "COLLECTION_NOT_FOUND") {
         return res.status(404).json({
           success: false,
           message: "Collection not found"
         });
       }
-      if (String(error.message).startsWith("REQUIRED_FIELD_MISSING:")) {
+
+      if (message.startsWith("REQUIRED_FIELD_MISSING:")) {
         return res.status(400).json({
           success: false,
-          message: error.message.replace("REQUIRED_FIELD_MISSING:", "Required field missing: ")
+          message: message.replace("REQUIRED_FIELD_MISSING:", "Required field missing: ")
         });
       }
+
+      if (
+        message.startsWith("INVALID_FIELD_TYPE:") ||
+        message.startsWith("INVALID_SELECT_OPTION:") ||
+        message.startsWith("INVALID_IMAGE:") ||
+        message.startsWith("SELECT_OPTIONS_MISSING:")
+      ) {
+        return res.status(400).json({
+          success: false,
+          message
+        });
+      }
+
       return res.status(500).json({
         success: false,
         message: error.message || "Failed to create CMS entry"
@@ -363,18 +379,34 @@ export class CmsController {
       const data = await CmsService.updateEntry(siteId, entryId, req.body || {});
       return res.json({ success: true, data });
     } catch (error: any) {
+      const message = String(error.message);
+
       if (error.message === "ENTRY_NOT_FOUND") {
         return res.status(404).json({
           success: false,
           message: "Entry not found"
         });
       }
-      if (String(error.message).startsWith("REQUIRED_FIELD_MISSING:")) {
+
+      if (message.startsWith("REQUIRED_FIELD_MISSING:")) {
         return res.status(400).json({
           success: false,
-          message: error.message.replace("REQUIRED_FIELD_MISSING:", "Required field missing: ")
+          message: message.replace("REQUIRED_FIELD_MISSING:", "Required field missing: ")
         });
       }
+
+      if (
+        message.startsWith("INVALID_FIELD_TYPE:") ||
+        message.startsWith("INVALID_SELECT_OPTION:") ||
+        message.startsWith("INVALID_IMAGE:") ||
+        message.startsWith("SELECT_OPTIONS_MISSING:")
+      ) {
+        return res.status(400).json({
+          success: false,
+          message
+        });
+      }
+
       return res.status(500).json({
         success: false,
         message: error.message || "Failed to update CMS entry"
