@@ -724,8 +724,17 @@ const renderFlexItemBlock = (
       flexShrink: style.flexShrink ?? 1,
       flexBasis: style.flexBasis || "auto",
       minWidth: style.minWidth || "auto",
-      display: "block",
-      width: "100%",
+      display:
+  style.display ||
+  "block",
+
+width:
+  style.width ||
+  "auto",
+
+maxWidth:
+  style.maxWidth ||
+  "100%",
     });
 
   return `
@@ -1137,6 +1146,169 @@ const renderCollectionListBlock = async (
  * BLOCK REGISTRY
  * =========================================================
  */
+const renderNavbarBlock = (
+  data: any,
+  childrenHTML: string
+): string => {
+  const style =
+    getDesktopStyle(data);
+
+  const props =
+    data?.props || {};
+
+  const rawZIndex =
+    Number(
+      props.dropdownZIndex
+    );
+
+  const dropdownZIndex =
+    Number.isFinite(rawZIndex)
+      ? Math.max(
+          1,
+          Math.min(
+            999999,
+            Math.trunc(rawZIndex)
+          )
+        )
+      : 99999;
+
+  const className =
+    registerBlockCss(data, {
+      display: "flex",
+
+      flexDirection:
+        style.flexDirection ||
+        "row",
+
+      flexWrap:
+        style.flexWrap ||
+        "wrap",
+
+      justifyContent:
+        style.justifyContent ||
+        "space-between",
+
+      alignItems:
+        style.alignItems ||
+        "center",
+
+      gap:
+        style.gap ||
+        "24px",
+
+      width:
+        style.width ||
+        "100%",
+
+      maxWidth:
+        style.maxWidth ||
+        "100%",
+
+      minWidth:
+        style.minWidth ??
+        0,
+
+      minHeight:
+        style.minHeight,
+
+      padding:
+        style.padding,
+
+      background:
+        style.background,
+
+      backgroundColor:
+        style.backgroundColor,
+
+      color:
+        style.color,
+
+      borderBottom:
+        style.borderBottom,
+
+      boxShadow:
+        style.boxShadow,
+
+      backdropFilter:
+        style.backdropFilter,
+
+      borderRadius:
+        style.borderRadius,
+
+      boxSizing:
+        "border-box",
+
+      position:
+        "relative",
+
+      overflow:
+        "visible",
+
+      zIndex:
+        9999,
+
+      whiteSpace:
+        style.whiteSpace ||
+        "nowrap",
+    });
+
+  const context =
+    data?.__rbContext as
+      | RenderContext
+      | undefined;
+
+  if (context) {
+    context.responsiveCss.push(`
+.${className}{
+  overflow:visible;
+}
+
+.${className} > .pb-flex-item{
+  width:auto;
+  min-width:0;
+  flex:0 1 auto;
+}
+
+.${className} .navbar-dropdown-parent{
+  position:relative !important;
+  overflow:visible !important;
+  z-index:${dropdownZIndex} !important;
+}
+
+.${className} .navbar-dropdown-parent::after{
+  content:"";
+  position:absolute;
+  top:100%;
+  left:0;
+  right:0;
+  height:16px;
+  pointer-events:auto;
+  z-index:${dropdownZIndex - 1};
+}
+
+.${className} .navbar-dropdown-parent .navbar-submenu{
+  display:none !important;
+  position:absolute;
+  top:100%;
+  z-index:${dropdownZIndex} !important;
+}
+
+.${className} .navbar-dropdown-parent:hover .navbar-submenu,
+.${className} .navbar-dropdown-parent:focus-within .navbar-submenu,
+.${className} .navbar-dropdown-parent .navbar-submenu:hover{
+  display:flex !important;
+}
+`);
+  }
+
+  return `
+    <nav
+      class="pb-navbar ${className}"
+    >
+      ${childrenHTML}
+    </nav>
+  `;
+};
 
 type BlockRenderer = (
   data: any,
@@ -1198,9 +1370,10 @@ const BLOCK_RENDERERS: Record<
 
   select: (data) =>
     renderSelectBlock(data),
-
+  
   navbar:
-    renderFlexBlock,
+  renderNavbarBlock,
+  
 
   footer:
     renderFooterBlock,
