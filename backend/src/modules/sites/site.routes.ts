@@ -81,7 +81,7 @@ router.use(
 router.get(
   "/:siteId/export",
   siteAccessStack,
-  requirePermission(PERMISSIONS.SITE_READ),
+  requirePermission(PERMISSIONS.SITE_UPDATE),
   exportSite
 );
 export default router;
