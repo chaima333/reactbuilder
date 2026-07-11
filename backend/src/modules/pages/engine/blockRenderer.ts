@@ -307,6 +307,33 @@ const extractResponsiveStyle = (
     result.desktop = mergeStyles(result.desktop, propsStyle);
   }
 
+  const directBackgroundProps = {
+    background:
+      data?.props?.background,
+    backgroundColor:
+      data?.props?.backgroundColor,
+    backgroundImage:
+      data?.props?.backgroundImage,
+    backgroundSize:
+      data?.props?.backgroundSize,
+    backgroundPosition:
+      data?.props?.backgroundPosition,
+    backgroundRepeat:
+      data?.props?.backgroundRepeat,
+  };
+
+  result.desktop = mergeStyles(
+    result.desktop,
+    Object.fromEntries(
+      Object.entries(directBackgroundProps)
+        .filter(([, value]) =>
+          value !== undefined &&
+          value !== null &&
+          value !== ""
+        )
+    )
+  );
+
   if (isResponsiveStyle(dataStyle)) {
     result.desktop = mergeStyles(result.desktop, dataStyle.desktop);
     result.tablet = mergeStyles(result.tablet, dataStyle.tablet);
@@ -703,9 +730,14 @@ const renderFlexBlock = (
       boxSizing: "border-box",
     });
 
+  const isNavbarSubmenu =
+    data?.props?.semanticRole === "dropdown" ||
+    data?.semanticRole === "dropdown" ||
+    String(data?.__rbBlockId || "").startsWith("navbar-submenu-");
+
   return `
     <div
-      class="pb-flex ${className}"
+      class="pb-flex ${className}${isNavbarSubmenu ? " navbar-submenu" : ""}"
     >
       ${childrenHTML}
     </div>`;
@@ -737,9 +769,20 @@ maxWidth:
   "100%",
     });
 
+  const hasDropdownChild =
+    Array.isArray(data?.__rbChildren) &&
+    data.__rbChildren.some((child: any) =>
+      child?.data?.props?.semanticRole === "dropdown" ||
+      child?.props?.semanticRole === "dropdown" ||
+      (
+        child?.type === "flex" &&
+        String(child?.id || "").startsWith("navbar-submenu-")
+      )
+    );
+
   return `
     <div
-      class="pb-flex-item ${className}"
+      class="pb-flex-item ${className}${hasDropdownChild ? " navbar-dropdown-parent" : ""}"
     >
       ${childrenHTML}
     </div>`;
@@ -1430,6 +1473,20 @@ const renderBlocksInternal = async (
         ? {
             ...block.data,
 
+            __rbBlockId:
+              block.id,
+
+            __rbBlockType:
+              block.type,
+
+            __rbMeta:
+              block.meta,
+
+            __rbChildren:
+              Array.isArray(block.children)
+                ? block.children
+                : [],
+
             __rbClassName:
               `rb-block-${context.nextBlockId++}`,
 
@@ -1437,6 +1494,20 @@ const renderBlocksInternal = async (
               context,
           }
         : {
+            __rbBlockId:
+              block.id,
+
+            __rbBlockType:
+              block.type,
+
+            __rbMeta:
+              block.meta,
+
+            __rbChildren:
+              Array.isArray(block.children)
+                ? block.children
+                : [],
+
             __rbClassName:
               `rb-block-${context.nextBlockId++}`,
 
