@@ -53,12 +53,44 @@ export const safeURL = (url?: string): string => {
   }
 
   if (
-  /^data:image\/(?:png|jpeg|jpg|gif|webp|svg\+xml);base64,[a-zA-Z0-9+/=\s]+$/i.test(
-    trimmed
-  )
-) {
-  return trimmed;
-}
+    /^data:image\/(?:png|jpeg|jpg|gif|webp|svg\+xml);base64,[a-zA-Z0-9+/=\s]+$/i.test(
+      trimmed
+    )
+  ) {
+    return trimmed;
+  }
+
+  if (
+    /^data:image\/svg\+xml(?:;charset=[a-zA-Z0-9-]+)?(?:;utf8)?,/i.test(
+      trimmed
+    )
+  ) {
+    const svgPayload =
+      trimmed.slice(
+        trimmed.indexOf(",") + 1
+      );
+
+    let decodedPayload =
+      svgPayload;
+
+    try {
+      decodedPayload =
+        decodeURIComponent(
+          svgPayload
+        );
+    } catch {
+      decodedPayload =
+        svgPayload;
+    }
+
+    if (
+      !/<script|javascript:|on\w+=/i.test(
+        decodedPayload
+      )
+    ) {
+      return trimmed;
+    }
+  }
   try {
     const parsed = new URL(trimmed);
 
@@ -73,6 +105,44 @@ export const safeURL = (url?: string): string => {
   }
 
   return "#";
+};
+
+const resolveAssetUrl = (
+  value: unknown
+): string => {
+  if (!value) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (isRecord(value)) {
+    const candidates = [
+      value.url,
+      value.src,
+      value.secure_url,
+      value.secureUrl,
+      value.imageUrl,
+      value.publicUrl,
+      value.fileUrl,
+      value.path,
+    ];
+
+    for (const candidate of candidates) {
+      const resolved =
+        resolveAssetUrl(
+          candidate
+        );
+
+      if (resolved) {
+        return resolved;
+      }
+    }
+  }
+
+  return "";
 };
 
 export const safeColor = (color?: string): string => {
@@ -875,11 +945,33 @@ const renderTextBlock = (data: any): string => {
 };
 
 const renderImageBlock = (data: any): string => {
+  const props =
+    data?.props || {};
+
   const source =
-    safeURL(data.props?.src || "");
+    safeURL(
+      resolveAssetUrl(
+        props.src ||
+        props.url ||
+        props.image ||
+        props.imageUrl ||
+        props.logo ||
+        props.media ||
+        props.asset ||
+        data.src ||
+        data.url ||
+        data.image ||
+        data.imageUrl ||
+        data.logo ||
+        data.media ||
+        data.asset
+      )
+    );
 
   const alt =
-    data.props?.alt ||
+    props.alt ||
+    props.title ||
+    props.label ||
     data.alt ||
     "Image";
 
@@ -895,13 +987,36 @@ const renderImageBlock = (data: any): string => {
       height: "auto",
     });
 
-  return `
+  const imageHtml = `
     <img
       src="${escapeHTML(source)}"
       alt="${escapeHTML(alt)}"
       loading="lazy"
       class="${className}"
     />`;
+
+  const href =
+    safeURL(
+      props.href ||
+      props.linkHref ||
+      props.linkUrl ||
+      data.href ||
+      data.linkHref ||
+      data.linkUrl ||
+      ""
+    );
+
+  if (href !== "#") {
+    return `
+      <a
+        href="${escapeHTML(href)}"
+        class="pb-image-link"
+      >
+        ${imageHtml}
+      </a>`;
+  }
+
+  return imageHtml;
 };
 
 const renderLinkBlock = (data: any): string => {
