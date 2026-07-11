@@ -11,6 +11,7 @@ import {
 import { CmsField } from "./CmsField.model";
 import { CmsEntry } from "./CmsEntry.model";
 import { Site } from "./site";
+import { Page } from "./page";
 
 @Table({
   tableName: "cms_collections",
@@ -53,6 +54,21 @@ export class CmsCollection extends Model {
     allowNull: true
   })
   description?: string;
+
+  @ForeignKey(() => Page)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+    field: "template_page_id"
+  })
+  templatePageId?: number | null;
+
+  @BelongsTo(() => Page, {
+    foreignKey: "templatePageId",
+    onDelete: "SET NULL",
+    onUpdate: "CASCADE"
+  })
+  templatePage?: Page;
 
   @HasMany(() => CmsField)
   fields!: CmsField[];

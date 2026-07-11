@@ -1,5 +1,4 @@
-// cms.service.ts
-import { CmsCollection, CmsField, CmsEntry } from "../../models";
+import { CmsCollection, CmsField, CmsEntry, Page } from "../../models";
 
 const slugify = (value: string) =>
   value
@@ -32,7 +31,6 @@ const validateEntryData = (
       );
     }
 
-    // الحقل الاختياري الفارغ ما يحتاجش validation
     if (isEmptyValue(value)) {
       continue;
     }
@@ -191,7 +189,12 @@ export class CmsService {
       where: { id: collectionId, siteId },
       include: [
         { model: CmsField, required: false },
-        { model: CmsEntry, required: false }
+        { model: CmsEntry, required: false },
+        {
+          model: Page,
+          as: "templatePage",
+          required: false
+        }
       ]
     });
   }
@@ -201,14 +204,19 @@ export class CmsService {
       where: { siteId, slug },
       include: [
         { model: CmsField, required: false },
-        { model: CmsEntry, required: false }
+        { model: CmsEntry, required: false },
+        {
+          model: Page,
+          as: "templatePage",
+          required: false
+        }
       ]
     });
   }
 
   static async createCollection(
     siteId: number,
-    payload: { name: string; slug?: string; description?: string }
+    payload: { name: string; slug?: string; description?: string; templatePageId?: number | null }
   ) {
     const name = String(payload.name || "").trim();
     if (!name) throw new Error("COLLECTION_NAME_REQUIRED");
@@ -222,18 +230,36 @@ export class CmsService {
 
     if (existing) throw new Error("COLLECTION_SLUG_EXISTS");
 
+    let templatePageId: number | null = null;
+
+    if (payload.templatePageId) {
+      const page = await Page.findOne({
+        where: {
+          id: payload.templatePageId,
+          siteId
+        }
+      });
+
+      if (!page) {
+        throw new Error("TEMPLATE_PAGE_NOT_FOUND");
+      }
+
+      templatePageId = page.id;
+    }
+
     return CmsCollection.create({
       siteId,
       name,
       slug,
-      description: payload.description || null
+      description: payload.description || null,
+      templatePageId
     });
   }
 
   static async updateCollection(
     siteId: number,
     collectionId: number,
-    payload: { name?: string; slug?: string; description?: string }
+    payload: { name?: string; slug?: string; description?: string; templatePageId?: number | null }
   ) {
     const collection = await CmsCollection.findOne({
       where: { id: collectionId, siteId }
@@ -254,24 +280,128 @@ export class CmsService {
       if (existing) throw new Error("COLLECTION_SLUG_EXISTS");
     }
 
+    let templatePageId = collection.templatePageId;
+
+    if (payload.templatePageId !== undefined) {
+      if (payload.templatePageId === null) {
+        templatePageId = null;
+      } else {
+        const page = await Page.findOne({
+          where: {
+            id: payload.templatePageId,
+            siteId
+          }
+        });
+
+        if (!page) {
+          throw new Error("TEMPLATE_PAGE_NOT_FOUND");
+        }
+
+        templatePageId = page.id;
+      }
+    }
+
     await collection.update({
       name: nextName,
       slug: nextSlug,
-      description: payload.description !== undefined ? payload.description : collection.description
+      description: payload.description !== undefined ? payload.description : collection.description,
+      templatePageId
     });
 
-    return collection;
+    // ✅ إعادة تحميل الـ collection مع العلاقات
+    return CmsCollection.findOne({
+      where: { id: collection.id, siteId },
+      include: [
+        { model: CmsField, required: false },
+        { model: CmsEntry, required: false },
+        {
+          model: Page,
+          as: "templatePage",
+          required: false
+        }
+      ]
+    });
   }
 
-  static async deleteCollection(siteId: number, collectionId: number) {
+  static async deleteCollection(
+    siteId: number,
+    collectionId: number
+  ) {
     const collection = await CmsCollection.findOne({
-      where: { id: collectionId, siteId }
+      where: {
+        id: collectionId,
+        siteId
+      }
     });
 
-    if (!collection) throw new Error("COLLECTION_NOT_FOUND");
+    if (!collection) {
+      throw new Error("COLLECTION_NOT_FOUND");
+    }
 
     await collection.destroy();
+
     return true;
+  }
+
+  static async getPublishedEntryBySlug(
+    siteId: number,
+    collectionSlug: string,
+    entrySlug: string
+  ) {
+    const collection = await CmsCollection.findOne({
+      where: {
+        siteId,
+        slug: collectionSlug
+      },
+      include: [
+        {
+          model: Page,
+          as: "templatePage",
+          required: false
+        }
+      ]
+    });
+
+    if (!collection) {
+      throw new Error("COLLECTION_NOT_FOUND");
+    }
+
+    const entry = await CmsEntry.findOne({
+      where: {
+        siteId,
+        collectionId: collection.id,
+        slug: entrySlug,
+        status: "published"
+      }
+    });
+
+    if (!entry) {
+      throw new Error("ENTRY_NOT_FOUND");
+    }
+
+    return {
+      id: entry.id,
+      siteId: entry.siteId,
+      slug: entry.slug,
+      status: entry.status,
+      data: entry.data,
+      createdAt: entry.createdAt,
+      updatedAt: entry.updatedAt,
+      template: collection.templatePage
+        ? {
+            pageId: collection.templatePage.id,
+            title: collection.templatePage.title,
+            slug: collection.templatePage.slug,
+            blocks: collection.templatePage.blocks || []
+          }
+        : null,
+      collection: {
+        id: collection.id,
+        name: collection.name,
+        slug: collection.slug,
+        templatePageId: collection.templatePageId
+      }
+    };
   }
 
   // =====================================
@@ -555,56 +685,5 @@ export class CmsService {
         slug: collection.slug
       }
     }));
-  }
-
-  static async getPublishedEntryBySlug(
-    siteId: number,
-    collectionSlug: string,
-    entrySlug: string
-  ) {
-    const collection = await CmsCollection.findOne({
-      where: {
-        siteId,
-        slug: collectionSlug
-      }
-    });
-
-    if (!collection) {
-      throw new Error("COLLECTION_NOT_FOUND");
-    }
-
-    const entry = await CmsEntry.findOne({
-      where: {
-        siteId,
-        collectionId: collection.id,
-        slug: entrySlug,
-        status: "published"
-      },
-      include: [
-        {
-          model: CmsCollection,
-          attributes: ["id", "name", "slug"]
-        }
-      ]
-    });
-
-    if (!entry) {
-      throw new Error("ENTRY_NOT_FOUND");
-    }
-
-    return {
-      id: entry.id,
-      siteId: entry.siteId,
-      slug: entry.slug,
-      status: entry.status,
-      data: entry.data,
-      createdAt: entry.createdAt,
-      updatedAt: entry.updatedAt,
-      collection: {
-        id: collection.id,
-        name: collection.name,
-        slug: collection.slug
-      }
-    };
   }
 }

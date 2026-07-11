@@ -98,7 +98,12 @@ export class CmsController {
         });
       }
 
-      const data = await CmsService.updateCollection(siteId, collectionId, req.body || {});
+      const data = await CmsService.updateCollection(siteId, collectionId, {
+        name: req.body.name,
+        slug: req.body.slug,
+        description: req.body.description,
+        templatePageId: req.body.templatePageId !== undefined ? req.body.templatePageId : undefined
+      });
       return res.json({ success: true, data });
     } catch (error: any) {
       if (error.message === "COLLECTION_NOT_FOUND") {
