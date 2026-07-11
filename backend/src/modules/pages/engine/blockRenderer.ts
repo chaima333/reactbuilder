@@ -201,6 +201,11 @@ type ResponsiveStyle = {
 type RenderContext = {
   responsiveCss: string[];
   nextBlockId: number;
+  rewriteUrl?: (url: string) => string;
+};
+
+export type RenderBlocksOptions = {
+  rewriteUrl?: (url: string) => string;
 };
 
 const UNIT_LESS_CSS_PROPS = new Set([
@@ -490,6 +495,40 @@ const getDesktopStyle = (
   return extractResponsiveStyle(data).desktop || {};
 };
 
+const resolveHref = (
+  data: any,
+  value: unknown
+): string => {
+  const raw =
+    typeof value === "string"
+      ? value
+      : resolveAssetUrl(value);
+
+  const safe =
+    safeURL(
+      raw
+    );
+
+  const rewriteUrl =
+    data?.__rbContext?.rewriteUrl;
+
+  if (safe !== "#") {
+    return typeof rewriteUrl === "function"
+      ? safeURL(
+          rewriteUrl(safe)
+        )
+      : safe;
+  }
+
+  if (typeof rewriteUrl !== "function") {
+    return "#";
+  }
+
+  return safeURL(
+    rewriteUrl(raw)
+  );
+};
+
 const mapResponsiveStyle = (
   responsive: ResponsiveStyle,
   mapper: (style: Record<string, unknown>) => Record<string, unknown>
@@ -639,7 +678,8 @@ const renderCTABlock = (data: any): string => {
         ? `
       <a
         href="${escapeHTML(
-          safeURL(
+          resolveHref(
+            data,
             data.props?.buttonUrl ||
               "#"
           )
@@ -793,7 +833,8 @@ const renderButtonBlock = (data: any): string => {
     });
 
   const href =
-    safeURL(
+    resolveHref(
+      data,
       data.props?.href ||
       data.props?.url ||
       data.props?.link ||
@@ -1340,7 +1381,8 @@ const renderImageBlock = (data: any): string => {
     />`;
 
   const href =
-    safeURL(
+    resolveHref(
+      data,
       props.href ||
       props.linkHref ||
       props.linkUrl ||
@@ -1371,7 +1413,8 @@ const renderLinkBlock = (data: any): string => {
   <a
     class="${className}"
     href="${escapeHTML(
-      safeURL(
+      resolveHref(
+        data,
         data.props?.href ||
           data.props?.url
       )
@@ -2028,11 +2071,14 @@ const renderBlocksInternal = async (
 
 export const renderBlocks = async (
   blocks: any[] = [],
-  siteId?: number
+  siteId?: number,
+  options: RenderBlocksOptions = {}
 ): Promise<string> => {
   const context: RenderContext = {
     responsiveCss: [],
     nextBlockId: 1,
+    rewriteUrl:
+      options.rewriteUrl,
   };
 
   const html =

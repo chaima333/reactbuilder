@@ -130,6 +130,117 @@ const getPublicPath = (
   return `/${slug}/`;
 };
 
+export const createStaticExportUrlResolver = (
+  siteId: number,
+  publishedSlugs: Iterable<string>
+) => {
+  const sitePrefix =
+    `/site/${siteId}`;
+
+  const knownSlugs =
+    new Set(
+      Array.from(publishedSlugs)
+        .map((slug) =>
+          normalizeSlug(
+            slug,
+            ""
+          )
+        )
+        .filter(Boolean)
+    );
+
+  return (value: string): string => {
+    const raw =
+      String(value || "")
+        .trim();
+
+    if (!raw) {
+      return raw;
+    }
+
+    if (
+      raw.startsWith("#") ||
+      /^https?:\/\//i.test(raw) ||
+      /^mailto:/i.test(raw) ||
+      /^tel:/i.test(raw) ||
+      /^data:/i.test(raw)
+    ) {
+      return raw;
+    }
+
+    let pathname =
+      raw;
+
+    let suffix =
+      "";
+
+    const suffixMatch =
+      pathname.match(/([?#].*)$/);
+
+    if (suffixMatch) {
+      suffix =
+        suffixMatch[1];
+
+      pathname =
+        pathname.slice(
+          0,
+          suffixMatch.index
+        );
+    }
+
+    pathname =
+      pathname.replace(
+        /\/+$/g,
+        ""
+      );
+
+    if (
+      pathname === sitePrefix ||
+      pathname === `${sitePrefix}/home`
+    ) {
+      return `/${suffix}`;
+    }
+
+    if (
+      pathname.startsWith(
+        `${sitePrefix}/`
+      )
+    ) {
+      const slug =
+        normalizeSlug(
+          pathname.slice(
+            sitePrefix.length + 1
+          ),
+          ""
+        );
+
+      return isHomeSlug(slug)
+        ? `/${suffix}`
+        : `/${slug}/${suffix}`;
+    }
+
+    const slug =
+      normalizeSlug(
+        pathname.replace(
+          /^\/+/,
+          ""
+        ),
+        ""
+      );
+
+    if (
+      slug &&
+      knownSlugs.has(slug)
+    ) {
+      return isHomeSlug(slug)
+        ? `/${suffix}`
+        : `/${slug}/${suffix}`;
+    }
+
+    return raw;
+  };
+};
+
 const buildAbsoluteUrl = (
   baseUrl: string,
   publicPath: string
@@ -364,6 +475,17 @@ export const exportSite = async (
       siteSettings?.theme ||
       siteData?.settings?.theme;
 
+    const staticExportUrlResolver =
+      createStaticExportUrlResolver(
+        siteId,
+        pages.map((page) =>
+          normalizeSlug(
+            (page.toJSON() as any).slug,
+            `page-${page.id}`
+          )
+        )
+      );
+
     for (
       const page of pages
     ) {
@@ -435,7 +557,11 @@ export const exportSite = async (
       const blocksHTML =
         await renderBlocks(
           resolvedBlocks,
-          siteId
+          siteId,
+          {
+            rewriteUrl:
+              staticExportUrlResolver,
+          }
         );
 
       const html =

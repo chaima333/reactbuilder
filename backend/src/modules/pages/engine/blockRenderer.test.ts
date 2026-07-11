@@ -152,4 +152,110 @@ describe("static block renderer parity", () => {
     expect(html).toContain("opacity:0.4");
     expect(html).toContain("var(--rb-color-primary)");
   });
+
+  it("rewrites static export internal navigation links while preserving special links", async () => {
+    const rewriteUrl = (url: string) => {
+      if (
+        url === "/site/420" ||
+        url === "/site/420/" ||
+        url === "/site/420/home"
+      ) {
+        return "/";
+      }
+
+      if (url === "/site/420/services-finance") {
+        return "/services-finance/";
+      }
+
+      if (url === "services-finance") {
+        return "/services-finance/";
+      }
+
+      return url;
+    };
+
+    const html =
+      await renderBlocks(
+        [
+          {
+            id: "home-link",
+            type: "link",
+            data: {
+              props: {
+                href: "/site/420/home",
+                label: "Home",
+              },
+            },
+            children: [],
+          },
+          {
+            id: "service-button",
+            type: "button",
+            data: {
+              props: {
+                href: "/site/420/services-finance",
+                label: "Services",
+              },
+            },
+            children: [],
+          },
+          {
+            id: "known-slug-link",
+            type: "link",
+            data: {
+              props: {
+                href: "services-finance",
+                label: "Known slug",
+              },
+            },
+            children: [],
+          },
+          {
+            id: "external-link",
+            type: "link",
+            data: {
+              props: {
+                href: "https://example.com/page",
+                label: "External",
+              },
+            },
+            children: [],
+          },
+          {
+            id: "anchor-link",
+            type: "link",
+            data: {
+              props: {
+                href: "#contact",
+                label: "Anchor",
+              },
+            },
+            children: [],
+          },
+          {
+            id: "mailto-link",
+            type: "link",
+            data: {
+              props: {
+                href: "mailto:hello@example.com",
+                label: "Email",
+              },
+            },
+            children: [],
+          },
+        ],
+        420,
+        {
+          rewriteUrl,
+        }
+      );
+
+    expect(html).toContain('href="/"');
+    expect(
+      html.match(/href="\/services-finance\/"/g)
+    ).toHaveLength(2);
+    expect(html).toContain('href="https://example.com/page"');
+    expect(html).toContain('href="#contact"');
+    expect(html).toContain('href="mailto:hello@example.com"');
+  });
 });
