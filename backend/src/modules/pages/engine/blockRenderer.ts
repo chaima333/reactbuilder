@@ -265,6 +265,10 @@ const isResponsiveStyle = (
 const toKebabCase = (
   value: string
 ): string => {
+  if (value.startsWith("--")) {
+    return value;
+  }
+
   return value
     .replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`)
     .replace(/^ms-/, "-ms-");
@@ -324,7 +328,7 @@ const serializeStyleObject = (
         key.startsWith("__") ||
         key === "children" ||
         key === "zoom" ||
-        !/^[a-zA-Z][a-zA-Z0-9-]*$/.test(key)
+        !/^(?:--[a-zA-Z0-9-_]+|[a-zA-Z][a-zA-Z0-9-]*)$/.test(key)
       ) {
         return "";
       }
@@ -485,6 +489,84 @@ const getDesktopStyle = (
 ): Record<string, unknown> => {
   return extractResponsiveStyle(data).desktop || {};
 };
+
+const mapResponsiveStyle = (
+  responsive: ResponsiveStyle,
+  mapper: (style: Record<string, unknown>) => Record<string, unknown>
+): ResponsiveStyle => ({
+  desktop: mapper(responsive.desktop || {}),
+  tablet: mapper(responsive.tablet || {}),
+  mobile: mapper(responsive.mobile || {}),
+});
+
+const withResponsiveStyle = (
+  data: any,
+  style: ResponsiveStyle,
+  className: string
+) => ({
+  ...data,
+  style,
+  __rbClassName: className,
+});
+
+const pickStyleProps = (
+  style: Record<string, unknown>,
+  keys: string[]
+): Record<string, unknown> => {
+  return Object.fromEntries(
+    keys
+      .filter((key) =>
+        style[key] !== undefined &&
+        style[key] !== null &&
+        style[key] !== ""
+      )
+      .map((key) => [
+        key,
+        style[key],
+      ])
+  );
+};
+
+const omitStyleProps = (
+  style: Record<string, unknown>,
+  keys: string[]
+): Record<string, unknown> => {
+  const omitted =
+    new Set(keys);
+
+  return Object.fromEntries(
+    Object.entries(style)
+      .filter(([key]) =>
+        !omitted.has(key)
+      )
+  );
+};
+
+const SECTION_BACKGROUND_PROPS = [
+  "background",
+  "backgroundColor",
+  "backgroundImage",
+  "backgroundSize",
+  "backgroundPosition",
+  "backgroundRepeat",
+  "color",
+];
+
+const SECTION_INNER_LAYOUT_PROPS = [
+  "display",
+  "flexDirection",
+  "justifyContent",
+  "alignItems",
+  "gap",
+  "textAlign",
+];
+
+const SECTION_OUTER_ONLY_PROPS = [
+  "maxWidth",
+  "marginLeft",
+  "marginRight",
+  ...SECTION_INNER_LAYOUT_PROPS,
+];
 
 /**
  * =========================================================
@@ -703,52 +785,150 @@ const renderButtonBlock = (data: any): string => {
   const className =
     registerBlockCss(data, {
       display: "inline-block",
-      background: safeColor(data.props?.color || data.color),
-      color: "white",
       padding: "12px 25px",
-      borderRadius: "6px",
+      borderRadius: "8px",
       textDecoration: "none",
+      fontWeight: 700,
+      cursor: "pointer",
     });
 
-  return `
-  <div
-    class="button-wrapper"
-    style="text-align:center;margin:20px 0;"
-  >
+  const href =
+    safeURL(
+      data.props?.href ||
+      data.props?.url ||
+      data.props?.link ||
+      data.url ||
+      ""
+    );
+
+  const label =
+    data.props?.label ||
+    data.props?.text ||
+    "Button";
+
+  if (href !== "#") {
+    return `
     <a
-      href="${escapeHTML(
-        safeURL(
-          data.props?.url ||
-            data.url
-        )
-      )}"
-      class="btn-primary ${className}"
+      href="${escapeHTML(href)}"
+      class="${className}"
     >
-      ${escapeHTML(
-        data.props?.label ||
-          data.label ||
-          "Click here"
-      )}
-    </a>
-  </div>`;
+      ${escapeHTML(label)}
+    </a>`;
+  }
+
+  return `
+    <button
+      type="button"
+      class="${className}"
+    >
+      ${escapeHTML(label)}
+    </button>`;
 };
 
 const renderSectionBlock = (
   data: any,
   childrenHTML: string
 ): string => {
-  const className =
-    registerBlockCss(data, {
-      width: "100%",
-      padding: "40px 0",
-    });
+  const responsive =
+    extractResponsiveStyle(data);
+
+  const rootClassName =
+    registerBlockCss(
+      withResponsiveStyle(
+        data,
+        mapResponsiveStyle(
+          responsive,
+          (style) =>
+            pickStyleProps(
+              style,
+              SECTION_BACKGROUND_PROPS
+            )
+        ),
+        `${data?.__rbClassName || "rb-section"}-root`
+      ),
+      {
+        width: "100%",
+        position: "relative",
+        marginBottom: 0,
+        boxSizing: "border-box",
+      }
+    );
+
+  const shellClassName =
+    registerBlockCss(
+      withResponsiveStyle(
+        data,
+        mapResponsiveStyle(
+          responsive,
+          (style) =>
+            omitStyleProps(
+              style,
+              SECTION_OUTER_ONLY_PROPS
+            )
+        ),
+        data?.__rbClassName || "rb-section"
+      ),
+      {
+        width: "100%",
+        minWidth: 0,
+        maxWidth: "100%",
+        minHeight: "200px",
+        paddingTop: "80px",
+        paddingBottom: "80px",
+        paddingLeft: "24px",
+        paddingRight: "24px",
+        boxSizing: "border-box",
+      }
+    );
+
+  const innerClassName =
+    registerBlockCss(
+      withResponsiveStyle(
+        data,
+        mapResponsiveStyle(
+          responsive,
+          (style) => ({
+            width:
+              style.width,
+            maxWidth:
+              style.maxWidth,
+            marginLeft:
+              style.marginLeft,
+            marginRight:
+              style.marginRight,
+            ...pickStyleProps(
+              style,
+              SECTION_INNER_LAYOUT_PROPS
+            ),
+          })
+        ),
+        `${data?.__rbClassName || "rb-section"}-inner`
+      ),
+      {
+        width: "100%",
+        minWidth: 0,
+        maxWidth: "100%",
+        marginLeft: "auto",
+        marginRight: "auto",
+        boxSizing: "border-box",
+        position: "relative",
+      }
+    );
 
   return `
-  <section
-    class="pb-section ${className}"
+  <div
+    class="pb-section-root ${rootClassName}"
   >
-    ${childrenHTML}
-  </section>`;
+    <section
+      class="pb-section ${shellClassName}"
+    >
+      <div
+        class="pb-section-inner ${innerClassName}"
+      >
+        ${childrenHTML}
+      </div>
+    </section>
+  </div>`;
 };
 
 const renderFooterBlock = (
@@ -788,16 +968,29 @@ const renderFlexBlock = (
   const style =
     getDesktopStyle(data);
 
+  const flexDirection =
+    style.flexDirection || "row";
+
   const className =
     registerBlockCss(data, {
       display: "flex",
-      flexDirection: style.flexDirection || "row",
+      flexDirection,
       justifyContent: style.justifyContent || "flex-start",
       alignItems: style.alignItems || "stretch",
-      gap: style.gap || "0px",
-      flexWrap: style.flexWrap || "nowrap",
+      gap: style.gap || "24px",
+      flexWrap:
+        style.flexWrap ||
+        (
+          flexDirection === "column"
+            ? "nowrap"
+            : "wrap"
+        ),
       width: "100%",
+      maxWidth: "100%",
+      minWidth: 0,
       boxSizing: "border-box",
+      position: "relative",
+      overflow: "visible",
     });
 
   const isNavbarSubmenu =
@@ -822,21 +1015,10 @@ const renderFlexItemBlock = (
 
   const className =
     registerBlockCss(data, {
-      flexGrow: style.flexGrow ?? 0,
-      flexShrink: style.flexShrink ?? 1,
-      flexBasis: style.flexBasis || "auto",
-      minWidth: style.minWidth || "auto",
-      display:
-  style.display ||
-  "block",
-
-width:
-  style.width ||
-  "auto",
-
-maxWidth:
-  style.maxWidth ||
-  "100%",
+      minWidth: 0,
+      boxSizing: "border-box",
+      position: "relative",
+      overflow: "visible",
     });
 
   const hasDropdownChild =
@@ -899,17 +1081,114 @@ const renderGridItemBlock = (
 ): string => {
   const className =
     registerBlockCss(data, {
-      padding: "20px",
-      border: "1px solid #eee",
-      borderRadius: "8px",
+      width: "100%",
+      minWidth: 0,
+      maxWidth: "100%",
+      minHeight: 0,
+      alignSelf: "stretch",
+      justifySelf: "stretch",
+      overflow: "visible",
+      boxSizing: "border-box",
+      display: "block",
+      gridColumn: "auto",
+      gridRow: "auto",
+      position: "relative",
     });
 
   return `
   <div
     class="pb-grid-item ${className}"
   >
-    ${childrenHTML}
+    <div
+      class="pb-grid-item-inner"
+      style="display:contents;min-width:0;max-width:100%;box-sizing:border-box;width:100%;height:100%;overflow:visible;"
+    >
+      ${childrenHTML}
+    </div>
   </div>`;
+};
+
+const hasAnyStyleProp = (
+  style: Record<string, unknown>,
+  keys: string[]
+): boolean => {
+  return keys.some((key) =>
+    style[key] !== undefined &&
+    style[key] !== null &&
+    style[key] !== ""
+  );
+};
+
+const normalizeText = (
+  value: unknown
+): string => {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
+const renderTitleSegments = (
+  data: any,
+  content: string
+): string | null => {
+  const segments =
+    Array.isArray(data?.props?.segments)
+      ? data.props.segments
+      : [];
+
+  if (segments.length === 0) {
+    return null;
+  }
+
+  const segmentText =
+    normalizeText(
+      segments
+        .map((segment: any) =>
+          segment?.text || ""
+        )
+        .join("")
+    );
+
+  if (
+    segmentText !==
+    normalizeText(content)
+  ) {
+    return null;
+  }
+
+  return segments
+    .map((segment: any) => {
+      const text =
+        escapeHTML(
+          segment?.text || ""
+        );
+
+      if (
+        segment?.variant !== "accent"
+      ) {
+        return text;
+      }
+
+      const background =
+        segment?.style?.backgroundImage &&
+        segment.style.backgroundImage !== "none"
+          ? segment.style.backgroundImage
+          : "linear-gradient(90deg, #0A84FF, #F77F00)";
+
+      const style =
+        serializeStyleObject({
+          background,
+          WebkitBackgroundClip:
+            "text",
+          backgroundClip:
+            "text",
+          WebkitTextFillColor:
+            "transparent",
+        });
+
+      return `<span style="${escapeHTML(style)}">${text}</span>`;
+    })
+    .join("");
 };
 
 const renderTitleBlock = (data: any): string => {
@@ -921,11 +1200,45 @@ const renderTitleBlock = (data: any): string => {
     resolvedData?.props?.content ||
     "Title";
 
+  const desktopStyle =
+    getDesktopStyle(data);
+
+  const hasMargin =
+    hasAnyStyleProp(
+      desktopStyle,
+      [
+        "margin",
+        "marginTop",
+        "marginBottom",
+        "marginLeft",
+        "marginRight",
+      ]
+    );
+
   const className =
-    registerBlockCss(data, {});
+    registerBlockCss(data, {
+      width: "auto",
+      maxWidth: "100%",
+      display: "block",
+      minWidth: 0,
+      margin: hasMargin ? undefined : 0,
+      overflowWrap: "break-word",
+      wordBreak: "normal",
+      lineHeight: "1.15",
+      overflow: "visible",
+      whiteSpace: "normal",
+      boxSizing: "border-box",
+    });
+
+  const contentHTML =
+    renderTitleSegments(
+      resolvedData,
+      String(text)
+    ) ||
+    escapeHTML(text);
 
   return `
-    <h2 class="${className}">${escapeHTML(text)}</h2>`;
+    <h2 class="${className}">${contentHTML}</h2>`;
 };
 
 const renderTextBlock = (data: any): string => {
@@ -937,11 +1250,42 @@ const renderTextBlock = (data: any): string => {
     resolvedData?.props?.content ||
     "Text";
 
+  const isKpiNumber =
+    resolvedData?.props?.semanticRole ===
+    "kpiNumber";
+
   const className =
-    registerBlockCss(data, {});
+    registerBlockCss(data, {
+      width: isKpiNumber
+        ? "auto"
+        : "100%",
+      maxWidth: isKpiNumber
+        ? "none"
+        : "100%",
+      minWidth: isKpiNumber
+        ? "auto"
+        : 0,
+      height: "auto",
+      margin: 0,
+      overflow: "visible",
+      overflowWrap: isKpiNumber
+        ? "normal"
+        : "break-word",
+      wordBreak: isKpiNumber
+        ? "keep-all"
+        : "normal",
+      whiteSpace: isKpiNumber
+        ? "nowrap"
+        : "normal",
+      hyphens: "none",
+      lineHeight: isKpiNumber
+        ? "1"
+        : "1.55",
+      boxSizing: "border-box",
+    });
 
   return `
-    <p class="${className}">${escapeHTML(text)}</p>`;
+    <div class="${className}">${escapeHTML(text)}</div>`;
 };
 
 const renderImageBlock = (data: any): string => {
