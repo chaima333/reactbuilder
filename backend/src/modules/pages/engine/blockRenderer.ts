@@ -363,6 +363,37 @@ const mergeStyles = (
   );
 };
 
+const normalizeStaticExportStyle = (
+  style: Record<string, unknown>
+): Record<string, unknown> => {
+  const result = {
+    ...style,
+  };
+
+  const hasMotionMarker =
+    result.animation ||
+    result.animationName ||
+    result.animationDuration ||
+    result.transition ||
+    result.transitionProperty;
+
+  if (hasMotionMarker) {
+    if (
+      String(result.opacity).trim() === "0"
+    ) {
+      result.opacity = 1;
+    }
+
+    if (
+      String(result.visibility).trim() === "hidden"
+    ) {
+      result.visibility = "visible";
+    }
+  }
+
+  return result;
+};
+
 const extractResponsiveStyle = (
   data: any
 ): ResponsiveStyle => {
@@ -420,6 +451,28 @@ const extractResponsiveStyle = (
   } else if (isRecord(dataStyle)) {
     result.desktop = mergeStyles(result.desktop, dataStyle);
   }
+
+  result.desktop =
+    normalizeStaticExportStyle(
+      result.desktop || {}
+    );
+
+  result.tablet =
+    normalizeStaticExportStyle(
+      mergeStyles(
+        result.desktop,
+        result.tablet
+      )
+    );
+
+  result.mobile =
+    normalizeStaticExportStyle(
+      mergeStyles(
+        result.desktop,
+        result.tablet,
+        result.mobile
+      )
+    );
 
   return result;
 };
@@ -605,6 +658,24 @@ const SECTION_OUTER_ONLY_PROPS = [
   "marginLeft",
   "marginRight",
   ...SECTION_INNER_LAYOUT_PROPS,
+];
+
+const FLEX_RUNTIME_IGNORED_PROPS = [
+  "height",
+  "maxHeight",
+];
+
+const GRID_RUNTIME_IGNORED_PROPS = [
+  "height",
+  "maxHeight",
+];
+
+const TITLE_RUNTIME_OVERRIDE_PROPS = [
+  "whiteSpace",
+  "wordBreak",
+  "overflowWrap",
+  "overflow",
+  "boxSizing",
 ];
 
 /**
@@ -1009,11 +1080,28 @@ const renderFlexBlock = (
   const style =
     getDesktopStyle(data);
 
+  const responsive =
+    extractResponsiveStyle(data);
+
+  const renderData =
+    withResponsiveStyle(
+      data,
+      mapResponsiveStyle(
+        responsive,
+        (style) =>
+          omitStyleProps(
+            style,
+            FLEX_RUNTIME_IGNORED_PROPS
+          )
+      ),
+      data?.__rbClassName || "rb-flex"
+    );
+
   const flexDirection =
     style.flexDirection || "row";
 
   const className =
-    registerBlockCss(data, {
+    registerBlockCss(renderData, {
       display: "flex",
       flexDirection,
       justifyContent: style.justifyContent || "flex-start",
@@ -1088,6 +1176,23 @@ const renderGridBlock = (
   const style =
     getDesktopStyle(data);
 
+  const responsive =
+    extractResponsiveStyle(data);
+
+  const renderData =
+    withResponsiveStyle(
+      data,
+      mapResponsiveStyle(
+        responsive,
+        (style) =>
+          omitStyleProps(
+            style,
+            GRID_RUNTIME_IGNORED_PROPS
+          )
+      ),
+      data?.__rbClassName || "rb-grid"
+    );
+
   const columns =
     normalizeGridColumns(
       style.columns,
@@ -1101,7 +1206,7 @@ const renderGridBlock = (
       : `repeat(${columns}, 1fr)`;
 
   const className =
-    registerBlockCss(data, {
+    registerBlockCss(renderData, {
       display: "grid",
       gap: style.gap || "24px",
       width: "100%",
@@ -1256,8 +1361,25 @@ const renderTitleBlock = (data: any): string => {
       ]
     );
 
+  const responsive =
+    extractResponsiveStyle(data);
+
+  const renderData =
+    withResponsiveStyle(
+      data,
+      mapResponsiveStyle(
+        responsive,
+        (style) =>
+          omitStyleProps(
+            style,
+            TITLE_RUNTIME_OVERRIDE_PROPS
+          )
+      ),
+      data?.__rbClassName || "rb-title"
+    );
+
   const className =
-    registerBlockCss(data, {
+    registerBlockCss(renderData, {
       width: "auto",
       maxWidth: "100%",
       display: "block",

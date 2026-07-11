@@ -258,4 +258,181 @@ describe("static block renderer parity", () => {
     expect(html).toContain('href="#contact"');
     expect(html).toContain('href="mailto:hello@example.com"');
   });
+
+  it("keeps real page content between global navbar and footer", async () => {
+    const html =
+      await renderBlocks([
+        {
+          id: "nav",
+          type: "navbar",
+          data: {
+            style: {
+              desktop: {},
+            },
+          },
+          children: [],
+        },
+        {
+          id: "content",
+          type: "section",
+          data: {
+            style: {
+              desktop: {},
+            },
+          },
+          children: [
+            {
+              id: "title",
+              type: "title",
+              data: {
+                props: {
+                  content: "Industries content",
+                },
+                style: {
+                  desktop: {},
+                },
+              },
+              children: [],
+            },
+          ],
+        },
+        {
+          id: "footer",
+          type: "footer",
+          data: {
+            style: {
+              desktop: {},
+            },
+          },
+          children: [],
+        },
+      ]);
+
+    expect(html.indexOf("pb-navbar")).toBeGreaterThan(-1);
+    expect(html.indexOf("Industries content")).toBeGreaterThan(
+      html.indexOf("pb-navbar")
+    );
+    expect(html.indexOf("Industries content")).toBeLessThan(
+      html.indexOf("pb-footer")
+    );
+  });
+
+  it("lets long titles wrap even when imported HTML saved nowrap styles", async () => {
+    const html =
+      await renderBlocks([
+        {
+          id: "long-title",
+          type: "title",
+          data: {
+            props: {
+              content:
+                "Nous ne sommes pas un cabinet de conseil traditionnel",
+            },
+            style: {
+              desktop: {
+                width: "max-content",
+                maxWidth: "900px",
+                whiteSpace: "nowrap",
+                wordBreak: "keep-all",
+                overflowWrap: "normal",
+              },
+            },
+          },
+          children: [],
+        },
+      ]);
+
+    expect(html).toMatch(/white-space:normal/);
+    expect(html).toMatch(/overflow-wrap:break-word/);
+    expect(html).not.toMatch(/white-space:nowrap/);
+  });
+
+  it("ignores imported fixed flex and grid heights while preserving intentional minHeight", async () => {
+    const html =
+      await renderBlocks([
+        {
+          id: "imported-flex",
+          type: "flex",
+          data: {
+            style: {
+              desktop: {
+                height: "900px",
+                minHeight: "220px",
+              },
+            },
+          },
+          children: [],
+        },
+        {
+          id: "imported-grid",
+          type: "grid",
+          data: {
+            style: {
+              desktop: {
+                height: "640px",
+                minHeight: "180px",
+              },
+            },
+          },
+          children: [],
+        },
+      ]);
+
+    expect(html).not.toContain("height:900px");
+    expect(html).not.toContain("height:640px");
+    expect(html).toContain("min-height:220px");
+    expect(html).toContain("min-height:180px");
+  });
+
+  it("renders animated initial hidden states as visible in static export", async () => {
+    const html =
+      await renderBlocks([
+        {
+          id: "animated",
+          type: "text",
+          data: {
+            props: {
+              content: "Animated content",
+            },
+            style: {
+              desktop: {
+                opacity: 0,
+                visibility: "hidden",
+                animation: "fade-in 400ms ease forwards",
+              },
+            },
+          },
+          children: [],
+        },
+      ]);
+
+    expect(html).toContain("opacity:1");
+    expect(html).toContain("visibility:visible");
+    expect(html).toContain("Animated content");
+  });
+
+  it("maps unique published slugs to unique static archive paths", () => {
+    const getArchivePath = (slug: string) =>
+      slug === "home" || slug === "index"
+        ? "index.html"
+        : `${slug}/index.html`;
+
+    const slugs = [
+      "home",
+      "industries",
+      "about",
+      "vi-platform",
+    ];
+
+    const paths =
+      slugs.map(getArchivePath);
+
+    expect(new Set(paths).size).toBe(paths.length);
+    expect(paths).toEqual([
+      "index.html",
+      "industries/index.html",
+      "about/index.html",
+      "vi-platform/index.html",
+    ]);
+  });
 });
