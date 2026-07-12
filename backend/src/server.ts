@@ -58,6 +58,7 @@ import cmsPublicRoutes from "./modules/cms/cms.public.routes";
 
 // ✅ استورد getPublicPageById
 import { getPublicPageById } from "./modules/pages/controllers/page.controller";
+import formsPublicRoutes from "./modules/forms/forms.public.routes";
 
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
@@ -100,7 +101,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 ======================== */
 app.use("/p", publicRoutes);
 app.use("/p/public", publicSiteRoutes);
-
+app.use( "/api/public",formsPublicRoutes);
 /* ========================
    AUTH
 ======================== */
@@ -113,7 +114,6 @@ app.use("/api/public/sites/:siteId/cms", cmsPublicRoutes);
    PUBLIC PAGE ROUTES (NO AUTH) ✅ MUST BE BEFORE TENANT
 ======================== */
 
-// ✅ Route للـ Public Page by ID (بدون Auth)
 app.get(
   "/api/sites/:siteId/pages/:pageId/public",
   getPublicPageById

@@ -435,4 +435,81 @@ describe("static block renderer parity", () => {
       "vi-platform/index.html",
     ]);
   });
+
+  it("centers desktop section inner containers without changing two-column layout", async () => {
+    const html =
+      await renderBlocks([
+        {
+          id: "cta-section",
+          type: "section",
+          data: {
+            style: {
+              desktop: {
+                background: "#020b16",
+                width: "100%",
+                maxWidth: "1180px",
+                padding: "120px 0px",
+              },
+            },
+          },
+          children: [
+            {
+              id: "cta-container",
+              type: "flex",
+              data: {
+                style: {
+                  desktop: {
+                    width: "1320px",
+                    maxWidth: "1320px",
+                    marginLeft: "52px",
+                    marginRight: "52px",
+                    paddingLeft: "32px",
+                    paddingRight: "32px",
+                    display: "flex",
+                    gap: "24px",
+                  },
+                },
+              },
+              children: [
+                {
+                  id: "left",
+                  type: "flexItem",
+                  data: {
+                    style: {
+                      desktop: {
+                        flex: "1 1 0",
+                      },
+                    },
+                  },
+                  children: [],
+                },
+                {
+                  id: "right",
+                  type: "flexItem",
+                  data: {
+                    style: {
+                      desktop: {
+                        flex: "1 1 0",
+                      },
+                    },
+                  },
+                  children: [],
+                },
+              ],
+            },
+          ],
+        },
+      ]);
+
+    expect(html).toMatch(/\.rb-block-4-root\{[^}]*width:100%/);
+    expect(html).toMatch(/\.rb-block-4-root\{[^}]*background:#020b16/);
+    expect(html).toMatch(/\.rb-block-4-inner\{[^}]*max-width:1320px/);
+    expect(html).toMatch(/\.rb-block-4-inner\{[^}]*margin-left:auto/);
+    expect(html).toMatch(/\.rb-block-4-inner\{[^}]*margin-right:auto/);
+    expect(html).toMatch(/\.rb-block-3\{[^}]*width:100%/);
+    expect(html).toMatch(/\.rb-block-3\{[^}]*max-width:1320px/);
+    expect(html).toMatch(/\.rb-block-3\{[^}]*margin-left:auto/);
+    expect(html).toMatch(/\.rb-block-3\{[^}]*margin-right:auto/);
+    expect(html).toMatch(/\.rb-block-3\{[^}]*display:flex/);
+  });
 });

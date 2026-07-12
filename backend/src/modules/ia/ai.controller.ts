@@ -24,7 +24,6 @@ const getGenerationErrorCode = (error: any) => {
 
 export const generatePage = async (req: AuthRequest, res: Response) => {
   try {
-    // Najem naamlou validation mel log
     console.log("🚀 GENERATE_PAGE_STARTED", {
       siteId: req.siteContext?.siteId,
       userId: req.user?.id,

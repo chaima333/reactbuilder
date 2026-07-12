@@ -1,10 +1,11 @@
 import { Sequelize } from "sequelize-typescript";
-import { User, Token, Page, Site, ActivityLog, Media, PageVersion, PageSlug, FigmaImport, ContactSubmission, FigmaPluginToken, PlatformSetting, AiGeneration, SiteInvitation, AiActivityEvent, PartnerApplication, CmsEntry, CmsCollection, CmsField } from "../../models"; 
+import { User, Token, Page, Site, ActivityLog, Media, PageVersion, PageSlug, FigmaImport, ContactSubmission, FigmaPluginToken, PlatformSetting, AiGeneration, SiteInvitation, AiActivityEvent, PartnerApplication, CmsEntry, CmsCollection, CmsField, FormSubmission } from "../../models"; 
 import { Seo } from "../../models/Seo";
 import { Plugin } from "../../models/Plugin";
 import { SiteMember } from "../../models/SiteMember";
 import { SitePlugin } from "../../models/SitePlugin";
 import Notification from "../../models/Notification";
+import { Form } from "../../models/Form.model";
 const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
@@ -40,7 +41,9 @@ export const sequelize = new Sequelize(databaseUrl, {
     PartnerApplication,
     CmsEntry,
      CmsCollection,
-     CmsField
+     CmsField,
+     FormSubmission,
+     Form
     
   ],
 

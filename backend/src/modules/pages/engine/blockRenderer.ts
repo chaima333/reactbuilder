@@ -634,6 +634,120 @@ const omitStyleProps = (
   );
 };
 
+const parsePxValue = (
+  value: unknown
+): number | null => {
+  if (
+    typeof value === "number" &&
+    Number.isFinite(value)
+  ) {
+    return value;
+  }
+
+  const match =
+    String(value || "")
+      .trim()
+      .match(/^(\d+(?:\.\d+)?)px$/);
+
+  return match
+    ? Number(match[1])
+    : null;
+};
+
+const formatPxValue = (
+  value: number
+): string => `${Math.round(value * 1000) / 1000}px`;
+
+const getSectionChildContainerMaxWidth = (
+  data: any
+): string | undefined => {
+  const directChildren =
+    Array.isArray(data?.__rbChildren)
+      ? data.__rbChildren
+      : [];
+
+  const widths =
+    directChildren
+      .filter((child: any) =>
+        child?.type === "flex" ||
+        child?.type === "grid"
+      )
+      .flatMap((child: any) => {
+        const style =
+          child?.data?.style?.desktop ||
+          child?.data?.style ||
+          {};
+
+        return [
+          parsePxValue(style.maxWidth),
+          parsePxValue(style.width),
+        ];
+      })
+      .filter(
+        (value: number | null): value is number =>
+          value !== null &&
+          value > 0 &&
+          value <= 1920
+      );
+
+  if (widths.length === 0) {
+    return undefined;
+  }
+
+  const sectionMax =
+    parsePxValue(
+      getDesktopStyle(data).maxWidth
+    );
+
+  const childMax =
+    Math.max(...widths);
+
+  if (
+    sectionMax !== null &&
+    childMax <= sectionMax
+  ) {
+    return undefined;
+  }
+
+  return formatPxValue(childMax);
+};
+
+const normalizeSectionChildContainerStyle = (
+  data: any,
+  style: Record<string, unknown>
+): Record<string, unknown> => {
+  if (data?.__rbParentType !== "section") {
+    return style;
+  }
+
+  const widthPx =
+    parsePxValue(style.width);
+
+  const maxWidthPx =
+    parsePxValue(style.maxWidth);
+
+  const containerWidth =
+    Math.max(
+      widthPx || 0,
+      maxWidthPx || 0
+    );
+
+  if (
+    containerWidth <= 0 ||
+    containerWidth > 1920
+  ) {
+    return style;
+  }
+
+  return {
+    ...style,
+    width: "100%",
+    maxWidth: formatPxValue(containerWidth),
+    marginLeft: "auto",
+    marginRight: "auto",
+  };
+};
+
 const SECTION_BACKGROUND_PROPS = [
   "background",
   "backgroundColor",
@@ -944,6 +1058,9 @@ const renderSectionBlock = (
   const responsive =
     extractResponsiveStyle(data);
 
+  const inferredContainerMaxWidth =
+    getSectionChildContainerMaxWidth(data);
+
   const rootClassName =
     registerBlockCss(
       withResponsiveStyle(
@@ -999,20 +1116,28 @@ const renderSectionBlock = (
         data,
         mapResponsiveStyle(
           responsive,
-          (style) => ({
-            width:
-              style.width,
-            maxWidth:
-              style.maxWidth,
-            marginLeft:
-              style.marginLeft,
-            marginRight:
-              style.marginRight,
-            ...pickStyleProps(
-              style,
-              SECTION_INNER_LAYOUT_PROPS
-            ),
-          })
+          (style) =>
+            Object.fromEntries(
+              Object.entries({
+                width:
+                  style.width,
+                maxWidth:
+                  inferredContainerMaxWidth ||
+                  style.maxWidth,
+                marginLeft:
+                  style.marginLeft,
+                marginRight:
+                  style.marginRight,
+                ...pickStyleProps(
+                  style,
+                  SECTION_INNER_LAYOUT_PROPS
+                ),
+              }).filter(([, value]) =>
+                value !== undefined &&
+                value !== null &&
+                value !== ""
+              )
+            )
         ),
         `${data?.__rbClassName || "rb-section"}-inner`
       ),
@@ -1089,9 +1214,12 @@ const renderFlexBlock = (
       mapResponsiveStyle(
         responsive,
         (style) =>
-          omitStyleProps(
-            style,
-            FLEX_RUNTIME_IGNORED_PROPS
+          normalizeSectionChildContainerStyle(
+            data,
+            omitStyleProps(
+              style,
+              FLEX_RUNTIME_IGNORED_PROPS
+            )
           )
       ),
       data?.__rbClassName || "rb-flex"
@@ -1185,9 +1313,12 @@ const renderGridBlock = (
       mapResponsiveStyle(
         responsive,
         (style) =>
-          omitStyleProps(
-            style,
-            GRID_RUNTIME_IGNORED_PROPS
+          normalizeSectionChildContainerStyle(
+            data,
+            omitStyleProps(
+              style,
+              GRID_RUNTIME_IGNORED_PROPS
+            )
           )
       ),
       data?.__rbClassName || "rb-grid"
@@ -2066,7 +2197,8 @@ const BLOCK_RENDERERS: Record<
 const renderBlocksInternal = async (
   blocks: any[] = [],
   siteId: number | undefined,
-  context: RenderContext
+  context: RenderContext,
+  parentBlock?: any
 ): Promise<string> => {
   if (!Array.isArray(blocks)) {
     return "";
@@ -2088,7 +2220,8 @@ const renderBlocksInternal = async (
         ? await renderBlocksInternal(
             block.children,
             siteId,
-            context
+            context,
+            block
           )
         : "";
 
@@ -2102,6 +2235,12 @@ const renderBlocksInternal = async (
 
             __rbBlockType:
               block.type,
+
+            __rbParentType:
+              parentBlock?.type,
+
+            __rbParentId:
+              parentBlock?.id,
 
             __rbMeta:
               block.meta,
@@ -2123,6 +2262,12 @@ const renderBlocksInternal = async (
 
             __rbBlockType:
               block.type,
+
+            __rbParentType:
+              parentBlock?.type,
+
+            __rbParentId:
+              parentBlock?.id,
 
             __rbMeta:
               block.meta,

@@ -23,17 +23,19 @@ import { PartnerApplication } from "./PartnerApplication";
 import { CmsEntry } from "./CmsEntry.model";
 import { CmsCollection } from "./CmsCollection.model";
 import { CmsField } from "./CmsField.model";
+import { FormSubmission } from "./FormSubmission.model";
+import { Form } from "./Form.model";
 
 export const models = [
   User, Token, Page, Site, ActivityLog, Media, 
   Seo, Plugin, SitePlugin, SiteMember, 
   PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken,PlatformSetting,Notification,AiGeneration,SiteInvitation,AiActivityEvent,PartnerApplication
-  ,CmsEntry, CmsCollection,CmsField
+  ,CmsEntry, CmsCollection,CmsField,FormSubmission,Form
 ];
 
 export { 
   User, Token, Page, Site, ActivityLog, 
   Media, Seo, Plugin, SitePlugin, SiteMember, 
   PageVersion, PageSlug, FigmaImport,ContactSubmission,FigmaPluginToken,PlatformSetting,Notification,AiGeneration,SiteInvitation,AiActivityEvent,PartnerApplication
-  ,CmsEntry, CmsCollection,CmsField
+  ,CmsEntry, CmsCollection,CmsField,FormSubmission,Form
 };
