@@ -5,6 +5,15 @@ import {
 
 import archiver = require("archiver");
 import {
+  createHash,
+} from "crypto";
+import {
+  lookup,
+} from "dns/promises";
+import {
+  isIP,
+} from "net";
+import {
   Page,
   Site,
 } from "../../../models";
@@ -33,6 +42,69 @@ type ExportedPageInfo = {
   file: string;
   url: string | null;
 };
+
+type DownloadedMediaAsset = {
+  sourceUrl: string;
+  archivePath: string;
+  publicPath: string;
+  contentType: string;
+  buffer: Buffer;
+};
+
+type MediaBundleResult = {
+  assets: DownloadedMediaAsset[];
+  urlMap: Map<string, string>;
+  failedUrls: string[];
+};
+
+type MediaDownloader = (
+  url: string
+) => Promise<{
+  contentType: string;
+  buffer: Buffer;
+} | null>;
+
+const MEDIA_DOWNLOAD_TIMEOUT_MS =
+  8000;
+
+const MEDIA_MAX_BYTES =
+  10 * 1024 * 1024;
+
+const ALLOWED_MEDIA_TYPES =
+  new Map<string, string>([
+    [
+      "image/jpeg",
+      ".jpg",
+    ],
+    [
+      "image/png",
+      ".png",
+    ],
+    [
+      "image/gif",
+      ".gif",
+    ],
+    [
+      "image/webp",
+      ".webp",
+    ],
+    [
+      "image/avif",
+      ".avif",
+    ],
+    [
+      "image/svg+xml",
+      ".svg",
+    ],
+    [
+      "image/x-icon",
+      ".ico",
+    ],
+    [
+      "image/vnd.microsoft.icon",
+      ".ico",
+    ],
+  ]);
 
 const normalizeBaseUrl = (
   value: unknown
@@ -321,6 +393,483 @@ const sanitizeDownloadName = (
       );
 
   return result || "site";
+};
+
+const decodeHtmlAttribute = (
+  value: string
+): string => {
+  return value
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#039;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+};
+
+const isDataImageUrl = (
+  value: string
+): boolean =>
+  /^data:image\//i.test(
+    value.trim()
+  );
+
+const isHttpMediaCandidate = (
+  value: string
+): boolean =>
+  /^https?:\/\//i.test(
+    value.trim()
+  );
+
+export const collectMediaUrlsFromHtml = (
+  html: string
+): string[] => {
+  const urls =
+    new Set<string>();
+
+  const addUrl = (
+    value: string
+  ) => {
+    const decoded =
+      decodeHtmlAttribute(
+        value
+      )
+        .trim();
+
+    if (
+      decoded &&
+      (
+        isHttpMediaCandidate(decoded) ||
+        isDataImageUrl(decoded)
+      )
+    ) {
+      urls.add(decoded);
+    }
+  };
+
+  for (
+    const match of html.matchAll(
+      /\bsrc=["']([^"']+)["']/gi
+    )
+  ) {
+    addUrl(match[1]);
+  }
+
+  for (
+    const match of html.matchAll(
+      /\bsrcset=["']([^"']+)["']/gi
+    )
+  ) {
+    String(match[1])
+      .split(",")
+      .map((candidate) =>
+        candidate.trim().split(/\s+/)[0]
+      )
+      .filter(Boolean)
+      .forEach(addUrl);
+  }
+
+  for (
+    const match of html.matchAll(
+      /url\(\s*(['"]?)(.*?)\1\s*\)/gi
+    )
+  ) {
+    addUrl(match[2]);
+  }
+
+  for (
+    const match of html.matchAll(
+      /<meta\b[^>]*>/gi
+    )
+  ) {
+    const tag =
+      match[0];
+
+    if (
+      !/(?:property|name)=["'](?:og:image|twitter:image)["']/i.test(tag)
+    ) {
+      continue;
+    }
+
+    const content =
+      tag.match(
+        /\bcontent=["']([^"']+)["']/i
+      );
+
+    if (content) {
+      addUrl(content[1]);
+    }
+  }
+
+  return Array.from(urls);
+};
+
+const isPrivateIp = (
+  address: string
+): boolean => {
+  const version =
+    isIP(address);
+
+  if (version === 4) {
+    const parts =
+      address
+        .split(".")
+        .map(Number);
+
+    const [
+      a,
+      b,
+    ] = parts;
+
+    return (
+      a === 10 ||
+      a === 127 ||
+      (
+        a === 172 &&
+        b >= 16 &&
+        b <= 31
+      ) ||
+      (
+        a === 192 &&
+        b === 168
+      ) ||
+      (
+        a === 169 &&
+        b === 254
+      ) ||
+      a === 0
+    );
+  }
+
+  if (version === 6) {
+    const normalized =
+      address.toLowerCase();
+
+    return (
+      normalized === "::1" ||
+      normalized.startsWith("fc") ||
+      normalized.startsWith("fd") ||
+      normalized.startsWith("fe80:")
+    );
+  }
+
+  return true;
+};
+
+export const isSafePublicMediaUrl = async (
+  value: string
+): Promise<boolean> => {
+  let parsed: URL;
+
+  try {
+    parsed =
+      new URL(value);
+  } catch {
+    return false;
+  }
+
+  if (
+    parsed.protocol !== "http:" &&
+    parsed.protocol !== "https:"
+  ) {
+    return false;
+  }
+
+  const hostname =
+    parsed.hostname.toLowerCase();
+
+  if (
+    hostname === "localhost" ||
+    hostname.endsWith(".localhost")
+  ) {
+    return false;
+  }
+
+  if (
+    isIP(hostname) &&
+    isPrivateIp(hostname)
+  ) {
+    return false;
+  }
+
+  try {
+    const addresses =
+      await lookup(
+        hostname,
+        {
+          all: true,
+        }
+      );
+
+    return addresses.every(
+      ({ address }) =>
+        !isPrivateIp(address)
+    );
+  } catch {
+    return false;
+  }
+};
+
+const extensionFromContentType = (
+  contentType: string
+): string =>
+  ALLOWED_MEDIA_TYPES.get(
+    contentType
+      .split(";")[0]
+      .trim()
+      .toLowerCase()
+  ) || "";
+
+const sanitizeAssetBaseName = (
+  value: string
+): string => {
+  const clean =
+    value
+      .replace(/\.[a-zA-Z0-9]+$/, "")
+      .replace(/[^a-zA-Z0-9-_]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 48);
+
+  return clean || "asset";
+};
+
+export const createAssetFilename = (
+  url: string,
+  contentType: string
+): string => {
+  const hash =
+    createHash("sha256")
+      .update(url)
+      .digest("hex")
+      .slice(0, 10);
+
+  let base =
+    "asset";
+
+  try {
+    const parsed =
+      new URL(url);
+
+    const lastSegment =
+      parsed.pathname
+        .split("/")
+        .filter(Boolean)
+        .pop() || "asset";
+
+    base =
+      sanitizeAssetBaseName(
+        lastSegment
+      );
+  } catch {
+    base = "asset";
+  }
+
+  const extension =
+    extensionFromContentType(
+      contentType
+    ) || ".bin";
+
+  return `${base}-${hash}${extension}`;
+};
+
+export const defaultMediaDownloader: MediaDownloader = async (
+  url
+) => {
+  if (
+    !(await isSafePublicMediaUrl(url))
+  ) {
+    return null;
+  }
+
+  const controller =
+    new AbortController();
+
+  const timeout =
+    setTimeout(
+      () => controller.abort(),
+      MEDIA_DOWNLOAD_TIMEOUT_MS
+    );
+
+  try {
+    const response =
+      await fetch(
+        url,
+        {
+          signal:
+            controller.signal,
+          redirect:
+            "follow",
+        }
+      );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const contentType =
+      response.headers
+        .get("content-type")
+        ?.split(";")[0]
+        .trim()
+        .toLowerCase() || "";
+
+    if (
+      !ALLOWED_MEDIA_TYPES.has(contentType)
+    ) {
+      return null;
+    }
+
+    const contentLength =
+      Number(
+        response.headers.get(
+          "content-length"
+        )
+      );
+
+    if (
+      Number.isFinite(contentLength) &&
+      contentLength > MEDIA_MAX_BYTES
+    ) {
+      return null;
+    }
+
+    const buffer =
+      Buffer.from(
+        await response.arrayBuffer()
+      );
+
+    if (
+      buffer.byteLength >
+      MEDIA_MAX_BYTES
+    ) {
+      return null;
+    }
+
+    return {
+      contentType,
+      buffer,
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+export const bundleStaticExportMedia = async (
+  htmlPages: Record<string, string>,
+  downloader: MediaDownloader = defaultMediaDownloader
+): Promise<MediaBundleResult> => {
+  const urls =
+    new Set<string>();
+
+  for (
+    const html of Object.values(
+      htmlPages
+    )
+  ) {
+    collectMediaUrlsFromHtml(html)
+      .forEach((url) =>
+        urls.add(url)
+      );
+  }
+
+  const assets:
+    DownloadedMediaAsset[] = [];
+
+  const urlMap =
+    new Map<string, string>();
+
+  const failedUrls:
+    string[] = [];
+
+  for (const url of urls) {
+    if (isDataImageUrl(url)) {
+      continue;
+    }
+
+    if (
+      !isHttpMediaCandidate(url)
+    ) {
+      continue;
+    }
+
+    const downloaded =
+      await downloader(url);
+
+    if (!downloaded) {
+      failedUrls.push(url);
+      continue;
+    }
+
+    const filename =
+      createAssetFilename(
+        url,
+        downloaded.contentType
+      );
+
+    const publicPath =
+      `/assets/${filename}`;
+
+    urlMap.set(
+      url,
+      publicPath
+    );
+
+    assets.push({
+      sourceUrl:
+        url,
+      archivePath:
+        `assets/${filename}`,
+      publicPath,
+      contentType:
+        downloaded.contentType,
+      buffer:
+        downloaded.buffer,
+    });
+  }
+
+  return {
+    assets,
+    urlMap,
+    failedUrls,
+  };
+};
+
+export const rewriteMediaUrlsInHtml = (
+  html: string,
+  urlMap: Map<string, string>
+): string => {
+  let rewritten =
+    html;
+
+  const entries =
+    Array.from(
+      urlMap.entries()
+    )
+      .sort(
+        ([a], [b]) =>
+          b.length - a.length
+      );
+
+  for (
+    const [
+      remoteUrl,
+      localUrl,
+    ] of entries
+  ) {
+    rewritten =
+      rewritten
+        .split(remoteUrl)
+        .join(localUrl)
+        .split(
+          remoteUrl.replace(/&/g, "&amp;")
+        )
+        .join(localUrl);
+  }
+
+  return rewritten;
 };
 
 const isFooterBlock = (
@@ -636,6 +1185,25 @@ export const exportSite = async (
       }
     }
 
+    const mediaBundle =
+      await bundleStaticExportMedia(
+        htmlPages
+      );
+
+    if (mediaBundle.urlMap.size > 0) {
+      for (
+        const filename of Object.keys(
+          htmlPages
+        )
+      ) {
+        htmlPages[filename] =
+          rewriteMediaUrlsInHtml(
+            htmlPages[filename],
+            mediaBundle.urlMap
+          );
+      }
+    }
+
     const warnings:
       string[] = [];
 
@@ -645,9 +1213,13 @@ export const exportSite = async (
       );
     }
 
-    warnings.push(
-      "Media files are not localized yet. Remote media URLs may still depend on ReactBuilder storage."
-    );
+    if (
+      mediaBundle.failedUrls.length > 0
+    ) {
+      warnings.push(
+        `${mediaBundle.failedUrls.length} media URL(s) could not be localized and remain remote.`
+      );
+    }
 
     warnings.push(
       "This is a static export. A standalone CMS backend and database are not included yet."
@@ -696,7 +1268,7 @@ export const exportSite = async (
           true,
 
         localMedia:
-          false,
+          mediaBundle.assets.length > 0,
 
         cmsRuntime:
           false,
@@ -832,6 +1404,18 @@ ${sitemapEntries.join("")}
         );
 
         archive.pipe(res);
+
+        for (
+          const asset of mediaBundle.assets
+        ) {
+          archive.append(
+            asset.buffer,
+            {
+              name:
+                asset.archivePath,
+            }
+          );
+        }
 
         for (
           const [
