@@ -45,10 +45,11 @@ const makeTitle = (
 const normalizeHrefPath = (
   href: string
 ) =>
-  href
+  stripUrlMeta(href)
+    .trim()
     .replace(/\\/g, "/")
-    .replace(/^\.\//, "")
-    .replace(/^\//, "");
+    .replace(/^\/+/, "")
+    .replace(/^(\.\/)+/, "");
 
 const isExternalUrl = (
   value: string
@@ -111,12 +112,12 @@ const getAttribute = (
   const match =
     tag.match(
       new RegExp(
-        `\\s${name}\\s*=\\s*(["'])(.*?)\\1`,
+        `\\s${name}\\s*=\\s*(?:(["'])(.*?)\\1|([^\\s>]+))`,
         "i"
       )
     );
 
-  return match?.[2] || "";
+  return match?.[2] || match?.[3] || "";
 };
 
 const hasStylesheetRel = (
@@ -142,18 +143,50 @@ const resolveZipAssetPath = (
   const cleanHref =
     stripUrlMeta(assetHref);
 
-  const candidates = [
-    normalizeHrefPath(cleanHref),
+  const fromDir =
+    path.dirname(fromFile);
+
+  const fromRelativeDir =
     path
       .relative(
         extractDir,
-        path.resolve(
-          path.dirname(fromFile),
-          cleanHref
-        )
+        fromDir
       )
-      .replace(/\\/g, "/")
-  ].filter(Boolean);
+      .replace(/\\/g, "/");
+
+  const direct =
+    normalizeHrefPath(cleanHref);
+
+  const relativeToSource =
+    normalizeHrefPath(
+      path
+        .relative(
+          extractDir,
+          path.resolve(
+            fromDir,
+            cleanHref
+          )
+        )
+        .replace(/\\/g, "/")
+    );
+
+  const relativeToSourceDir =
+    fromRelativeDir
+      ? normalizeHrefPath(
+          `${fromRelativeDir}/${direct}`
+        )
+      : direct;
+
+  const candidates =
+    Array.from(
+      new Set(
+        [
+          direct,
+          relativeToSource,
+          relativeToSourceDir
+        ].filter(Boolean)
+      )
+    );
 
   for (const candidate of candidates) {
     const normalized =
@@ -175,6 +208,54 @@ const resolveZipAssetPath = (
 
     if (insensitive) {
       return insensitive;
+    }
+  }
+
+  const lowerCandidates =
+    candidates.map(candidate =>
+      normalizeHrefPath(candidate).toLowerCase()
+    );
+
+  const uniqueEntries =
+    Array.from(
+      new Map(
+        Array.from(fileByRelativePath.entries())
+          .map(([key, value]) => [
+            normalizeHrefPath(key).toLowerCase(),
+            value
+          ])
+      ).entries()
+    );
+
+  for (const candidate of lowerCandidates) {
+    const suffix =
+      `/${candidate}`;
+
+    const suffixMatch =
+      uniqueEntries.find(([key]) =>
+        key.endsWith(suffix)
+      );
+
+    if (suffixMatch) {
+      return suffixMatch[1];
+    }
+  }
+
+  const basename =
+    path
+      .basename(direct)
+      .toLowerCase();
+
+  if (basename) {
+    const basenameMatches =
+      uniqueEntries.filter(([key]) =>
+        path
+          .basename(key)
+          .toLowerCase() === basename
+      );
+
+    if (basenameMatches.length === 1) {
+      return basenameMatches[0][1];
     }
   }
 
@@ -255,7 +336,10 @@ const inlineZipStylesheets = (
           fileByRelativePath
         );
 
-      return `<style data-inlined-from="${normalizeHrefPath(href)}">\n${inlinedCss}\n</style>`;
+      return `<style data-inlined-from="${normalizeHrefPath(href)}">\n${inlinedCss.replace(
+        /<\/style/gi,
+        "<\\/style"
+      )}\n</style>`;
     }
   );
 
