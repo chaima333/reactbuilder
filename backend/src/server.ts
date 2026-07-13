@@ -59,6 +59,7 @@ import cmsPublicRoutes from "./modules/cms/cms.public.routes";
 // ✅ استورد getPublicPageById
 import { getPublicPageById } from "./modules/pages/controllers/page.controller";
 import formsPublicRoutes from "./modules/forms/forms.public.routes";
+import formsRoutes from "./modules/forms/forms.routes";
 
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
@@ -111,7 +112,7 @@ app.use("/api/public/sites/:siteId/partner-applications", publicPartnerApplicati
 app.use("/api/public/sites/:siteId/cms", cmsPublicRoutes);
 
 /* ========================
-   PUBLIC PAGE ROUTES (NO AUTH) ✅ MUST BE BEFORE TENANT
+   PUBLIC PAGE ROUTES (NO AUTH)
 ======================== */
 
 app.get(
@@ -139,6 +140,7 @@ app.use("/api/figma-plugin", figmaPluginRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/sites/:siteId/ia", tenantStack, iaRoutes);
 app.use("/api/ai/assistant", authStack, assistantRoutes);
+app.use("/api/sites/:siteId/forms", authStack,formsRoutes);
 
 /* ========================
    ADMIN / USERS

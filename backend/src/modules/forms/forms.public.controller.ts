@@ -8,6 +8,82 @@ import {
 } from "./forms.service";
 
 export class FormsPublicController {
+  static async getFormById(
+    req: Request,
+    res: Response
+  ) {
+    try {
+      const siteId =
+        Number(req.params.siteId);
+
+      const formId =
+        Number(req.params.formId);
+
+      if (!siteId || !formId) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "siteId and formId are required"
+        });
+      }
+
+      const form =
+        await FormsService
+          .getPublicFormById(
+            siteId,
+            formId
+          );
+
+      return res.json({
+        success: true,
+        data: {
+          id: form.id,
+          siteId: form.siteId,
+          pageId: form.pageId,
+          name: form.name,
+          slug: form.slug,
+
+          schema:
+            Array.isArray(form.schema)
+              ? form.schema
+              : [],
+
+          settings:
+            form.settings || {},
+
+          isActive:
+            form.isActive
+        }
+      });
+    } catch (error: any) {
+      const message =
+        String(
+          error?.message || ""
+        );
+
+      if (
+        message === "FORM_NOT_FOUND"
+      ) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "Form not found or inactive"
+        });
+      }
+
+      console.error(
+        "PUBLIC_FORM_LOAD_ERROR",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Failed to load form"
+      });
+    }
+  }
+
   static async submitForm(
     req: Request,
     res: Response
@@ -44,7 +120,8 @@ export class FormsPublicController {
               req.ip || null,
 
             userAgent:
-              req.get("user-agent") || null
+              req.get("user-agent") ||
+              null
           }
         );
 
@@ -57,7 +134,9 @@ export class FormsPublicController {
       });
     } catch (error: any) {
       const message =
-        String(error?.message || "");
+        String(
+          error?.message || ""
+        );
 
       if (
         message === "FORM_NOT_FOUND"
@@ -82,6 +161,11 @@ export class FormsPublicController {
           message
         });
       }
+
+      console.error(
+        "PUBLIC_FORM_SUBMIT_ERROR",
+        error
+      );
 
       return res.status(500).json({
         success: false,

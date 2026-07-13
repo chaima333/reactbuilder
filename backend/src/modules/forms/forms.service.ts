@@ -340,4 +340,26 @@ static async submitForm(
       payload.userAgent || null
   });
 }
+
+static async getPublicFormById(
+  siteId: number,
+  formId: number
+) {
+  const form =
+    await Form.findOne({
+      where: {
+        id: formId,
+        siteId,
+        isActive: true
+      }
+    });
+
+  if (!form) {
+    throw new Error(
+      "FORM_NOT_FOUND"
+    );
+  }
+
+  return form;
+}
 }
