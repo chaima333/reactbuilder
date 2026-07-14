@@ -12,7 +12,40 @@ const slugify = (
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+type FormSubmissionStatus =
+  | "new"
+  | "read"
+  | "archived"
+  | "spam";
 
+const allowedSubmissionStatuses:
+  FormSubmissionStatus[] = [
+    "new",
+    "read",
+    "archived",
+    "spam"
+  ];
+
+const parseSubmissionStatus = (
+  value: unknown
+): FormSubmissionStatus => {
+  const status =
+    String(value || "")
+      .trim()
+      .toLowerCase() as FormSubmissionStatus;
+
+  if (
+    !allowedSubmissionStatuses.includes(
+      status
+    )
+  ) {
+    throw new Error(
+      "INVALID_SUBMISSION_STATUS"
+    );
+  }
+
+  return status;
+};
 export class FormsService {
   static async getForms(
     siteId: number
@@ -227,6 +260,71 @@ export class FormsService {
       ]
     });
   }
+
+  static async getSubmissionById(
+  siteId: number,
+  formId: number,
+  submissionId: number
+) {
+  const submission =
+    await FormSubmission.findOne({
+      where: {
+        id: submissionId,
+        siteId,
+        formId
+      }
+    });
+
+  if (!submission) {
+    throw new Error(
+      "SUBMISSION_NOT_FOUND"
+    );
+  }
+
+  return submission;
+}
+
+static async updateSubmissionStatus(
+  siteId: number,
+  formId: number,
+  submissionId: number,
+  statusValue: unknown
+) {
+  const status =
+    parseSubmissionStatus(
+      statusValue
+    );
+
+  const submission =
+    await this.getSubmissionById(
+      siteId,
+      formId,
+      submissionId
+    );
+
+  await submission.update({
+    status
+  });
+
+  return submission;
+}
+
+static async deleteSubmission(
+  siteId: number,
+  formId: number,
+  submissionId: number
+) {
+  const submission =
+    await this.getSubmissionById(
+      siteId,
+      formId,
+      submissionId
+    );
+
+  await submission.destroy();
+
+  return true;
+}
 
   static async getFormBySlug(
   siteId: number,

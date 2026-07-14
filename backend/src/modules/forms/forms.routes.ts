@@ -92,6 +92,22 @@ router.get(
   ),
   FormsController.getSubmissions
 );
+router.patch(
+  "/:formId/submissions/:submissionId",
+  siteAccessStack,
+  requirePermission(
+    PERMISSIONS.SITE_UPDATE
+  ),
+  FormsController.updateSubmissionStatus
+);
 
+router.delete(
+  "/:formId/submissions/:submissionId",
+  siteAccessStack,
+  requirePermission(
+    PERMISSIONS.SITE_UPDATE
+  ),
+  FormsController.deleteSubmission
+);
 
 export default router;
