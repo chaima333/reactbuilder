@@ -356,35 +356,25 @@ export const getPublicPageById = async (req: Request, res: Response) => {
     }
 
     const site = await Site.findByPk(siteId);
-    const globalLayout = site?.get("globalLayout") || {};
-
     const seoRecord = page.seo;
     const pageData = {
       ...page.toJSON(),
       seo: seoRecord?.toJSON() || null,
+      site:
+        site && typeof site.toJSON === "function"
+          ? site.toJSON()
+          : site
     };
 
-    const { renderBlocks, renderFullPage } = require("../engine/blockRenderer");
-    const { SEOBuilder } = require("../engine/seoBuilder");
-
-    const seo = SEOBuilder.build(pageData);
-    const host = req.get("host");
-    const protocol = req.protocol;
-    const canonical = `${protocol}://${host}/pages/${siteId}/${pageData.slug}`;
-
-    const pageBlocks = Array.isArray(pageData.blocks) ? pageData.blocks : [];
-    const allBlocks = [
-      ...(globalLayout.navbar ? [globalLayout.navbar] : []),
-      ...pageBlocks,
-      ...(globalLayout.footer ? [globalLayout.footer] : [])
-    ];
-
-    const blocksHTML = await renderBlocks(allBlocks, siteId);
-    const html = renderFullPage(pageData, seo, canonical, blocksHTML);
-
-    return res.status(200).send(html);
+    return res.status(200).json({
+      success: true,
+      data: pageData
+    });
   } catch (error: any) {
     console.error("[PUBLIC_PAGE_BY_ID_ERROR]:", error.message);
-    return res.status(500).send("<h1>500 - Internal Server Error</h1>");
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error"
+    });
   }
 };
