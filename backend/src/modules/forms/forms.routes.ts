@@ -51,6 +51,13 @@ router.post(
 );
 
 router.get(
+  "/slug/:slug",
+  siteAccessStack,
+  requirePermission(PERMISSIONS.SITE_READ),
+  FormsController.getFormBySlug
+);
+
+router.get(
   "/:formId",
   siteAccessStack,
   requirePermission(
@@ -84,13 +91,6 @@ router.get(
     PERMISSIONS.SITE_READ
   ),
   FormsController.getSubmissions
-);
-
-router.get(
-  "/slug/:slug",
-  siteAccessStack,
-  requirePermission(PERMISSIONS.SITE_READ),
-  FormsController.getFormBySlug
 );
 
 

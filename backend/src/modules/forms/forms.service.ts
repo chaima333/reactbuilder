@@ -1,5 +1,6 @@
 import {
   Form,
+  Page,
   FormSubmission
 } from "../../models";
 
@@ -293,8 +294,23 @@ static async submitForm(
 
     const value = values[key];
 
+    const type =
+      String(field?.type || "")
+        .toLowerCase();
+
     if (
       field?.required &&
+      type === "checkbox" &&
+      value !== true
+    ) {
+      throw new Error(
+        `REQUIRED_FIELD_MISSING:${key}`
+      );
+    }
+
+    if (
+      field?.required &&
+      type !== "checkbox" &&
       (
         value === undefined ||
         value === null ||
@@ -307,7 +323,7 @@ static async submitForm(
     }
 
     if (
-      field?.type === "email" &&
+      type === "email" &&
       value !== undefined &&
       value !== null &&
       value !== ""
@@ -325,13 +341,33 @@ static async submitForm(
     }
   }
 
+  let pageId =
+    payload.pageId ??
+    form.pageId ??
+    null;
+
+  if (
+    pageId !== null &&
+    pageId !== undefined
+  ) {
+    const page =
+      await Page.findOne({
+        where: {
+          id: pageId,
+          siteId
+        }
+      });
+
+    pageId =
+      page
+        ? page.id
+        : null;
+  }
+
   return FormSubmission.create({
     formId: form.id,
     siteId,
-    pageId:
-      payload.pageId ??
-      form.pageId ??
-      null,
+    pageId,
     values,
     status: "new",
     ipAddress:

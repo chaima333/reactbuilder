@@ -7,6 +7,26 @@ import {
   FormsService
 } from "./forms.service";
 
+const parseOptionalPositiveNumber = (
+  value: unknown
+) => {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const parsed =
+    Number(value);
+
+  return Number.isFinite(parsed) &&
+    parsed > 0
+    ? parsed
+    : null;
+};
+
 export class FormsPublicController {
   static async getFormById(
     req: Request,
@@ -112,9 +132,9 @@ export class FormsPublicController {
               req.body?.values || {},
 
             pageId:
-              req.body?.pageId !== undefined
-                ? Number(req.body.pageId)
-                : null,
+              parseOptionalPositiveNumber(
+                req.body?.pageId
+              ),
 
             ipAddress:
               req.ip || null,

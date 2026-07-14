@@ -18,7 +18,6 @@ import { requirePermission } from "../../core/middleware/role.middleware";
 import { PERMISSIONS } from "../../core/constants/permissions";
 import siteMembersRoutes from "./members/siteMembers.routes";
 import { exportSite } from "./export/export.controller";
-import formsRoutes from "../forms/forms.routes";
 
 const router = Router({ mergeParams: true });
 
@@ -86,8 +85,4 @@ router.get(
   exportSite
 );
 
-router.use(
-  "/:siteId/forms",
-  formsRoutes
-);
 export default router;
