@@ -2,13 +2,21 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn("page_versions", "status", {
-      type: Sequelize.STRING,
-      allowNull: true,
-    });
+    const table = await queryInterface.describeTable("page_versions");
+
+    if (!table.status) {
+      await queryInterface.addColumn("page_versions", "status", {
+        type: Sequelize.STRING,
+        allowNull: true,
+      });
+    }
   },
 
   async down(queryInterface) {
-    await queryInterface.removeColumn("page_versions", "status");
+    const table = await queryInterface.describeTable("page_versions");
+
+    if (table.status) {
+      await queryInterface.removeColumn("page_versions", "status");
+    }
   },
 };

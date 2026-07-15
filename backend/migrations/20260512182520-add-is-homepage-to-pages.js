@@ -3,31 +3,37 @@
 module.exports = {
 
   async up(queryInterface, Sequelize) {
+    const table = await queryInterface.describeTable("pages");
 
-    await queryInterface.addColumn(
+    if (!table.is_homepage) {
+      await queryInterface.addColumn(
 
-      "pages",
+        "pages",
 
-      "is_homepage",
+        "is_homepage",
 
-      {
+        {
 
-        type: Sequelize.BOOLEAN,
+          type: Sequelize.BOOLEAN,
 
-        allowNull: false,
+          allowNull: false,
 
-        defaultValue: false
-      }
-    );
+          defaultValue: false
+        }
+      );
+    }
   },
 
   async down(queryInterface) {
+    const table = await queryInterface.describeTable("pages");
 
-    await queryInterface.removeColumn(
+    if (table.is_homepage) {
+      await queryInterface.removeColumn(
 
-      "pages",
+        "pages",
 
-      "is_homepage"
-    );
+        "is_homepage"
+      );
+    }
   }
 };

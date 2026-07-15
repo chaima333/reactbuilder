@@ -5,8 +5,7 @@ export const initializeDB = async () => {
     await sequelize.authenticate();
     console.log("✅ DB connected");
 
-    await sequelize.sync({ alter: true }); 
-    console.log("📦 DB Synced (Columns updated successfully)");
+    console.log("DB schema managed by migrations");
 
   } catch (error) {
     console.error("❌ DB error:", error);
