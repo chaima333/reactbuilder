@@ -28,6 +28,10 @@ interface RuntimeContextValue {
   device: Device;
 
   tokens?: any;
+
+  siteId?: number | string | null;
+
+  pageId?: number | string | null;
 }
 
 // =========================

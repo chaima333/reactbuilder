@@ -11,7 +11,11 @@ export type FieldType =
   | "array"
   | "number"
   | "boolean"
-  | "image";
+  | "image"
+  | "cmsCollectionSelect"
+  | "cmsFieldSelect"
+  | "cmsBinding"
+  | "formSelect";
 
 // ========================
 // Style Categories
@@ -32,7 +36,7 @@ export interface ValidationRules {
   min?: number;
   max?: number;
   pattern?: string;
-  cssUnit?: boolean; // 🛡️ زيدها هوني باش الـ Error يطير
+  cssUnit?: boolean; 
 }
 
 // ========================
@@ -46,7 +50,8 @@ export interface BaseField {
 
   category?: StyleFieldCategory;
   responsive?: boolean;
-  validation?: ValidationRules; // 👈 هذي توّة باش تقبل cssUnit
+  validation?: ValidationRules; 
+  resetFields?: string[];
 }
 
 // ========================

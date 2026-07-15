@@ -30,11 +30,12 @@ import {
 import {
   useRuntimeNode
 } from "../../hooks/useRuntimeNode";
-import { tokens } from "../../core/theme/tokens";
 
 interface EditorCanvasProps {
 
   blocks: Block[];
+
+  validationBlocks?: Block[];
 
   registry: any;
 
@@ -73,6 +74,9 @@ interface EditorCanvasProps {
     | "tablet";
 
   errors: ValidationError[];
+  
+  siteId?: number | null;
+  pageId?: number | null;
 }
 
 export const VIRTUAL_ROOT_ID =
@@ -81,10 +85,9 @@ export const VIRTUAL_ROOT_ID =
 // =====================================
 // INNER CONTENT
 // =====================================
-
 const EditorCanvasContent = ({
-  
   blocks = [],
+  validationBlocks,
   registry,
   onUpdate,
   onDelete,
@@ -95,9 +98,10 @@ const EditorCanvasContent = ({
   hoverData,
   onDuplicate,
   hoveredId,
-  errors = []
+  errors = [],
+  tokens: themeTokensInput
 }: EditorCanvasProps) => {
-
+  
   const viewportRef =
     React.useRef<HTMLDivElement | null>(
       null
@@ -290,15 +294,20 @@ const canvasMaxWidth =
   // INVARIANTS
   // =====================================
 
-  const invariantReport =
-    React.useMemo(
-      () =>
-        validateTreeInvariants(
-          blocks || []
-        ),
-      [blocks]
-    );
+ const invariantBlocks =
+  validationBlocks ??
+  blocks;
 
+const invariantReport =
+  React.useMemo(
+    () =>
+      validateTreeInvariants(
+        invariantBlocks || []
+      ),
+    [
+      invariantBlocks
+    ]
+  );
   // =====================================
   // ROOT RUNTIME NODE
   // =====================================
@@ -324,7 +333,8 @@ const canvasMaxWidth =
   // =====================================
   // RENDER
   // =====================================
-
+const themeTokens =
+  themeTokensInput as any;
   return (
 <Box
   {...rootProps}
@@ -342,7 +352,7 @@ const canvasMaxWidth =
 
         width: "100%",
 
-        minHeight: "100vh",
+        minHeight: 0,
 
         display: "flex",
 
@@ -356,15 +366,16 @@ const canvasMaxWidth =
           "hidden",
 
         overflowY:
-          "auto",
+          "visible",
 
-        backgroundColor:
-
-          isOver
-
-            ? "rgba(25,118,210,0.03)"
-
-            : "#f9f9f9",
+     backgroundColor:
+  isOver
+    ? "rgba(25,118,210,0.03)"
+    : (
+        themeTokens?.colors?.background?.default ||
+        themeTokens?.colors?.muted ||
+        "#f9f9f9"
+      ),
 
         transition:
           "all 0.2s ease",
@@ -435,8 +446,7 @@ const canvasMaxWidth =
   data-droppable-container="true"
   data-block-id={VIRTUAL_ROOT_ID}
   data-block-type="root"
- 
-   sx={{
+ sx={{
   width:
     device === "desktop"
       ? "100%"
@@ -449,38 +459,65 @@ const canvasMaxWidth =
       ? "100%"
       : canvasWidth,
 
-            minHeight:
-              "100vh",
+  minHeight:
+    blocks.length === 0
+      ? "400px"
+      : "auto",
 
-            flexShrink:
-              0,
+  flexShrink: 0,
 
-            overflowX: "hidden",
+  overflowX: "hidden",
 
-            overflowY:"visible",
+  overflowY: "visible",
 
-            boxSizing:
-              "border-box",
+  boxSizing: "border-box",
 
-            background:
-              tokens?.colors?.surface ||
-              "#fff",
+  "--rb-color-primary":
+    themeTokens?.colors?.brand?.primary ||
+    themeTokens?.colors?.primary ||
+    "#2563eb",
 
-            position:
-              "relative",
+  "--rb-color-on-primary":
+    "#ffffff",
 
-            transition:
-              "width 0.25s ease",
+  "--rb-font-family":
+    themeTokens?.typography?.fontFamily ||
+    "inherit",
 
-            margin:
-              "0 auto",
+  background:
+    themeTokens?.colors?.background?.surface ||
+    themeTokens?.colors?.surface ||
+    "#fff",
 
-            borderRadius:
-              "12px",
+  fontFamily:
+    "var(--rb-font-family)",
 
-            boxShadow:
-              "0 0 0 1px rgba(0,0,0,0.05)"
-          }}
+  color:
+    themeTokens?.colors?.brand?.secondary ||
+    themeTokens?.colors?.text ||
+    "#111827",
+
+  position: "relative",
+
+  transition: "width 0.25s ease",
+
+  margin: "0 auto",
+
+  borderRadius: "12px",
+
+  boxShadow:
+    "0 0 0 1px rgba(0,0,0,0.05)",
+
+  "& h1, & h2, & h3": {
+    fontFamily:
+      "var(--rb-font-family)"
+  },
+
+  "& p, & div, & span, & a": {
+    fontFamily:
+      "var(--rb-font-family)"
+  }
+} as any}
         >
 
           {(!blocks ||
@@ -779,7 +816,13 @@ export const EditorCanvas = (
         device:
           props.device,
         tokens:
-          props.tokens
+          props.tokens,
+        siteId:
+          props.siteId ??
+          null,
+        pageId:
+          props.pageId ??
+          null
       }}
     >
 

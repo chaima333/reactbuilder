@@ -27,7 +27,9 @@ import {
   PublicPageRuntime
 } from "./PublicPageRuntime";
 
+
 export const PublicSite: React.FC = () => {
+
 
   // =========================
   // PARAMS
@@ -37,6 +39,7 @@ export const PublicSite: React.FC = () => {
     siteId,
     slug
   } = useParams();
+
 
   // =========================
   // FETCH SITE
@@ -53,6 +56,7 @@ export const PublicSite: React.FC = () => {
     }
   );
 
+
   // =========================
   // LOADING
   // =========================
@@ -60,6 +64,7 @@ export const PublicSite: React.FC = () => {
   if (loading) {
     return <LoadingSpinner />;
   }
+
 
   // =========================
   // ERROR
@@ -71,16 +76,27 @@ export const PublicSite: React.FC = () => {
   ) {
 
     return (
-
       <Container sx={{ py: 10 }}>
-
         <Alert severity="error">
           Site non trouvé
         </Alert>
-
       </Container>
     );
+
   }
+
+
+  console.log(
+    "PUBLIC SITE DATA",
+    siteData
+  );
+
+
+  console.log(
+    "GLOBAL LAYOUT",
+    (siteData as any).globalLayout
+  );
+
 
   // =========================
   // PUBLISHED PAGES
@@ -92,12 +108,16 @@ export const PublicSite: React.FC = () => {
         p.status === "published"
     ) || [];
 
+
+
   // =========================
   // NORMALIZED SLUG
   // =========================
 
   const normalizedSlug =
     slug?.trim();
+
+
 
   // =========================
   // HOMEPAGE
@@ -107,12 +127,16 @@ export const PublicSite: React.FC = () => {
     publishedPages.find(
       (p: any) =>
         p.isHomepage === true
-    ) ||
+    )
+    ||
     publishedPages.find(
       (p: any) =>
         p.slug === "home"
-    ) ||
+    )
+    ||
     publishedPages[0];
+
+
 
   // =========================
   // ROUTE TYPE
@@ -124,6 +148,8 @@ export const PublicSite: React.FC = () => {
     /^home-\d+$/.test(
       normalizedSlug
     );
+
+
 
   // =========================
   // SELECTED PAGE
@@ -137,48 +163,30 @@ export const PublicSite: React.FC = () => {
             p.slug === normalizedSlug
         );
 
+
+
   const isRequestedSlugMissing =
     !!normalizedSlug &&
     !isHomepageRoute &&
     !selectedPage;
 
-  console.log(
-    "PUBLIC_SITE_PAGE_RESOLUTION",
-    {
-      homepageId:
-        homepage?.id,
 
-      selectedPageId:
-        selectedPage?.id,
 
-      selectedSlug:
-        selectedPage?.slug,
+  // =========================
+  // THEME
+  // =========================
 
-      requestedSlug:
-        normalizedSlug,
+  const siteTheme =
+    siteData.theme ||
+    (siteData as any)?.settings?.theme ||
+    {};
 
-      isHomepageRoute,
 
-      isRequestedSlugMissing,
+  const runtimeTheme =
+    selectedPage?.theme ||
+    siteTheme;
 
-      isHomepage:
-        selectedPage?.isHomepage,
 
-      blocksCount:
-        selectedPage?.blocks?.length || 0,
-
-      publishedPages:
-        publishedPages.map(
-          (p: any) => ({
-            id: p.id,
-            title: p.title,
-            slug: p.slug,
-            status: p.status,
-            isHomepage: p.isHomepage
-          })
-        )
-    }
-  );
 
   // =========================
   // RENDER
@@ -189,37 +197,55 @@ export const PublicSite: React.FC = () => {
     <Box
       sx={{
         minHeight: "100vh",
+
         bgcolor:
-          selectedPage?.theme?.colors?.surface ||
-          siteData?.theme?.colors?.surface ||
+          runtimeTheme?.colors?.background?.default ||
+          runtimeTheme?.colors?.muted ||
           "#f8fafc"
       }}
     >
 
-      {selectedPage ? (
+      {
+        selectedPage
+          ?
 
-        <PublicPageRuntime
-          page={selectedPage}
-          site={siteData}
-        />
+          <PublicPageRuntime
 
-      ) : (
+            page={selectedPage}
+            site={{
+              ...siteData,
+              theme: siteTheme
+            }}
 
-        <Container sx={{ py: 10 }}>
+          />
 
-          <Alert severity="info">
-            {isRequestedSlugMissing
-              ? "Page non trouvée ou non publiée"
-              : "Aucun homepage publié"}
-          </Alert>
+          :
 
-        </Container>
+          <Container sx={{ py: 10 }}>
 
-      )}
+            <Alert severity="info">
+
+              {
+                isRequestedSlugMissing
+                  ?
+                  "Page non trouvée ou non publiée"
+                  :
+                  "Aucun homepage publié"
+              }
+
+            </Alert>
+
+          </Container>
+      }
+
 
     </Box>
+
   );
+
 };
+
+
 
 // =========================
 // LOADING
@@ -228,17 +254,25 @@ export const PublicSite: React.FC = () => {
 const LoadingSpinner = () => (
 
   <Box
+
     display="flex"
+
     justifyContent="center"
+
     alignItems="center"
+
     minHeight="100vh"
+
   >
 
     <CircularProgress
+
       sx={{
         color: "#00C49A"
       }}
+
     />
 
   </Box>
+
 );

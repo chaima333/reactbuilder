@@ -1,15 +1,15 @@
 import { FieldDefinition } from "../../../../types/page.types";
 
 export const textFields: FieldDefinition[] = [ // 👈 زيد التايب هوني
-  {
-    key: "content",
-    label: "Text Content",
-    type: "textarea", 
-    target: "props",
-    validation: {
-      required: true
-    }
-  },
+ {
+  key: "content",
+  label: "Text Content",
+  type: "cmsBinding",
+  target: "props",
+  validation: {
+    required: true
+  }
+},
   {
     key: "fontSize",
     label: "Font Size",

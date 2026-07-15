@@ -7,6 +7,8 @@ import {
 import {
   useRuntimeNode
 } from "../../../../hooks/useRuntimeNode";
+import { useGetPublicSiteQuery } from "../../../../../../redux/services/sites.api";
+import { useParams } from "react-router-dom";
 
 export const NavbarBlock = ({
   block,
@@ -47,13 +49,122 @@ export const NavbarBlock = ({
 
       droppable: true
     });
+  
+  // =====================================
+  // NAVBAR PROPS (كل القيم من هنا)
+  // =====================================
+
+  const navbarProps =
+    block?.data?.props ||
+    block?.props ||
+    {};
+
+  // خذ كل القيم من props مع قيم افتراضية
+  const {
+    dynamicPagesLabel = "Pages",
+    dropdownBg = "#0f172a",
+    dropdownColor = "#ffffff",
+    dropdownMinWidth = "220px",
+    dropdownPadding = "12px",
+    dropdownBorderRadius = "12px",
+    dropdownBoxShadow = "0 12px 30px rgba(0,0,0,0.18)",
+    dropdownGap = "10px",
+    dropdownFontWeight = 700,
+    linkFontWeight = 600,
+    dropdownZIndex = 99999,
+    dropdownPosition = "relative",
+    dropdownDisplay = "flex",
+    dropdownAlignItems = "center",
+    dropdownCursor = "pointer",
+    dropdownWhiteSpace = "nowrap",
+    linkTextDecoration = "none",
+    linkWhiteSpace = "nowrap"
+  } = navbarProps;
+
+  const {
+    siteId
+  } = useParams();
+
+  const isPublicSiteRoute =
+    window.location.pathname.startsWith("/site/");
+
+  const {
+    data: publicSiteData
+  } = useGetPublicSiteQuery(
+    Number(siteId),
+    {
+      skip:
+        !isPublicSiteRoute ||
+        !siteId
+    }
+  );
+
+  const normalizeNavText = (
+    value: any
+  ) =>
+    String(value || "")
+      .trim()
+      .toLowerCase();
+
+  const collectExistingLabels = (
+    node: any
+  ): string[] => {
+    const props =
+      node?.data?.props ||
+      node?.props ||
+      {};
+
+    const ownValues = [
+      props.label,
+      props.content,
+      props.text,
+      props.title
+    ]
+      .filter(Boolean)
+      .map(normalizeNavText);
+
+    const childValues =
+      (node?.children || [])
+        .flatMap(collectExistingLabels);
+
+    return [
+      ...ownValues,
+      ...childValues
+    ];
+  };
+
+  const existingLabels =
+    new Set(
+      collectExistingLabels(block)
+    );
+
+  const dynamicPages =
+    isPublicSiteRoute
+      ? (
+        publicSiteData?.pages || []
+      )
+        .filter((page: any) =>
+          page.status === "published"
+        )
+        .filter((page: any) => {
+          const title =
+            normalizeNavText(page.title);
+
+          const slug =
+            normalizeNavText(page.slug);
+
+          return (
+            !existingLabels.has(title) &&
+            !existingLabels.has(slug)
+          );
+        })
+      : [];
 
   const {
     context,
     isOver,
     rootProps
   } = runtime;
-
 
   // =====================================
   // RESPONSIVE FLEX
@@ -171,7 +282,8 @@ export const NavbarBlock = ({
     overflow:
       "visible",
       
-    zIndex:9999,
+    zIndex: 9999,
+
     whiteSpace:
       resolvedCss.whiteSpace ||
       "nowrap",
@@ -185,21 +297,70 @@ export const NavbarBlock = ({
       resolved.cursor
   };
 
-  // =====================================
-  // RENDER
-  // =====================================
-  return (
-<nav
-  {...rootProps}
-  style={navbarStyle}
->
-<style>
+  const navbarChildren =
+    React.Children.toArray(children);
 
-  {`
+  const dynamicPagesMenu =
+    dynamicPages.length > 0 ? (
+      <div
+        className="navbar-dropdown-parent"
+        style={{
+          position: dropdownPosition,
+          display: dropdownDisplay,
+          alignItems: dropdownAlignItems,
+          fontWeight: dropdownFontWeight,
+          cursor: dropdownCursor,
+          whiteSpace: dropdownWhiteSpace
+        }}
+      >
+        {dynamicPagesLabel}
+        <div
+          className="navbar-submenu"
+          style={{
+            position: "absolute",
+            top: "100%",
+            right: 0,
+            minWidth: dropdownMinWidth,
+            padding: dropdownPadding,
+            background: resolved.backgroundColor || dropdownBg,
+            color: resolved.color || dropdownColor,
+            borderRadius: dropdownBorderRadius,
+            boxShadow: dropdownBoxShadow,
+            flexDirection: "column",
+            gap: dropdownGap
+          }}
+        >
+          {dynamicPages.map((page: any) => (
+            <a
+              key={page.id}
+              href={
+                page.slug === "home"
+                  ? `/site/${siteId}`
+                  : `/site/${siteId}/${page.slug}`
+              }
+              style={{
+                color: "inherit",
+                textDecoration: linkTextDecoration,
+                fontWeight: linkFontWeight,
+                whiteSpace: linkWhiteSpace
+              }}
+            >
+              {page.title || page.slug}
+            </a>
+          ))}
+        </div>
+      </div>
+    ) : null;
+
+  // =====================================
+  // CSS STYLES (كل القيم من props)
+  // =====================================
+
+  const dropdownStyles = `
     .navbar-dropdown-parent {
-      position: relative !important;
+      position: ${dropdownPosition} !important;
       overflow: visible !important;
-      z-index: 99999 !important;
+      z-index: ${dropdownZIndex} !important;
     }
 
     .navbar-dropdown-parent::after {
@@ -210,12 +371,12 @@ export const NavbarBlock = ({
       right: 0 !important;
       height: 16px !important;
       pointer-events: auto !important;
-      z-index: 999998 !important;
+      z-index: ${dropdownZIndex - 1} !important;
     }
 
     .navbar-dropdown-parent .navbar-submenu {
       display: none !important;
-      z-index: 999999 !important;
+      z-index: ${dropdownZIndex} !important;
     }
 
     .navbar-dropdown-parent:hover .navbar-submenu,
@@ -223,12 +384,22 @@ export const NavbarBlock = ({
     .navbar-dropdown-parent .navbar-submenu:hover {
       display: flex !important;
     }
-  `}
+  `;
 
-</style>
+  // =====================================
+  // RENDER
+  // =====================================
 
-  {children}
+  return (
+    <nav
+      {...rootProps}
+      style={navbarStyle}
+    >
+      <style>
+        {dropdownStyles}
+      </style>
 
+      {children}
     </nav>
   );
 };

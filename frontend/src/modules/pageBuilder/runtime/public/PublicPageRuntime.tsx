@@ -2,7 +2,7 @@ import React from "react";
 
 import {
   Box,
-  Container
+  useMediaQuery
 } from "@mui/material";
 
 import {
@@ -12,16 +12,38 @@ import {
 import {
   RuntimeProvider
 } from "../context/RuntimeProvider";
+import { PublicChatbotSlot } from "../../../chatbot/PublicChatbotSlot";
 
 export const PublicPageRuntime = ({
   page,
   site
 }: any) => {
 
+  const isMobileViewport =
+    useMediaQuery("(max-width:600px)");
+
+  const isTabletViewport =
+    useMediaQuery("(min-width:601px) and (max-width:1024px)");
+
   const runtimeTokens =
     page?.theme ||
     site?.theme ||
+    site?.settings?.theme ||
     {};
+
+  const pageBackground =
+    runtimeTokens?.colors?.background?.default ||
+    runtimeTokens?.colors?.muted ||
+    "#f8fafc";
+
+  const pageSurface =
+    runtimeTokens?.colors?.background?.surface ||
+    runtimeTokens?.colors?.surface ||
+    "#ffffff";
+
+  const fontFamily =
+    runtimeTokens?.typography?.fontFamily ||
+    "inherit";
 
   // =========================
   // GLOBAL LAYOUT
@@ -37,6 +59,27 @@ const globalLayout =
 
   const pageBlocks: any[] =
     page?.blocks || [];
+
+  const hasHtmlImportedBlock = (
+    blocks: any[]
+  ): boolean =>
+    (blocks || []).some(
+      (block: any) =>
+        block?.meta?.importSource === "html" ||
+        hasHtmlImportedBlock(block?.children || [])
+    );
+
+  const isHtmlImportedPage =
+    hasHtmlImportedBlock(pageBlocks);
+
+  const runtimeDevice =
+    isHtmlImportedPage
+      ? isMobileViewport
+        ? "mobile"
+        : isTabletViewport
+          ? "tablet"
+          : "desktop"
+      : "desktop";
 
   const isFooterBlock = (block: any) => {
     const semanticType =
@@ -71,27 +114,25 @@ const footerBlocks: any[] =
     ? [globalLayout.footer]
     : [];
 
-  console.log("NAVBAR_BLOCK_COUNT", {
-    pageNavbarCount:
-      pageBlocks.filter(
-        (block: any) => block?.type === "navbar"
-      ).length,
-    injectedNavbarCount: navbarBlocks.length,
-    renderedNavbarCount:
-      pageBlocks.filter(
-        (block: any) => block?.type === "navbar"
-      ).length + navbarBlocks.length
-  });
 
-  // =========================
-  // RENDER
-  // =========================
+  const publicSiteId =
+  Number(
+    site?.id ||
+    page?.siteId ||
+    page?.site?.id ||
+    0
+  );
+ 
   return (
 
     <RuntimeProvider
       value={{
         mode: "public",
-        device: "desktop",
+        device: runtimeDevice,
+        siteId:
+          publicSiteId || null,
+        pageId:
+          page?.id || null,
         tokens:
           runtimeTokens
       }}
@@ -101,26 +142,37 @@ const footerBlocks: any[] =
         sx={{
           width: "100%",
           minHeight: "100vh",
-          bgcolor:
-            runtimeTokens?.colors?.surface ||
-            "#f8fafc"
-        }}
+          backgroundColor: pageBackground,
+          "--rb-color-primary":
+            runtimeTokens?.colors?.brand?.primary ||
+            runtimeTokens?.colors?.primary ||
+            "#2563eb",
+          "--rb-color-on-primary":
+            runtimeTokens?.colors?.brand?.onPrimary ||
+            runtimeTokens?.colors?.onPrimary ||
+            "#ffffff",
+          "--rb-font-family": fontFamily,
+          fontFamily: "var(--rb-font-family)",
+          color:
+            runtimeTokens?.colors?.brand?.secondary ||
+            runtimeTokens?.colors?.text ||
+            "#111827"
+        } as any}
       >
- {/* GLOBAL NAVBAR */}
 
 {navbarBlocks.length > 0 && (
-
   <RenderTree
     blocks={navbarBlocks}
   />
-
 )}
 
-{/* PAGE CONTENT */}
 
 <Box
   sx={{
-    width: "100%"
+    width: "100%",
+    minHeight: "100vh",
+    backgroundColor: pageSurface,
+    fontFamily: "var(--rb-font-family)"
   }}
 >
 
@@ -140,9 +192,12 @@ const footerBlocks: any[] =
 
 )}
 
-
+{publicSiteId > 0 && (
+  <PublicChatbotSlot
+    siteId={publicSiteId}
+  />
+)}
       </Box>
-
     </RuntimeProvider>
   );
 };

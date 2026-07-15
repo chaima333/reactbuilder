@@ -1,3 +1,4 @@
+import { backendUrl } from "../../config/api";
 import { api } from "../api/api";
 
 import {
@@ -9,6 +10,9 @@ export type SiteRole =
   | "ADMIN"
   | "EDITOR"
   | "VIEWER";
+
+export type SiteTheme =
+  Record<string, any>;
 
 export type Site = {
   id: number;
@@ -23,7 +27,13 @@ export type Site = {
   role?: SiteRole;
   memberRole?: SiteRole;
 
+  theme?: SiteTheme;
+
   pages?: Page[];
+  globalLayout?: {
+  navbar: any | null;
+  footer: any | null;
+};
 };
 
 export type SitesResponse = {
@@ -159,6 +169,39 @@ export const sitesApi = api.injectEndpoints({
       ],
     }),
 
+    updateSiteTheme: builder.mutation<
+      Site,
+      {
+        siteId: number | string;
+        theme: SiteTheme;
+      }
+    >({
+      query: ({
+        siteId,
+        theme
+      }) => ({
+        url: `/sites/${siteId}/theme`,
+        method: "PUT",
+        body: {
+          theme
+        },
+      }),
+
+      transformResponse: (response: any) =>
+        response?.data || response,
+
+      invalidatesTags: (result, error, { siteId }) => [
+        {
+          type: "Sites",
+          id: Number(siteId)
+        },
+        {
+          type: "Sites",
+          id: "LIST"
+        },
+      ],
+    }),
+
     deleteSite: builder.mutation<void, number>({
       query: (id) => ({
         url: `/sites/${id}`,
@@ -178,8 +221,7 @@ export const sitesApi = api.injectEndpoints({
       number
     >({
       query: (siteId) => ({
-        url:
-          `https://backend-rmfq.onrender.com/p/public/sites/${siteId}`,
+        url: backendUrl(`/p/public/sites/${siteId}`),
         method: "GET"
       }),
 
@@ -204,5 +246,6 @@ export const {
   useGetSiteAccessQuery,
   useCreateSiteMutation,
   useUpdateSiteMutation,
+  useUpdateSiteThemeMutation,
   useDeleteSiteMutation
 } = sitesApi;

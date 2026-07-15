@@ -1,12 +1,12 @@
 import { FieldDefinition } from "../../../../types/page.types";
 
 export const titleFields: FieldDefinition[] = [
-  {
-    key: "content",
-    label: "Title Text",
-    type: "text",
-    target: "props"
-  },
+ {
+  key: "content",
+  label: "Title Text",
+  type: "cmsBinding",
+  target: "props"
+},
   {
     key: "fontSize",
     label: "Font Size",
@@ -17,7 +17,7 @@ export const titleFields: FieldDefinition[] = [
   {
     key: "textAlign",
     label: "Alignment",
-    type: "select", // 👈 ومبعد نردوه أيقونات
+    type: "select", 
     target: "style",
     category: "layout",
     options: [

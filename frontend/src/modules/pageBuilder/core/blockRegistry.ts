@@ -67,6 +67,8 @@ import { linkDefinition } from "../components/blocks/primitives/link/definition"
 import { inputDefinition } from "../components/blocks/primitives/input/definition";
 import { selectDefinition } from "../components/blocks/primitives/select/definition";
 import { textareaDefinition } from "../components/blocks/primitives/textarea/definition";
+import { collectionListDefinition } from "../components/blocks/data/collectionList/collection";
+import { formDefinition } from "../components/blocks/data/forms";
 
 // =========================
 // TRANSITIONAL SEMANTIC
@@ -198,5 +200,11 @@ faq: emptySemanticDefinition(
   React.createElement(
     HelpOutlineIcon
   )
-)
+),
+//DATA
+collectionList:
+  collectionListDefinition,
+
+form:
+  formDefinition,
 };

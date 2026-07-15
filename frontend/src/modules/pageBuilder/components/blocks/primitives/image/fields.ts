@@ -2,12 +2,14 @@ import { FieldDefinition } from "../../../../types/page.types";
 
 export const imageFields: FieldDefinition[] = [
   {
-    key: "url", // بدلتها url باش تمشي مع الـ component متاعك لو تستعمل في data.props.url
-    label: "Image URL",
-    type: "text",
-    target: "props",
-    validation: { required: true }
-  },
+  key: "url",
+  label: "Image URL",
+  type: "cmsBinding",
+  target: "props",
+  validation: {
+    required: true
+  }
+},
   {
     key: "alt",
     label: "Alt Text",

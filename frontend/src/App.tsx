@@ -1,5 +1,4 @@
 // src/App.tsx
-
 import React, {
   Suspense,
   lazy
@@ -63,7 +62,12 @@ import AdminPlugins from "./modules/admin/pages/AdminPlugins";
 import AdminAIAnalytics from "./modules/admin/pages/ai-analytics";
 import SitePluginMarketplacePage from "./modules/pageBuilder/plugins/SitePluginMarketplacePage";
 import AcceptInvitationPage from "./modules/sites/pages/AcceptInvitationPage";
-
+import AdminAiTelemetrySitePage from "./modules/admin/pages/ai-telemetry-site";
+import CmsCollectionsPage from "./modules/cms/CmsCollectionsPage";
+import CmsCollectionDetailsPage from "./modules/cms/CmsCollectionDetailsPage";
+import PublicCmsEntryPage from "./modules/cms/pages/CmsEntryPage";
+import FormsPage from "./modules/forms/FormsPage";
+import FormDetailsPage from "./modules/forms/FormDetailsPage";
 
 // ======================================================
 // LAZY PAGES
@@ -97,11 +101,11 @@ const PublicSite = lazy(
   () => import("./modules/pageBuilder/runtime/public/PublicSitePage")
     .then(m => ({ default: m.PublicSite }))
 );
+
 const PublicPage = lazy(
   () => import("./modules/pageBuilder/runtime/public/PublicPage")
     .then(m => ({ default: m.PublicPage }))
 );
-
 
 const Profile = lazy(
   () => import("./modules/users/pages/Profile")
@@ -112,6 +116,7 @@ const Settings = lazy(
   () => import("./modules/users/pages/Settings")
     .then(m => ({ default: m.Settings }))
 );
+
 const AdminSettings = lazy(
   () => import("./modules/admin/pages/AdminSettings")
 );
@@ -136,6 +141,17 @@ const Home = lazy(
     .then(m => ({ default: m.Home }))
 );
 
+const About = lazy(
+  () => import("./app/pages/AboutPage")
+    .then(m => ({ default: m.AboutPage }))
+);
+
+// ✅ أضف ServicesPage
+const Services = lazy(
+  () => import("./app/pages/ServicesPage")
+    .then(m => ({ default: m.ServicesPage }))
+);
+
 const PageEditor = lazy(
   () => import("./modules/pageBuilder/pages/PageEditor")
     .then(m => ({ default: m.PageEditor }))
@@ -153,22 +169,34 @@ const SiteMembersPage = lazy(
   () => import("./modules/sites/pages/SiteMembersPage")
 );
 
+const PartnerApplicationsPage = lazy(
+  () => import("./modules/partnerApplications/PartnerApplicationsPage")
+);
+
+const PublicPartnerApplicationPage = lazy(
+  () => import("./modules/partnerApplications/PublicPartnerApplicationPage")
+);
+
+const HelpCenterPage = lazy(
+  () => import("./modules/platformAssistant/pages/HelpCenterPage")
+);
+
+const Contact = lazy(
+  () => import("./app/pages/ContactPage").then(m => ({ default: m.ContactPage }))
+);
+
 // ======================================================
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-console.log(
-  "GOOGLE_CLIENT_ID_USED:",
-  GOOGLE_CLIENT_ID
-);
+console.log("GOOGLE_CLIENT_ID_USED:", GOOGLE_CLIENT_ID);
+
 // ======================================================
 // ROUTE GUARDS
 // ======================================================
 
 const ProtectedRoute = () => {
-
   const isAuthenticated = useSelector(
-    (s: RootState) =>
-      s.auth.isAuthenticated
+    (s: RootState) => s.auth.isAuthenticated
   );
 
   return isAuthenticated
@@ -177,7 +205,6 @@ const ProtectedRoute = () => {
 };
 
 const AdminRoute = () => {
-
   const {
     isAuthenticated,
     user
@@ -189,9 +216,9 @@ const AdminRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
- if (user?.role !== "ADMIN") {
-  return <Navigate to="/dashboard" replace />;
-}
+  if (user?.role !== "ADMIN") {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return <Outlet />;
 };
@@ -216,7 +243,6 @@ const AppLoader = () => (
 // ======================================================
 
 const AppContent: React.FC = () => {
-
   const themeMode = useSelector(
     (s: RootState) => s.theme.mode
   );
@@ -224,7 +250,6 @@ const AppContent: React.FC = () => {
   useAppBootstrap();
 
   return (
-
     <MuiThemeProvider
       theme={
         themeMode === "light"
@@ -232,172 +257,109 @@ const AppContent: React.FC = () => {
           : darkTheme
       }
     >
-
       <CssBaseline />
-
       <SnackbarProvider maxSnack={3}>
-
         <BuilderThemeProvider>
-
           <BrowserRouter>
-
             <Suspense fallback={<AppLoader />}>
-
               <Routes>
+                {/* PUBLIC ROUTES */}
+                <Route path="/" element={<Home />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/services" element={<Services />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/waiting-approval" element={<WaitingPage />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-                {/* PUBLIC */}
-
-                <Route
-                  path="/"
-                  element={<Home />}
+                {/* PUBLIC SITE ROUTES - ORDER MATTERS! Most specific first */}
+                
+                {/* 1. CMS Entry Page (3 dynamic params) */}
+                <Route 
+                  path="/site/:siteId/:collectionSlug/:entrySlug" 
+                  element={<PublicCmsEntryPage />} 
+                />
+                
+                {/* 2. Page Builder Page with ID ✅ NEW */}
+                <Route 
+                  path="/site/:siteId/page/:pageId" 
+                  element={<PublicPage />} 
+                />
+                
+                {/* 3. Public Page (2 dynamic params: siteId + slug) */}
+                <Route 
+                  path="/site/:siteId/:slug" 
+                  element={<PublicSite />} 
+                />
+                
+                {/* 4. Alternative pattern for public pages */}
+                <Route 
+                  path="/p/:siteId/:slug" 
+                  element={<PublicPage />} 
+                />
+                
+                {/* 5. Public Site (1 dynamic param) */}
+                <Route 
+                  path="/site/:siteId" 
+                  element={<PublicSite />} 
+                />
+                
+                {/* 6. Partner Application */}
+                <Route 
+                  path="/partner-apply/:siteId" 
+                  element={<PublicPartnerApplicationPage />} 
+                />
+                
+                {/* 7. Test Editor */}
+                <Route 
+                  path="/test-editor" 
+                  element={<PageEditor mode="edit" />} 
                 />
 
-                <Route
-                  path="/login"
-                  element={<Login />}
-                />
-
-                <Route
-                  path="/register"
-                  element={<Register />}
-                />
-
-                <Route
-                  path="/waiting-approval"
-                  element={<WaitingPage />}
-                />
-
-                <Route
-                  path="/forgot-password"
-                  element={<ForgotPassword />}
-                />
-
-                <Route
-                  path="/reset-password/:token"
-                  element={<ResetPassword />}
-                />
-
-                <Route
-                  path="/site/:siteId"
-                  element={<PublicSite />}
-                />
-                <Route
-                  path="/site/:siteId/:slug"
-                  element={<PublicSite />}
-                />
-               <Route
-                 path="/p/:siteId/:slug"
-                element={<PublicPage />}
-                 />
-                <Route
-                  path="/test-editor"
-                  element={<PageEditor mode="edit" />}
-                />
-
-                {/* PROTECTED */}
-
+                {/* PROTECTED ROUTES */}
                 <Route element={<ProtectedRoute />}>
-
                   <Route element={<Layout />}>
-
-                    <Route
-                      path="/dashboard"
-                      element={<DashboardPage />}
-                    />
-                     <Route
-                     path="/figma-import/:importId"
-                      element={<FigmaImportBridge />}
-                       />
-
-                    <Route
-                      path="/sites"
-                      element={<Sites />}
-                    />
-
-                    <Route
-                      path="/sites/:siteId/edit"
-                      element={<SiteEditor />}
-                    />
-
-                    <Route
-                      path="/sites/:siteId/pages/new"
-                      element={<PageEditor mode="create" />}
-                    />
-
-                    <Route
-                      path="/sites/:siteId/pages/:pageId/edit"
-                      element={<PageEditor mode="edit" />}
-                    />
-
-                    <Route
-                      path="/profile"
-                      element={<Profile />}
-                    />
-
-                    <Route
-                    path="/sites/:siteId/media"
-                     element={<Media />}
-                     />
-                     <Route
-                     path="/sites/:siteId/plugins"
-                     element={<SitePluginMarketplacePage />}
-                    />
-
-                    <Route
-                      path="/settings"
-                      element={<Settings />}
-                    />
-
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/help" element={<HelpCenterPage />} />
+                    <Route path="/figma-import/:importId" element={<FigmaImportBridge />} />
+                    <Route path="/sites" element={<Sites />} />
+                    <Route path="/sites/:siteId/edit" element={<SiteEditor />} />
+                    <Route path="/sites/:siteId/pages/new" element={<PageEditor mode="create" />} />
+                    <Route path="/sites/:siteId/pages/:pageId/edit" element={<PageEditor mode="edit" />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/sites/:siteId/media" element={<Media />} />
+                    <Route path="/sites/:siteId/plugins" element={<SitePluginMarketplacePage />} />
+                    <Route path="/sites/:siteId/partner-applications" element={<PartnerApplicationsPage />} />
+                    <Route path="/sites/:siteId/cms" element={<CmsCollectionsPage />} />
+                    <Route path="/sites/:siteId/cms/collections/:collectionSlug" element={<CmsCollectionDetailsPage />} />
+                    <Route path="/sites/:siteId/forms" element={<FormsPage />} />
+                    <Route path="/sites/:siteId/forms/:formId" element={<FormDetailsPage />} />
+                    <Route path="/settings" element={<Settings />} />
+                    
+                    {/* ADMIN ROUTES */}
                     <Route element={<AdminRoute />}>
-                        <Route
-                         path="/admin"
-                         element={<AdminDashboard />}
-                          />
-                      <Route
-                        path="/users"
-                        element={<Users />}
-                      />
-                      <Route
-                       path="/admin/settings"
-                      element={<AdminSettings />}
-                       />
-                       <Route
-  path="/admin/plugins"
-  element={<AdminPlugins />}
-/>
-<Route
-  path="/admin/ai-analytics"
-  element={<AdminAIAnalytics />}
-/>
+                      <Route path="/admin" element={<AdminDashboard />} />
+                      <Route path="/users" element={<Users />} />
+                      <Route path="/admin/settings" element={<AdminSettings />} />
+                      <Route path="/admin/plugins" element={<AdminPlugins />} />
+                      <Route path="/admin/ai-analytics" element={<AdminAIAnalytics />} />
+                      <Route path="/admin/ai-analytics/sites/:siteId" element={<AdminAiTelemetrySitePage />} />
                     </Route>
-                    <Route
-  path="/sites/:siteId/members"
-  element={<SiteMembersPage />}
-/>
-<Route
-  path="/invitations/accept"
-  element={<AcceptInvitationPage />}
-/>
-
+                    
+                    <Route path="/sites/:siteId/members" element={<SiteMembersPage />} />
+                    <Route path="/invitations/accept" element={<AcceptInvitationPage />} />
                   </Route>
-
                 </Route>
 
-                <Route
-                  path="*"
-                  element={<Navigate to="/" replace />}
-                />
-
+                {/* 404 - Catch all */}
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
-
             </Suspense>
-
           </BrowserRouter>
-
         </BuilderThemeProvider>
-
       </SnackbarProvider>
-
     </MuiThemeProvider>
   );
 };
@@ -407,21 +369,13 @@ const AppContent: React.FC = () => {
 // ======================================================
 
 function App() {
-
   return (
-
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-
       <Provider store={store}>
-
         <LanguageProvider>
-
           <AppContent />
-
         </LanguageProvider>
-
       </Provider>
-
     </GoogleOAuthProvider>
   );
 }
