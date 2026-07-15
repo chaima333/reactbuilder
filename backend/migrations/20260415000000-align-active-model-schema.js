@@ -491,7 +491,10 @@ module.exports = {
       pageId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: { model: "pages", key: "id" },
+        references: {
+          model: "pages",
+          key: "id",
+        },
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
       },
@@ -507,9 +510,219 @@ module.exports = {
       updatedAt: currentTimestamp(Sequelize),
     });
 
-    await addIndexIfMissing(queryInterface, "page_slugs", ["siteId", "slug"], {
-      name: "page_slugs_site_slug_idx",
-    });
+    // Repair legacy page_slugs schemas safely.
+    let pageSlugColumns =
+      await queryInterface.describeTable(
+        "page_slugs"
+      );
+
+    // Legacy DB uses page_id while the active model uses pageId.
+    if (!pageSlugColumns.pageId) {
+      await queryInterface.addColumn(
+        "page_slugs",
+        "pageId",
+        {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        }
+      );
+
+      pageSlugColumns =
+        await queryInterface.describeTable(
+          "page_slugs"
+        );
+    }
+
+    if (pageSlugColumns.page_id) {
+      await queryInterface.sequelize.query(`
+        UPDATE "page_slugs"
+        SET "pageId" = "page_id"
+        WHERE "pageId" IS NULL;
+      `);
+    }
+
+    // Legacy DB has no siteId. Recover it from the parent page.
+    if (!pageSlugColumns.siteId) {
+      await queryInterface.addColumn(
+        "page_slugs",
+        "siteId",
+        {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        }
+      );
+
+      pageSlugColumns =
+        await queryInterface.describeTable(
+          "page_slugs"
+        );
+    }
+
+    const pageColumns =
+      await queryInterface.describeTable(
+        "pages"
+      );
+
+    const pageSiteColumn =
+      pageColumns.siteId
+        ? "siteId"
+        : pageColumns.site_id
+          ? "site_id"
+          : null;
+
+    if (!pageSiteColumn) {
+      throw new Error(
+        "Cannot repair page_slugs: pages has neither siteId nor site_id"
+      );
+    }
+
+    await queryInterface.sequelize.query(`
+      UPDATE "page_slugs" AS ps
+      SET "siteId" = p."${pageSiteColumn}"
+      FROM "pages" AS p
+      WHERE ps."siteId" IS NULL
+        AND p."id" = ps."pageId";
+    `);
+
+    // Active PageSlug model uses camelCase timestamp columns.
+    if (!pageSlugColumns.createdAt) {
+      await queryInterface.addColumn(
+        "page_slugs",
+        "createdAt",
+        {
+          type: Sequelize.DATE,
+          allowNull: true,
+        }
+      );
+
+      pageSlugColumns =
+        await queryInterface.describeTable(
+          "page_slugs"
+        );
+    }
+
+    if (pageSlugColumns.created_at) {
+      await queryInterface.sequelize.query(`
+        UPDATE "page_slugs"
+        SET "createdAt" = COALESCE(
+          "createdAt",
+          "created_at",
+          CURRENT_TIMESTAMP
+        );
+      `);
+    } else {
+      await queryInterface.sequelize.query(`
+        UPDATE "page_slugs"
+        SET "createdAt" = CURRENT_TIMESTAMP
+        WHERE "createdAt" IS NULL;
+      `);
+    }
+
+    if (!pageSlugColumns.updatedAt) {
+      await queryInterface.addColumn(
+        "page_slugs",
+        "updatedAt",
+        {
+          type: Sequelize.DATE,
+          allowNull: true,
+        }
+      );
+
+      pageSlugColumns =
+        await queryInterface.describeTable(
+          "page_slugs"
+        );
+    }
+
+    if (pageSlugColumns.updated_at) {
+      await queryInterface.sequelize.query(`
+        UPDATE "page_slugs"
+        SET "updatedAt" = COALESCE(
+          "updatedAt",
+          "updated_at",
+          "createdAt",
+          CURRENT_TIMESTAMP
+        );
+      `);
+    } else {
+      await queryInterface.sequelize.query(`
+        UPDATE "page_slugs"
+        SET "updatedAt" = COALESCE(
+          "updatedAt",
+          "createdAt",
+          CURRENT_TIMESTAMP
+        );
+      `);
+    }
+
+    const [invalidPageSlugs] =
+      await queryInterface.sequelize.query(`
+        SELECT COUNT(*) AS count
+        FROM "page_slugs"
+        WHERE "pageId" IS NULL
+           OR "siteId" IS NULL
+           OR "createdAt" IS NULL
+           OR "updatedAt" IS NULL;
+      `);
+
+    const invalidPageSlugCount =
+      Number(invalidPageSlugs[0]?.count || 0);
+
+    if (invalidPageSlugCount > 0) {
+      throw new Error(
+        `Cannot repair page_slugs: ${invalidPageSlugCount} rows remain incomplete`
+      );
+    }
+
+    await queryInterface.changeColumn(
+      "page_slugs",
+      "pageId",
+      {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+      }
+    );
+
+    await queryInterface.changeColumn(
+      "page_slugs",
+      "siteId",
+      {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+      }
+    );
+
+    await queryInterface.changeColumn(
+      "page_slugs",
+      "createdAt",
+      {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.fn("NOW"),
+      }
+    );
+
+    await queryInterface.changeColumn(
+      "page_slugs",
+      "updatedAt",
+      {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.fn("NOW"),
+      }
+    );
+
+    // Keep legacy page_id, created_at and is_active columns.
+    // They are not deleted because existing deployments may still contain them.
+
+    await addIndexIfMissing(
+      queryInterface,
+      "page_slugs",
+      ["siteId", "slug"],
+      {
+        name: "page_slugs_site_slug_idx",
+      }
+    );
 
     await createTableIfMissing(queryInterface, "slug_maps", {
       id: {
