@@ -61,6 +61,42 @@ const createTableIfMissing = async (
 
   await queryInterface.createTable(tableName, definition);
 };
+const quoteIdentifier = (value) =>
+  `"${String(value).replace(/"/g, '""')}"`;
+
+const getColumnTypeName = async (
+  queryInterface,
+  tableName,
+  columnName
+) => {
+  const [rows] =
+    await queryInterface.sequelize.query(
+      `
+        SELECT t.typname AS "typeName"
+        FROM pg_attribute a
+        INNER JOIN pg_class c
+          ON c.oid = a.attrelid
+        INNER JOIN pg_namespace n
+          ON n.oid = c.relnamespace
+        INNER JOIN pg_type t
+          ON t.oid = a.atttypid
+        WHERE n.nspname = 'public'
+          AND c.relname = :tableName
+          AND a.attname = :columnName
+          AND a.attnum > 0
+          AND NOT a.attisdropped
+        LIMIT 1;
+      `,
+      {
+        replacements: {
+          tableName,
+          columnName
+        }
+      }
+    );
+
+  return rows[0]?.typeName || null;
+};
 
 const ensureEnumValues = async (queryInterface, enumName, values) => {
   for (const value of values) {
@@ -805,26 +841,76 @@ module.exports = {
       }
     );
 
-    if (
+       if (
       (await hasTable(queryInterface, "site_users")) &&
       (await hasTable(queryInterface, "site_members"))
     ) {
+      const siteMemberRoleType =
+        await getColumnTypeName(
+          queryInterface,
+          "site_members",
+          "role"
+        );
+
+      const normalizedRoleExpression = `
+        CASE role::text
+          WHEN 'Owner' THEN 'OWNER'
+          WHEN 'Admin' THEN 'ADMIN'
+          WHEN 'Editor' THEN 'EDITOR'
+          WHEN 'Viewer' THEN 'VIEWER'
+          ELSE UPPER(role::text)
+        END
+      `;
+
+      let roleExpression =
+        normalizedRoleExpression;
+
+      if (
+        siteMemberRoleType &&
+        siteMemberRoleType.startsWith("enum_")
+      ) {
+        await ensureEnumValues(
+          queryInterface,
+          siteMemberRoleType,
+          [
+            "OWNER",
+            "ADMIN",
+            "EDITOR",
+            "VIEWER"
+          ]
+        );
+
+        roleExpression = `
+          (${normalizedRoleExpression})
+          ::${quoteIdentifier(siteMemberRoleType)}
+        `;
+      }
+
       await queryInterface.sequelize.query(`
-        INSERT INTO site_members (user_id, site_id, role, created_at, updated_at)
+        INSERT INTO site_members (
+          user_id,
+          site_id,
+          role,
+          created_at,
+          updated_at
+        )
         SELECT
           user_id,
           site_id,
-          CASE role::text
-            WHEN 'Owner' THEN 'OWNER'
-            WHEN 'Admin' THEN 'ADMIN'
-            WHEN 'Editor' THEN 'EDITOR'
-            WHEN 'Viewer' THEN 'VIEWER'
-            ELSE role::text
-          END::"enum_site_members_role",
-          COALESCE(created_at, CURRENT_TIMESTAMP),
-          COALESCE(updated_at, CURRENT_TIMESTAMP)
+          ${roleExpression},
+          COALESCE(
+            created_at,
+            CURRENT_TIMESTAMP
+          ),
+          COALESCE(
+            updated_at,
+            CURRENT_TIMESTAMP
+          )
         FROM site_users
-        ON CONFLICT (user_id, site_id) DO NOTHING;
+        ON CONFLICT (
+          user_id,
+          site_id
+        ) DO NOTHING;
       `);
     }
 
