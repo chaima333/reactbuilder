@@ -4,6 +4,7 @@ import { AuthRequest } from '../../shared/auth.util';
 import { SiteService } from '../sites/site.service';
 import { Op } from "sequelize";
 import { EventDispatcher } from "../../core/plugins/event.dispatcher";
+import { OptionalSiteVisitorAuthRequest } from '../siteVisitors/siteVisitorAuth.middleware';
 
 // =========================
 // CREATE SITE
@@ -434,6 +435,7 @@ export const getDefaultSite = async (
     });
   }
 };
+
 export const getPublicSite = async (
   req: Request,
   res: Response
@@ -442,11 +444,37 @@ export const getPublicSite = async (
     const siteId =
       Number(req.params.siteId);
 
-    if (!Number.isFinite(siteId)) {
+    if (
+      !Number.isInteger(siteId) ||
+      siteId <= 0
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid site id"
       });
+    }
+
+    const authRequest =
+      req as OptionalSiteVisitorAuthRequest;
+
+    const isAuthenticatedVisitor =
+      Boolean(authRequest.siteVisitor);
+
+    res.set(
+      "Vary",
+      "Authorization"
+    );
+
+    if (isAuthenticatedVisitor) {
+      res.set(
+        "Cache-Control",
+        "private, no-store, max-age=0"
+      );
+    } else {
+      res.set(
+        "Cache-Control",
+        "public, max-age=60"
+      );
     }
 
     const site =
@@ -455,38 +483,60 @@ export const getPublicSite = async (
           id: siteId,
           status: "active"
         },
+
         include: [
           {
             model: Page,
             as: "pages",
             required: false,
+
+            attributes: [
+              "id",
+              "title",
+              "slug",
+              "status",
+              "visibility",
+              "isHomepage",
+              "publishedAt"
+            ],
+
             where: {
-              status: "published"
+              status: "published",
+
+              ...(
+                isAuthenticatedVisitor
+                  ? {}
+                  : {
+                      visibility:
+                        "public"
+                    }
+              )
             }
           }
         ]
       });
 
     if (!site) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Site not found"
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Site not found"
+      });
     }
 
     return res.json({
       success: true,
       data: site
     });
-
   } catch (error: any) {
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: error.message
-      });
+    console.error(
+      "GET_PUBLIC_SITE_ERROR",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Internal server error"
+    });
   }
 };

@@ -10,6 +10,10 @@ import {
   CmsPublicController
 } from "../cms/cms.public.controller";
 
+import {
+  attachOptionalSiteVisitorAuth
+} from "../siteVisitors/siteVisitorAuth.middleware";
+
 const router =
   Router();
 
@@ -22,6 +26,7 @@ router.get(
 // Public site JSON
 router.get(
   "/sites/:siteId",
+  attachOptionalSiteVisitorAuth,
   getPublicSite
 );
 

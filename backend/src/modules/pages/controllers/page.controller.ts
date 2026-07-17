@@ -4,7 +4,7 @@ import { PageVersionService } from "../services/pageVersion.service";
 import { PageMapper } from "../mappers/page.mapper";
 import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
 import { Request, Response } from "express";
-
+import { getPublicPageAccessDecision } from "../../siteVisitors/siteVisitorPageAccess";
 
 export const handleEventDispatch = async (
   result: any,
@@ -56,7 +56,6 @@ export const handleEventDispatch = async (
     envelope,
     source
   );
-
 };
 
 // ========================
@@ -154,6 +153,7 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
     }, 500);
   }
 };
+
 // ========================
 // 🟢 DELETE PAGE
 // ========================
@@ -182,21 +182,21 @@ export const publishPageController = async (req: AuthRequest, res: Response) => 
       req.user.id
     );
 
-  const publishEvent: any = result?.event;
+    const publishEvent: any = result?.event;
 
-console.log("[PAGE_PUBLISH_EVENT] before dispatch", {
-  type: publishEvent?.type,
-  shouldEmit: publishEvent?.shouldEmit,
-  userId:
-    publishEvent?.context?.userId ??
-    publishEvent?.payload?.userId ??
-    publishEvent?.payload?.context?.userId,
-  siteId:
-    publishEvent?.context?.siteId ??
-    publishEvent?.payload?.siteId ??
-    publishEvent?.payload?.context?.siteId,
-  pageId: result?.data?.id,
-});
+    console.log("[PAGE_PUBLISH_EVENT] before dispatch", {
+      type: publishEvent?.type,
+      shouldEmit: publishEvent?.shouldEmit,
+      userId:
+        publishEvent?.context?.userId ??
+        publishEvent?.payload?.userId ??
+        publishEvent?.payload?.context?.userId,
+      siteId:
+        publishEvent?.context?.siteId ??
+        publishEvent?.payload?.siteId ??
+        publishEvent?.payload?.context?.siteId,
+      pageId: result?.data?.id,
+    });
 
     await handleEventDispatch(result, "PageController.publishPage");
 
@@ -290,17 +290,20 @@ export const getPageById = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// ========================
+// 🟢 UPDATE PAGE SEO
+// ========================
 export const updatePageSeo = async (
   req: AuthRequest,
   res: Response
 ) => {
   try {
-    const seo =
-      await PageService.updatePageSeo(
-        Number(req.siteContext.siteId),
-        Number(req.params.pageId),
-        req.body
-      );
+    const seo = await PageService.updatePageSeo(
+      Number(req.siteContext.siteId),
+      Number(req.params.pageId),
+      req.body
+    );
 
     return res.json({
       success: true,
@@ -325,12 +328,24 @@ export const updatePageSeo = async (
     });
   }
 };
-export const getPublicPageById = async (req: Request, res: Response) => {
+
+// ========================
+// 🟢 GET PUBLIC PAGE BY ID
+// ========================
+export const getPublicPageById = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const siteId = Number(req.params.siteId);
     const pageId = Number(req.params.pageId);
 
-    if (!siteId || !pageId) {
+    if (
+      !Number.isInteger(siteId) ||
+      siteId <= 0 ||
+      !Number.isInteger(pageId) ||
+      pageId <= 0
+    ) {
       return res.status(400).json({
         success: false,
         message: "siteId and pageId are required"
@@ -338,14 +353,19 @@ export const getPublicPageById = async (req: Request, res: Response) => {
     }
 
     const { Page, Seo, Site } = require("../../../models");
-    
+
     const page = await Page.findOne({
       where: {
         id: pageId,
         siteId,
         status: "published"
       },
-      include: [{ model: Seo, required: false }]
+      include: [
+        {
+          model: Seo,
+          required: false
+        }
+      ]
     });
 
     if (!page) {
@@ -355,15 +375,35 @@ export const getPublicPageById = async (req: Request, res: Response) => {
       });
     }
 
+    const accessDecision = getPublicPageAccessDecision(req, page);
+
+    res.set("Vary", "Authorization");
+
+    // ✅ التصحيح: استخدام 'in' operator لنarrowing
+    if ("statusCode" in accessDecision) {
+      res.set("Cache-Control", "private, no-store, max-age=0");
+
+      return res.status(accessDecision.statusCode).json({
+        success: false,
+        message: accessDecision.message,
+        code: accessDecision.code
+      });
+    }
+
+    // ✅ الآن TypeScript يعرف أن allowed: true
+    if (page.visibility === "members_only") {
+      res.set("Cache-Control", "private, no-store, max-age=0");
+    } else {
+      res.set("Cache-Control", "public, max-age=60");
+    }
+
     const site = await Site.findByPk(siteId);
     const seoRecord = page.seo;
+
     const pageData = {
       ...page.toJSON(),
-      seo: seoRecord?.toJSON() || null,
-      site:
-        site && typeof site.toJSON === "function"
-          ? site.toJSON()
-          : site
+      seo: seoRecord?.toJSON?.() || null,
+      site: site && typeof site.toJSON === "function" ? site.toJSON() : site
     };
 
     return res.status(200).json({
@@ -372,6 +412,7 @@ export const getPublicPageById = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("[PUBLIC_PAGE_BY_ID_ERROR]:", error.message);
+
     return res.status(500).json({
       success: false,
       message: "Internal Server Error"

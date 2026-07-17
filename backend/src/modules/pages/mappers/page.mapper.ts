@@ -55,7 +55,7 @@ export const PageMapper = {
       slug: raw.slug,
       content: raw.content,
       blocks: raw.blocks,
-      status: raw.status,
+      visibility: raw.visibility || "public",
       siteId: raw.siteId,
       userId: raw.userId,
       isHomepage: raw.isHomepage,

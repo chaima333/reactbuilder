@@ -13,12 +13,11 @@ import { User } from "./User";
 import { Site } from "./site";
 import { Seo } from "./Seo";
 
-// Type pour les blocs de l'éditeur
 export type Block = { type: string; content: string };
 
-// Statuts possibles d'une page
 export type PageStatus = 'draft' | 'published' | 'scheduled' | 'deleted';
 
+export type PageVisibility = | "public" | "members_only";
 
 @Table({
   tableName: "pages",
@@ -49,7 +48,16 @@ export class Page extends Model {
   @Column({ type: DataType.ENUM('draft', 'published', 'scheduled', 'deleted'), defaultValue: 'draft' })
   status!: PageStatus;
 
-  // 🛡️ الربط مع المستخدم
+  @Column({
+  type: DataType.ENUM(
+    "public",
+    "members_only"
+  ),
+  allowNull: false,
+  defaultValue: "public"
+})
+visibility!: PageVisibility;
+
   @Column({
   type: DataType.BOOLEAN,
   allowNull:false,
@@ -105,7 +113,6 @@ publishedAt!: Date;
 })
 metaData: any; 
 
-
 @Column({
   type: DataType.INTEGER,
   allowNull: false,
@@ -113,6 +120,4 @@ metaData: any;
   field: 'views' 
 })
 views!: number;
-
-
 }

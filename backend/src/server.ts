@@ -60,6 +60,8 @@ import cmsPublicRoutes from "./modules/cms/cms.public.routes";
 import { getPublicPageById } from "./modules/pages/controllers/page.controller";
 import formsPublicRoutes from "./modules/forms/forms.public.routes";
 import formsRoutes from "./modules/forms/forms.routes";
+import siteVisitorAuthRoutes from "./modules/siteVisitors/siteVisitorAuth.routes";
+import { attachOptionalSiteVisitorAuth } from "./modules/siteVisitors/siteVisitorAuth.middleware";
 
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
@@ -117,7 +119,12 @@ app.use("/api/public/sites/:siteId/cms", cmsPublicRoutes);
 
 app.get(
   "/api/sites/:siteId/pages/:pageId/public",
+  attachOptionalSiteVisitorAuth,
   getPublicPageById
+);
+app.use(
+  "/api/public/sites/:siteId/visitor-auth",
+  siteVisitorAuthRoutes
 );
 
 /* ========================

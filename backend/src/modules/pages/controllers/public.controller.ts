@@ -4,6 +4,7 @@ import { SEOBuilder } from "../engine/seoBuilder";
 import { renderBlocks, renderFullPage } from "../engine/blockRenderer";
 import { Site } from "../../../models/site";
 import { Seo } from "../../../models/Seo";
+import { getPublicPageAccessDecision } from "../../siteVisitors/siteVisitorPageAccess";
 
 export const getPublicPage = async (req: Request, res: Response) => {
   try {
@@ -23,33 +24,83 @@ export const getPublicPage = async (req: Request, res: Response) => {
       return res.status(404).send("<h1>404 - Page Not Found</h1>");
     }
 
+    const accessDecision =
+      getPublicPageAccessDecision(
+        req,
+        result.page
+      );
+
+    if (!accessDecision.allowed) {
+      res.set(
+        "Cache-Control",
+        "no-store"
+      );
+
+      const statusCode =
+        'statusCode' in accessDecision
+          ? accessDecision.statusCode
+          : 403;
+
+      const title =
+        statusCode === 401
+          ? "Authentication Required"
+          : "Access Denied";
+
+      const message =
+        'message' in accessDecision
+          ? accessDecision.message
+          : "You do not have permission to view this page.";
+
+      return res
+        .status(statusCode)
+        .send(`
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <meta
+                name="robots"
+                content="noindex,nofollow"
+              />
+              <title>${title}</title>
+            </head>
+            <body>
+              <main>
+                <h1>${title}</h1>
+                <p>${message}</p>
+              </main>
+            </body>
+          </html>
+        `);
+    }
+
     if (!result.isOriginal) {
       return res.redirect(301, `/pages/${siteId}/${result.page.slug}`);
     }
 
     const rawPage =
-  typeof result.page.toJSON === "function"
-    ? result.page.toJSON()
-    : result.page;
+      typeof result.page.toJSON === "function"
+        ? result.page.toJSON()
+        : result.page;
 
-const seoRecord =
-  await Seo.findOne({
-    where: {
-      pageId: rawPage.id,
-      siteId: rawPage.siteId,
-    },
-  });
+    const seoRecord =
+      await Seo.findOne({
+        where: {
+          pageId: rawPage.id,
+          siteId: rawPage.siteId,
+        },
+      });
 
-const page = {
-  ...rawPage,
-  seo:
-    typeof seoRecord?.toJSON === "function"
-      ? seoRecord.toJSON()
-      : seoRecord,
-};
+    const page = {
+      ...rawPage,
+      seo:
+        typeof seoRecord?.toJSON === "function"
+          ? seoRecord.toJSON()
+          : seoRecord,
+    };
 
-const seo =
-  SEOBuilder.build(page);
+    const seo =
+      SEOBuilder.build(page);
 
     const host =
       req.get("host");
@@ -60,7 +111,20 @@ const seo =
     const canonical =
       `${protocol}://${host}/pages/${siteId}/${page.slug}`;
 
-    res.set("Cache-Control", "public, max-age=60");
+    // =============================================
+    // FIX: Cache-Control based on page visibility
+    // =============================================
+    if (page.visibility === "members_only") {
+      res.set(
+        "Cache-Control",
+        "private, no-store, max-age=0"
+      );
+    } else {
+      res.set(
+        "Cache-Control",
+        "public, max-age=60"
+      );
+    }
 
     const site =
       await Site.findByPk(
@@ -72,6 +136,7 @@ const seo =
 
     const pageBlocks =
       Array.isArray(page.blocks) ? page.blocks : [];
+
     const isFooterBlock = (block: any) => {
       const semanticType =
         block?.meta?.semanticType ||
@@ -100,11 +165,11 @@ const seo =
         : [])
     ];
 
-const blocksHTML = await renderBlocks(allBlocks, siteId);
+    const blocksHTML = await renderBlocks(allBlocks, siteId);
 
-const html = renderFullPage(page, seo, canonical, blocksHTML);
+    const html = renderFullPage(page, seo, canonical, blocksHTML);
 
-return res.status(200).send(html);
+    return res.status(200).send(html);
 
   } catch (error: any) {
     console.error("[RENDER_ERROR]:", error.message);
@@ -136,8 +201,56 @@ export const getPublicPageJSON = async (
       });
     }
 
-    const { page } =
-      result;
+    // =============================================
+    // FIX: Check access for JSON endpoint
+    // =============================================
+    const accessDecision =
+      getPublicPageAccessDecision(
+        req,
+        result.page
+      );
+
+    if (!accessDecision.allowed) {
+      res.set(
+        "Cache-Control",
+        "no-store"
+      );
+
+      const statusCode =
+        'statusCode' in accessDecision
+          ? accessDecision.statusCode
+          : 403;
+
+      const message =
+        'message' in accessDecision
+          ? accessDecision.message
+          : "You do not have permission to view this page.";
+
+      return res
+        .status(statusCode)
+        .json({
+          success: false,
+          message: message,
+          code: 'code' in accessDecision ? accessDecision.code : undefined
+        });
+    }
+
+    const { page } = result;
+
+    // =============================================
+    // FIX: Cache-Control for JSON endpoint
+    // =============================================
+    if (page.visibility === "members_only") {
+      res.set(
+        "Cache-Control",
+        "private, no-store, max-age=0"
+      );
+    } else {
+      res.set(
+        "Cache-Control",
+        "public, max-age=60"
+      );
+    }
 
     const site =
       await Site.findByPk(

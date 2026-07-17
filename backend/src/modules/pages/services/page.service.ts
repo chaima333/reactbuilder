@@ -66,6 +66,10 @@ static async createPage(
       }
     );
   }
+ const visibility =
+  data.visibility === "members_only"
+    ? "members_only"
+    : "public";
 
   const page =
     await PageRepository.create({
@@ -74,6 +78,7 @@ static async createPage(
       siteId,
       userId,
       status: data.status || PAGE_STATUS.DRAFT,
+      visibility,
       isHomepage: requestedHomepage
     });
 

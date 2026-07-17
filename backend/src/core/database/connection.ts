@@ -1,5 +1,5 @@
 import { Sequelize } from "sequelize-typescript";
-import { User, Token, Page, Site, ActivityLog, Media, PageVersion, PageSlug, FigmaImport, ContactSubmission, FigmaPluginToken, PlatformSetting, AiGeneration, SiteInvitation, AiActivityEvent, PartnerApplication, CmsEntry, CmsCollection, CmsField, FormSubmission } from "../../models"; 
+import { User, Token, Page, Site, ActivityLog, Media, PageVersion, PageSlug, FigmaImport, ContactSubmission, FigmaPluginToken, PlatformSetting, AiGeneration, SiteInvitation, AiActivityEvent, PartnerApplication, CmsEntry, CmsCollection, CmsField, FormSubmission, SiteVisitor, SiteVisitorSession } from "../../models"; 
 import { Seo } from "../../models/Seo";
 import { Plugin } from "../../models/Plugin";
 import { SiteMember } from "../../models/SiteMember";
@@ -43,7 +43,9 @@ export const sequelize = new Sequelize(databaseUrl, {
      CmsCollection,
      CmsField,
      FormSubmission,
-     Form
+     Form,
+     SiteVisitor,
+     SiteVisitorSession
     
   ],
 

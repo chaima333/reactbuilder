@@ -1,3 +1,4 @@
+
 // backend/src/modules/pages/commands/updatePage.handler.ts
 
 import { Page } from "../../../models/page";
@@ -21,13 +22,11 @@ export const updatePageHandler = async (command: any) => {
       return { success: false, error: "invalid context" };
     }
 
-    // ✅ أضف slug و theme إلى allowedFields
-    const allowedFields = ["title", "content", "blocks", "slug", "theme"];
+    const allowedFields = ["title", "content", "blocks", "slug", "theme",  "visibility"];
     const safePayload: any = {};
 
     const blocks = payload?.blocks || [];
 
-    // ✅ خيار: استخراج Navbar اختياري (افتراضي: true)
     const extractNavbar = payload?.extractNavbar !== false;
 
     let filteredBlocks = blocks;
@@ -61,7 +60,16 @@ export const updatePageHandler = async (command: any) => {
       navbar = findNavbar(blocks);
       filteredBlocks = removeNavbar(blocks);
     }
-
+   if (
+  payload.visibility !== undefined &&
+  payload.visibility !== "public" &&
+  payload.visibility !== "members_only"
+) {
+  return {
+    success: false,
+    error: "INVALID_PAGE_VISIBILITY"
+  };
+}
     for (const field of allowedFields) {
       if (payload[field] !== undefined) {
         if (field === "blocks") {

@@ -3,26 +3,27 @@ import {
   getPublicPage,
   getPublicPageJSON
 } from "../controllers/public.controller";
+import { attachOptionalSiteVisitorAuth } from "../../siteVisitors/siteVisitorAuth.middleware";
 
 const router = Router({
   mergeParams: true
 });
 
-// HTML rendered page for SEO / view-source
 router.get(
   "/html/pages/:siteId/:slug",
+  attachOptionalSiteVisitorAuth,
   getPublicPage
 );
 
-// JSON page data for React public runtime
 router.get(
   "/pages/:siteId/:slug",
+  attachOptionalSiteVisitorAuth,
   getPublicPageJSON
 );
 
-// Legacy JSON route
 router.get(
   "/public/pages/:siteId/:slug",
+  attachOptionalSiteVisitorAuth,
   getPublicPageJSON
 );
 
