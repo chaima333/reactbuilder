@@ -10,6 +10,10 @@ import PageVersion from "../../../models/pageVersion";
 import { updatePageHandler } from "../commands/updatePage.handler";
 import { AdminSettingsService } from "../../admin/adminSettings.service";
 import { Seo, Site } from "../../../models";
+import {
+  assertCanCreateNormalPage,
+  assertSystemPageCanBeDeleted
+} from "../systemPages";
 
 const { nanoid } = require("nanoid");
 
@@ -25,10 +29,15 @@ static async createPage(
   userId: number,
   data: any
 ) {
+  assertCanCreateNormalPage(data);
+
   const settings = await AdminSettingsService.getSettings();
   const maxPages = settings.maxPagesPerSite ?? 50;
   const currentPagesCount = await Page.count({
-    where: { siteId }
+    where: {
+      siteId,
+      systemType: null
+    }
   });
 
   if (currentPagesCount >= maxPages) {
@@ -112,7 +121,7 @@ static async createPage(
   // ================= UPDATE =================
 
 static async updatePage(siteId: number, pageId: number, userId: number, input: any) {
-  return await updatePageHandler({
+  const result = await updatePageHandler({
     payload: { pageId, ...input },
     context: { 
       userId, 
@@ -121,11 +130,18 @@ static async updatePage(siteId: number, pageId: number, userId: number, input: a
       action: "update" 
     }
   });
+
+  if (!result?.success) {
+    throw new Error(result?.error || "PAGE_UPDATE_FAILED");
+  }
+
+  return result;
 }
   // ================= DELETE =================
   static async deletePage(siteId: number, pageId: number) {
     const page = await PageRepository.findById(pageId, siteId);
     if (!page) throw new Error("PAGE_NOT_FOUND");
+    assertSystemPageCanBeDeleted(page);
 
     const updated = await page.update({ status: PAGE_STATUS.DELETED });
 

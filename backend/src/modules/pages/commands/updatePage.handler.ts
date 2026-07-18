@@ -8,6 +8,10 @@ import { ActivityService } from "../../dashboard/services/activity.service";
 import { Site } from "../../../models/site";
 import PageVersion from "../../../models/pageVersion";
 import { sequelize } from "../../../core/database/connection";
+import {
+  assertSystemPageMutationAllowed,
+  isPageSystemType
+} from "../systemPages";
 
 export const updatePageHandler = async (command: any) => {
   try {
@@ -80,14 +84,6 @@ export const updatePageHandler = async (command: any) => {
       }
     }
 
-    if (!safePayload.slug && payload.title) {
-      safePayload.slug = payload.title
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
-    }
-
     const updateResult = await sequelize.transaction(async (transaction) => {
       const page = await Page.findOne({
         where: {
@@ -100,6 +96,27 @@ export const updatePageHandler = async (command: any) => {
 
       if (!page) {
         throw new Error("PAGE_NOT_FOUND");
+      }
+
+      assertSystemPageMutationAllowed(
+        page,
+        payload
+      );
+
+      const currentSystemType =
+        page.systemType ||
+        page.get?.("systemType");
+
+      if (
+        !safePayload.slug &&
+        payload.title &&
+        !isPageSystemType(currentSystemType)
+      ) {
+        safePayload.slug = payload.title
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
       }
 
       const oldPage = normalizePage(page);

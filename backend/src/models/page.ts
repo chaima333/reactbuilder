@@ -19,6 +19,10 @@ export type PageStatus = 'draft' | 'published' | 'scheduled' | 'deleted';
 
 export type PageVisibility = | "public" | "members_only";
 
+export type PageSystemType =
+  | "visitor_login"
+  | "visitor_register";
+
 @Table({
   tableName: "pages",
   timestamps: true,
@@ -57,6 +61,16 @@ export class Page extends Model {
   defaultValue: "public"
 })
 visibility!: PageVisibility;
+
+  @Column({
+  type: DataType.ENUM(
+    "visitor_login",
+    "visitor_register"
+  ),
+  allowNull: true,
+  field: "system_type"
+})
+systemType!: PageSystemType | null;
 
   @Column({
   type: DataType.BOOLEAN,

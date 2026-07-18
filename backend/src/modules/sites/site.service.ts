@@ -1,6 +1,9 @@
 import { sequelize } from "../../core/database/connection"; // ثبت في المسار الصحيح
 import { Site, SiteMember } from "../../models";
 import { AdminSettingsService } from "../admin/adminSettings.service";
+import {
+  createMissingSystemPagesForSite
+} from "../pages/systemPages";
 
 export class SiteService {
   static async createSite(userId: number, siteData: any, userRole?: string) {
@@ -43,6 +46,12 @@ if (userRole !== "ADMIN") {
         siteId: site.id,
         role: 'OWNER'
       }, { transaction: t });
+
+      await createMissingSystemPagesForSite(
+        site.id,
+        userId,
+        t
+      );
 
       await t.commit();
       return site;

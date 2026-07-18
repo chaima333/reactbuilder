@@ -5,6 +5,9 @@ import { PageMapper } from "../mappers/page.mapper";
 import { EventDispatcher } from "../../../core/plugins/event.dispatcher";
 import { Request, Response } from "express";
 import { getPublicPageAccessDecision } from "../../siteVisitors/siteVisitorPageAccess";
+import {
+  getPageGuardErrorResponse
+} from "../systemPages";
 
 export const handleEventDispatch = async (
   result: any,
@@ -71,6 +74,17 @@ export const createPage = async (req: AuthRequest, res: Response) => {
     await handleEventDispatch(result, "PageController.createPage");
     return res.status(201).json({ success: true, data: PageMapper.toDTO(result.data) });
   } catch (err: any) {
+    const guardError =
+      getPageGuardErrorResponse(err);
+
+    if (guardError) {
+      return res.status(guardError.status).json({
+        success: false,
+        message: guardError.code,
+        code: guardError.code
+      });
+    }
+
     if (err?.message === "MAX_PAGES_LIMIT_REACHED") {
       return res.status(403).json({
         success: false,
@@ -146,6 +160,17 @@ export const updatePage = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (err: any) {
+    const guardError =
+      getPageGuardErrorResponse(err);
+
+    if (guardError) {
+      return res.status(guardError.status).json({
+        success: false,
+        message: guardError.code,
+        code: guardError.code
+      });
+    }
+
     return res.status(500).json({ success: false, message: err.message });
   } finally {
     setTimeout(() => {
@@ -166,6 +191,17 @@ export const deletePage = async (req: AuthRequest, res: Response) => {
     await handleEventDispatch(result, "PageController.deletePage");
     return res.json({ success: true, message: "Page deleted" });
   } catch (err: any) {
+    const guardError =
+      getPageGuardErrorResponse(err);
+
+    if (guardError) {
+      return res.status(guardError.status).json({
+        success: false,
+        message: guardError.code,
+        code: guardError.code
+      });
+    }
+
     return res.status(500).json({ success: false, message: err.message });
   }
 };

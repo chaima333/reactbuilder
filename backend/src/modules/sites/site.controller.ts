@@ -502,6 +502,7 @@ export const getPublicSite = async (
 
             where: {
               status: "published",
+              systemType: null,
 
               ...(
                 isAuthenticatedVisitor

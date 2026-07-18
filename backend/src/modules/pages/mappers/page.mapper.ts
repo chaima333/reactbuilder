@@ -1,4 +1,7 @@
 // mapper/page.mapper.ts
+import type {
+  PageDTO
+} from "../types/page.types";
 
 const normalizePage = (page: any) => {
   if (!page) {
@@ -42,7 +45,7 @@ const mapSeo = (seo: any) => {
 };
 
 export const PageMapper = {
-  toDTO: (page: any) => {
+  toDTO: (page: any): PageDTO | null => {
     const raw = normalizePage(page);
 
     if (!raw) {
@@ -56,6 +59,7 @@ export const PageMapper = {
       content: raw.content,
       blocks: raw.blocks,
       visibility: raw.visibility || "public",
+      systemType: raw.systemType || null,
       siteId: raw.siteId,
       userId: raw.userId,
       isHomepage: raw.isHomepage,
@@ -69,6 +73,6 @@ export const PageMapper = {
     };
   },
 
-  toListDTO: (pages: any[]) =>
+  toListDTO: (pages: any[]): Array<PageDTO | null> =>
     pages.map((p) => PageMapper.toDTO(p)),
 };

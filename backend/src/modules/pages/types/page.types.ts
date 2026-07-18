@@ -1,4 +1,7 @@
 import { Page } from "../../../models/page";
+import type {
+  PageSystemType
+} from "../../../models/page";
 
 export type PageStatus = "draft" | "published" | "scheduled" | "deleted";
 
@@ -35,6 +38,26 @@ export interface PageUpdateInput {
   content?: string;
   blocks?: PageBlock[];
   status?: PageStatus;
+}
+
+export interface PageDTO {
+  id: number;
+  title: string;
+  slug: string;
+  content?: string;
+  blocks?: PageBlock[];
+  visibility: "public" | "members_only";
+  systemType: PageSystemType | null;
+  siteId: number;
+  userId: number;
+  isHomepage: boolean;
+  publishedAt?: Date | string | null;
+  metaData?: Record<string, any>;
+  views?: number;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  theme?: any;
+  seo?: any;
 }
 
 export type SlugResolveResult =
