@@ -9,6 +9,7 @@ import { Site } from "../../../models/site";
 import PageVersion from "../../../models/pageVersion";
 import { sequelize } from "../../../core/database/connection";
 import {
+  assertPageAuthBlocksValid,
   assertSystemPageMutationAllowed,
   isPageSystemType
 } from "../systemPages";
@@ -97,11 +98,9 @@ export const updatePageHandler = async (command: any) => {
       if (!page) {
         throw new Error("PAGE_NOT_FOUND");
       }
-
-      assertSystemPageMutationAllowed(
-        page,
-        payload
-      );
+      assertSystemPageMutationAllowed(page,safePayload);
+      assertPageAuthBlocksValid(page,safePayload);
+      assertSystemPageMutationAllowed(page,payload);
 
       const currentSystemType =
         page.systemType ||
