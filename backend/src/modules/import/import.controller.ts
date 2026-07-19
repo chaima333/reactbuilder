@@ -3,7 +3,8 @@ import path from "path";
 import unzipper from "unzipper";
 import { MediaService } from "../media/media.service";
 import {
-  makeSafeImportedPageSlug
+  makeSafeImportedPageSlug,
+  normalizeImportedPageSlug
 } from "./importedPageIdentity";
 
 const extractTemplateConst = (
@@ -19,18 +20,47 @@ const extractTemplateConst = (
   return match?.[1] || "";
 };
 
+const isHtmlFile = (
+  filePath: string
+) =>
+  path
+    .extname(filePath)
+    .toLowerCase() ===
+  ".html";
+
+const toSourceFile = (
+  extractDir: string,
+  filePath: string
+) =>
+  path
+    .relative(
+      extractDir,
+      filePath
+    )
+    .replace(
+      /\\/g,
+      "/"
+    );
+
 const makeSlug = (
   filePath: string
 ) => {
-  const name =
-    path.basename(
-      filePath,
-      ".html"
+  const extension =
+    path.extname(
+      filePath
     );
 
-  return name === "index"
-    ? "home"
-    : name;
+  const fileName =
+    path.basename(
+      filePath,
+      extension
+    );
+
+  return normalizeImportedPageSlug(
+    fileName.toLowerCase() === "index"
+      ? "home"
+      : fileName
+  );
 };
 
 const makeTitle = (
@@ -415,18 +445,15 @@ export const importHtmlZip = async (
         message: "No file uploaded"
       });
     }
-zipPath =
-  req.file.path;
 
-extractDir =
-  path.join(
-    "temp",
-    `${req.file.filename}_extract`
-  );
-    fs.mkdirSync(
-      extractDir,
-      { recursive: true }
+    zipPath = req.file.path;
+
+    extractDir = path.join(
+      "temp",
+      `${req.file.filename}_extract`
     );
+
+    fs.mkdirSync(extractDir, { recursive: true });
 
     await fs
       .createReadStream(zipPath)
@@ -441,11 +468,8 @@ extractDir =
 
     const walk = (dir: string) => {
       for (const entry of fs.readdirSync(dir)) {
-        const fullPath =
-          path.join(dir, entry);
-
-        const stat =
-          fs.statSync(fullPath);
+        const fullPath = path.join(dir, entry);
+        const stat = fs.statSync(fullPath);
 
         if (stat.isDirectory()) {
           walk(fullPath);
@@ -463,36 +487,56 @@ extractDir =
     for (const file of files) {
       const relativePath =
         path
-          .relative(
-            extractDir,
-            file
-          )
+          .relative(extractDir, file)
           .replace(/\\/g, "/");
 
       const normalized =
-        normalizeHrefPath(
-          relativePath
-        );
+        normalizeHrefPath(relativePath);
 
-      fileByRelativePath.set(
-        normalized,
-        file
-      );
-
-      fileByRelativePath.set(
-        normalized.toLowerCase(),
-        file
-      );
+      fileByRelativePath.set(normalized, file);
+      fileByRelativePath.set(normalized.toLowerCase(), file);
     }
 
     const htmlFiles =
-      files.filter(file =>
-        file.endsWith(".html")
+      files
+        .filter(isHtmlFile)
+        .sort(
+          (left, right) =>
+            toSourceFile(extractDir, left).localeCompare(
+              toSourceFile(extractDir, right)
+            )
+        );
+
+    const sourceHtmlFiles =
+      htmlFiles.map(
+        htmlPath =>
+          toSourceFile(extractDir, htmlPath)
       );
 
+    console.log(
+      "ZIP_SOURCE_HTML_MANIFEST",
+      {
+        count: sourceHtmlFiles.length,
+        files: sourceHtmlFiles
+      }
+    );
+
+    if (sourceHtmlFiles.length === 0) {
+      return res
+        .status(422)
+        .json({
+          success: false,
+          code: "ZIP_NO_HTML_FILES",
+          message: "The ZIP does not contain any HTML files",
+          sourceHtmlFiles: []
+        });
+    }
+
     const siteJsPath =
-      files.find(file =>
-        file.endsWith("assets/site.js")
+      files.find(
+        file =>
+          toSourceFile(extractDir, file).toLowerCase() ===
+          "assets/site.js"
       );
 
     let navHtml = "";
@@ -500,22 +544,10 @@ extractDir =
 
     if (siteJsPath) {
       const siteJs =
-        fs.readFileSync(
-          siteJsPath,
-          "utf-8"
-        );
+        fs.readFileSync(siteJsPath, "utf-8");
 
-      navHtml =
-        extractTemplateConst(
-          siteJs,
-          "NAV_HTML"
-        );
-
-      footerHtml =
-        extractTemplateConst(
-          siteJs,
-          "FOOTER_HTML"
-        );
+      navHtml = extractTemplateConst(siteJs, "NAV_HTML");
+      footerHtml = extractTemplateConst(siteJs, "FOOTER_HTML");
     }
 
     const imageFiles =
@@ -526,8 +558,7 @@ extractDir =
     const assetMap: Record<string, string> = {};
 
     for (const imagePath of imageFiles) {
-      const buffer =
-        fs.readFileSync(imagePath);
+      const buffer = fs.readFileSync(imagePath);
 
       const relativePath =
         path
@@ -536,13 +567,9 @@ extractDir =
 
       const fakeFile = {
         buffer,
-        originalname:
-          path.basename(imagePath),
-        mimetype:
-          "image/" +
-          path.extname(imagePath).replace(".", ""),
-        size:
-          buffer.length
+        originalname: path.basename(imagePath),
+        mimetype: "image/" + path.extname(imagePath).replace(".", ""),
+        size: buffer.length
       };
 
       const media =
@@ -552,91 +579,104 @@ extractDir =
           String(req.user.id)
         );
 
-      assetMap[relativePath] =
-        media.url;
+      assetMap[relativePath] = media.url;
     }
 
-    const usedPageSlugs =
-      new Set<string>();
+    const usedPageSlugs = new Set<string>();
+    const pages: any[] = [];
+    const pagePreparationFailures: Array<{
+      sourceFile: string;
+      message: string;
+    }> = [];
 
-    const pages =
-      htmlFiles.map(htmlPath => {
-        const rawSlug =
-          makeSlug(htmlPath);
+    for (const htmlPath of htmlFiles) {
+      const sourceFile = toSourceFile(extractDir, htmlPath);
+      const rawSlug = makeSlug(htmlPath);
+      const slug = makeSafeImportedPageSlug(rawSlug, usedPageSlugs);
+      const title = makeTitle(rawSlug);
 
-        const slug =
-          makeSafeImportedPageSlug(
-            rawSlug,
-            usedPageSlugs
-          );
+      console.log("ZIP_BACKEND_PAGE_PREPARE_START", {
+        sourceFile,
+        rawSlug,
+        resolvedSlug: slug,
+        title
+      });
 
-        const title =
-          makeTitle(slug);
+      try {
+        let processedHtml = fs.readFileSync(htmlPath, "utf-8");
 
-        let processedHtml =
-          fs.readFileSync(
-            htmlPath,
-            "utf-8"
-          );
+        processedHtml = createSelfContainedHtml(
+          processedHtml,
+          htmlPath,
+          extractDir,
+          fileByRelativePath
+        );
 
-        processedHtml =
-          createSelfContainedHtml(
-            processedHtml,
-            htmlPath,
-            extractDir,
-            fileByRelativePath
-          );
+        processedHtml = processedHtml.replace(
+          /<div[^>]*id=["']site-nav["'][^>]*>\s*<\/div>/i,
+          ""
+        );
 
-        processedHtml =
-          processedHtml.replace(
-            /<div[^>]*id=["']site-nav["'][^>]*>\s*<\/div>/i,
-            ""
-          );
-
-        processedHtml =
-          processedHtml.replace(
-            /<div[^>]*id=["']site-footer["'][^>]*>\s*<\/div>/i,
-            ""
-          );
+        processedHtml = processedHtml.replace(
+          /<div[^>]*id=["']site-footer["'][^>]*>\s*<\/div>/i,
+          ""
+        );
 
         for (const [localPath, cloudUrl] of Object.entries(assetMap)) {
-          processedHtml =
-            processedHtml
-              .split(localPath)
-              .join(cloudUrl);
+          processedHtml = processedHtml.split(localPath).join(cloudUrl);
         }
 
-        const sourceFile =
-          path.relative(
-            extractDir,
-            htmlPath
-          ).replace(/\\/g, "/");
-
-        return {
+        pages.push({
           title,
-          originalSlug:
-            rawSlug,
+          originalSlug: rawSlug,
           slug,
           sourceFile,
           processedHtml,
           isHomepage:
             path.basename(htmlPath).toLowerCase() === "index.html"
-        };
-      });
+        });
 
-    const pageByHref =
-      new Map<string, string>();
+        console.log("ZIP_BACKEND_PAGE_PREPARE_SUCCESS", {
+          sourceFile,
+          slug,
+          htmlLength: processedHtml.length
+        });
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : String(error);
+
+        console.error("ZIP_BACKEND_PAGE_PREPARE_FAILED", {
+          sourceFile,
+          slug,
+          message
+        });
+
+        pagePreparationFailures.push({
+          sourceFile,
+          message
+        });
+      }
+    }
+
+    if (pagePreparationFailures.length > 0) {
+      return res.status(422).json({
+        success: false,
+        code: "ZIP_PAGE_PREPARATION_FAILED",
+        message: `Failed to prepare ${pagePreparationFailures.length} HTML page(s)`,
+        sourceHtmlFiles,
+        preparedPages: pages.map(page => ({
+          sourceFile: page.sourceFile,
+          slug: page.slug
+        })),
+        failedPages: pagePreparationFailures
+      });
+    }
+
+    const pageByHref = new Map<string, string>();
 
     for (const page of pages) {
-      const source =
-        normalizeHrefPath(
-          page.sourceFile
-        );
-
-      const basename =
-        path.basename(
-          source
-        );
+      const source = normalizeHrefPath(page.sourceFile);
+      const basename = path.basename(source);
 
       const route =
         page.slug === "home"
@@ -647,47 +687,26 @@ extractDir =
       pageByHref.set(basename, route);
       pageByHref.set(`./${basename}`, route);
     }
-const rewriteAssetUrls = (
-  html: string
-) => {
-  let output = html;
 
-  for (const [localPath, cloudUrl] of Object.entries(assetMap)) {
-    output =
-      output
-        .split(localPath)
-        .join(cloudUrl);
-  }
+    const rewriteAssetUrls = (html: string) => {
+      let output = html;
 
-  return output;
-};
-    const rewriteInternalLinks = (
-      html: string
-    ) =>
+      for (const [localPath, cloudUrl] of Object.entries(assetMap)) {
+        output = output.split(localPath).join(cloudUrl);
+      }
+
+      return output;
+    };
+
+    const rewriteInternalLinks = (html: string) =>
       html.replace(
         /href=(["'])([^"']+\.html(?:[?#][^"']*)?)\1/gi,
-        (
-          _match,
-          quote,
-          href
-        ) => {
-          const split =
-            String(href).match(
-              /^([^?#]+)([?#].*)?$/
-            );
+        (_match, quote, href) => {
+          const split = String(href).match(/^([^?#]+)([?#].*)?$/);
+          const hrefPath = normalizeHrefPath(split?.[1] || "");
+          const suffix = split?.[2] || "";
 
-          const hrefPath =
-            normalizeHrefPath(
-              split?.[1] || ""
-            );
-
-          const suffix =
-            split?.[2] || "";
-
-          const route =
-            pageByHref.get(
-              hrefPath
-            );
+          const route = pageByHref.get(hrefPath);
 
           if (!route) {
             return `href=${quote}${href}${quote}`;
@@ -697,16 +716,10 @@ const rewriteAssetUrls = (
         }
       );
 
-   navHtml =
-  rewriteInternalLinks(
-    rewriteAssetUrls(navHtml)
-  );
+    navHtml = rewriteInternalLinks(rewriteAssetUrls(navHtml));
+    footerHtml = rewriteInternalLinks(rewriteAssetUrls(footerHtml));
 
-footerHtml =
-  rewriteInternalLinks(
-    rewriteAssetUrls(footerHtml)
-  );
-
+    // تحديث الـresponse النهائي
     return res.json({
       success: true,
       assetMap,
@@ -714,14 +727,21 @@ footerHtml =
         navHtml,
         footerHtml
       },
+      sourceHtmlFiles,
+      manifest: {
+        expectedPageCount: sourceHtmlFiles.length,
+        preparedPageCount: pages.length,
+        sourceHtmlFiles,
+        preparedPages: pages.map(page => ({
+          sourceFile: page.sourceFile,
+          title: page.title,
+          slug: page.slug
+        }))
+      },
       pages
     });
-
-   } catch (error: any) {
-    console.error(
-      "IMPORT_ZIP_ERROR",
-      error
-    );
+  } catch (error: any) {
+    console.error("IMPORT_ZIP_ERROR", error);
 
     return res.status(500).json({
       success: false,
@@ -730,22 +750,11 @@ footerHtml =
     });
   } finally {
     if (zipPath) {
-      fs.rmSync(
-        zipPath,
-        {
-          force: true
-        }
-      );
+      fs.rmSync(zipPath, { force: true });
     }
 
     if (extractDir) {
-      fs.rmSync(
-        extractDir,
-        {
-          recursive: true,
-          force: true
-        }
-      );
+      fs.rmSync(extractDir, { recursive: true, force: true });
     }
   }
 };

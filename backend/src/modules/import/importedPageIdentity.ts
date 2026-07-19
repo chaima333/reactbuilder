@@ -4,24 +4,65 @@ const RESERVED_SYSTEM_PAGE_SLUGS =
     "register"
   ]);
 
+export const normalizeImportedPageSlug = (
+  rawSlug: string
+) => {
+  const normalized =
+    String(rawSlug || "")
+      .normalize("NFKD")
+      .replace(
+        /[\u0300-\u036f]/g,
+        ""
+      )
+      .trim()
+      .toLowerCase()
+      .replace(
+        /[^a-z0-9]+/g,
+        "-"
+      )
+      .replace(
+        /^-+|-+$/g,
+        ""
+      );
+
+  return normalized || "page";
+};
+
 export const makeSafeImportedPageSlug = (
   rawSlug: string,
   usedSlugs: Set<string>
 ) => {
+  const normalizedSlug =
+    normalizeImportedPageSlug(
+      rawSlug
+    );
+
   const baseSlug =
-    RESERVED_SYSTEM_PAGE_SLUGS.has(rawSlug)
-      ? `${rawSlug}-imported`
-      : rawSlug;
+    RESERVED_SYSTEM_PAGE_SLUGS.has(
+      normalizedSlug
+    )
+      ? `${normalizedSlug}-imported`
+      : normalizedSlug;
 
-  let slug = baseSlug;
-  let suffix = 2;
+  let slug =
+    baseSlug;
 
-  while (usedSlugs.has(slug)) {
-    slug = `${baseSlug}-${suffix}`;
-    suffix += 1;
+  let suffix =
+    2;
+
+  while (
+    usedSlugs.has(slug)
+  ) {
+    slug =
+      `${baseSlug}-${suffix}`;
+
+    suffix +=
+      1;
   }
 
-  usedSlugs.add(slug);
+  usedSlugs.add(
+    slug
+  );
 
   return slug;
 };
