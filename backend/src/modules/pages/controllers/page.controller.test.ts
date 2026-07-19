@@ -113,6 +113,36 @@ describe("page controller guard error handling", () => {
       createPage,
       "NORMAL_PAGE_CANNOT_SET_SYSTEM_TYPE",
       400
+    ],
+    [
+      "duplicate visitor auth block",
+      createPage,
+      "PAGE_VISITOR_AUTH_BLOCK_DUPLICATED",
+      409
+    ],
+    [
+      "mixed visitor auth blocks",
+      updatePage,
+      "PAGE_CANNOT_MIX_VISITOR_AUTH_BLOCKS",
+      409
+    ],
+    [
+      "missing system visitor auth block",
+      updatePage,
+      "SYSTEM_PAGE_VISITOR_AUTH_BLOCK_REQUIRED",
+      409
+    ],
+    [
+      "wrong system visitor auth block",
+      updatePage,
+      "SYSTEM_PAGE_WRONG_VISITOR_AUTH_BLOCK",
+      409
+    ],
+    [
+      "duplicate system visitor auth block",
+      updatePage,
+      "SYSTEM_PAGE_VISITOR_AUTH_BLOCK_DUPLICATED",
+      409
     ]
   ])(
     "returns explicit HTTP status/code for %s guard failures",

@@ -265,6 +265,17 @@ export const restorePageVersion = async (req: AuthRequest, res: Response) => {
 
     return res.json({ success: true, data: PageMapper.toDTO(result.data) });
   } catch (err: any) {
+    const guardError =
+      getPageGuardErrorResponse(err);
+
+    if (guardError) {
+      return res.status(guardError.status).json({
+        success: false,
+        message: guardError.code,
+        code: guardError.code
+      });
+    }
+
     if (err?.message === "PAGE_NOT_FOUND") {
       return res.status(404).json({
         success: false,

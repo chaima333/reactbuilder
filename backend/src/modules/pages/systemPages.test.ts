@@ -21,6 +21,7 @@ vi.mock("../../models", () => ({
 import {
   PAGE_SYSTEM_TYPES,
   assertCanCreateNormalPage,
+  assertPageAuthBlocksValid,
   assertSystemPageCanBeDeleted,
   assertSystemPageMutationAllowed,
   createMissingSystemPagesForSite,
@@ -219,6 +220,188 @@ describe("system page guards", () => {
       })
     ).toThrow(
       "NORMAL_PAGE_CANNOT_SET_SYSTEM_TYPE"
+    );
+  });
+
+  it("accepts normal pages with one visitorLogin block", () => {
+    expect(() =>
+      assertCanCreateNormalPage({
+        title: "Client Portal",
+        blocks: [
+          {
+            type: "visitorLogin",
+            children: []
+          }
+        ]
+      })
+    ).not.toThrow();
+
+    expect(() =>
+      assertPageAuthBlocksValid(
+        { systemType: null },
+        {
+          blocks: [
+            {
+              type: "visitorLogin",
+              children: []
+            }
+          ]
+        }
+      )
+    ).not.toThrow();
+  });
+
+  it("accepts normal pages with one visitorRegister block", () => {
+    expect(() =>
+      assertCanCreateNormalPage({
+        title: "Signup",
+        blocks: [
+          {
+            type: "visitorRegister",
+            children: []
+          }
+        ]
+      })
+    ).not.toThrow();
+  });
+
+  it("rejects duplicate visitorLogin blocks, including nested duplicates", () => {
+    expect(() =>
+      assertCanCreateNormalPage({
+        title: "Portal",
+        blocks: [
+          {
+            type: "section",
+            children: [
+              {
+                type: "visitorLogin",
+                children: []
+              },
+              {
+                type: "flex",
+                children: [
+                  {
+                    type: "visitorLogin",
+                    children: []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      })
+    ).toThrow(
+      "PAGE_VISITOR_AUTH_BLOCK_DUPLICATED"
+    );
+  });
+
+  it("rejects duplicate visitorRegister blocks", () => {
+    expect(() =>
+      assertCanCreateNormalPage({
+        title: "Signup",
+        blocks: [
+          {
+            type: "visitorRegister",
+            children: []
+          },
+          {
+            type: "visitorRegister",
+            children: []
+          }
+        ]
+      })
+    ).toThrow(
+      "PAGE_VISITOR_AUTH_BLOCK_DUPLICATED"
+    );
+  });
+
+  it("rejects mixed visitorLogin and visitorRegister blocks on normal pages", () => {
+    expect(() =>
+      assertCanCreateNormalPage({
+        title: "Auth",
+        blocks: [
+          {
+            type: "visitorLogin",
+            children: []
+          },
+          {
+            type: "visitorRegister",
+            children: []
+          }
+        ]
+      })
+    ).toThrow(
+      "PAGE_CANNOT_MIX_VISITOR_AUTH_BLOCKS"
+    );
+  });
+
+  it("rejects system login auth block removal and wrong system auth block", () => {
+    expect(() =>
+      assertPageAuthBlocksValid(
+        {
+          systemType:
+            PAGE_SYSTEM_TYPES.VISITOR_LOGIN
+        },
+        {
+          blocks: []
+        }
+      )
+    ).toThrow(
+      "SYSTEM_PAGE_VISITOR_AUTH_BLOCK_REQUIRED"
+    );
+
+    expect(() =>
+      assertPageAuthBlocksValid(
+        {
+          systemType:
+            PAGE_SYSTEM_TYPES.VISITOR_LOGIN
+        },
+        {
+          blocks: [
+            {
+              type: "visitorRegister",
+              children: []
+            }
+          ]
+        }
+      )
+    ).toThrow(
+      "SYSTEM_PAGE_WRONG_VISITOR_AUTH_BLOCK"
+    );
+  });
+
+  it("rejects system register auth block removal and wrong system auth block", () => {
+    expect(() =>
+      assertPageAuthBlocksValid(
+        {
+          systemType:
+            PAGE_SYSTEM_TYPES.VISITOR_REGISTER
+        },
+        {
+          blocks: []
+        }
+      )
+    ).toThrow(
+      "SYSTEM_PAGE_VISITOR_AUTH_BLOCK_REQUIRED"
+    );
+
+    expect(() =>
+      assertPageAuthBlocksValid(
+        {
+          systemType:
+            PAGE_SYSTEM_TYPES.VISITOR_REGISTER
+        },
+        {
+          blocks: [
+            {
+              type: "visitorLogin",
+              children: []
+            }
+          ]
+        }
+      )
+    ).toThrow(
+      "SYSTEM_PAGE_WRONG_VISITOR_AUTH_BLOCK"
     );
   });
 

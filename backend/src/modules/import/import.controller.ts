@@ -2,6 +2,9 @@ import fs from "fs";
 import path from "path";
 import unzipper from "unzipper";
 import { MediaService } from "../media/media.service";
+import {
+  makeSafeImportedPageSlug
+} from "./importedPageIdentity";
 
 const extractTemplateConst = (
   js: string,
@@ -553,10 +556,19 @@ extractDir =
         media.url;
     }
 
+    const usedPageSlugs =
+      new Set<string>();
+
     const pages =
       htmlFiles.map(htmlPath => {
-        const slug =
+        const rawSlug =
           makeSlug(htmlPath);
+
+        const slug =
+          makeSafeImportedPageSlug(
+            rawSlug,
+            usedPageSlugs
+          );
 
         const title =
           makeTitle(slug);
@@ -602,6 +614,8 @@ extractDir =
 
         return {
           title,
+          originalSlug:
+            rawSlug,
           slug,
           sourceFile,
           processedHtml,

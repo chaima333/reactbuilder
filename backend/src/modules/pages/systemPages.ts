@@ -115,11 +115,20 @@ export const assertPageAuthBlocksValid = (
     )
   ) {
     if (
-      counts.visitorLogin > 0 ||
+      counts.visitorLogin > 1 ||
+      counts.visitorRegister > 1
+    ) {
+      throw new Error(
+        "PAGE_VISITOR_AUTH_BLOCK_DUPLICATED"
+      );
+    }
+
+    if (
+      counts.visitorLogin > 0 &&
       counts.visitorRegister > 0
     ) {
       throw new Error(
-        "NORMAL_PAGE_CANNOT_CONTAIN_VISITOR_AUTH_BLOCK"
+        "PAGE_CANNOT_MIX_VISITOR_AUTH_BLOCKS"
       );
     }
 
@@ -206,11 +215,16 @@ export const PAGE_GUARD_ERROR_RESPONSES: Record<
     status: 400,
     code: "NORMAL_PAGE_CANNOT_SET_SYSTEM_TYPE"
   },
-  NORMAL_PAGE_CANNOT_CONTAIN_VISITOR_AUTH_BLOCK: {
-  status: 400,
-  code:
-    "NORMAL_PAGE_CANNOT_CONTAIN_VISITOR_AUTH_BLOCK"
-},
+  PAGE_VISITOR_AUTH_BLOCK_DUPLICATED: {
+    status: 409,
+    code:
+      "PAGE_VISITOR_AUTH_BLOCK_DUPLICATED"
+  },
+  PAGE_CANNOT_MIX_VISITOR_AUTH_BLOCKS: {
+    status: 409,
+    code:
+      "PAGE_CANNOT_MIX_VISITOR_AUTH_BLOCKS"
+  },
 
 SYSTEM_PAGE_VISITOR_AUTH_BLOCK_REQUIRED: {
   status: 409,
@@ -391,11 +405,20 @@ export const assertCanCreateNormalPage = (
   );
 
 if (
-  counts.visitorLogin > 0 ||
+  counts.visitorLogin > 1 ||
+  counts.visitorRegister > 1
+) {
+  throw new Error(
+    "PAGE_VISITOR_AUTH_BLOCK_DUPLICATED"
+  );
+}
+
+if (
+  counts.visitorLogin > 0 &&
   counts.visitorRegister > 0
 ) {
   throw new Error(
-    "NORMAL_PAGE_CANNOT_CONTAIN_VISITOR_AUTH_BLOCK"
+    "PAGE_CANNOT_MIX_VISITOR_AUTH_BLOCKS"
   );
 }
 };

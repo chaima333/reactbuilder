@@ -12,6 +12,7 @@ import { AdminSettingsService } from "../../admin/adminSettings.service";
 import { Seo, Site } from "../../../models";
 import {
   assertCanCreateNormalPage,
+  assertPageAuthBlocksValid,
   assertSystemPageCanBeDeleted
 } from "../systemPages";
 
@@ -247,6 +248,14 @@ static async restoreVersion(siteId: number, pageId: number, versionId: number, u
     if (!version) {
       throw new Error("VERSION_NOT_FOUND");
     }
+
+    assertPageAuthBlocksValid(
+      page,
+      {
+        blocks:
+          version.blocks
+      }
+    );
 
     const oldPage = page.toJSON();
 
