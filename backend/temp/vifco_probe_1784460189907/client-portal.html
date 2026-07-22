@@ -1,0 +1,51 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Client Portal — VIFCO</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/style.css"><style>
+.portal-wrap{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;min-height:80vh}
+.portal-info h1{font-size:clamp(40px,5vw,68px);letter-spacing:-.03em;line-height:1.05;margin-bottom:24px}
+.portal-info p{color:var(--text-muted);font-size:17px;line-height:1.7;max-width:520px;margin-bottom:32px}
+.portal-info ul{list-style:none;margin-top:32px}
+.portal-info li{padding:16px 0;border-bottom:1px dashed rgba(122,158,192,.15);font-size:15px;color:var(--text-muted);position:relative;padding-left:30px}
+.portal-info li::before{content:"";position:absolute;left:0;top:22px;width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,var(--blue-2),var(--orange-2));box-shadow:0 0 12px rgba(247,127,0,.4)}
+.login-box{padding:56px 44px;border-radius:24px;background:rgba(6,32,61,.7);border:1px solid rgba(122,158,192,.15);backdrop-filter:blur(20px);max-width:480px;justify-self:end;width:100%;position:relative;overflow:hidden}
+.login-box::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--grad-divider)}
+.login-box h3{font-size:30px;margin-bottom:10px;letter-spacing:-.02em}
+.login-box .sub{color:var(--text-muted);font-size:14px;margin-bottom:32px}
+.login-field{margin-bottom:20px}
+.login-field label{display:block;font-family:'Syne',sans-serif;font-weight:500;font-size:11px;color:var(--text-muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px}
+.login-field input{width:100%;padding:16px 18px;border-radius:10px;background:rgba(2,11,24,.6);border:1px solid rgba(10,132,255,.2);color:var(--text);font-family:inherit;font-size:14.5px;outline:none;transition:.4s var(--ease)}
+.login-field input:focus{border-color:var(--orange-2);box-shadow:0 0 0 3px rgba(247,127,0,.15)}
+.login-row{display:flex;justify-content:space-between;align-items:center;margin:18px 0 22px;font-size:13px;color:var(--text-muted)}
+.login-row label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.login-row a{color:var(--orange-2);text-decoration:none}
+.login-box button{width:100%;padding:18px;border:none;border-radius:10px;background:var(--grad-btn);color:#0A0A0A;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;letter-spacing:.1em;text-transform:uppercase;transition:.4s var(--ease)}
+.login-box button:hover{box-shadow:0 12px 36px rgba(10,132,255,.3);transform:translateY(-1px)}
+.divider{display:flex;align-items:center;gap:14px;margin:28px 0;color:var(--text-muted);font-size:12px;letter-spacing:.15em;text-transform:uppercase}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:rgba(122,158,192,.15)}
+.cta-row{text-align:center;font-size:13.5px;color:var(--text-muted)}
+.cta-row a{color:var(--orange-2);text-decoration:none;font-weight:500}
+@media (max-width:1024px){.portal-wrap{grid-template-columns:1fr;gap:48px}.login-box{justify-self:stretch;padding:40px 28px}}
+</style></head><body data-page="client-portal"><div id="site-nav"></div>
+<section style="padding-top:120px"><div class="container"><div class="portal-wrap">
+<div class="portal-info reveal">
+<div class="section-tag" style="margin-bottom:20px">Espace Client</div>
+<h1>Accédez à vos <span class="gradient-text">livrables &amp; dashboards.</span></h1>
+<p>L’Espace Client VIFCO vous donne un accès sécurisé à vos rapports d’étude, modèles financiers, tableaux de bord temps réel et données de marché exclusives.</p>
+<ul>
+<li>Livrables de mission consultables en ligne 24/7</li>
+<li>Modèles Excel et dashboards mis à jour mensuellement</li>
+<li>Rapports VIFCO Insights réservés aux clients</li>
+<li>Communication sécurisée avec votre équipe VIFCO</li>
+<li>Notifications événements, webinaires et publications</li>
+</ul>
+</div>
+<form class="login-box reveal d1" onsubmit="event.preventDefault();this.querySelector('button').innerText='Connexion en cours…'">
+<h3>Espace Client</h3>
+<p class="sub">Connectez-vous à votre portail sécurisé VIFCO.</p>
+<div class="login-field"><label>Email professionnel</label><input type="email" placeholder="vous@entreprise.com" required></div>
+<div class="login-field"><label>Mot de passe</label><input type="password" placeholder="••••••••••" required></div>
+<div class="login-row"><label><input type="checkbox"> Rester connecté</label><a href="#">Mot de passe oublié ?</a></div>
+<button type="submit">Se connecter →</button>
+<div class="divider">ou</div>
+<div class="cta-row">Pas encore client ? <a href="contact.html">Demander un accès</a></div>
+</form>
+</div></div></section>
+<div id="site-footer"></div><script src="assets/site.js"></script></body></html>

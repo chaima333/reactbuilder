@@ -1,0 +1,54 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Contact — VIFCO</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/style.css"><style>
+.contact-grid{display:grid;grid-template-columns:1fr 1.05fr;gap:80px}
+.ctable{display:flex;flex-direction:column;gap:6px}
+.crow{display:grid;grid-template-columns:120px 1fr;gap:24px;align-items:start;padding:22px 0;border-bottom:1px solid rgba(122,158,192,.1)}
+.crow .k{font-family:'Syne',sans-serif;font-weight:600;font-size:12px;color:var(--blue-3);letter-spacing:.2em;text-transform:uppercase;padding-top:4px}
+.crow .v{color:var(--text);font-size:15px;line-height:1.7}
+.crow .v a{display:block;color:inherit;text-decoration:none;transition:color .3s}
+.crow .v a:hover{color:var(--orange-2)}
+.office{padding:10px 0;border-bottom:1px dashed rgba(122,158,192,.1)}
+.office:last-child{border-bottom:none}
+.office .name{display:block;font-family:'Syne',sans-serif;font-weight:600;font-size:13px;color:var(--orange-2);letter-spacing:.1em;margin-bottom:4px}
+.office .addr{font-size:13.5px;color:var(--text-muted)}
+.form{padding:40px;border-radius:22px;background:rgba(6,32,61,.6);border:1px solid rgba(122,158,192,.12);backdrop-filter:blur(20px)}
+.form h3{font-size:28px;margin-bottom:8px}
+.form .sub{color:var(--text-muted);font-size:14px;margin-bottom:30px}
+.field{margin-bottom:20px}
+.field label{display:block;font-family:'Syne',sans-serif;font-weight:500;font-size:11px;color:var(--text-muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px}
+.field input,.field select,.field textarea{width:100%;padding:14px 16px;border-radius:10px;background:rgba(2,11,24,.6);border:1px solid rgba(10,132,255,.2);color:var(--text);font-family:inherit;font-size:14.5px;transition:.4s var(--ease);outline:none}
+.field textarea{min-height:120px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--orange-2);box-shadow:0 0 0 3px rgba(247,127,0,.15)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form button{width:100%;padding:16px;border:none;border-radius:10px;background:var(--grad-btn);color:#0A0A0A;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;letter-spacing:.08em;text-transform:uppercase;transition:.4s var(--ease);margin-top:8px}
+.form button:hover{box-shadow:0 10px 30px rgba(10,132,255,.3);transform:translateY(-1px)}
+@media (max-width:1024px){.contact-grid{grid-template-columns:1fr;gap:48px}.field-row{grid-template-columns:1fr}.form{padding:28px 22px}.crow{grid-template-columns:1fr;gap:8px}}
+</style></head><body data-page="contact"><div id="site-nav"></div>
+<header class="page-hero"><div class="mesh"></div><div class="grid-lines"></div>
+<div class="container" style="position:relative;z-index:2">
+<div class="reveal eyebrow"><span class="bar"></span>Contact</div>
+<h1 class="reveal d1">Démarrez une <span class="gradient-text">conversation.</span></h1>
+<p class="lead reveal d2">Parlez-nous de votre projet — nous répondons sous un jour ouvré. Chaque fondateur de startup bénéficie d’une <b>session de stratégie gratuite de 30 minutes</b>.</p>
+</div></header>
+<section><div class="container"><div class="contact-grid">
+<div class="ctable reveal">
+<div class="crow"><div class="k">Email</div><div class="v"><a href="mailto:contact@vifco.co">contact@vifco.co</a><a href="mailto:partners@vifco.co">partners@vifco.co</a></div></div>
+<div class="crow"><div class="k">Téléphone</div><div class="v"><a href="tel:+14158004210">+1 (415) 800-4210 · US</a><a href="tel:+33668091577">+33 6 68 09 15 77 · France</a><a href="tel:+21624860408">+216 24 86 04 08 · Tunisie</a></div></div>
+<div class="crow"><div class="k">Bureaux</div><div class="v">
+<div class="office"><span class="name">🇹🇳 HQ — Tunis</span><span class="addr">Immeuble Molka, Rue de la Bourse, Lac 2</span></div>
+<div class="office"><span class="name">🇫🇷 Paris</span><span class="addr">20 Rue du Bas Boulards, Sucy-en-Brie</span></div>
+<div class="office"><span class="name">🇺🇸 Wilmington</span><span class="addr">300 Delaware Ave, Wilmington DE 19801</span></div>
+<div class="office"><span class="name">🇲🇦 Casablanca</span><span class="addr">Twin Center, Boulevard Zerktouni</span></div>
+<div class="office"><span class="name">🇸🇳 Dakar</span><span class="addr">Almadies, Route de la Corniche</span></div>
+</div></div>
+<div class="crow"><div class="k">Réseaux</div><div class="v"><a href="#">LinkedIn — /company/vifco</a><a href="#">X / Twitter — @vifco_co</a><a href="#">Capital Minds Podcast</a></div></div>
+</div>
+<form class="form reveal d1" onsubmit="event.preventDefault();this.querySelector('button').innerText='✓ Message envoyé';setTimeout(()=>this.reset(),1500)">
+<h3>Envoyer un message</h3>
+<p class="sub">Nous orienterons votre demande vers le practice lead concerné.</p>
+<div class="field-row"><div class="field"><label>Nom complet</label><input type="text" required placeholder="Jean Dupont"></div><div class="field"><label>Email</label><input type="email" required placeholder="jean@entreprise.com"></div></div>
+<div class="field-row"><div class="field"><label>Entreprise</label><input type="text" placeholder="Acme Holdings"></div><div class="field"><label>Téléphone</label><input type="tel" placeholder="+216 XX XXX XXX"></div></div>
+<div class="field"><label>Domaine d’intérêt</label><select required><option value="">Sélectionner…</option><option>Conseil financier</option><option>IA &amp; FinTech</option><option>Banking digital</option><option>ESG &amp; Sustainable Finance</option><option>VI Platform — Accès anticipé</option><option>VIFCO Academy</option><option>Recrutement</option><option>Presse / Médias</option></select></div>
+<div class="field"><label>Message</label><textarea placeholder="Décrivez votre projet…" required></textarea></div>
+<button type="submit">Envoyer le message →</button>
+</form></div></div></section>
+<div id="site-footer"></div><script src="assets/site.js"></script></body></html>

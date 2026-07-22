@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>About — VIFCO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+.mission-grid{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start}
+.mission-body p{color:var(--text-muted);font-size:16px;line-height:1.75;margin-bottom:20px;max-width:560px}
+.mission-body p b{color:var(--text);font-weight:500}
+.mission-quote{position:sticky;top:120px;padding:48px 40px;border-radius:22px;background:rgba(6,32,61,.6);border:1px solid rgba(122,158,192,.12);overflow:hidden}
+.mission-quote::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--grad-divider)}
+.mission-quote .q{font-family:'Syne',sans-serif;font-weight:500;font-style:italic;font-size:24px;line-height:1.35;color:var(--text);margin-bottom:24px}
+.mission-quote .q::before{content:"\""; font-size:64px;color:var(--orange-2);line-height:0;vertical-align:-20px;margin-right:6px}
+.mission-quote .a{font-family:'Syne',sans-serif;font-weight:600;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--orange-3)}
+
+.vision-pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+
+.offices-table{border-radius:20px;overflow:hidden;border:1px solid rgba(122,158,192,.12)}
+.office-row{display:grid;grid-template-columns:280px 1fr;gap:32px;padding:32px 36px;border-bottom:1px solid rgba(122,158,192,.1);transition:.4s var(--ease);background:rgba(6,32,61,.35)}
+.office-row:last-child{border-bottom:none}
+.office-row:hover{background:rgba(6,32,61,.65)}
+.office-row .name{display:flex;flex-direction:column;gap:6px}
+.office-row .name .city{font-family:'Syne',sans-serif;font-weight:700;font-size:22px;color:var(--text);letter-spacing:-.01em}
+.office-row .name .country{font-size:12px;color:var(--orange-2);letter-spacing:.2em;text-transform:uppercase;font-family:'Syne',sans-serif;font-weight:600}
+.office-row .role{color:var(--text-muted);font-size:15px;line-height:1.65}
+
+.values-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.value{padding:36px 24px;border-radius:18px;background:rgba(6,32,61,.4);border:1px solid rgba(122,158,192,.12);transition:.5s var(--ease);text-align:center}
+.value:hover{transform:translateY(-6px);background:rgba(6,32,61,.8);border-color:var(--orange-2)}
+.value .letter{font-family:'Syne',sans-serif;font-weight:800;font-size:64px;line-height:1;background:var(--grad-title);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:18px}
+.value h4{font-family:'Syne',sans-serif;font-weight:600;font-size:18px;margin-bottom:10px}
+.value p{font-size:13px;color:var(--text-muted);line-height:1.55}
+
+.cta-strip{display:flex;justify-content:space-between;align-items:center;gap:32px;padding:48px;border-radius:22px;background:linear-gradient(135deg,rgba(0,87,184,.2),rgba(247,127,0,.12));border:1px solid rgba(247,127,0,.3);flex-wrap:wrap}
+.cta-strip h3{font-size:32px;letter-spacing:-.02em;max-width:600px}
+.cta-strip .row{display:flex;gap:12px;flex-wrap:wrap}
+
+@media (max-width:1024px){.mission-grid{grid-template-columns:1fr}.mission-quote{position:static}.vision-pillars{grid-template-columns:1fr}.values-grid{grid-template-columns:1fr 1fr}.office-row{grid-template-columns:1fr;gap:12px}}
+@media (max-width:720px){.values-grid{grid-template-columns:1fr}.cta-strip{padding:32px 24px}}
+</style>
+</head>
+<body data-page="about">
+<div id="site-nav"></div>
+
+<header class="page-hero">
+  <div class="mesh"></div>
+  <div class="grid-lines"></div>
+  <div class="container" style="position:relative;z-index:2">
+    <div class="reveal eyebrow"><span class="bar"></span>About VIFCO</div>
+    <h1 class="reveal d1">Nous ne sommes pas un cabinet de conseil traditionnel. Nous sommes les <span class="gradient-text">architectes de la finance de demain.</span></h1>
+    <p class="lead reveal d2"><b>VIFCO — Visionary Investment Finance Company</b> — est un cabinet de conseil international de premier rang, spécialisé dans la finance, les investissements stratégiques et les méga-projets à impact.</p>
+    <p class="lead reveal d3" style="margin-top:-16px">Fondé par <b>Ibrahim Soua</b>, VIFCO opère depuis <b>Tunis, Paris, Wilmington (Delaware) et San Francisco</b>, avec un réseau actif dans <b>11+ pays sur 4 continents</b>.</p>
+  </div>
+</header>
+
+<section>
+  <div class="container">
+    <div class="sec-head reveal"><div class="section-tag">Notre Mission</div></div>
+    <div class="mission-grid">
+      <div class="mission-body">
+        <h2 class="reveal" style="font-size:clamp(34px,4vw,52px);margin-bottom:32px;letter-spacing:-.025em">Transformer les ambitions financières les plus complexes en <span class="gradient-text">réalités tangibles.</span></h2>
+        <p class="reveal d1">VIFCO accompagne ses clients — <b>investisseurs institutionnels, gouvernements, fonds souverains, banques et porteurs de méga-projets</b> — dans la conception, la structuration et l'exécution de leurs stratégies d'investissement les plus exigeantes.</p>
+        <p class="reveal d2">Notre approche fusionne <b>rigueur analytique</b>, <b>intelligence artificielle de pointe</b> et <b>expertise ESG</b> pour délivrer des résultats mesurables — et pas seulement des recommandations de façade.</p>
+        <p class="reveal d3">Chaque mission est traitée avec la même rigueur qu'une opération de marché : confidentialité absolue, indépendance de jugement, exécution disciplinée.</p>
+      </div>
+      <aside class="mission-quote reveal d1">
+        <div class="q">Take your investments to the Visionary Attitude.</div>
+        <div class="a">— Ibrahim Soua, Founder &amp; MD</div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--bg-2)">
+  <div class="container">
+    <div class="sec-head reveal"><div class="section-tag">Vision 2025-2030</div>
+      <h2>Notre stratégie. <span class="gradient-text">Notre horizon.</span></h2>
+      <p>Trois piliers complémentaires qui guident chaque décision stratégique du cabinet jusqu'en 2030.</p>
+    </div>
+    <div class="vision-pillars">
+      <article class="pillar reveal">
+        <span class="r-num">PILIER I</span>
+        <h3>IA &amp; Tech<span class="sub">Cabinet conseil IA Finance MENA-Afrique</span></h3>
+        <p>Être le premier cabinet conseil IA Finance de la région MENA-Afrique — référence sur tokenisation RWA, modèles prédictifs et IA générative appliquée à la finance.</p>
+      </article>
+      <article class="pillar reveal d1">
+        <span class="r-num">PILIER II</span>
+        <h3>Transformation Digitale<span class="sub">50+ institutions modernisées d'ici 2030</span></h3>
+        <p>Accompagner la modernisation de 50+ institutions financières d'ici 2030 — banques, néo-banques, asset managers, opérateurs Mobile Money africains.</p>
+      </article>
+      <article class="pillar reveal d2">
+        <span class="r-num">PILIER III</span>
+        <h3>ESG &amp; Impact<span class="sub">$500M+ structurés en finance verte</span></h3>
+        <p>Structurer $500M+ en instruments de finance verte et durable — Green Bonds souverains, Impact Funds régionaux, Sustainability-Linked instruments.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="sec-head reveal"><div class="section-tag">Présence Mondiale</div>
+      <h2>Quatre bureaux. <span class="gradient-text">Un seul standard.</span></h2>
+      <p>Une infrastructure de delivery globale, des équipes ancrées localement et un réseau actif dans 11+ pays.</p>
+    </div>
+    <div class="offices-table reveal">
+      <div class="office-row">
+        <div class="name"><span class="city">Tunis</span><span class="country">🇹🇳 Siège social</span></div>
+        <div class="role">Hub opérationnel Afrique &amp; MENA · Centre de delivery · Équipe principale et leadership exécutif.</div>
+      </div>
+      <div class="office-row">
+        <div class="name"><span class="city">Paris</span><span class="country">🇫🇷 Europe</span></div>
+        <div class="role">Relations investisseurs européens · Marchés financiers France · Partenariats institutionnels EU.</div>
+      </div>
+      <div class="office-row">
+        <div class="name"><span class="city">Wilmington</span><span class="country">🇺🇸 Delaware — USA</span></div>
+        <div class="role">Entité légale internationale · Structuration juridique US · Accès marchés américains.</div>
+      </div>
+      <div class="office-row">
+        <div class="name"><span class="city">San Francisco</span><span class="country">🇺🇸 Tech Hub</span></div>
+        <div class="role">Innovation FinTech · IA &amp; Tech Advisory · Connexion écosystème Silicon Valley.</div>
+      </div>
+      <div class="office-row">
+        <div class="name"><span class="city">Réseau 11+ pays</span><span class="country">🌍 Continents 4</span></div>
+        <div class="role">Afrique de l'Ouest, Golfe, Moyen-Orient, Afrique du Nord — partenaires locaux certifiés VIFCO.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--bg-2)">
+  <div class="container">
+    <div class="sec-head reveal"><div class="section-tag">Notre ADN</div>
+      <h2>Cinq valeurs. <span class="gradient-text">Une signature.</span></h2>
+      <p>Les principes fondateurs qui guident chaque mission VIFCO — du premier appel à la livraison finale.</p>
+    </div>
+    <div class="values-grid">
+      <div class="value reveal"><div class="letter">V</div><h4>Vision</h4><p>Pensée long-terme. Chaque décision structurée pour créer de la valeur durable.</p></div>
+      <div class="value reveal d1"><div class="letter">E</div><h4>Excellence</h4><p>Standards Top Tier sur chaque mission, sans compromis sur la qualité analytique.</p></div>
+      <div class="value reveal d2"><div class="letter">I</div><h4>Innovation</h4><p>IA et technologies de rupture intégrées dans nos méthodologies conseil.</p></div>
+      <div class="value reveal d3"><div class="letter">I</div><h4>Impact</h4><p>Succès mesuré à l'aune de l'impact réel créé pour clients et écosystèmes.</p></div>
+      <div class="value reveal d4"><div class="letter">I</div><h4>Intégrité</h4><p>Confidentialité absolue, indépendance de jugement, transparence totale.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="cta-strip reveal">
+      <h3>Découvrez comment VIFCO peut transformer votre <span class="gradient-text">stratégie d'investissement.</span></h3>
+      <div class="row">
+        <a href="contact.html" class="btn btn-primary">Prendre rendez-vous →</a>
+        <a href="services-finance.html" class="btn btn-ghost">Découvrir nos Services</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="site-footer"></div>
+<script src="assets/site.js"></script>
+</body>
+</html>

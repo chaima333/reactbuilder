@@ -1,0 +1,51 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Carrières — VIFCO</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/style.css"><style>
+.why-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin:48px 0 80px}
+.why{padding:36px 30px;border-radius:18px;background:rgba(6,32,61,.55);border:1px solid rgba(122,158,192,.12);transition:.4s var(--ease)}
+.why:hover{transform:translateY(-4px);border-color:rgba(247,127,0,.3)}
+.why .n{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--orange-2);letter-spacing:.22em;margin-bottom:18px}
+.why h4{font-size:20px;margin-bottom:10px;letter-spacing:-.015em}
+.why p{font-size:14px;color:var(--text-muted);line-height:1.65}
+.jobs-filter{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:32px;padding:8px;background:rgba(6,32,61,.4);border-radius:14px;border:1px solid rgba(122,158,192,.1)}
+.jobf{padding:12px 20px;border-radius:10px;border:none;background:transparent;color:var(--text-muted);font-family:'Syne',sans-serif;font-weight:500;font-size:13px;cursor:pointer;transition:.3s}
+.jobf.active{background:var(--grad-btn);color:#0A0A0A;font-weight:600}
+.jobf:hover:not(.active){color:var(--text)}
+.jobs{display:flex;flex-direction:column;gap:14px}
+.job{padding:28px 32px;border-radius:14px;background:rgba(6,32,61,.55);border:1px solid rgba(122,158,192,.12);display:grid;grid-template-columns:1fr 130px 130px 160px;gap:24px;align-items:center;transition:.4s var(--ease)}
+.job:hover{border-color:var(--orange-2);background:rgba(6,32,61,.85);transform:translateX(4px)}
+.job .title{font-family:'Syne',sans-serif;font-weight:600;font-size:18px}
+.job .title small{display:block;color:var(--text-muted);font-weight:400;font-family:'Inter';font-size:13px;margin-top:4px;letter-spacing:0}
+.job .meta{font-size:13px;color:var(--text-muted)}
+.job .meta b{display:block;font-family:'Syne',sans-serif;font-weight:600;color:var(--text);font-size:11px;letter-spacing:.15em;text-transform:uppercase;margin-bottom:4px}
+.job a{padding:10px 18px;border-radius:10px;background:transparent;border:1px solid rgba(10,132,255,.4);color:var(--text);font-family:'Syne',sans-serif;font-weight:600;font-size:13px;text-align:center;transition:.3s}
+.job a:hover{background:var(--grad-btn);border-color:transparent;color:#0A0A0A}
+@media (max-width:1024px){.why-grid{grid-template-columns:1fr}.job{grid-template-columns:1fr;gap:14px}.job a{justify-self:start}}
+</style></head><body data-page="careers"><div id="site-nav"></div>
+<header class="page-hero"><div class="mesh"></div><div class="grid-lines"></div>
+<div class="container" style="position:relative;z-index:2">
+<div class="reveal eyebrow"><span class="bar"></span>Carrières</div>
+<h1 class="reveal d1">Construisez la finance <span class="gradient-text">de demain.</span></h1>
+<p class="lead reveal d2">VIFCO recrute les meilleurs talents pour transformer la finance africaine et MENA. Si vous êtes <b>expert finance, technologue, ou stratège passionné</b> par l’impact que peut avoir la finance sur le développement économique de nos marchés, votre place est chez nous.</p>
+</div></header>
+<section><div class="container">
+<div class="sec-head reveal"><div class="section-tag">Pourquoi VIFCO</div><h2>Six raisons de <span class="gradient-text">nous rejoindre.</span></h2></div>
+<div class="why-grid">
+<div class="why reveal"><div class="n">01 — IMPACT</div><h4>Impact Réel</h4><p>Vos missions structurent des projets qui transforment l’économie des marchés Afrique et MENA.</p></div>
+<div class="why reveal d1"><div class="n">02 — EXPERTISE</div><h4>Apprentissage Continu</h4><p>Accès aux meilleurs cas clients, formations VIFCO Academy, mentoring par les associés.</p></div>
+<div class="why reveal d2"><div class="n">03 — DIVERSITÉ</div><h4>Équipes Multiculturelles</h4><p>Collaborateurs originaires de 12+ nationalités, 5 langues parlées au bureau.</p></div>
+<div class="why reveal"><div class="n">04 — INNOVATION</div><h4>IA &amp; Tech</h4><p>Travaillez avec les outils IA les plus avancés appliqués aux problématiques finance.</p></div>
+<div class="why reveal d1"><div class="n">05 — RÉMUNÉRATION</div><h4>Compétitif</h4><p>Salaires alignés sur les standards internationaux + bonus performance.</p></div>
+<div class="why reveal d2"><div class="n">06 — FLEXIBILITÉ</div><h4>Hybride &amp; Mobilité</h4><p>Télétravail flexible, missions internationales, bureaux Tunis · Paris · Dakar · Casablanca.</p></div>
+</div>
+<div class="sec-head reveal"><div class="section-tag">Postes ouverts</div><h2>12 opportunités <span class="gradient-text">en ce moment.</span></h2></div>
+<div class="jobs-filter reveal">
+<button class="jobf active">Tous</button><button class="jobf">Conseil</button><button class="jobf">Tech &amp; IA</button><button class="jobf">Finance</button><button class="jobf">Stages</button>
+</div>
+<div class="jobs">
+<div class="job reveal"><div class="title">Senior Manager — Finance Stratégique<small>5+ ans d’expérience en M&amp;A ou conseil stratégique</small></div><div class="meta"><b>Localisation</b>Tunis · Paris</div><div class="meta"><b>Contrat</b>CDI</div><a href="contact.html">Postuler →</a></div>
+<div class="job reveal d1"><div class="title">Data Scientist IA &amp; Finance<small>Python, ML, expertise modèles prédictifs marchés financiers</small></div><div class="meta"><b>Localisation</b>Tunis · Casa</div><div class="meta"><b>Contrat</b>CDI</div><a href="contact.html">Postuler →</a></div>
+<div class="job reveal d2"><div class="title">Consultant Banking &amp; Conformité<small>Bâle, IFRS, expériences banque centrale appréciées</small></div><div class="meta"><b>Localisation</b>Dakar · Tunis</div><div class="meta"><b>Contrat</b>CDI</div><a href="contact.html">Postuler →</a></div>
+<div class="job reveal"><div class="title">Product Manager VI Platform<small>Product SaaS B2B, idéalement FinTech</small></div><div class="meta"><b>Localisation</b>Paris · Tunis</div><div class="meta"><b>Contrat</b>CDI</div><a href="contact.html">Postuler →</a></div>
+<div class="job reveal d1"><div class="title">ESG Analyst<small>Expertise impact, sustainable finance, reporting climat</small></div><div class="meta"><b>Localisation</b>Tunis · Remote</div><div class="meta"><b>Contrat</b>CDI</div><a href="contact.html">Postuler →</a></div>
+<div class="job reveal d2"><div class="title">Stagiaire — Analyse Marchés Africains<small>Master Finance / Économie, 6 mois</small></div><div class="meta"><b>Localisation</b>Tunis</div><div class="meta"><b>Contrat</b>Stage</div><a href="contact.html">Postuler →</a></div>
+</div></div></section>
+<div id="site-footer"></div><script src="assets/site.js"></script></body></html>

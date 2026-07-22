@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VIFCO — Finance the Visionary. Build the Future.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+.hero{min-height:100vh;padding:160px 0 100px;display:flex;flex-direction:column;justify-content:center;position:relative}
+.particles{position:absolute;inset:0;z-index:0;pointer-events:none}
+.particle{position:absolute;border-radius:50%;background:radial-gradient(circle,var(--blue-3),transparent 70%);opacity:.2;filter:blur(1px);animation:float 14s ease-in-out infinite}
+.particle.orange{background:radial-gradient(circle,var(--orange-3),transparent 70%);opacity:.15}
+@keyframes float{0%,100%{transform:translateY(0) translateX(0)}25%{transform:translateY(-30px) translateX(20px)}50%{transform:translateY(10px) translateX(-20px)}75%{transform:translateY(-15px) translateX(15px)}}
+.hero-inner{position:relative;z-index:2}
+.hero-eyebrow{display:flex;align-items:center;gap:14px;margin-bottom:32px;font-family:'Syne',sans-serif;font-weight:500;font-size:13px;color:var(--text-muted);letter-spacing:.28em;text-transform:uppercase}
+.hero-eyebrow .bar{width:52px;height:1px;background:var(--grad-divider)}
+.hero-eyebrow .tags{display:flex;gap:10px}
+.hero-eyebrow .tags span{color:var(--orange-3)}
+.hero-title{font-size:clamp(54px,8vw,128px);font-weight:800;line-height:.95;letter-spacing:-.035em;margin-bottom:36px}
+.hero-title .l1{display:block;color:var(--text)}
+.hero-title .l2{display:block;background:var(--grad-title);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero-title .l3{display:block;font-style:italic;font-weight:500;color:var(--orange-2);padding-left:5vw}
+.hero-sub{max-width:640px;font-size:clamp(17px,1.3vw,21px);color:var(--text-muted);margin-bottom:44px;line-height:1.55}
+.hero-sub b{color:var(--text);font-weight:500}
+.hero-ctas{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:72px}
+
+.partners{margin-top:32px}
+.partners-lbl{font-family:'Syne',sans-serif;font-weight:500;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--text-dim);margin-bottom:22px}
+.partners-row{display:flex;gap:38px;flex-wrap:wrap;align-items:center}
+.partners-row .p{font-family:'Syne',sans-serif;font-weight:600;font-size:14px;color:var(--text-muted);opacity:.65;letter-spacing:.04em;transition:opacity .3s}
+.partners-row .p:hover{opacity:1;color:var(--text)}
+
+.insights-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.insight{padding:32px 28px;border-radius:18px;background:rgba(6,32,61,.4);border:1px solid rgba(122,158,192,.12);transition:.5s var(--ease);display:flex;flex-direction:column;min-height:280px}
+.insight:hover{transform:translateY(-4px);border-color:var(--orange-2)}
+.insight .cat{font-family:'Syne',sans-serif;font-weight:600;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--blue-3);margin-bottom:18px}
+.insight h3{font-size:20px;margin-bottom:12px;letter-spacing:-.015em;line-height:1.25}
+.insight p{color:var(--text-muted);font-size:14px;margin-bottom:auto;line-height:1.6}
+.insight .meta{margin-top:24px;display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim)}
+
+.cta-final{padding:80px 56px;border-radius:24px;background:linear-gradient(135deg,rgba(0,87,184,.25),rgba(247,127,0,.15));border:1px solid rgba(247,127,0,.3);position:relative;overflow:hidden;text-align:center}
+.cta-final::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 0% 0%,rgba(10,132,255,.25),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(247,127,0,.2),transparent 50%)}
+.cta-final h2{font-size:clamp(36px,4.4vw,60px);position:relative;margin-bottom:20px;letter-spacing:-.03em}
+.cta-final p{font-size:18px;color:var(--text-muted);max-width:640px;margin:0 auto 36px;position:relative;line-height:1.55}
+.cta-final .row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative}
+
+@media (max-width:1024px){
+  .insights-grid{grid-template-columns:1fr}
+}
+@media (max-width:720px){
+  .hero-title .l3{padding-left:10vw}
+  .cta-final{padding:48px 28px}
+}
+</style>
+</head>
+<body data-page="home">
+
+<div id="site-nav"></div>
+
+<header class="hero">
+  <div class="mesh"></div>
+  <div class="grid-lines"></div>
+  <div class="particles" id="particles"></div>
+  <div class="container hero-inner">
+    <div class="hero-eyebrow reveal">
+      <span class="bar"></span>
+      <div class="tags"><span>Tech / AI</span> · <span>ESG &amp; Impact</span> · <span>Digital Finance</span></div>
+    </div>
+    <h1 class="hero-title reveal d1">
+      <span class="l1">Finance the</span>
+      <span class="l2">Visionary.</span>
+      <span class="l3">Build the Future.</span>
+    </h1>
+    <p class="hero-sub reveal d2">VIFCO accompanies <b>investors, institutions and governments</b> in structuring their most ambitious projects — at the intersection of Finance, Artificial Intelligence and ESG Excellence.</p>
+    <div class="hero-ctas reveal d3">
+      <a href="contact.html" class="btn btn-navy">Request Advisory
+        <svg class="arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+      <a href="vi-platform.html" class="btn btn-gold">Explore VI Platform</a>
+    </div>
+
+    <div class="kpi-bar reveal d4">
+      <div class="kpi"><div class="num">$<span data-count="2" data-suffix="Mds+">0</span></div><span class="lbl">Projets conseillés</span></div>
+      <div class="kpi"><div class="num"><span data-count="11" data-suffix="+">0</span></div><span class="lbl">Pays actifs</span></div>
+      <div class="kpi"><div class="num"><span data-count="50" data-suffix="+">0</span></div><span class="lbl">Experts mobilisés</span></div>
+      <div class="kpi"><div class="num"><span data-count="3">0</span></div><span class="lbl">Piliers stratégiques</span></div>
+    </div>
+
+    <div class="partners reveal">
+      <div class="partners-lbl">Tunis · Paris · Wilmington · San Francisco</div>
+    </div>
+  </div>
+</header>
+
+<!-- PILLARS -->
+<section id="pillars">
+  <div class="container">
+    <div class="sec-head reveal">
+      <div class="section-tag">Les 3 Piliers VIFCO</div>
+      <h2>Une stratégie. <span class="gradient-text">Trois forces.</span></h2>
+      <p>Notre Strategy 2025-2030 positionne VIFCO comme la référence de la finance d'impact en Afrique et MENA — au croisement de la technologie, de l'intelligence artificielle et de l'ESG.</p>
+    </div>
+    <div class="pillars">
+      <article class="pillar reveal">
+        <span class="r-num">PILIER I</span>
+        <h3>Intelligence Artificielle &amp; Tech<span class="sub">FinTech · RWA · IA Finance</span></h3>
+        <p>FinTech de nouvelle génération, tokenisation d'actifs réels (RWA), conseil en stratégie IA pour institutions financières. VIFCO intègre l'IA au cœur des modèles d'investissement.</p>
+        <div class="tags"><span>Stratégie IA</span><span>RWA</span><span>FinTech</span><span>Modèles prédictifs</span></div>
+      </article>
+      <article class="pillar reveal d1">
+        <span class="r-num">PILIER II</span>
+        <h3>Transformation Digitale<span class="sub">Core Banking · Open Banking · RegTech</span></h3>
+        <p>De la modernisation du Core Banking à l'Open Banking et la conformité RegTech, nous pilotons la transformation digitale des banques et institutions financières.</p>
+        <div class="tags"><span>Core Banking</span><span>Open Banking</span><span>RegTech</span><span>Digital Strategy</span></div>
+      </article>
+      <article class="pillar reveal d2">
+        <span class="r-num">PILIER III</span>
+        <h3>Excellence ESG &amp; Impact<span class="sub">Green Bonds · Impact · Afrique</span></h3>
+        <p>VIFCO structure des instruments de finance durable adaptés aux marchés africains et MENA — pour des investissements qui créent valeur économique et sociale durable.</p>
+        <div class="tags"><span>Green Bonds</span><span>ESG Scoring</span><span>Impact Measurement</span></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST -->
+<section style="background:var(--bg-2)">
+  <div class="container">
+    <div class="sec-head reveal">
+      <div class="section-tag">Preuves Sociales</div>
+      <h2>Ils nous font <span class="gradient-text">confiance.</span></h2>
+      <p>VIFCO travaille aux côtés des institutions les plus exigeantes — des banques de développement aux fonds souverains, en passant par les gouvernements et les leaders FinTech émergents.</p>
+    </div>
+    <div class="partners-row reveal d1" style="gap:48px;justify-content:flex-start">
+      <div class="p">Banque Africaine de Développement</div>
+      <div class="p">Banque Mondiale</div>
+      <div class="p">IFC</div>
+      <div class="p">IFC Africa</div>
+      <div class="p">FMI</div>
+      <div class="p">Institutions MENA</div>
+    </div>
+  </div>
+</section>
+
+<!-- INSIGHTS -->
+<section id="insights-teaser">
+  <div class="container">
+    <div class="sec-head reveal">
+      <div class="section-tag">Insights &amp; Recherche</div>
+      <h2>L'intelligence VIFCO, <span class="gradient-text">chaque mois.</span></h2>
+      <p>Analyses exclusives, rapports de recherche et tribunes d'experts sur l'intersection Finance × IA × ESG. Le VIFCO AI Insights Report décrypte les tendances qui façonnent les marchés de demain.</p>
+    </div>
+    <div class="insights-grid">
+      <article class="insight reveal">
+        <span class="cat">AI &amp; Finance</span>
+        <h3>L'IA générative redessine la gestion d'actifs MENA</h3>
+        <p>Comment les modèles prédictifs natifs s'invitent dans les comités d'investissement des banques régionales.</p>
+        <div class="meta"><span>VIFCO AI Insights</span><span>14 min</span></div>
+      </article>
+      <article class="insight reveal d1">
+        <span class="cat">ESG &amp; Impact</span>
+        <h3>Green Bonds africains : la décennie de bascule</h3>
+        <p>Cartographie des émissions vertes 2024-2026 et perspectives pour les souverains du Maghreb et de l'Ouest.</p>
+        <div class="meta"><span>Research Note</span><span>22 min</span></div>
+      </article>
+      <article class="insight reveal d2">
+        <span class="cat">Digital Banking</span>
+        <h3>Open Banking au Golfe : les huit prochains mois</h3>
+        <p>Vagues réglementaires, opportunités API, et nouveaux modèles compétitifs pour les banques de second rang.</p>
+        <div class="meta"><span>Capital Minds</span><span>18 min</span></div>
+      </article>
+    </div>
+    <div style="margin-top:48px;display:flex;gap:14px;flex-wrap:wrap" class="reveal">
+      <a class="btn btn-ghost" href="insights.html">Voir tous les Insights →</a>
+      <a class="btn btn-gold" href="insights.html">Télécharger le dernier rapport →</a>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section style="background:var(--bg-2)">
+  <div class="container">
+    <div class="cta-final reveal">
+      <h2>Prêt à passer à <span class="gradient-text">l'investissement visionnaire ?</span></h2>
+      <p>Rejoignez les décideurs, investisseurs et institutions qui font confiance à VIFCO. Abonnez-vous à notre newsletter premium et recevez chaque mois le VIFCO AI Insights Report.</p>
+      <div class="row">
+        <a href="contact.html" class="btn btn-primary">S'abonner à la Newsletter
+          <svg class="arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a href="careers.html" class="btn btn-ghost">Rejoindre l'équipe — Job Board →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="site-footer"></div>
+<script src="assets/site.js"></script>
+<script>
+(function(){
+  const c=document.getElementById('particles');
+  if(!c) return;
+  const opts=[{s:140,x:10,y:20,d:0,o:.22,c:'blue'},{s:80,x:85,y:15,d:3,o:.15,c:'orange'},{s:200,x:70,y:60,d:6,o:.18,c:'blue'},{s:60,x:25,y:75,d:2,o:.12,c:'orange'},{s:120,x:55,y:40,d:5,o:.14,c:'blue'},{s:90,x:92,y:82,d:1,o:.13,c:'blue'},{s:50,x:5,y:60,d:7,o:.18,c:'orange'}];
+  opts.forEach(o=>{const p=document.createElement('div');p.className='particle'+(o.c==='orange'?' orange':'');p.style.width=p.style.height=o.s+'px';p.style.left=o.x+'%';p.style.top=o.y+'%';p.style.animationDelay=o.d+'s';p.style.opacity=o.o;c.appendChild(p)});
+})();
+</script>
+<style id="__om-edit-overrides">
+#nav .logo .word { font-weight: 700 !important; }
+</style>
+</body>
+</html>

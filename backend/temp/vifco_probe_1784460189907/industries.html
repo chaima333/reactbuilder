@@ -1,0 +1,27 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Industries — VIFCO</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/style.css"><style>
+.ind-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.ind-card{padding:44px 36px;border-radius:22px;background:rgba(6,32,61,.55);border:1px solid rgba(122,158,192,.12);transition:.5s var(--ease);position:relative;overflow:hidden;min-height:360px;display:flex;flex-direction:column}
+.ind-card::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--grad-divider);transform:scaleX(0);transform-origin:left;transition:transform .6s var(--ease)}
+.ind-card:hover::after{transform:scaleX(1)}
+.ind-card:hover{transform:translateY(-6px);background:rgba(6,32,61,.85)}
+.ind-card .tag{display:inline-block;padding:6px 14px;border-radius:999px;background:rgba(247,127,0,.12);color:var(--orange-3);font-family:'Syne',sans-serif;font-weight:600;font-size:11px;letter-spacing:.2em;text-transform:uppercase;border:1px solid rgba(247,127,0,.35);align-self:flex-start;margin-bottom:24px}
+.ind-card h3{font-size:26px;margin-bottom:14px;letter-spacing:-.02em}
+.ind-card p{color:var(--text-muted);font-size:15px;line-height:1.65;margin-bottom:24px}
+.ind-card .topics{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:18px;border-top:1px dashed rgba(122,158,192,.15)}
+.ind-card .topics span{font-size:12px;color:var(--blue-3);padding:6px 12px;border:1px solid rgba(10,132,255,.25);border-radius:999px;background:rgba(10,132,255,.06)}
+@media (max-width:1024px){.ind-grid{grid-template-columns:1fr}}
+</style></head><body data-page="industries"><div id="site-nav"></div>
+<header class="page-hero"><div class="mesh"></div><div class="grid-lines"></div>
+<div class="container" style="position:relative;z-index:2">
+<div class="reveal eyebrow"><span class="bar"></span>Industries</div>
+<h1 class="reveal d1">Une expertise <span class="gradient-text">sectorielle profonde.</span></h1>
+<p class="lead reveal d2">VIFCO adapte son expertise aux spécificités de chaque secteur. Notre connaissance sectorielle approfondie nous permet de délivrer des recommandations <b>immédiatement actionnables</b>, ancrées dans les réalités opérationnelles et réglementaires de chaque industrie.</p>
+</div></header>
+<section><div class="container"><div class="ind-grid">
+<article class="ind-card reveal"><span class="tag">Banques</span><h3>Banques &amp; Institutions Financières</h3><p>Des banques commerciales aux banques de développement, VIFCO accompagne les institutions dans leur triple défi : modernisation technologique, conformité réglementaire renforcée et adaptation aux nouvelles exigences ESG.</p><div class="topics"><span>Core Banking</span><span>IA &amp; Data</span><span>Bâle IV</span><span>Green Bonds</span><span>Digital CX</span></div></article>
+<article class="ind-card reveal d1"><span class="tag">Fonds</span><h3>Fonds d’Investissement &amp; Asset Managers</h3><p>Private equity, venture capital, fonds souverains, family offices — VIFCO apporte aux fonds une expertise de structuration, d’analyse et de sourcing qui maximise les rendements ajustés au risque sur les marchés africains et MENA.</p><div class="topics"><span>Allocation</span><span>Due diligence</span><span>ESG integration</span><span>Reporting LP</span><span>Deal Afrique</span></div></article>
+<article class="ind-card reveal d2"><span class="tag">Gouvernements</span><h3>Gouvernements &amp; Secteur Public</h3><p>VIFCO est un partenaire de confiance pour les États, ministères et agences publiques dans la conception et l’exécution de leur politique d’investissement, transformation digitale et structuration de méga-projets.</p><div class="topics"><span>Politique infra</span><span>PPP</span><span>Services publics digitaux</span><span>Finance souveraine</span><span>Green Sovereign</span></div></article>
+<article class="ind-card reveal d3"><span class="tag">Startups</span><h3>Startups FinTech &amp; Scale-ups Tech</h3><p>De la structuration du business model à la levée de fonds, en passant par le go-to-market et la conformité réglementaire, VIFCO accompagne les startups FinTech africaines et MENA dans chaque étape de leur croissance.</p><div class="topics"><span>Go-to-market</span><span>DD investisseurs</span><span>Modèle économique</span><span>Conformité</span><span>Partenariats bancaires</span></div></article>
+<article class="ind-card reveal" style="grid-column:1 / -1"><span class="tag">Énergie</span><h3>Énergie &amp; Infrastructure</h3><p>Les grands projets d’infrastructure énergétique — solaire, éolien, hydroélectrique — requièrent des montages financiers complexes alliant dette senior, equity et garanties institutionnelles. VIFCO structure les solutions de financement adaptées aux projets à impact.</p><div class="topics"><span>Project Finance</span><span>Dette infra</span><span>Green Finance</span><span>Multilatéraux BAD/BM</span><span>ESG compliance</span></div></article>
+</div></div></section>
+<div id="site-footer"></div><script src="assets/site.js"></script></body></html>

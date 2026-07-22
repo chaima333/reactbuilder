@@ -920,6 +920,29 @@ const composePageBlocksWithGlobalLayout = (
     ),
   ];
 };
+const sanitizeStaticExportHtml = (
+  html: string
+): string =>
+  html.replace(
+    /grid-template-rows:\s*(\d+(?:\.\d+)?)px(\s*!important)?(?=;)/gi,
+    (
+      original,
+      rawValue: string,
+      important = ""
+    ) => {
+      const value =
+        Number(rawValue);
+
+      if (
+        Number.isFinite(value) &&
+        value >= 700
+      ) {
+        return `grid-template-rows:auto${important}`;
+      }
+
+      return original;
+    }
+  );
 
 export const exportSite = async (
   req: Request,
@@ -1113,13 +1136,19 @@ export const exportSite = async (
           }
         );
 
-      const html =
-        renderFullPage(
-          exportPageData,
-          seo,
-          exportedCanonical,
-          blocksHTML
-        );
+      const renderedHtml =
+  renderFullPage(
+    exportPageData,
+    seo,
+    exportedCanonical,
+    blocksHTML
+  );
+
+const html =
+  sanitizeStaticExportHtml(
+    renderedHtml
+  );
+        
 
       htmlPages[
         archivePath
