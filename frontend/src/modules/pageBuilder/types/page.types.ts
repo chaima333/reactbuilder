@@ -2,7 +2,7 @@
 
 import React from "react";
 
-// 🔄 Re-exporting everything to be the main Hub
+// ðŸ”„ Re-exporting everything to be the main Hub
 export type { 
   FieldDefinition, 
   BaseField, 
@@ -54,13 +54,18 @@ export type BlockType =
   | "grid"
   | "link"
   | "features"
-| "valuesGrid"
-| "officeTable"
-| "featurePillars"
-| "gridItem"
-| "input"
+  | "faq"
+  | "valuesGrid"
+  | "officeTable"
+  | "featurePillars"
+  | "gridItem"
+  | "input"
   | "select"
-  | "textarea";
+  | "collectionList"
+  | "textarea"
+  | "form"
+  | "visitorLogin"
+  | "visitorRegister";
 
 // ========================
 // Block Rules
@@ -84,8 +89,7 @@ export interface Block {
   };
   children: Block[];
 
-
-meta?: BlockMeta & {
+  meta?: BlockMeta & {
 
   isLocked?: boolean;
 
@@ -112,7 +116,7 @@ export interface PageData {
 // ========================
 export type RuntimeMode = "editor" | "preview" | "public";
 
-export interface BlockRendererProps<P = Record<string, any>> { // 🟢 دعم الـ Generic Props للـ Renderer
+export interface BlockRendererProps<P = Record<string, any>> { // ðŸŸ¢ Ø¯Ø¹Ù… Ø§Ù„Ù€ Generic Props Ù„Ù„Ù€ Renderer
   block?: Block;
   data: {
     props: P;
@@ -124,14 +128,37 @@ export interface BlockRendererProps<P = Record<string, any>> { // 🟢 دعم ا
   };
 }
 
+export type BlockExportMode =
+  | "static"
+  | "clientRuntime"
+  | "serverSnapshot"
+  | "unsupported";
+
+export type BlockBackendCapability =
+  | "visitorAuth"
+  | "forms"
+  | "cms";
+
+export type BlockExportFallback =
+  | "placeholder"
+  | "disabled"
+  | "snapshot"
+  | "omit";
+
+export interface BlockExportConfig {
+  mode: BlockExportMode;
+  backendRequired?: BlockBackendCapability[];
+  fallback?: BlockExportFallback;
+  runtimeModule?: string;
+}
+
 // ========================
-// 🏆 The Master Block Config (Hardened with Generics)
+// ðŸ† The Master Block Config (Hardened with Generics)
 // ========================
 import type { FieldDefinition } from "./field.types";
 import type { ResponsiveStyle, StyleObject } from "./style.types";
 import { BlockMeta } from "./blockMeta.types";
 
-// 🟢 الـ Generic <P> هوني يخلّي كل Block يحدد الـ Type متع الـ Props الخاصة بيه حصراً
 export interface BlockConfig<P extends Record<string, unknown> = Record<string, unknown>> {
   type: BlockType;
   label: string;
@@ -141,7 +168,8 @@ export interface BlockConfig<P extends Record<string, unknown> = Record<string, 
   isContainer: boolean; 
   
   rules?: BlockRules;
-  allowedChildren?: BlockType[];
+
+  export?: BlockExportConfig;
 
   // Inspector schema
   fields: FieldDefinition[]; 
@@ -151,7 +179,7 @@ export interface BlockConfig<P extends Record<string, unknown> = Record<string, 
 
   // Initial state (Hardened & Strictly Checked!)
   defaultData: {
-    props: P; // 🟢 توة الـ props ولّت ملوية وما يقبلش الـ unknown العشوائي
+    props: P; 
     style: ResponsiveStyle;
   };
 }

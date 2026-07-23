@@ -21,6 +21,13 @@ export const collectionListDefinition: BlockConfig = {
     React.createElement(ViewListIcon),
   category: "content",
   isContainer: false,
+  export: {
+    mode: "serverSnapshot",
+    backendRequired: [
+      "cms"
+    ],
+    fallback: "snapshot"
+  },
   rules: {
     allowedParents: [
       "root",

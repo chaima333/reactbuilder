@@ -31,16 +31,39 @@ export const formDefinition: BlockConfig = {
 
   category: "content",
 
-  isContainer: false,
+  isContainer: true,
+
+  export: {
+    mode: "clientRuntime",
+    backendRequired: [
+      "forms"
+    ],
+    fallback: "disabled",
+    runtimeModule: "forms"
+  },
 
   rules: {
-    allowedParents: [
-      "root",
-      "section",
-      "flexItem",
-      "gridItem"
-    ]
-  },
+  allowedParents: [
+    "root",
+    "section",
+    "flexItem",
+    "gridItem"
+  ],
+
+  allowedChildren: [
+    "title",
+    "text",
+    "input",
+    "select",
+    "textarea",
+    "button",
+    "link",
+    "flex",
+    "flexItem",
+    "grid",
+    "gridItem"
+  ]
+},
 
   fields:
     formFields,
