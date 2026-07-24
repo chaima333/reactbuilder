@@ -6,6 +6,10 @@ import type {
 } from "../../../../types/page.types";
 
 import {
+  blockExportCapabilities
+} from "../../../../export/blockExportCapabilities.generated";
+
+import {
   VisitorLoginBlock
 } from "./VisitorLoginBlock";
 
@@ -31,14 +35,8 @@ export const visitorLoginDefinition: BlockConfig = {
     ],
     singleton: true
   },
-  export: {
-    mode: "clientRuntime",
-    backendRequired: [
-      "visitorAuth"
-    ],
-    fallback: "disabled",
-    runtimeModule: "visitorAuth"
-  },
+  export:
+    blockExportCapabilities.visitorLogin,
   fields: visitorLoginFields,
   component: VisitorLoginBlock as any,
   defaultData: visitorLoginDefaults

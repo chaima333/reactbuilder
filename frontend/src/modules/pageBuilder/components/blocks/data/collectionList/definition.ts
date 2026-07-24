@@ -7,6 +7,10 @@ import {
 } from "../../../../types/page.types";
 
 import {
+  blockExportCapabilities
+} from "../../../../export/blockExportCapabilities.generated";
+
+import {
   CollectionListBlock
 } from "./CollectionListBlock";
 
@@ -21,13 +25,8 @@ export const collectionListDefinition: BlockConfig = {
     React.createElement(ViewListIcon),
   category: "content",
   isContainer: false,
-  export: {
-    mode: "serverSnapshot",
-    backendRequired: [
-      "cms"
-    ],
-    fallback: "snapshot"
-  },
+  export:
+    blockExportCapabilities.collectionList,
   rules: {
     allowedParents: [
       "root",

@@ -35,6 +35,11 @@ import {
   renderFullPage,
 } from "../../pages/engine/blockRenderer";
 
+import {
+  analyzeBlockExportCapabilities,
+  mergeBlockExportAnalysis,
+} from "./blockExportAnalyzer";
+
 type ExportedPageInfo = {
   id: number;
   title: string;
@@ -1031,6 +1036,10 @@ export const exportSite = async (
     const sitemapEntries:
       string[] = [];
 
+    const exportCapabilityAnalyses:
+      ReturnType<typeof analyzeBlockExportCapabilities>[] =
+        [];
+
     const siteData =
       typeof site.toJSON === "function"
         ? site.toJSON() as any
@@ -1120,6 +1129,12 @@ export const exportSite = async (
           ),
           exportPageData
         );
+
+      exportCapabilityAnalyses.push(
+        analyzeBlockExportCapabilities(
+          resolvedBlocks
+        )
+      );
 
       const seo =
         SEOBuilder.build(
@@ -1254,6 +1269,11 @@ const html =
       "This is a static export. A standalone CMS backend and database are not included yet."
     );
 
+    const exportCapabilities =
+      mergeBlockExportAnalysis(
+        exportCapabilityAnalyses
+      );
+
     const manifest = {
       version: 1,
 
@@ -1280,6 +1300,8 @@ const html =
 
       pages:
         exportedPages,
+
+      exportCapabilities,
 
       features: {
         staticHtml:

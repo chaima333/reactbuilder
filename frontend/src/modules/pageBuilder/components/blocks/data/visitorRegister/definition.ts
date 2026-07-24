@@ -6,6 +6,10 @@ import type {
 } from "../../../../types/page.types";
 
 import {
+  blockExportCapabilities
+} from "../../../../export/blockExportCapabilities.generated";
+
+import {
   VisitorRegisterBlock
 } from "./VisitorRegisterBlock";
 
@@ -31,14 +35,8 @@ export const visitorRegisterDefinition: BlockConfig = {
     ],
     singleton: true
   },
-  export: {
-    mode: "clientRuntime",
-    backendRequired: [
-      "visitorAuth"
-    ],
-    fallback: "disabled",
-    runtimeModule: "visitorAuth"
-  },
+  export:
+    blockExportCapabilities.visitorRegister,
   fields: visitorRegisterFields,
   component: VisitorRegisterBlock as any,
   defaultData: visitorRegisterDefaults

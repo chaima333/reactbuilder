@@ -8,6 +8,10 @@ import {
 } from "../../../../types/page.types";
 
 import {
+  blockExportCapabilities
+} from "../../../../export/blockExportCapabilities.generated";
+
+import {
   FormBlock
 } from "./FormBlock";
 
@@ -33,14 +37,8 @@ export const formDefinition: BlockConfig = {
 
   isContainer: true,
 
-  export: {
-    mode: "clientRuntime",
-    backendRequired: [
-      "forms"
-    ],
-    fallback: "disabled",
-    runtimeModule: "forms"
-  },
+  export:
+    blockExportCapabilities.form,
 
   rules: {
   allowedParents: [

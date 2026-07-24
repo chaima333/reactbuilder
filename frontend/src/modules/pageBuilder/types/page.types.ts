@@ -147,7 +147,7 @@ export type BlockExportFallback =
 
 export interface BlockExportConfig {
   mode: BlockExportMode;
-  backendRequired?: BlockBackendCapability[];
+  backendRequired?: readonly BlockBackendCapability[];
   fallback?: BlockExportFallback;
   runtimeModule?: string;
 }
