@@ -39,6 +39,10 @@ import {
   analyzeBlockExportCapabilities,
   mergeBlockExportAnalysis,
 } from "./blockExportAnalyzer";
+import {
+  injectStaticExportRuntime,
+  loadVisitorAuthRuntimeBundle,
+} from "./staticExportRuntimeAssets";
 
 type ExportedPageInfo = {
   id: number;
@@ -134,6 +138,39 @@ const normalizeBaseUrl = (
     }
 
     return `${parsed.protocol}//${parsed.host}`;
+  } catch {
+    return "";
+  }
+};
+
+const normalizePublicApiBaseUrl = (
+  value: unknown
+): string => {
+  const raw =
+    String(value || "")
+      .trim();
+
+  if (!raw) {
+    return "";
+  }
+
+  try {
+    const parsed =
+      new URL(raw);
+
+    if (
+      parsed.protocol !== "http:" &&
+      parsed.protocol !== "https:"
+    ) {
+      return "";
+    }
+
+    parsed.hash = "";
+    parsed.search = "";
+
+    return parsed
+      .toString()
+      .replace(/\/$/, "");
   } catch {
     return "";
   }
@@ -1130,10 +1167,13 @@ export const exportSite = async (
           exportPageData
         );
 
-      exportCapabilityAnalyses.push(
+      const pageExportCapabilities =
         analyzeBlockExportCapabilities(
           resolvedBlocks
-        )
+        );
+
+      exportCapabilityAnalyses.push(
+        pageExportCapabilities
       );
 
       const seo =
@@ -1148,6 +1188,15 @@ export const exportSite = async (
           {
             rewriteUrl:
               staticExportUrlResolver,
+            pageId:
+              pageData.id,
+            clientRuntimeBlockTypes:
+              pageExportCapabilities
+                .clientRuntimeBlockTypes
+                .filter((type) =>
+                  type === "visitorLogin" ||
+                  type === "visitorRegister"
+                ),
           }
         );
 
@@ -1248,6 +1297,57 @@ const html =
       }
     }
 
+    const exportCapabilities =
+      mergeBlockExportAnalysis(
+        exportCapabilityAnalyses
+      );
+
+    const visitorAuthRuntimeBundle =
+      loadVisitorAuthRuntimeBundle({
+        enabled:
+          exportCapabilities.runtimeModules
+            .includes(
+              "visitorAuth"
+            ),
+      });
+
+    const visitorAuthRuntimeConfig = {
+      siteId,
+      apiBaseUrl:
+        normalizePublicApiBaseUrl(
+          req.query.apiBaseUrl
+        ) ||
+        normalizePublicApiBaseUrl(
+          process.env
+            .PUBLIC_API_BASE_URL
+        ),
+      enabledCapabilities:
+        visitorAuthRuntimeBundle
+          .visitorAuthRuntime
+          ? [
+              "visitorAuth",
+            ]
+          : [],
+    };
+
+    if (
+      visitorAuthRuntimeBundle
+        .visitorAuthRuntime
+    ) {
+      for (
+        const filename of Object.keys(
+          htmlPages
+        )
+      ) {
+        htmlPages[filename] =
+          injectStaticExportRuntime(
+            htmlPages[filename],
+            visitorAuthRuntimeBundle,
+            visitorAuthRuntimeConfig
+          );
+      }
+    }
+
     const warnings:
       string[] = [];
 
@@ -1268,11 +1368,6 @@ const html =
     warnings.push(
       "This is a static export. A standalone CMS backend and database are not included yet."
     );
-
-    const exportCapabilities =
-      mergeBlockExportAnalysis(
-        exportCapabilityAnalyses
-      );
 
     const manifest = {
       version: 1,
@@ -1320,6 +1415,10 @@ const html =
 
         localMedia:
           mediaBundle.assets.length > 0,
+
+        visitorAuthRuntime:
+          visitorAuthRuntimeBundle
+            .visitorAuthRuntime,
 
         cmsRuntime:
           false,
@@ -1455,6 +1554,19 @@ ${sitemapEntries.join("")}
         );
 
         archive.pipe(res);
+
+        for (
+          const asset of
+            visitorAuthRuntimeBundle.assets
+        ) {
+          archive.append(
+            asset.buffer,
+            {
+              name:
+                asset.archivePath,
+            }
+          );
+        }
 
         for (
           const asset of mediaBundle.assets

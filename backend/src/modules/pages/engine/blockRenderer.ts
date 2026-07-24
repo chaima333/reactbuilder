@@ -202,10 +202,14 @@ type RenderContext = {
   responsiveCss: string[];
   nextBlockId: number;
   rewriteUrl?: (url: string) => string;
+  clientRuntimeBlockTypes?: Set<string>;
+  pageId?: number | string | null;
 };
 
 export type RenderBlocksOptions = {
   rewriteUrl?: (url: string) => string;
+  clientRuntimeBlockTypes?: string[];
+  pageId?: number | string | null;
 };
 
 const UNIT_LESS_CSS_PROPS = new Set([
@@ -1385,6 +1389,84 @@ const renderGridItemBlock = (
   </div>`;
 };
 
+const escapeJsonForHtml = (
+  value: unknown
+): string =>
+  JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/=/g, "\\u003d")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+
+const serializeRuntimeBlock = (
+  block: any
+): any => ({
+  id:
+    block?.id,
+  type:
+    block?.type,
+  data:
+    isRecord(block?.data)
+      ? block.data
+      : {
+          props: {},
+          style: {},
+        },
+  meta:
+    block?.meta,
+  children:
+    Array.isArray(block?.children)
+      ? block.children.map(
+          serializeRuntimeBlock
+        )
+      : [],
+});
+
+const renderClientRuntimeMount = (
+  block: any,
+  renderData: any,
+  context: RenderContext
+): string => {
+  const className =
+    registerBlockCss(
+      renderData,
+      {
+        width: "100%",
+        boxSizing: "border-box",
+      }
+    );
+
+  const payload =
+    escapeJsonForHtml({
+      block:
+        serializeRuntimeBlock(
+          block
+        ),
+      pageId:
+        context.pageId || null,
+    });
+
+  return `
+    <div
+      class="rb-export-runtime-block ${className}"
+      data-rb-export-runtime-block
+      data-rb-block-type="${escapeHTML(
+        String(
+          block?.type ||
+            "unknown"
+        )
+      )}"
+    >
+      <script
+        type="application/json"
+        data-rb-export-block
+      >${payload}</script>
+    </div>
+  `;
+};
+
 const hasAnyStyleProp = (
   style: Record<string, unknown>,
   keys: string[]
@@ -2289,6 +2371,20 @@ const renderBlocksInternal = async (
         String(block.type || "")
       ];
 
+    if (
+      context.clientRuntimeBlockTypes?.has(
+        String(block.type || "")
+      )
+    ) {
+      html += renderClientRuntimeMount(
+        block,
+        renderData,
+        context
+      );
+
+      continue;
+    }
+
     if (!renderer) {
       console.warn(
         `Unknown block type: ${String(
@@ -2346,6 +2442,14 @@ export const renderBlocks = async (
     nextBlockId: 1,
     rewriteUrl:
       options.rewriteUrl,
+    clientRuntimeBlockTypes:
+      options.clientRuntimeBlockTypes
+        ? new Set(
+            options.clientRuntimeBlockTypes
+          )
+        : undefined,
+    pageId:
+      options.pageId,
   };
 
   const html =

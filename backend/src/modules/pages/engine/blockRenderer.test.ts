@@ -512,4 +512,126 @@ describe("static block renderer parity", () => {
     expect(html).toMatch(/\.rb-block-3\{[^}]*margin-right:auto/);
     expect(html).toMatch(/\.rb-block-3\{[^}]*display:flex/);
   });
+
+  it("renders visitor auth client runtime blocks as export mount points", async () => {
+    const html =
+      await renderBlocks(
+        [
+          {
+            id: "login-block",
+            type: "visitorLogin",
+            data: {
+              props: {
+                title: "Member login",
+                passwordPlaceholder:
+                  "Password",
+              },
+              style: {},
+            },
+            children: [],
+          },
+          {
+            id: "register-block",
+            type: "visitorRegister",
+            data: {
+              props: {
+                title: "Register",
+              },
+              style: {},
+            },
+            children: [],
+          },
+        ],
+        42,
+        {
+          pageId: 7,
+          clientRuntimeBlockTypes: [
+            "visitorLogin",
+            "visitorRegister",
+          ],
+        }
+      );
+
+    expect(html).toContain(
+      "data-rb-export-runtime-block"
+    );
+    expect(html).toContain(
+      'data-rb-block-type="visitorLogin"'
+    );
+    expect(html).toContain(
+      'data-rb-block-type="visitorRegister"'
+    );
+    expect(html).not.toContain(
+      "rb-unknown-block"
+    );
+    expect(html).not.toContain("<form");
+    expect(html).not.toContain("<input");
+    expect(html).not.toContain(
+      'type="password"'
+    );
+  });
+
+  it("escapes serialized runtime block data safely", async () => {
+    const html =
+      await renderBlocks(
+        [
+          {
+            id: "register-block",
+            type: "visitorRegister",
+            data: {
+              props: {
+                title:
+                  '</script><img src=x onerror="alert(1)">',
+              },
+              style: {},
+            },
+            children: [],
+          },
+        ],
+        42,
+        {
+          clientRuntimeBlockTypes: [
+            "visitorRegister",
+          ],
+        }
+      );
+
+    expect(html).toContain(
+      "data-rb-export-runtime-block"
+    );
+    expect(html).not.toContain(
+      "</script><img"
+    );
+    expect(html).not.toContain(
+      "onerror="
+    );
+    expect(html).toContain(
+      "\\u003c/script\\u003e"
+    );
+  });
+
+  it("keeps static pages unchanged when no runtime options are supplied", async () => {
+    const html =
+      await renderBlocks([
+        {
+          id: "plain-title",
+          type: "title",
+          data: {
+            props: {
+              content: "Hello",
+            },
+            style: {},
+          },
+          children: [],
+        },
+      ]);
+
+    expect(html).toContain("Hello");
+    expect(html).not.toContain(
+      "data-rb-export-runtime-block"
+    );
+    expect(html).not.toContain(
+      "data-rb-export-block"
+    );
+  });
 });
