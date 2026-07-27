@@ -1150,6 +1150,34 @@ const renderSectionBlock = (
   const inferredContainerMaxWidth =
     getSectionChildContainerMaxWidth(data);
 
+  const isInsideNeutralizedUnsupportedContainer =
+    data
+      ?.__rbInsideNeutralizedUnsupportedContainer ===
+    true;
+
+  const shellResponsive =
+    mapResponsiveStyle(
+      responsive,
+      (style) => {
+        const shellStyle =
+          omitStyleProps(
+            style,
+            SECTION_OUTER_ONLY_PROPS
+          );
+
+        return isInsideNeutralizedUnsupportedContainer
+          ? omitStyleProps(
+              shellStyle,
+              [
+                "height",
+                "minHeight",
+                "maxHeight"
+              ]
+            )
+          : shellStyle;
+      }
+    );
+
   const rootClassName =
     registerBlockCss(
       withResponsiveStyle(
@@ -1176,25 +1204,28 @@ const renderSectionBlock = (
     registerBlockCss(
       withResponsiveStyle(
         data,
-        mapResponsiveStyle(
-          responsive,
-          (style) =>
-            omitStyleProps(
-              style,
-              SECTION_OUTER_ONLY_PROPS
-            )
-        ),
+        shellResponsive,
         data?.__rbClassName || "rb-section"
       ),
       {
         width: "100%",
         minWidth: 0,
         maxWidth: "100%",
-        minHeight: "200px",
-        paddingTop: "80px",
-        paddingBottom: "80px",
-        paddingLeft: "24px",
-        paddingRight: "24px",
+        minHeight: isInsideNeutralizedUnsupportedContainer
+          ? 0
+          : "200px",
+        paddingTop: isInsideNeutralizedUnsupportedContainer
+          ? 0
+          : "80px",
+        paddingBottom: isInsideNeutralizedUnsupportedContainer
+          ? 0
+          : "80px",
+        paddingLeft: isInsideNeutralizedUnsupportedContainer
+          ? 0
+          : "24px",
+        paddingRight: isInsideNeutralizedUnsupportedContainer
+          ? 0
+          : "24px",
         boxSizing: "border-box",
       }
     );
@@ -2335,10 +2366,10 @@ const BLOCK_RENDERERS: Record<
 
   select: (data) =>
     renderSelectBlock(data),
-  
+
   navbar:
   renderNavbarBlock,
-  
+
 
   footer:
     renderFooterBlock,
@@ -2365,8 +2396,10 @@ const renderBlocksInternal = async (
   blocks: any[] = [],
   siteId: number | undefined,
   context: RenderContext,
-  parentBlock?: any
+  parentBlock?: any,
+  insideNeutralizedUnsupportedContainer = false
 ): Promise<string> => {
+
   if (!Array.isArray(blocks)) {
     return "";
   }
@@ -2381,14 +2414,38 @@ const renderBlocksInternal = async (
       continue;
     }
 
-    const childrenHTML =
+    const blockType =
+      String(block.type || "");
+
+    const renderer =
+      BLOCK_RENDERERS[blockType];
+
+    const isClientRuntimeBlock =
+      context
+        .clientRuntimeBlockTypes
+        ?.has(blockType) === true;
+
+    const hasChildren =
       Array.isArray(block.children) &&
-      block.children.length > 0
+      block.children.length > 0;
+
+    const neutralizesDescendants =
+      context
+        .neutralizeUnsupportedContainers ===
+        true &&
+      !renderer &&
+      !isClientRuntimeBlock &&
+      hasChildren;
+
+    const childrenHTML =
+      hasChildren
         ? await renderBlocksInternal(
             block.children,
             siteId,
             context,
-            block
+            block,
+            insideNeutralizedUnsupportedContainer ||
+              neutralizesDescendants
           )
         : "";
 
@@ -2422,6 +2479,9 @@ const renderBlocksInternal = async (
 
             __rbContext:
               context,
+
+            __rbInsideNeutralizedUnsupportedContainer:
+              insideNeutralizedUnsupportedContainer,
           }
         : {
             __rbBlockId:
@@ -2449,18 +2509,12 @@ const renderBlocksInternal = async (
 
             __rbContext:
               context,
+
+            __rbInsideNeutralizedUnsupportedContainer:
+              insideNeutralizedUnsupportedContainer,
           };
 
-    const renderer =
-      BLOCK_RENDERERS[
-        String(block.type || "")
-      ];
-
-    if (
-      context.clientRuntimeBlockTypes?.has(
-        String(block.type || "")
-      )
-    ) {
+    if (isClientRuntimeBlock) {
       html += renderClientRuntimeMount(
         block,
         renderData,
@@ -2477,11 +2531,7 @@ const renderBlocksInternal = async (
         )}`
       );
 const shouldNeutralize =
-  context
-    .neutralizeUnsupportedContainers ===
-    true &&
-  Array.isArray(block.children) &&
-  block.children.length > 0;
+  neutralizesDescendants;
 
 const fallbackData =
   shouldNeutralize
@@ -2568,7 +2618,7 @@ export const renderBlocks = async (
   siteId?: number,
   options: RenderBlocksOptions = {}
 ): Promise<string> => {
- 
+
   const context: RenderContext = {
   responsiveCss: [],
   nextBlockId: 1,
