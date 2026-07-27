@@ -609,6 +609,109 @@ describe("static block renderer parity", () => {
       "\\u003c/script\\u003e"
     );
   });
+it("neutralizes nested section defaults inside unsupported export containers", async () => {
+  const html =
+    await renderBlocks(
+      [
+        {
+          id: "form-block",
+          type: "form",
+          data: {
+            style: {},
+          },
+          children: [
+            {
+              id: "form-flex",
+              type: "flex",
+              data: {
+                style: {
+                  desktop: {
+                    flexDirection:
+                      "column",
+                  },
+                },
+              },
+              children: [
+                {
+                  id: "form-flex-item",
+                  type: "flexItem",
+                  data: {
+                    style: {},
+                  },
+                  children: [
+                    {
+                      id: "form-row-section",
+                      type: "section",
+                      data: {
+                        style: {},
+                      },
+                      children: [
+                        {
+                          id: "field",
+                          type: "input",
+                          data: {
+                            props: {
+                              name:
+                                "email",
+                            },
+                            style: {},
+                          },
+                          children: [],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      42,
+      {
+        neutralizeUnsupportedContainers:
+          true,
+      }
+    );
+
+  const sectionClass =
+    html.match(
+      /class="pb-section (rb-block-\d+)"/
+    )?.[1];
+
+  if (!sectionClass) {
+    throw new Error(
+      "Nested section class was not rendered"
+    );
+  }
+
+  const sectionCss =
+    html.match(
+      new RegExp(
+        `\\.${sectionClass}\\{([^}]*)\\}`
+      )
+    )?.[1] || "";
+
+  expect(html).toContain(
+    'data-rb-block-type="form"'
+  );
+
+  expect(sectionCss).toContain(
+    "min-height:0px"
+  );
+
+  expect(sectionCss).toContain(
+    "padding-top:0px"
+  );
+
+  expect(sectionCss).toContain(
+    "padding-bottom:0px"
+  );
+
+  expect(sectionCss).not.toContain(
+    "min-height:200px"
+  );
+});
 
   it("keeps static pages unchanged when no runtime options are supplied", async () => {
     const html =
