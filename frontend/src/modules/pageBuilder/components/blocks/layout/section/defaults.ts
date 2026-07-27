@@ -1,30 +1,59 @@
-import type { BlockConfig } from "../../../../types/page.types";
+import type {
+  BlockConfig
+} from "../../../../types/page.types";
 
 export const sectionDefaults = {
-
   props: {},
 
   style: {
+    desktop: {
+      paddingTop:
+        "88px",
 
-  desktop: {
+      paddingBottom:
+        "88px",
 
-  paddingTop: "0px",
+      paddingLeft:
+        "24px",
 
-  paddingBottom: "0px",
+      paddingRight:
+        "24px",
 
-  paddingLeft: "0px",
+      backgroundColor: "rgba(0,0,0,0)",
 
-  paddingRight: "0px",
+      width:
+        "100%",
 
-  backgroundColor: "rgba(0,0,0,0)",
+      maxWidth:
+        "1200px"
+    },
 
-  width: "100%",
+    tablet: {
+      paddingTop:
+        "72px",
 
-  maxWidth: "100%",
+      paddingBottom:
+        "72px",
 
-  marginLeft: "0px",
+      paddingLeft:
+        "24px",
 
-  marginRight: "0px"
-},
+      paddingRight:
+        "24px"
+    },
+
+    mobile: {
+      paddingTop:
+        "56px",
+
+      paddingBottom:
+        "56px",
+
+      paddingLeft:
+        "18px",
+
+      paddingRight:
+        "18px"
+    }
   }
 } satisfies BlockConfig["defaultData"];

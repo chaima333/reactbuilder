@@ -1,25 +1,22 @@
-// src/modules/pageBuilder/components/blocks/layout/grid/definition.ts
+﻿// src/modules/pageBuilder/components/blocks/layout/grid/definition.ts
 
 import React from "react";
-
 import GridViewIcon from "@mui/icons-material/GridView";
 
-import { GridBlock } from "./GridBlock";
+import {
+  GridBlock
+} from "./GridBlock";
 
 import type {
   BlockConfig
 } from "../../../../types/page.types";
 
 export const gridDefinition: BlockConfig = {
+  type: "grid",
 
-  type:
-    "grid",
+  label: "Grid Layout",
 
-  label:
-    "Grid Layout",
-
-  category:
-    "layout",
+  category: "layout",
 
   icon:
     React.createElement(
@@ -29,63 +26,44 @@ export const gridDefinition: BlockConfig = {
   component:
     GridBlock,
 
-  isContainer:
-    true,
-
-  allowedChildren: [
-    "gridItem"
-  ],
+  isContainer: true,
 
   rules: {
-
     allowedParents: [
       "section",
       "flexItem"
+    ],
+
+    allowedChildren: [
+      "gridItem"
     ]
   },
 
   fields: [],
 
   defaultData: {
-
     props: {},
 
     style: {
-
       desktop: {
-
-        display:
-          "grid",
-
+        display: "grid",
         gridTemplateColumns:
           "repeat(3, minmax(0,1fr))",
-
-        gap:
-          "16px"
+        gap: "16px"
       },
 
       tablet: {
-
-        display:
-          "grid",
-
+        display: "grid",
         gridTemplateColumns:
           "repeat(2, minmax(0,1fr))",
-
-        gap:
-          "16px"
+        gap: "16px"
       },
 
       mobile: {
-
-        display:
-          "grid",
-
+        display: "grid",
         gridTemplateColumns:
           "repeat(1, minmax(0,1fr))",
-
-        gap:
-          "16px"
+        gap: "16px"
       }
     }
   }

@@ -32,37 +32,29 @@ export const RenderTree = ({
 
     return null;
   }
-
-  return (
-
-    <>
-
-      {blocks.map(
-        (block) => (
-
+return (
+  <>
+    {blocks.map(
+      (block) => {
+        return (
           <RuntimeRenderer
             key={block.id}
-
             block={block}
-
             device={device}
           >
-
-            {block.children &&
-              block.children.length >
-                0 && (
-
+            {
+              block.children &&
+              block.children.length > 0 && (
                 <RenderTree
-                  blocks={
-                    block.children
-                  }
+                  blocks={block.children}
                 />
-              )}
+              )
+            }
 
           </RuntimeRenderer>
-        )
-      )}
-
-    </>
-  );
+        );
+      }
+    )}
+  </>
+);
 };

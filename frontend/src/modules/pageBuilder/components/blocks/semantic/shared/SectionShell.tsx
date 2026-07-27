@@ -7,7 +7,6 @@ import {
 } from "../../../../core/theme/useResolvedStyle";
 
 interface SectionShellProps {
-
   children: React.ReactNode;
 
   style?: any;
@@ -19,16 +18,11 @@ interface SectionShellProps {
 }
 
 export const SectionShell = ({
-
   children,
-
   style,
-
   device = "desktop"
-
 }: SectionShellProps) => {
-
-  const resolved : any =
+  const resolved: any =
     useResolvedStyle(
       style,
       device
@@ -44,7 +38,8 @@ export const SectionShell = ({
     width:
       resolved.width || "100%",
 
-    minWidth: 0,
+    minWidth:
+      0,
 
     minHeight:
       resolved.minHeight,
@@ -70,50 +65,60 @@ export const SectionShell = ({
     textAlign:
       resolved.textAlign,
 
+    background:
+      resolved.background,
 
+    backgroundColor:
+      resolved.background
+        ? undefined
+        : resolved.backgroundColor || "transparent",
 
-background:
-  resolved.background,
+    backgroundImage:
+      resolved.backgroundImage,
 
-backgroundColor:
-  resolved.background
-    ? undefined
-    : resolved.backgroundColor || "transparent",
+    backgroundSize:
+      resolved.backgroundSize,
 
-backgroundImage:
-  resolved.backgroundImage,
+    backgroundRepeat:
+      resolved.backgroundRepeat,
 
-backgroundSize:
-  resolved.backgroundSize,
-
-backgroundRepeat:
-  resolved.backgroundRepeat,
-
-backgroundPosition:
-  resolved.backgroundPosition,
+    backgroundPosition:
+      resolved.backgroundPosition,
 
     padding:
       resolved.padding,
 
     paddingTop:
-      hasPaddingShorthand
-        ? undefined
-        : resolved.paddingTop || "80px",
+      resolved.paddingTop ||
+      (
+        hasPaddingShorthand
+          ? undefined
+          : "80px"
+      ),
 
     paddingBottom:
-      hasPaddingShorthand
-        ? undefined
-        : resolved.paddingBottom || "80px",
+      resolved.paddingBottom ||
+      (
+        hasPaddingShorthand
+          ? undefined
+          : "80px"
+      ),
 
     paddingLeft:
-      hasPaddingShorthand
-        ? undefined
-        : resolved.paddingLeft || "24px",
+      resolved.paddingLeft ||
+      (
+        hasPaddingShorthand
+          ? undefined
+          : "24px"
+      ),
 
     paddingRight:
-      hasPaddingShorthand
-        ? undefined
-        : resolved.paddingRight || "24px",
+      resolved.paddingRight ||
+      (
+        hasPaddingShorthand
+          ? undefined
+          : "24px"
+      ),
 
     margin:
       resolved.margin,
@@ -185,35 +190,11 @@ backgroundPosition:
       "relative"
   };
 
-  console.log(
-    "SECTION_SHELL_RUNTIME",
-    JSON.stringify(
-      {
-        inputStyle:
-          style,
-        resolved,
-        outerStyle,
-        innerStyle
-      },
-      null,
-      2
-    )
-  );
-
   return (
-
-    <Box
-      sx={outerStyle}
-    >
-
-      <Box
-        sx={innerStyle}
-      >
-
+    <Box sx={outerStyle}>
+      <Box sx={innerStyle}>
         {children}
-
       </Box>
-
     </Box>
   );
 };

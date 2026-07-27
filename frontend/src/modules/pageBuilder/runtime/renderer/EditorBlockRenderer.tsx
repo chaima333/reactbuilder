@@ -101,10 +101,6 @@ export const EditorBlockRenderer = ({
 
   if (!config) {
 
-    console.warn(
-      `[EDITOR] Unknown block type "${block.type}"`
-    );
-
     return null;
   }
 
@@ -161,13 +157,7 @@ export const EditorBlockRenderer = ({
 
   (block.children || []).map(
     (child: any) => {
-      console.log(
-        "RENDERER CHILD",
-        child.type,
-        child.id?.slice(0, 8),
-        child.children?.length
-      );
-
+  
       return (
 
         <EditorBlockRenderer

@@ -202,7 +202,7 @@ export const mergePresetDesktopStyle = (
 export const applySectionTitleScale = (
   style: any,
   extracted: any,
-  semanticType: string
+  _semanticType: string
 ) => {
   const desktop =
     style?.desktop || {};
@@ -243,28 +243,6 @@ export const applySectionTitleScale = (
         )}px`
       : emittedBefore;
 
-  console.log(
-    "SECTION_TITLE_SCALE_APPLIED",
-    {
-      semanticType,
-      originalFontSize,
-      emittedBefore,
-      emittedAfter,
-      ratioBefore:
-        originalPx !== null &&
-        emittedBeforePx !== null
-          ? Number(
-              (
-                emittedBeforePx /
-                originalPx
-              ).toFixed(
-                3
-              )
-            )
-          : null
-    }
-  );
-
   if (
     !shouldApply
   ) {
@@ -300,15 +278,24 @@ export const filterSectionStyle = (
         "background",
         "backgroundColor",
         "backgroundImage",
+        "backgroundSize",
+        "backgroundPosition",
+        "backgroundRepeat",
         "color",
         "padding",
         "paddingTop",
         "paddingBottom",
         "paddingLeft",
         "paddingRight",
+        "margin",
+        "marginTop",
+        "marginBottom",
+        "marginLeft",
+        "marginRight",
         "textAlign",
         "border",
-        "borderRadius"
+        "borderRadius",
+        "boxShadow"
       ]
     );
 
@@ -395,6 +382,10 @@ export const filterCardStyle = (
       [
         "background",
         "backgroundColor",
+        "backgroundImage",
+        "backgroundSize",
+        "backgroundPosition",
+        "backgroundRepeat",
         "color",
         "padding",
         "paddingTop",
@@ -403,6 +394,7 @@ export const filterCardStyle = (
         "paddingRight",
         "border",
         "borderRadius",
+        "boxShadow",
         "display",
         "flexDirection",
         "gap",

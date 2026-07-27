@@ -110,6 +110,10 @@ export function sanitizeExtractedStyles(
 
     "background",
     "backgroundColor",
+    "backgroundImage",
+    "backgroundSize",
+    "backgroundPosition",
+    "backgroundRepeat",
     "border",
     "borderRadius",
     "boxShadow",
@@ -130,11 +134,25 @@ export function sanitizeExtractedStyles(
       let value =
         styles[key];
 
+      const normalizedValue =
+        value
+          .replace(/\s/g, "")
+          .toLowerCase();
+
+      const isEmptyPaintValue =
+        key === "background" ||
+        key === "backgroundColor" ||
+        key === "backgroundImage";
+
       if (
         !value ||
         value === "none" ||
-        value.includes(
-          "rgba(0, 0, 0, 0)"
+        (
+          isEmptyPaintValue &&
+          (
+            normalizedValue === "rgba(0,0,0,0)" ||
+            normalizedValue === "rgb(0,0,0,0)"
+          )
         )
       ) {
 
@@ -153,23 +171,11 @@ export function sanitizeExtractedStyles(
 
       ) {
 
-        const normalized =
-
-          value
-            .replace(/\s/g, "")
-            .toLowerCase();
-
         const invalidBackgrounds = [
 
           "transparent",
 
           "rgba(0,0,0,0)",
-
-          "rgb(0,0,0)",
-
-          "#000",
-
-          "#000000",
 
           "initial",
 
@@ -182,7 +188,7 @@ export function sanitizeExtractedStyles(
 
         if (
           invalidBackgrounds.includes(
-            normalized
+            normalizedValue
           )
         ) {
 
@@ -339,29 +345,15 @@ export function sanitizeExtractedStyles(
     }
   );
 
-  console.log(
-    "🧼 SANITIZED",
-    sanitized
-  );
-
   // =====================================
   // SHORTHAND COLLISION FIX
   // =====================================
 
-  if (
-    sanitized.padding
-  ) {
-
-    delete sanitized.paddingTop;
-    delete sanitized.paddingBottom;
-    delete sanitized.paddingLeft;
-    delete sanitized.paddingRight;
-  }
-
+  // Keep explicit side values so centering, padding, and grid/flex containers
+  // keep the original computed layout instead of being collapsed to the shorthand.
   if (
     sanitized.margin
   ) {
-
     delete sanitized.marginTop;
     delete sanitized.marginBottom;
 

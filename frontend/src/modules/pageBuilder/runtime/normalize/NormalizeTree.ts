@@ -49,6 +49,36 @@ const createEmptyWrapper = (
   children: [child]
 });
 
+const unwrapIllegalItemChildren = (
+  parent: Block,
+  children: Block[]
+) => {
+  if (
+    parent.type !== "gridItem" &&
+    parent.type !== "flexItem"
+  ) {
+    return children;
+  }
+
+  return children.flatMap(child => {
+    const illegalNestedItem =
+      (
+        parent.type === "gridItem" &&
+        child.type === "flexItem"
+      ) ||
+      (
+        parent.type === "flexItem" &&
+        child.type === "flexItem"
+      );
+
+    if (!illegalNestedItem) {
+      return [child];
+    }
+
+    return child.children || [];
+  });
+};
+
 // =====================================================
 // NORMALIZE TREE
 // =====================================================
@@ -113,8 +143,11 @@ const normalizeBlock = (
 
   let children =
 
-    (block.children || [])
-      .map(normalizeBlock);
+    unwrapIllegalItemChildren(
+      block,
+      (block.children || [])
+        .map(normalizeBlock)
+    );
 
   // =====================================
   // FLEX → FLEX ITEMS ONLY

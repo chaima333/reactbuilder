@@ -448,6 +448,119 @@ const hasVisualShellStyle = (
   );
 };
 
+const getElementArea = (
+  element: HTMLElement
+) => {
+  const rect =
+    element.getBoundingClientRect();
+
+  return Math.max(
+    0,
+    rect.width
+  ) * Math.max(
+    0,
+    rect.height
+  );
+};
+
+const hasCtaTitleAndAction = (
+  element: HTMLElement
+) =>
+  !!element.querySelector(
+    "h1,h2,h3,h4"
+  ) &&
+  !!Array.from(
+    element.querySelectorAll(
+      "a,button"
+    )
+  ).find(
+    node =>
+      !!node.textContent?.trim()
+  );
+
+const getCtaShellScore = (
+  element: HTMLElement
+) => {
+  const computed =
+    (
+      element.ownerDocument.defaultView ||
+      window
+    ).getComputedStyle(
+      element
+    );
+
+  const className =
+    element.getAttribute(
+      "class"
+    ) || "";
+
+  let score = 0;
+
+  if (
+    hasCtaTitleAndAction(
+      element
+    )
+  ) {
+    score += 100;
+  }
+
+  if (
+    hasVisualShellStyle(
+      element
+    )
+  ) {
+    score += 60;
+  }
+
+  if (
+    !isTransparentVisualValue(
+      computed.background
+    ) ||
+    !isTransparentVisualValue(
+      computed.backgroundColor
+    ) ||
+    !isTransparentVisualValue(
+      computed.backgroundImage
+    )
+  ) {
+    score += 40;
+  }
+
+  if (
+    normalizeVisualValue(
+      computed.borderRadius
+    ) !== "0px" &&
+    normalizeVisualValue(
+      computed.borderRadius
+    ) !== "0px0px0px0px"
+  ) {
+    score += 30;
+  }
+
+  if (
+    /cta|call|panel|card|banner|box|inner|wrap|content/i.test(
+      className
+    )
+  ) {
+    score += 20;
+  }
+
+  if (
+    element.tagName === "SECTION"
+  ) {
+    score -= 15;
+  }
+
+  score += Math.min(
+    getElementArea(
+      element
+    ) / 10000,
+    40
+  );
+
+  return score;
+};
+
 const findCtaVisualShell = (
   element?: HTMLElement | null
 ) => {
@@ -455,93 +568,51 @@ const findCtaVisualShell = (
     return null;
   }
 
-  if (
-    forbiddenCtaRootTags.has(
-      element.tagName
-    )
-  ) {
-    return null;
-  }
+  const root =
+    (
+      element.closest(
+        "section, main, article"
+      ) as HTMLElement | null
+    ) || element;
 
-  const boundary =
-    element.closest(
-      "section, main, article"
-    ) as HTMLElement | null;
-
-  const buttons =
-    Array.from(
-      element.querySelectorAll(
-        "a,button"
+  const candidates =
+    [
+      root,
+      ...Array.from(
+        root.querySelectorAll(
+          "*"
+        )
       )
-    ).filter(
+    ].filter(
       (node): node is HTMLElement =>
-        node.nodeType === 1 &&
-        !!node.textContent?.trim()
+        node instanceof HTMLElement &&
+        !forbiddenCtaRootTags.has(
+          node.tagName
+        ) &&
+        hasCtaTitleAndAction(
+          node
+        ) &&
+        hasVisualShellStyle(
+          node
+        )
     );
 
-  for (const button of buttons) {
-    let current =
-      button.parentElement;
-
-    while (current) {
-      if (
-        forbiddenCtaRootTags.has(
-          current.tagName
-        )
-      ) {
-        break;
-      }
-
-      if (
-        current !== button &&
-        hasVisualShellStyle(
-          current
-        )
-      ) {
-        return current;
-      }
-
-      if (
-        current === element ||
-        current === boundary
-      ) {
-        break;
-      }
-
-      current =
-        current.parentElement;
-    }
+  if (!candidates.length) {
+    return element;
   }
 
-  let current: HTMLElement | null =
-    element;
-
-  while (current) {
-    if (
-      forbiddenCtaRootTags.has(
-        current.tagName
+  return candidates.sort(
+    (
+      a,
+      b
+    ) =>
+      getCtaShellScore(
+        b
+      ) -
+      getCtaShellScore(
+        a
       )
-    ) {
-      break;
-    }
-
-    if (
-      hasVisualShellStyle(
-        current
-      )
-    ) {
-      return current;
-    }
-
-    if (current === boundary) {
-      break;
-    }
-
-    current =
-      current.parentElement;
-  }
-
-  return element;
+  )[0];
 };
 
 const getComputedCtaButtonStyle = (
@@ -647,47 +718,6 @@ export const generateCTAPreset = (
   const containerElement =
     payload?.containerElement ||
     null;
-
-  console.log(
-    "CTA_STYLE_ROOT_SELECTED",
-    {
-      claimed:
-        claimedElement
-          ? {
-              tag:
-                claimedElement.tagName,
-              className:
-                claimedElement.getAttribute(
-                  "class"
-                ) || "",
-              id:
-                claimedElement.id || ""
-            }
-          : null,
-      styleRoot:
-        styleRoot
-          ? {
-              tag:
-                styleRoot.tagName,
-              className:
-                styleRoot.getAttribute(
-                  "class"
-                ) || "",
-              id:
-                styleRoot.id || ""
-            }
-          : null,
-      style:
-        styleRoot
-          ? desktopOf(
-              getComputedCtaPanelStyle(
-                styleRoot
-              )
-            )
-          : null
-    }
-  );
-
 const titleElement =
   styleRoot?.querySelector("h1,h2,h3,h4") as HTMLElement | null;
 
@@ -861,61 +891,11 @@ const titleElement =
       panelStyle,
       filterCtaPanelStyle
     );
-    console.log(
-  "CTA_PANEL_PADDING_COMPARE",
-  {
-    panelRaw:
-      panelStyle?.desktop?.padding,
-    panelMerged:
-      mergedPanelStyle.desktop?.padding,
-    sectionMerged:
-      mergedSectionStyle.desktop?.padding ||
-      `${mergedSectionStyle.desktop?.paddingTop} ${mergedSectionStyle.desktop?.paddingRight} ${mergedSectionStyle.desktop?.paddingBottom} ${mergedSectionStyle.desktop?.paddingLeft}`
-  }
-);
-
+  
   const sourcePanelDesktop =
     desktopOf(
       panelStyle
     );
-
-  console.log(
-    "CTA_SELECTED_PANEL_STYLE",
-    desktopOf(
-      panelStyle
-    )
-  );
-
-  console.log(
-    "CTA_SECTION_STYLE",
-    desktopOf(
-      rawSectionStyle
-    )
-  );
-
-  console.log(
-    "CTA_CONTAINER_STYLE",
-    desktopOf(
-      containerStyle
-    )
-  );
-
-  console.log(
-    "CTA_SOURCE_LAYOUT",
-    {
-      display:
-        sourcePanelDesktop.display,
-      flexDirection:
-        sourcePanelDesktop.flexDirection,
-      justifyContent:
-        sourcePanelDesktop.justifyContent,
-      alignItems:
-        sourcePanelDesktop.alignItems,
-      gap:
-        sourcePanelDesktop.gap
-    }
-  );
-
   const titleFallbackStyle: Record<string, any> = {
     maxWidth: "820px"
   };
@@ -976,62 +956,6 @@ const titleElement =
   const mergedActionRowMobile =
     (mergedActionRowStyle.mobile || {}) as Record<string, any>;
 
-  console.log(
-    "CTA_TITLE_SCALE_CLAMPED",
-    {
-      before:
-        titleFontSizeBefore,
-      after:
-        ctaTitleStyle.desktop?.fontSize,
-      maxWidth:
-        ctaTitleStyle.desktop?.maxWidth,
-      reason:
-        titleFontSizeBefore
-          ? "source-font-size"
-          : "no-font-size-fallback"
-    }
-  );
-
-  console.log(
-    "CTA_PRESET_ACTIONS_RENDERED",
-    {
-      payloadActionsCount:
-        payload?.actions?.length || 0,
-      renderedButtonsCount:
-        actions.length,
-      actions
-    }
-  );
-
-  console.log(
-    "CTA_VISUAL_STYLE_APPLIED",
-    {
-      titleFontSizeBefore:
-        titleFallbackStyle.fontSize,
-      titleFontSizeAfter:
-        ctaTitleStyle.desktop?.fontSize,
-      titleMaxWidthBefore:
-        titleFallbackStyle.maxWidth,
-      titleMaxWidthAfter:
-        ctaTitleStyle.desktop?.maxWidth,
-      cardPadding:
-        mergedPanelStyle.desktop?.padding ||
-        [
-          mergedSectionStyle.desktop?.paddingTop,
-          mergedSectionStyle.desktop?.paddingRight,
-          mergedSectionStyle.desktop?.paddingBottom,
-          mergedSectionStyle.desktop?.paddingLeft
-        ]
-          .filter(Boolean)
-          .join(" "),
-      actionGap:
-        mergedActionRowStyle.desktop?.gap ||
-        mergedActionRowStyle.desktop?.columnGap ||
-        mergedActionRowStyle.desktop?.rowGap,
-      buttonCount:
-        actions.length
-    }
-  );
 
   const leftTitleStyle = {
     ...ctaTitleStyle,
@@ -1051,51 +975,270 @@ const titleElement =
     }
   };
 
-  console.log(
-    "CTA_TITLE_STYLE",
-    leftTitleStyle
+const cleanNormal = (
+  value: any,
+  fallback?: any
+) =>
+  value === "normal" ||
+  value === "" ||
+  value === undefined
+    ? fallback
+    : value;
+
+const inheritResponsiveFlexStyle = (
+  desktop: Record<string, any> = {},
+  device: Record<string, any> = {},
+  options?: {
+    forceFluidWidth?: boolean;
+  }
+) => {
+  const merged = {
+    ...desktop,
+    ...device
+  };
+
+  return {
+    ...merged,
+
+    width:
+      options?.forceFluidWidth
+        ? "100%"
+        : cleanNormal(
+            device.width,
+            cleanNormal(
+              desktop.width,
+              undefined
+            )
+          ),
+
+    maxWidth:
+      "100%",
+
+    boxSizing:
+      cleanNormal(
+        device.boxSizing,
+        cleanNormal(
+          desktop.boxSizing,
+          "border-box"
+        )
+      ),
+
+    flexWrap:
+      cleanNormal(
+        device.flexWrap,
+        cleanNormal(
+          desktop.flexWrap,
+          "wrap"
+        )
+      ),
+
+    alignItems:
+      cleanNormal(
+        device.alignItems,
+        cleanNormal(
+          desktop.alignItems,
+          "center"
+        )
+      ),
+
+    justifyContent:
+      cleanNormal(
+        device.justifyContent,
+        cleanNormal(
+          desktop.justifyContent,
+          "center"
+        )
+      )
+  };
+};
+const panelDesktopStyle =
+  mergedPanelStyle.desktop || {};
+
+const actionRowDesktopStyle =
+  mergedActionRowStyle.desktop || {};
+
+const actionButtons =
+  actions.map(
+    (
+      action,
+      index
+    ) => {
+      const actionElement =
+        buttonElements[index] ||
+        buttonElement;
+
+      const actionStyle =
+        actionElement
+          ? getComputedCtaButtonStyle(
+              actionElement
+            )
+          : buttonStyle;
+
+     return {
+  id: uuidv4(),
+
+  type: "button" as const,
+
+  data: {
+    props: {
+      label: action.label,
+      href: action.href || ""
+    },
+
+    style: {
+      ...mergePresetDesktopStyle(
+        {
+          paddingTop: "14px",
+          paddingBottom: "14px",
+          paddingLeft: "24px",
+          paddingRight: "24px"
+        },
+        actionStyle,
+        filterCtaButtonStyle
+      )
+    }
+  },
+
+  children: []
+};
+    }
   );
 
-  const actionItems =
-    actions.map(
-      (
-        action,
-        index
-      ) => {
-        const actionElement =
-          buttonElements[index] ||
-          buttonElement;
+const finalBlock: Block = {
+  id:
+    uuidv4(),
 
-        const actionStyle =
-          actionElement
-            ? getComputedCtaButtonStyle(
-                actionElement
-              )
-            : buttonStyle;
+  type:
+    "section" as const,
 
-        return {
+  meta: {
+    semanticType:
+      "CTA_SECTION"
+  },
+
+  data: {
+    props: {},
+
+    style: {
+      ...mergedSectionStyle
+    }
+  },
+
+  children: [
+    {
+      id: uuidv4(),
+
+      type: "flex" as const,
+
+      data: {
+        props: {},
+
+        style: {
+          ...mergedContainerStyle,
+          ...mergedPanelStyle,
+
+          desktop: {
+            ...(mergedContainerStyle.desktop || {}),
+            ...(mergedPanelStyle.desktop || {}),
+
+            width: "100%",
+
+            maxWidth:
+              mergedContainerStyle.desktop?.maxWidth ||
+              "1280px",
+
+            marginLeft: "auto",
+            marginRight: "auto",
+
+            flexDirection:
+              sourcePanelDesktop.flexDirection ||
+              mergedPanelStyle.desktop?.flexDirection ||
+              "row",
+
+            alignItems:
+              sourcePanelDesktop.alignItems ||
+              mergedPanelStyle.desktop?.alignItems ||
+              "center",
+
+            justifyContent:
+              sourcePanelDesktop.justifyContent ||
+              mergedPanelStyle.desktop?.justifyContent ||
+              "space-between",
+
+            flexWrap:
+              sourcePanelDesktop.flexWrap ||
+              mergedPanelStyle.desktop?.flexWrap ||
+              "nowrap",
+
+            gap:
+              sourcePanelDesktop.gap ||
+              sourcePanelDesktop.rowGap ||
+              mergedPanelStyle.desktop?.gap ||
+              "32px"
+          },
+
+          tablet:
+            inheritResponsiveFlexStyle(
+              panelDesktopStyle,
+              mergedPanelTablet,
+              {
+                forceFluidWidth: true
+              }
+            ),
+
+          mobile: {
+            ...inheritResponsiveFlexStyle(
+              panelDesktopStyle,
+              mergedPanelMobile,
+              {
+                forceFluidWidth: true
+              }
+            ),
+
+            flexDirection: "column",
+            alignItems: "stretch"
+          }
+        }
+      },
+
+      children: [
+        {
           id: uuidv4(),
 
           type: "flexItem" as const,
 
           data: {
-
             props: {},
 
             style: {
-
               desktop: {
-
-                flex: "0 0 auto",
-
-                width: "auto",
-
-                maxWidth: "none"
+                flex: "1 1 520px",
+                minWidth: "0",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                justifyContent: "center",
+                gap: "12px"
               },
 
-              tablet: {},
+              tablet: {
+                flex: "1 1 100%",
+                minWidth: "0",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: "12px"
+              },
 
-              mobile: {}
+              mobile: {
+                flex: "1 1 100%",
+                width: "100%",
+                minWidth: "0",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: "12px"
+              }
             }
           },
 
@@ -1103,339 +1246,95 @@ const titleElement =
             {
               id: uuidv4(),
 
-              type: "button" as const,
+              type: "title" as const,
 
               data: {
-
                 props: {
+                  content:
+                    payload?.title ||
+                    "Ready to get started?",
 
-                  label:
-                    action.label,
-
-                  href:
-                    action.href || ""
+                  segments:
+                    payload?.titleSegments || []
                 },
 
                 style: {
-
-                    ...mergePresetDesktopStyle(
-                      {
-                        paddingTop:
-                          "14px",
-                      paddingBottom:
-                        "14px",
-                      paddingLeft:
-                        "24px",
-                      paddingRight:
-                        "24px"
-                    },
-                    actionStyle,
-                    filterCtaButtonStyle
-                  )
+                  ...leftTitleStyle
                 }
               },
 
               children: []
-            }
-          ]
-        };
-      }
-    );
-
-  const finalBlock: Block = {
-
-    id: uuidv4(),
-
-    type: "section" as const,
-     meta: {
-    semanticType: "CTA_SECTION",
-  },
-
-    data: {
-
-      props: {},
-
-      style: {
-
-        ...mergedSectionStyle
-      }
-    },
-
-    children: [
-      {
-        id: uuidv4(),
-
-        type: "flex" as const,
-
-        data: {
-
-          props: {},
-
-          style: {
-
-            ...mergedContainerStyle
-          }
-        },
-
-        children: [
-          {
-            id: uuidv4(),
-
-            type: "flex" as const,
-
-            data: {
-
-              props: {},
-
-              style: {
-
-                ...mergedPanelStyle,
-                desktop: {
-                  ...(mergedPanelStyle.desktop || {}),
-                  flexDirection:
-                    sourcePanelDesktop.flexDirection ||
-                    mergedPanelStyle.desktop?.flexDirection ||
-                    "row",
-                  alignItems:
-                    sourcePanelDesktop.alignItems ||
-                    mergedPanelStyle.desktop?.alignItems ||
-                    "center",
-                  justifyContent:
-                    sourcePanelDesktop.justifyContent ||
-                    mergedPanelStyle.desktop?.justifyContent ||
-                    "space-between",
-                  flexWrap:
-                    sourcePanelDesktop.flexWrap ||
-                    mergedPanelStyle.desktop?.flexWrap ||
-                    "nowrap",
-                  gap:
-                    sourcePanelDesktop.gap ||
-                    sourcePanelDesktop.rowGap ||
-                    mergedPanelStyle.desktop?.gap ||
-                    "32px"
-                },
-                tablet: {
-                  ...mergedPanelTablet,
-                  flexDirection:
-                    mergedPanelTablet.flexDirection ||
-                    "column",
-                  alignItems:
-                    mergedPanelTablet.alignItems ||
-                    "flex-start",
-                  flexWrap:
-                    mergedPanelTablet.flexWrap ||
-                    "wrap",
-                  width:
-                    mergedPanelTablet.width ||
-                    "100%"
-                },
-                mobile: {
-                  ...mergedPanelMobile,
-                  flexDirection:
-                    mergedPanelMobile.flexDirection ||
-                    "column",
-                  alignItems:
-                    mergedPanelMobile.alignItems ||
-                    "stretch",
-                  flexWrap:
-                    mergedPanelMobile.flexWrap ||
-                    "wrap",
-                  width:
-                    mergedPanelMobile.width ||
-                    "100%"
-                }
-              }
             },
 
-            children: [
-          {
-            id: uuidv4(),
+            ...(payload?.text
+              ? [
+                  {
+                    id: uuidv4(),
 
-            type: "flexItem" as const,
+                    type: "text" as const,
 
-            data: {
-
-              props: {},
-
-              style: {
-
-                desktop: {
-
-                  flex: "1 1 520px",
-                  minWidth: "0",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  justifyContent: "center",
-                  gap: "12px"
-                },
-
-                tablet: {},
-
-                mobile: {
-                  width: "100%"
-                }
-              }
-            },
-
-            children: [
-              {
-                id: uuidv4(),
-
-                type: "title" as const,
-
-                data: {
-
-                  props: {
-
-                    content:
-                      payload?.title ||
-                      "Ready to get started?",
-
-                    segments:
-                      payload?.titleSegments || []
-                  },
-
-                  style: {
-
-                    ...leftTitleStyle
-                  }
-                },
-
-                children: []
-              },
-              ...(payload?.text
-                ? [
-                    {
-                      id: uuidv4(),
-
-                      type: "text" as const,
-
-                      data: {
-
-                        props: {
-
-                          content:
-                            payload.text
-                        },
-
-                        style: {
-
-                          ...leftTextStyle
-                        }
+                    data: {
+                      props: {
+                        content: payload.text
                       },
 
-                      children: []
-                    }
-                  ]
-                : [])
-            ]
+                      style: {
+                        ...leftTextStyle
+                      }
+                    },
+
+                    children: []
+                  } as Block
+                ]
+              : [])
+          ]
+        },
+
+        {
+          id: uuidv4(),
+
+          type: "flexItem" as const,
+
+          data: {
+            props: {},
+
+            style: {
+              desktop: {
+                flex: "0 0 auto",
+                width: "auto",
+                display: "flex",
+                flexDirection: "row",
+                flexWrap: "wrap",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: "12px"
+              },
+
+              tablet: {
+                width: "auto",
+                maxWidth: "100%",
+                display: "flex",
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: "12px"
+              },
+
+              mobile: {
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "12px"
+              }
+            }
           },
-          {
-            id: uuidv4(),
 
-            type: "flexItem" as const,
-
-            data: {
-
-              props: {},
-
-              style: {
-
-                desktop: {
-
-                  flex: "0 0 auto",
-                  width: "auto",
-                  alignSelf: "center",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center"
-                },
-
-                tablet: {},
-
-                mobile: {
-                  width: "100%",
-                  alignSelf: "stretch"
-                }
-              }
-            },
-
-            children: [
-              {
-                id: uuidv4(),
-
-                type: "flex" as const,
-
-                data: {
-
-                  props: {
-                    direction: "row"
-                  },
-
-                  style: {
-
-                    ...mergedActionRowStyle,
-                    desktop: {
-                      ...(mergedActionRowStyle.desktop || {}),
-                      alignItems:
-                        mergedActionRowStyle.desktop?.alignItems ||
-                        "center",
-                      justifyContent:
-                        mergedActionRowStyle.desktop?.justifyContent ||
-                        "center"
-                    },
-                    tablet: {
-                      ...mergedActionRowTablet,
-                      width:
-                        mergedActionRowTablet.width ||
-                        "100%"
-                    },
-                    mobile: {
-                      ...mergedActionRowMobile,
-                      width:
-                        mergedActionRowMobile.width ||
-                        "100%",
-                      flexDirection:
-                        mergedActionRowMobile.flexDirection ||
-                        "column"
-                    }
-                  }
-                },
-
-                children:
-                  actionItems
-              }
-            ]
-          }
-            ]
-          }
-        ]
-      }
-    ]
-  };
-
-  console.log(
-    "CTA_FINAL_TREE",
-    {
-      type:
-        finalBlock.type,
-      sectionStyle:
-        finalBlock.data?.style,
-      containerType:
-        finalBlock.children?.[0]?.type,
-      containerStyle:
-        finalBlock.children?.[0]?.data?.style,
-      panelType:
-        finalBlock.children?.[0]?.children?.[0]?.type,
-      panelStyle:
-        finalBlock.children?.[0]?.children?.[0]?.data?.style,
-      panelChildren:
-        finalBlock.children?.[0]?.children?.[0]?.children?.map(
-          child => child.type
-        )
+          children: actionButtons
+        }
+      ]
     }
-  );
+  ]
+};
 
   return finalBlock;
 };

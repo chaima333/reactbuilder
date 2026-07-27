@@ -487,10 +487,7 @@ const createInsightItem = (
                     ]
                   }
                 : null
-            ].filter(
-              (child): child is Block =>
-                child !== null
-            )
+            ].filter(child => child !== null) as Block[]
           }
         : null,
       item.ctaLabel && actionElement

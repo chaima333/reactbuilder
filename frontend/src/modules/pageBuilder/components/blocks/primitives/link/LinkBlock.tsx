@@ -56,40 +56,6 @@ export const LinkBlock = ({
     "Link";
 
   // =====================================
-  // DEBUG
-  // =====================================
-
-  if (
-    context.mode ===
-    "editor"
-  ) {
-
-    console.log(
-      "🔥 LINK BLOCK",
-      props
-    );
-  }
-
-  console.log(
-    "LINK_RENDER_REPORT",
-    {
-      label:
-        props.label,
-      text:
-        props.text,
-      href:
-        props.href,
-      url:
-        props.url,
-      link:
-        props.link,
-      targetHref,
-      renderedAs:
-        "a"
-    }
-  );
-
-  // =====================================
   // RENDER
   // =====================================
   return (

@@ -1,111 +1,47 @@
-import { blockRegistry } from "../blockRegistry";
-import { BlockType } from "../../types/page.types";
+﻿import {
+  blockRegistry
+} from "../blockRegistry";
+
+import type {
+  BlockType
+} from "../../types/page.types";
 
 export const canDrop = (
   parentType: string,
   childType: string
 ): boolean => {
+  const childConfig =
+    blockRegistry[childType];
+
+  if (!childConfig) {
+    return false;
+  }
 
   if (parentType === "root") {
-
-    const childConfig =
-      blockRegistry[childType];
-
     return (
-      childConfig?.rules
+      childConfig.rules
         ?.allowedParents
-        ?.includes("root")
-      ?? false
+        ?.includes("root") ??
+      false
     );
   }
 
   const parentConfig =
     blockRegistry[parentType];
 
-  const childConfig =
-    blockRegistry[childType];
-
   if (
     !parentConfig ||
-    !childConfig
+    !parentConfig.isContainer
   ) {
     return false;
   }
 
-  if (!parentConfig.isContainer) {
-    return false;
-  }
+  const allowedChildren =
+    parentConfig.rules
+      ?.allowedChildren ??
+    [];
 
-  // =====================
-  // FLEX
-  // =====================
-
-  if (parentType === "flex") {
-    return childType === "flexItem";
-  }
-
-  if (parentType === "flexItem") {
-
-    if (
-      childType === "flexItem"
-    ) {
-      return false;
-    }
-
-    return (
-      parentConfig.allowedChildren?.includes(
-        childType as any
-      ) ?? true
-    );
-  }
-
-  // =====================
-  // GRID
-  // =====================
-
-  if (parentType === "grid") {
-    return childType === "gridItem";
-  }
-
-  if (parentType === "gridItem") {
-
-    if (
-      childType === "gridItem"
-    ) {
-      return false;
-    }
-
-    return (
-      parentConfig.allowedChildren?.includes(
-        childType as any
-      ) ?? true
-    );
-  }
-
-  // =====================
-  // GENERIC
-  // =====================
-
-  const isAllowedByParent =
-    parentConfig.allowedChildren?.includes(
-      childType as BlockType
-    );
-
-  if (!isAllowedByParent) {
-    return false;
-  }
-
-  const allowedParents =
-    childConfig.rules?.allowedParents;
-
-  if (
-    allowedParents &&
-    !allowedParents.includes(
-      parentType as BlockType
-    )
-  ) {
-    return false;
-  }
-
-  return true;
+  return allowedChildren.includes(
+    childType as BlockType
+  );
 };

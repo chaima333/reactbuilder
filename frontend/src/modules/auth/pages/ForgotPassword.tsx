@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import axios from 'axios';
+import { API_URL } from '../../../config/api';
 
 export const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -17,16 +18,12 @@ export const ForgotPassword = () => {
     setLoading(true);
     setError('');
 
-    // تحديد الـ Base URL مع الاحتياط (Fallback) في حال لم يقرأ VITE_API_URL
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://backend-rmfq.onrender.com';
 
     try {
-      await axios.post(`${apiUrl}/api/auth/forgot-password`, { email });
+      await axios.post(`${API_URL}/auth/forgot-password`, { email });
       setSent(true);
     } catch (err: any) {
-      // أمنياً، من المستحسن دائماً إظهار رسالة النجاح حتى لو البريد غير موجود
-      // لمنع الـ Email Enumeration
-      setSent(true);
+      setError(err?.response?.data?.message || 'Erreur lors de la demande de réinitialisation');
     } finally {
       setLoading(false);
     }

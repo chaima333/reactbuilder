@@ -191,38 +191,6 @@ const templateColumns =
         };
       };
 
-      console.log(
-        "GRID DOM STRUCTURE",
-        {
-          grid:
-            {
-              ...pickComputed(
-                gridElement
-              ),
-              gridTemplateColumns:
-                window.getComputedStyle(
-                  gridElement
-                ).gridTemplateColumns
-            },
-          children:
-            Array.from(
-              gridElement.children
-            ).map(
-              child => ({
-                outer:
-                  pickComputed(
-                    child
-                  ),
-                inner:
-                  child.firstElementChild
-                    ? pickComputed(
-                        child.firstElementChild
-                      )
-                    : null
-              })
-            )
-        }
-      );
     },
     [
       block?.children?.length,
@@ -333,81 +301,16 @@ margin:
       "all 0.15s ease-in-out"
   };
 
-  console.log(
-    "GRID_CONTAINER_STYLE",
-    {
-      id:
-        block?.id,
-      rawDesktop:
-        source?.style?.desktop,
-      resolved,
-      finalStyle:
-        gridStyle
-    }
-  );
-
   if (
     device === "mobile"
   ) {
-    console.log(
-      "MOBILE_LAYOUT_REPORT",
-      {
-        blockType:
-          "grid",
-        id:
-          block?.id,
-        semanticTypeAncestor:
-          findSemanticType(
-            block
-          ),
-        childTypes:
-          (block?.children || []).map(
-            (child: any) => child.type
-          ),
-        rawStyle:
-          source?.style,
-        rawDesktop:
-          source?.style?.desktop,
-        rawMobile:
-          source?.style?.mobile,
-        resolvedStyle:
-          resolved,
-        finalStyle:
-          gridStyle
-      }
-    );
+
   }
 
   if (
     device === "tablet"
   ) {
-    console.log(
-      "TABLET_LAYOUT_REPORT",
-      {
-        blockType:
-          "grid",
-        id:
-          block?.id,
-        semanticTypeAncestor:
-          findSemanticType(
-            block
-          ),
-        childTypes:
-          (block?.children || []).map(
-            (child: any) => child.type
-          ),
-        rawStyle:
-          source?.style,
-        rawDesktop:
-          source?.style?.desktop,
-        rawTablet:
-          source?.style?.tablet,
-        resolvedStyle:
-          resolved,
-        finalStyle:
-          gridStyle
-      }
-    );
+
   }
 
   // =====================================

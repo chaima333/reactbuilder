@@ -30,6 +30,17 @@ import {
 import {
   extractTitleSegments
 } from "./typography/extractTitleSegments";
+import {
+  applyImportedResponsiveDefaults
+} from "./applyImportedResponsiveDefaults";
+import {
+  flattenImportedNestedCards
+} from "./flattenImportedNestedCards";
+import { normalizeCanonicalContainers } from "../../normalize/normalizeCanonicalContainers";
+import {
+  createVisitorAuthBlockFromForm,
+  detectImportedAuthForm
+} from "./authFormDetection";
 
 // =====================================================
 // CANONICAL BLOCK TYPES
@@ -47,6 +58,11 @@ const COMPILER_BLOCK_TYPES = {
   IMAGE: "image",
   BUTTON: "button",
   LINK: "link",
+  SELECT: "select",
+  INPUT: "input",
+  TEXTAREA: "textarea",
+  FORM: "form"
+
 } as const;
 
 // =====================================================
@@ -75,6 +91,8 @@ export type ImportHtmlResult = {
 
 export type ImportHtmlContext = {
   layout?: "page" | "navbar" | "footer";
+  sourceFile?: string;
+  slug?: string;
 };
 
 // =====================================================
@@ -98,6 +116,9 @@ let activeSemanticReplacementMap =
     HTMLElement,
     SerializedBlock
   >();
+
+let activeImportContext:
+  ImportHtmlContext = {};
 
 let activeSemanticClaimRoots =
   new WeakSet<HTMLElement>();
@@ -372,63 +393,6 @@ const recordTrackedFallbackBranch = (
   );
 };
 
-const collectDescendantsByTypeForBlock = (
-  block: any,
-  type: string
-) => {
-  const results: any[] = [];
-
-  const walk = (
-    node: any
-  ) => {
-    if (!node) {
-      return;
-    }
-
-    if (node.type === type) {
-      results.push(node);
-    }
-
-    for (const child of node.children || []) {
-      walk(child);
-    }
-  };
-
-  walk(block);
-
-  return results;
-};
-
-const logEmptyTextBlocks = (
-  stage: string,
-  blocks: any[] = [],
-  path = "blocks",
-  parentType = "root"
-) => {
-
-  blocks.forEach((block, index) => {
-
-    const blockPath =
-      `${path}[${index}]`;
-
-    const content =
-      block?.data?.props?.content;
-
-    if (
-      block?.type === "text" &&
-      !content?.trim()
-    ) {
-
-    }
-
-    logEmptyTextBlocks(
-      stage,
-      block?.children || [],
-      `${blockPath}.children`,
-      block?.type || parentType
-    );
-  });
-};
 
 const SECTION_CHILD_LAYOUT_TYPES =
   new Set<string>([
@@ -489,6 +453,86 @@ const sanitizeSectionLayoutStyle = (
 
   delete nextStyle.desktop.paddingTop;
   delete nextStyle.desktop.paddingBottom;
+
+  return nextStyle;
+};
+
+const sanitizeImportedFlowStyle = (
+  style: Record<string, any> = {},
+  options: {
+    sectionRoot?: boolean;
+    centered?: boolean;
+    preserveMaxWidth?: boolean;
+  } = {}
+) => {
+  const nextStyle = {
+    ...style,
+    desktop: {
+      ...(style.desktop || {})
+    },
+    tablet: {
+      ...(style.tablet || {})
+    },
+    mobile: {
+      ...(style.mobile || {})
+    }
+  };
+
+  const scrubDevice = (
+    deviceStyle: Record<string, any>
+  ) => {
+    delete deviceStyle.left;
+    delete deviceStyle.right;
+    delete deviceStyle.top;
+    delete deviceStyle.bottom;
+    delete deviceStyle.inset;
+    delete deviceStyle.insetInline;
+    delete deviceStyle.insetInlineStart;
+    delete deviceStyle.insetInlineEnd;
+    delete deviceStyle.translate;
+    delete deviceStyle.transform;
+
+    if (
+      deviceStyle.position === "absolute" ||
+      deviceStyle.position === "fixed"
+    ) {
+      deviceStyle.position = "relative";
+    }
+
+    return deviceStyle;
+  };
+
+  scrubDevice(nextStyle.desktop);
+  scrubDevice(nextStyle.tablet);
+  scrubDevice(nextStyle.mobile);
+
+  if (options.sectionRoot) {
+    nextStyle.desktop.width = "100%";
+    nextStyle.desktop.boxSizing = "border-box";
+    nextStyle.desktop.overflow = "visible";
+    delete nextStyle.desktop.maxWidth;
+    delete nextStyle.desktop.marginLeft;
+    delete nextStyle.desktop.marginRight;
+  }
+
+  if (options.centered) {
+    nextStyle.desktop.width = "100%";
+    nextStyle.desktop.marginLeft = "auto";
+    nextStyle.desktop.marginRight = "auto";
+  }
+
+  if (!options.preserveMaxWidth && !options.sectionRoot) {
+    const maxWidth =
+      nextStyle.desktop.maxWidth;
+
+    if (
+      !maxWidth ||
+      maxWidth === "none" ||
+      maxWidth === "0px"
+    ) {
+      nextStyle.desktop.maxWidth = "100%";
+    }
+  }
 
   return nextStyle;
 };
@@ -580,10 +624,65 @@ const getElementDomPath = (
     ">"
   );
 };
+const isVisibleTextCoverageElement = (
+  element: HTMLElement
+) => {
+  const view =
+    getElementWindow(element);
 
+  let current:
+    HTMLElement | null =
+      element;
+
+  while (current) {
+    const tagName =
+      getTagNameLower(current);
+
+    if (
+      current.hidden ||
+      current.getAttribute(
+        "aria-hidden"
+      ) === "true" ||
+      [
+        "template",
+        "option"
+      ].includes(tagName)
+    ) {
+      return false;
+    }
+
+    const computed =
+      view.getComputedStyle(
+        current
+      );
+
+    if (
+      computed.display === "none" ||
+      computed.visibility === "hidden" ||
+      computed.visibility === "collapse" ||
+      Number.parseFloat(
+        computed.opacity || "1"
+      ) === 0
+    ) {
+      return false;
+    }
+
+    current =
+      current.parentElement;
+  }
+
+  return true;
+};
 const collectDomTextNodes = (
-  root: HTMLElement
+  root: HTMLElement,
+  options: {
+    respectVisibility?: boolean;
+  } = {}
 ): ImportTextNodeDiagnostic[] => {
+  const {
+    respectVisibility = true
+  } = options;
+
   const walker =
     root.ownerDocument.createTreeWalker(
       root,
@@ -599,9 +698,24 @@ const collectDomTextNodes = (
   while (node) {
     const parent =
       node.parentElement;
+
     const text =
       normalizeDiagnosticText(
         node.textContent || ""
+      );
+
+    const excludedSourceElement =
+      !!parent?.closest(
+        `
+          script,
+          style,
+          noscript,
+          svg,
+          template,
+          option,
+          [hidden],
+          [aria-hidden="true"]
+        `
       );
 
     if (
@@ -611,20 +725,31 @@ const collectDomTextNodes = (
       ) &&
       !shouldSkipTextCoverageElement(
         parent
+      ) &&
+      !excludedSourceElement &&
+      (
+        !respectVisibility ||
+        isVisibleTextCoverageElement(
+          parent
+        )
       )
     ) {
       texts.push({
         text,
+
         tag:
           parent.tagName,
+
         className:
           getElementClassName(
             parent
           ),
+
         path:
           getElementDomPath(
             parent
           ),
+
         parentText:
           normalizeDiagnosticText(
             parent.textContent || ""
@@ -799,21 +924,34 @@ const logSemanticDroppedText = (
       [emittedBlock]
     );
 
-  if (
-    droppedTextNodes.length
-  ) {
-   
-  }
+ if (
+  droppedTextNodes.length
+) {
+  console.error(
+    "❌ SEMANTIC_DROPPED_TEXT",
+    {
+      sourceTag:
+        element.tagName,
+
+      sourceClass:
+        getElementClassName(
+          element
+        ),
+
+      emittedBlockId:
+        emittedBlock.id,
+
+      emittedBlockType:
+        emittedBlock.type,
+
+      droppedTextNodes
+    }
+  );
+}
 
   return droppedTextNodes;
 };
 
-const textMatchesAcademyTraining = (
-  value = ""
-) =>
-  /\b(academy|training|formation|formations|certification|certifie|certifi|duration|dur[eé]e|mode|cours|atelier|programme)\b/i.test(
-    value
-  );
 
 const parseCssNumericValue = (
   value: unknown
@@ -1273,199 +1411,6 @@ const findTrustLikeSections = (
       }
     );
 
-const summarizeTrustSectionDom = (
-  section: HTMLElement,
-  semanticBlocks: any[]
-) => {
-  const selector =
-    ".partners, .partners-row, .logos, .logo-cloud, .trust, .trust-logos, .clients, .references, [class*='partner'], [class*='logo'], [class*='trust'], [class*='client'], [class*='reference']";
-
-  const possibleLogoContainer =
-    section.matches(selector)
-      ? section
-      : section.querySelector(
-          selector
-        );
-
-  const repeatedShortTextItems =
-    Array.from(
-      section.querySelectorAll(
-        "span, div, a, li"
-      )
-    )
-      .map(element => ({
-        tag:
-          element.tagName,
-        className:
-          getElementClassName(
-            element as HTMLElement
-          ),
-        text:
-          normalizeDiagnosticText(
-            element.textContent || ""
-          )
-      }))
-      .filter(
-        item =>
-          item.text.length > 0 &&
-          item.text.length <= 80
-      );
-
-  const claimedBy =
-    semanticBlocks
-      .filter(
-        (entry: any) =>
-          entry?.claimedNode?.element ===
-          section
-      )
-      .map((entry: any) => ({
-        semantic:
-          entry.emitted?.meta?.semanticType,
-        emittedType:
-          entry.emitted?.type
-      }));
-
-  const descendantClaimedBy =
-    semanticBlocks
-      .filter((entry: any) => {
-        const claimedElement =
-          entry?.claimedNode?.element;
-
-        return (
-          claimedElement &&
-          claimedElement !== section &&
-          section.contains(
-            claimedElement
-          )
-        );
-      })
-      .map((entry: any) => ({
-        semantic:
-          entry.emitted?.meta?.semanticType,
-        tag:
-          entry.claimedNode?.element?.tagName,
-        className:
-          getElementClassName(
-            entry.claimedNode?.element
-          )
-      }));
-
-  const heading =
-    section.querySelector(
-      "h1, h2, h3"
-    );
-  const paragraph =
-    section.querySelector(
-      "p"
-    );
-
-  return {
-    tag:
-      section.tagName,
-    className:
-      getElementClassName(
-        section
-      ),
-    path:
-      Array.from(
-        section.parentElement?.children || []
-      ).indexOf(section),
-    directChildren:
-      getSafeChildren(section).map(child => ({
-        tag:
-          child.tagName,
-        className:
-          getElementClassName(
-            child
-          ),
-        text:
-          normalizeDiagnosticText(
-            child.textContent || ""
-          ).slice(0, 120)
-      })),
-    headingText:
-      normalizeDiagnosticText(
-        heading?.textContent || ""
-      ),
-    paragraphText:
-      normalizeDiagnosticText(
-        paragraph?.textContent || ""
-      ),
-    repeatedShortTextItems,
-    possibleLogoContainerSelector:
-      selector,
-    possibleLogoContainer:
-      possibleLogoContainer
-        ? {
-            tag:
-              possibleLogoContainer.tagName,
-            className:
-              getElementClassName(
-                possibleLogoContainer as HTMLElement
-              ),
-            text:
-              normalizeDiagnosticText(
-                possibleLogoContainer.textContent || ""
-              ).slice(0, 160)
-          }
-        : null,
-    logoCandidateCount:
-      possibleLogoContainer
-        ? getSafeChildren(
-            possibleLogoContainer as HTMLElement
-          ).length
-        : 0,
-    claimedBy,
-    descendantClaimedBy,
-    whyNoSemanticResolverClaimedIt:
-      claimedBy.length
-        ? null
-        : "No registered resolver returned a semantic block for this top-level section."
-  };
-};
-
-const summarizeDiagnosticBlockTree = (
-  block: any,
-  depth = 0
-): any => {
-  if (!block) {
-    return null;
-  }
-
-  if (depth > 5) {
-    return {
-      id:
-        block.id,
-      type:
-        block.type,
-      truncated:
-        true
-    };
-  }
-
-  return {
-    id:
-      block.id,
-    type:
-      block.type,
-    semantic:
-      block.meta?.semanticType,
-    childTypes:
-      (block.children || []).map(
-        (child: any) => child?.type
-      ),
-    children:
-      (block.children || [])
-        .filter(Boolean)
-        .map((child: any) =>
-          summarizeDiagnosticBlockTree(
-            child,
-            depth + 1
-          )
-        )
-  };
-};
-
 const logTrustSectionAnalysis = (
   label: string,
   body: HTMLElement,
@@ -1495,11 +1440,17 @@ const createFallbackFlexWrapper = (
   data: {
     props: {},
     style:
-      withDesktopFallback(
-        style,
+      sanitizeImportedFlowStyle(
+        withDesktopFallback(
+          style,
+          {
+            display: "flex",
+            flexDirection: "column"
+          }
+        ),
         {
-          display: "flex",
-          flexDirection: "column"
+          centered: true,
+          preserveMaxWidth: true
         }
       )
   },
@@ -1518,11 +1469,13 @@ const createFallbackFlexWrapper = (
       data: {
         props: {},
         style:
-          withDesktopFallback(
-            style,
-            {
-              width: "100%"
-            }
+          sanitizeImportedFlowStyle(
+            withDesktopFallback(
+              style,
+              {
+                width: "100%"
+              }
+            )
           )
       },
 
@@ -1839,12 +1792,19 @@ const isTransparentColor = (
   const normalized =
     normalizeCssPaint(value);
 
+  if (
+    normalized.includes("url(") ||
+    normalized.includes("gradient(")
+  ) {
+    return false;
+  }
+
   return (
     !normalized ||
     normalized === "transparent" ||
     normalized === "none" ||
     normalized === "rgba(0,0,0,0)" ||
-    normalized.includes("rgba(0,0,0,0)")
+    normalized === "rgb(0,0,0,0)"
   );
 };
 
@@ -1857,8 +1817,15 @@ const hasRealPaint = (
   const backgroundColor =
     styles.backgroundColor || "";
 
+  const backgroundImage =
+    styles.backgroundImage || "";
+
   return (
     !isTransparentColor(backgroundColor) ||
+    (
+      !!backgroundImage &&
+      backgroundImage !== "none"
+    ) ||
     (
       !isTransparentColor(background) &&
       (
@@ -1897,30 +1864,106 @@ const findNearestPaintSource = (
   return null;
 };
 
-const resolvePaintSource = (
-  element: HTMLElement,
+const resolveOwnPaintSource = (
   computed: ReturnType<typeof extractComputedStyles>
 ) =>
   hasRealPaint(computed)
     ? computed
-    : findNearestPaintSource(
-        element.parentElement
-      );
+    : null;
+
+
+const getRgbParts = (
+  value?: string
+) => {
+  const match =
+    String(value || "").match(
+      /rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)/
+    );
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    r: Number(match[1]),
+    g: Number(match[2]),
+    b: Number(match[3])
+  };
+};
+
+const isLightColor = (
+  value?: string
+) => {
+  const rgb =
+    getRgbParts(value);
+
+  if (!rgb) {
+    return false;
+  }
+
+  return (
+    (rgb.r + rgb.g + rgb.b) / 3 >= 180
+  );
+};
+
+const isDarkPaint = (
+  value?: string
+) => {
+  const rgb =
+    getRgbParts(value);
+
+  if (!rgb) {
+    return false;
+  }
+
+  return (
+    (rgb.r + rgb.g + rgb.b) / 3 <= 90
+  );
+};
+
+const resolveSectionPaintSource = (
+  element: HTMLElement,
+  computed: ReturnType<typeof extractComputedStyles>
+) => {
+  const ownPaint =
+    resolveOwnPaintSource(computed);
+
+  if (ownPaint) {
+    return ownPaint;
+  }
+
+  const inheritedPaint =
+    findNearestPaintSource(
+      element.parentElement
+    );
+
+  const inheritedIsDark =
+    isDarkPaint(
+      inheritedPaint?.backgroundColor
+    ) ||
+    isDarkPaint(
+      inheritedPaint?.background
+    );
+
+  const textIsLight =
+    isLightColor(
+      computed.color
+    );
+
+  return inheritedIsDark && textIsLight
+    ? inheritedPaint
+    : null;
+};
 
 const getPreservedWrapperDesktopStyle = (
   computed: ReturnType<typeof extractComputedStyles>,
   layoutDesktop: Record<string, any> = {},
   element?: HTMLElement
 ) => {
-  const paintSource =
-    element
-      ? resolvePaintSource(
-          element,
-          computed
-        )
-      : hasRealPaint(computed)
-        ? computed
-        : null;
+ const paintSource =
+  hasRealPaint(computed)
+    ? computed
+    : null;
 
   return {
     ...layoutDesktop,
@@ -1932,6 +1975,22 @@ const getPreservedWrapperDesktopStyle = (
     backgroundColor:
       paintSource?.backgroundColor ||
       layoutDesktop.backgroundColor,
+
+    backgroundImage:
+      paintSource?.backgroundImage ||
+      layoutDesktop.backgroundImage,
+
+    backgroundSize:
+      paintSource?.backgroundSize ||
+      layoutDesktop.backgroundSize,
+
+    backgroundPosition:
+      paintSource?.backgroundPosition ||
+      layoutDesktop.backgroundPosition,
+
+    backgroundRepeat:
+      paintSource?.backgroundRepeat ||
+      layoutDesktop.backgroundRepeat,
 
     border:
       computed.border ||
@@ -2519,7 +2578,106 @@ const emitFallbackLabel = (
     }
   ];
 };
+const makeImportedFormChildShrinkSafe = (
+  block: SerializedBlock
+): SerializedBlock => {
+  const isFormControl =
+    [
+      COMPILER_BLOCK_TYPES.INPUT,
+      COMPILER_BLOCK_TYPES.SELECT,
+      COMPILER_BLOCK_TYPES.TEXTAREA,
+      COMPILER_BLOCK_TYPES.BUTTON
+    ].includes(
+      block.type as any
+    );
 
+  const isLayout =
+    [
+      COMPILER_BLOCK_TYPES.FLEX,
+      COMPILER_BLOCK_TYPES.GRID
+    ].includes(
+      block.type as any
+    );
+
+  const currentStyle =
+    block.data?.style || {};
+
+  const nextStyle = {
+    ...currentStyle,
+
+    desktop: {
+      ...(currentStyle.desktop || {}),
+
+      ...(isFormControl || isLayout
+        ? {
+            width: "100%"
+          }
+        : {}),
+
+      maxWidth:
+        "100%",
+
+      minWidth:
+        "0",
+
+      boxSizing:
+        "border-box"
+    },
+
+    tablet: {
+      ...(currentStyle.tablet || {}),
+
+      ...(isFormControl || isLayout
+        ? {
+            width: "100%"
+          }
+        : {}),
+
+      maxWidth:
+        "100%",
+
+      minWidth:
+        "0",
+
+      boxSizing:
+        "border-box"
+    },
+
+    mobile: {
+      ...(currentStyle.mobile || {}),
+
+      ...(isFormControl || isLayout
+        ? {
+            width: "100%"
+          }
+        : {}),
+
+      maxWidth:
+        "100%",
+
+      minWidth:
+        "0",
+
+      boxSizing:
+        "border-box"
+    }
+  };
+
+  return {
+    ...block,
+
+    data: {
+      ...(block.data || {}),
+      style:
+        nextStyle
+    },
+
+    children:
+      (block.children || []).map(
+        makeImportedFormChildShrinkSafe
+      )
+  };
+};
 const emitFallbackFormContainer = (
   element: HTMLElement,
   path: (string | number)[],
@@ -2539,10 +2697,11 @@ const emitFallbackFormContainer = (
       element
     );
 
-  const children =
-    getSafeChildren(
-      element
-    ).flatMap(
+const children =
+  getSafeChildren(
+    element
+  )
+    .flatMap(
       (child, index) =>
         parseDomToBlocks(
           child,
@@ -2551,8 +2710,11 @@ const emitFallbackFormContainer = (
           warnings,
           matcherHits
         )
+    )
+    .map(
+      makeImportedFormChildShrinkSafe
     );
-
+    
   if (!children.length) {
     return [];
   }
@@ -2560,15 +2722,22 @@ const emitFallbackFormContainer = (
   const isGrid =
     computed.display === "grid";
 
-  const blockType =
-    isGrid
-      ? COMPILER_BLOCK_TYPES.GRID
-      : COMPILER_BLOCK_TYPES.FLEX;
+const isFlex =
+  computed.display === "flex" ||
+  computed.display === "inline-flex";
 
-  const itemType =
-    isGrid
-      ? COMPILER_BLOCK_TYPES.GRID_ITEM
-      : COMPILER_BLOCK_TYPES.FLEX_ITEM;
+  const blockType =
+  COMPILER_BLOCK_TYPES.FORM;
+
+const layoutType =
+  isGrid
+    ? COMPILER_BLOCK_TYPES.GRID
+    : COMPILER_BLOCK_TYPES.FLEX;
+
+const itemType =
+  isGrid
+    ? COMPILER_BLOCK_TYPES.GRID_ITEM
+    : COMPILER_BLOCK_TYPES.FLEX_ITEM;
 
   const leftMargin =
     Number.parseFloat(
@@ -2590,63 +2759,43 @@ const emitFallbackFormContainer = (
       leftMargin === rightMargin
     );
 
-  const desktopStyle = {
-    ...(extracted.desktop || {}),
-    display:
-      computed.display ||
-      "block",
-    flexDirection:
-      computed.display === "flex" ||
-      computed.display === "inline-flex"
-        ? computed.flexDirection
-        : "column",
-    flexWrap:
-      computed.flexWrap,
-    gridTemplateColumns:
-      isGrid
-        ? computed.gridTemplateColumns
-        : undefined,
-    justifyContent:
-      computed.justifyContent,
-    alignItems:
-      computed.alignItems,
-    gap:
-      computed.gap !== "normal"
-        ? computed.gap
-        : extracted.desktop?.gap,
-    width:
-      computed.width ||
-      extracted.desktop?.width,
-    maxWidth:
-      computed.maxWidth !== "none"
-        ? computed.maxWidth
-        : extracted.desktop?.maxWidth,
-    marginLeft:
-      centered
-        ? "auto"
-        : computed.marginLeft,
-    marginRight:
-      centered
-        ? "auto"
-        : computed.marginRight,
-    padding:
-      computed.padding,
-    border:
-      computed.border,
-    borderRadius:
-      computed.borderRadius,
-    background:
-      computed.background,
-    backgroundColor:
-      computed.backgroundColor,
-    color:
-      computed.color,
-    boxSizing:
-      computed.boxSizing ||
-      "border-box",
-    minWidth: "0",
-    overflow: "visible"
-  };
+const desktopStyle = {
+  ...(extracted.desktop || {}),
+
+  display: "block",
+
+  width: "100%",
+  maxWidth: "100%",
+
+  marginLeft:
+    centered
+      ? "auto"
+      : computed.marginLeft,
+
+  marginRight:
+    centered
+      ? "auto"
+      : computed.marginRight,
+
+  padding: "0",
+  border: "none",
+  borderRadius: "0",
+  background: "transparent",
+  backgroundColor: "transparent",
+  boxShadow: "none",
+
+  color:
+    computed.color,
+
+  boxSizing:
+    "border-box",
+
+  minWidth:
+    "0",
+
+  overflow:
+    "visible"
+};
 
   return [
     {
@@ -2656,7 +2805,16 @@ const emitFallbackFormContainer = (
       ),
       type: blockType,
       data: {
-        props: {},
+  props: {
+    renderMode: "imported",
+    formId: "",
+
+    successMessage:
+      "Your message has been sent successfully.",
+
+    errorMessage:
+      "Failed to send your message."
+  },
         style: {
           ...extracted,
           desktop: desktopStyle,
@@ -2682,38 +2840,232 @@ const emitFallbackFormContainer = (
           }
         }
       },
-      children: children.map(
-        (child, index) => ({
-          id: generateNodeId(
-            itemType,
-            [
-              ...path,
-              "form-item",
-              index
-            ]
-          ),
-          type: itemType,
-          data: {
-            props: {},
-            style: {
-              desktop: {
-                width: "100%",
-                minWidth: "0",
-                boxSizing: "border-box"
-              },
-              tablet: {
-                width: "100%",
-                minWidth: "0"
-              },
-              mobile: {
-                width: "100%",
-                minWidth: "0"
-              }
-            }
-          },
-          children: [child]
-        })
+
+
+     children: [
+  {
+    id: generateNodeId(
+      layoutType,
+      [
+        ...path,
+        "form-layout"
+      ]
+    ),
+
+    type: layoutType,
+
+    data: {
+      props: {
+        semantic: {
+          semanticIntent:
+            "IMPORTED_FORM_LAYOUT"
+        }
+      },
+
+      style: {
+        desktop: {
+          display:
+            isGrid
+              ? "grid"
+              : "flex",
+            flexDirection:
+  isGrid
+    ? undefined
+    : isFlex
+      ? (
+          computed.flexDirection ||
+          "column"
+        )
+      : "column",
+
+flexWrap:
+  isGrid
+    ? undefined
+    : isFlex
+      ? (
+          computed.flexWrap ||
+          "nowrap"
+        )
+      : "nowrap",
+
+          gridTemplateColumns:
+            isGrid
+              ? (
+                  computed.gridTemplateColumns &&
+                  computed.gridTemplateColumns !==
+                    "none"
+                    ? makeGridTracksShrinkSafe(
+                        computed.gridTemplateColumns
+                      )
+                    : "minmax(0, 1fr)"
+                )
+              : undefined,
+
+         justifyContent:
+  isGrid || isFlex
+    ? (
+        computed.justifyContent ||
+        "flex-start"
       )
+    : "flex-start",
+
+alignItems:
+  isGrid || isFlex
+    ? (
+        computed.alignItems ||
+        "stretch"
+      )
+    : "stretch",
+
+          gap:
+            computed.gap &&
+            computed.gap !== "normal"
+              ? computed.gap
+              : "16px",
+
+          width:
+            "100%",
+
+          maxWidth:
+            "100%",
+
+          minWidth:
+            "0",
+
+          boxSizing:
+            "border-box",
+
+          overflow:
+            "visible"
+        },
+
+        tablet: {
+          display:
+            isGrid
+              ? "grid"
+              : "flex",
+
+          flexDirection:
+            isGrid
+              ? undefined
+              : "column",
+
+          gridTemplateColumns:
+            isGrid
+              ? "minmax(0, 1fr)"
+              : undefined,
+
+          width:
+            "100%",
+
+          maxWidth:
+            "100%",
+
+          minWidth:
+            "0",
+
+          boxSizing:
+            "border-box"
+        },
+
+        mobile: {
+          display:
+            isGrid
+              ? "grid"
+              : "flex",
+
+          flexDirection:
+            isGrid
+              ? undefined
+              : "column",
+
+          gridTemplateColumns:
+            isGrid
+              ? "minmax(0, 1fr)"
+              : undefined,
+
+          width:
+            "100%",
+
+          maxWidth:
+            "100%",
+
+          minWidth:
+            "0",
+
+          boxSizing:
+            "border-box"
+        }
+      }
+    },
+
+    children: children.map(
+      (
+        child,
+        index
+      ) => ({
+        id: generateNodeId(
+          itemType,
+          [
+            ...path,
+            "form-layout",
+            "item",
+            index
+          ]
+        ),
+
+        type:
+          itemType,
+
+        data: {
+          props: {},
+
+          style: {
+            desktop: {
+              width:
+                "100%",
+
+              minWidth:
+                "0",
+
+              boxSizing:
+                "border-box",
+
+              overflow:
+                "visible"
+            },
+
+            tablet: {
+              width:
+                "100%",
+
+              minWidth:
+                "0",
+
+              boxSizing:
+                "border-box"
+            },
+
+            mobile: {
+              width:
+                "100%",
+
+              minWidth:
+                "0",
+
+              boxSizing:
+                "border-box"
+            }
+          }
+        },
+
+        children: [
+          child
+        ]
+      })
+    )
+  }
+]
     }
   ];
 };
@@ -2800,12 +3152,6 @@ const emitFallbackStructuredContainer = (
         .map((child, index) => {
           const childStyle =
             extractLayoutStyles(child);
-
-          /**
-           * مهم:
-           * نقصّو الارتفاعات فقط في mission-grid left column
-           * أما quote/card نخليو minHeight متاعها كان موجود.
-           */
           const childClassName =
             getElementClassName(child).toLowerCase();
 
@@ -2894,7 +3240,8 @@ const emitFallbackStructuredContainer = (
     if (
       gridChildren.length >= 2
     ) {
-      const containerDesktopStyle = {
+      const containerDesktopStyle = sanitizeImportedFlowStyle({
+        desktop: {
         ...preservedWrapperStyle,
 
         display: "grid",
@@ -2978,7 +3325,11 @@ const emitFallbackStructuredContainer = (
         minWidth: "0",
         boxSizing: "border-box",
         overflow: "visible"
-      };
+        }
+      }, {
+        centered: true,
+        preserveMaxWidth: true
+      }).desktop;
 
       return [
         {
@@ -3272,6 +3623,168 @@ const getImportedListMarker = (
 
   return "•";
 };
+
+const makeImportedFlowTextSafe = (
+  input: Record<string, any> = {},
+  kind: "title" | "text"
+) => {
+  const next = {
+    ...input,
+
+    desktop: {
+      ...(input.desktop || {})
+    },
+
+    tablet: {
+      ...(input.tablet || {})
+    },
+
+    mobile: {
+      ...(input.mobile || {})
+    }
+  };
+
+  (
+    [
+      "desktop",
+      "tablet",
+      "mobile"
+    ] as const
+  ).forEach(device => {
+    const style =
+      next[device];
+
+    delete style.height;
+    delete style.minHeight;
+    delete style.maxHeight;
+
+    delete style.top;
+    delete style.right;
+    delete style.bottom;
+    delete style.left;
+    delete style.inset;
+    delete style.transform;
+    delete style.translate;
+
+    if (
+      style.position === "absolute" ||
+      style.position === "fixed"
+    ) {
+      style.position =
+        "relative";
+    }
+
+    style.display =
+      "block";
+
+    style.width =
+      "100%";
+
+    style.maxWidth =
+      "100%";
+
+    style.minWidth =
+      "0";
+
+    style.whiteSpace =
+      "normal";
+
+    style.wordBreak =
+      "normal";
+
+    style.overflowWrap =
+      "break-word";
+
+    style.overflow =
+      "visible";
+
+    style.boxSizing =
+      "border-box";
+
+    const rawLineHeight =
+      String(
+        style.lineHeight || ""
+      )
+        .trim()
+        .toLowerCase();
+
+    const numericLineHeight =
+      Number.parseFloat(
+        rawLineHeight
+      );
+
+    const fontSize =
+      Number.parseFloat(
+        String(
+          style.fontSize || ""
+        )
+      );
+
+    const isUnitless =
+      /^-?\d*\.?\d+$/.test(
+        rawLineHeight
+      );
+
+    const minimumRatio =
+      kind === "title"
+        ? 1.05
+        : 1.2;
+
+    const fallbackLineHeight =
+      kind === "title"
+        ? "1.12"
+        : "1.5";
+
+    const unsafeUnitless =
+      isUnitless &&
+      Number.isFinite(
+        numericLineHeight
+      ) &&
+      numericLineHeight <
+        minimumRatio;
+
+    const unsafePixels =
+      rawLineHeight.endsWith(
+        "px"
+      ) &&
+      Number.isFinite(
+        numericLineHeight
+      ) &&
+      Number.isFinite(
+        fontSize
+      ) &&
+      fontSize > 0 &&
+      numericLineHeight /
+        fontSize <
+        minimumRatio;
+
+    if (
+      !rawLineHeight ||
+      rawLineHeight === "normal" ||
+      unsafeUnitless ||
+      unsafePixels
+    ) {
+      style.lineHeight =
+        fallbackLineHeight;
+    }
+
+    if (
+      kind === "title" &&
+      (
+        !style.marginBottom ||
+        style.marginBottom ===
+          "0px" ||
+        style.marginBottom ===
+          "0"
+      )
+    ) {
+      style.marginBottom =
+        "8px";
+    }
+  });
+
+  return next;
+};
 function fallbackCompileElement(
   element: HTMLElement,
   path: (string | number)[],
@@ -3408,19 +3921,11 @@ if (
   const computedSection =
   extractComputedStyles(element);
 
-const shouldInheritSectionPaint =
-  tagName === "section" &&
-  !hasRealPaint(
+const sectionPaintSource =
+  resolveSectionPaintSource(
+    element,
     computedSection
   );
-
-const sectionPaintSource =
-  shouldInheritSectionPaint
-    ? resolvePaintSource(
-        element,
-        computedSection
-      )
-    : computedSection;
 
 const sectionStyle =
   sanitizeSectionLayoutStyle(
@@ -3430,18 +3935,32 @@ const sectionStyle =
 
   sectionStyle.desktop = {
     ...(sectionStyle.desktop || {}),
-
-  background:
+background:
   sectionPaintSource?.background ||
-  sectionStyle.desktop?.background,
+  undefined,
 
 backgroundColor:
   sectionPaintSource?.backgroundColor ||
-  sectionStyle.desktop?.backgroundColor,
+  undefined,
+
+backgroundImage:
+  sectionPaintSource?.backgroundImage ||
+  undefined,
+
+backgroundSize:
+  sectionPaintSource?.backgroundSize ||
+  undefined,
+
+backgroundPosition:
+  sectionPaintSource?.backgroundPosition ||
+  undefined,
+
+backgroundRepeat:
+  sectionPaintSource?.backgroundRepeat ||
+  undefined,
 
 color:
   computedSection.color ||
-  sectionPaintSource?.color ||
   sectionStyle.desktop?.color,
 
     padding:
@@ -3463,7 +3982,12 @@ color:
 
       data: {
         props: {},
-        style: sectionStyle
+        style: sanitizeImportedFlowStyle(
+          sectionStyle,
+          {
+            sectionRoot: true
+          }
+        )
       },
 
       children: compiledChildren
@@ -3518,10 +4042,13 @@ if (
             : {})
         },
 
-        style:
-          extractTypographyStyles(
-            element
-          )
+       style:
+  makeImportedFlowTextSafe(
+    extractTypographyStyles(
+      element
+    ),
+    "title"
+  )
       },
 
       children: []
@@ -3531,6 +4058,53 @@ if (
 if (
   tagName === "form"
 ) {
+  const authDetection =
+    detectImportedAuthForm({
+      form:
+        element as HTMLFormElement,
+      pageTitle:
+        activeImportContext.slug,
+      slug:
+        activeImportContext.slug,
+      sourceFile:
+        activeImportContext.sourceFile
+    });
+
+  if (
+    authDetection.kind &&
+    authDetection.confidence === "strong"
+  ) {
+    matcherHits.push({
+      matcher:
+        `auth-form:${authDetection.kind}`,
+      score:
+        authDetection.reasons.length,
+      path:
+        path.join(".")
+    });
+
+    return [
+      createVisitorAuthBlockFromForm(
+        element as HTMLFormElement,
+        path,
+        authDetection.kind
+      ) as SerializedBlock
+    ];
+  }
+
+  if (
+    authDetection.confidence === "weak"
+  ) {
+    warnings.push({
+      type:
+        "AUTH_FORM_DETECTION_WEAK",
+      message:
+        `Weak auth-form evidence ignored: ${authDetection.reasons.join(", ")}`,
+      path:
+        path.join(".")
+    });
+  }
+
   return emitFallbackFormContainer(
     element,
     path,
@@ -3570,22 +4144,40 @@ if (
     ];
   }
 
-  const displayText =
-    input.getAttribute(
-      "placeholder"
-    ) ||
-    input.value ||
-    input.getAttribute(
-      "value"
-    ) ||
-    "";
-
   return [
-    createVisualFormControl(
-      input,
-      path,
-      displayText
-    )
+    {
+      id: generateNodeId(
+        COMPILER_BLOCK_TYPES.INPUT,
+        path
+      ),
+
+      type:
+        COMPILER_BLOCK_TYPES.INPUT,
+
+      data: {
+        props: {
+          type:
+            input.type ||
+            "text",
+
+          placeholder:
+            input.getAttribute(
+              "placeholder"
+            ) ||
+            input.getAttribute(
+              "aria-label"
+            ) ||
+            ""
+        },
+
+        style:
+          mergeExtractedVisualStyles(
+            input
+          )
+      },
+
+      children: []
+    }
   ];
 }
 
@@ -3595,22 +4187,36 @@ if (
   const textarea =
     element as HTMLTextAreaElement;
 
-  const displayText =
-    textarea.getAttribute(
-      "placeholder"
-    ) ||
-    textarea.value ||
-    textarea.textContent ||
-    "";
-
   return [
-    createVisualFormControl(
-      textarea,
-      path,
-      normalizeDiagnosticText(
-        displayText
-      )
-    )
+    {
+      id: generateNodeId(
+        COMPILER_BLOCK_TYPES.TEXTAREA,
+        path
+      ),
+
+      type:
+        COMPILER_BLOCK_TYPES.TEXTAREA,
+
+      data: {
+        props: {
+          placeholder:
+            textarea.getAttribute(
+              "placeholder"
+            ) ||
+            textarea.getAttribute(
+              "aria-label"
+            ) ||
+            ""
+        },
+
+        style:
+          mergeExtractedVisualStyles(
+            textarea
+          )
+      },
+
+      children: []
+    }
   ];
 }
 
@@ -3619,24 +4225,49 @@ if (
 ) {
   const select =
     element as HTMLSelectElement;
+    
 
-  const selectedOption =
-    select.selectedOptions?.[0] ||
-    select.options?.[0];
+  const options =
+    Array.from(
+      select.options || []
+    )
+      .map(option =>
+        normalizeDiagnosticText(
+          option.textContent ||
+          option.value ||
+          ""
+        )
+      )
+      .filter(Boolean);
 
-  const displayText =
-    normalizeDiagnosticText(
-      selectedOption?.textContent ||
-      selectedOption?.value ||
-      ""
-    );
+  const placeholder =
+    options[0] ||
+    "Select option";
 
   return [
-    createVisualFormControl(
-      select,
-      path,
-      displayText
-    )
+    {
+      id: generateNodeId(
+        COMPILER_BLOCK_TYPES.SELECT,
+        path
+      ),
+
+      type:
+        COMPILER_BLOCK_TYPES.SELECT,
+
+      data: {
+        props: {
+          placeholder,
+          options
+        },
+
+        style:
+          mergeExtractedVisualStyles(
+            select
+          )
+      },
+
+      children: []
+    }
   ];
 }
 if (
@@ -3965,6 +4596,177 @@ if (
     }
   ];
 }
+// =========================================
+// MIXED INLINE PARAGRAPH
+// =========================================
+
+const mixedInlineTextTags =
+  new Set([
+    "p",
+    "blockquote",
+    "figcaption"
+  ]);
+
+const inlineFormattingTags =
+  new Set([
+    "span",
+    "strong",
+    "b",
+    "em",
+    "i",
+    "u",
+    "mark",
+    "small",
+    "sup",
+    "sub",
+    "br"
+  ]);
+
+const directMixedTextNodes =
+  getMeaningfulDirectTextNodes(
+    element
+  );
+
+const safeInlineChildren =
+  getSafeChildren(
+    element
+  );
+
+const isMixedInlineParagraph =
+  mixedInlineTextTags.has(
+    tagName
+  ) &&
+  directMixedTextNodes.length > 0 &&
+  safeInlineChildren.length > 0 &&
+  safeInlineChildren.every(
+    child =>
+      inlineFormattingTags.has(
+        getTagNameLower(
+          child
+        )
+      )
+  ) &&
+  !element.querySelector(
+    "a, button, img, input, select, textarea"
+  );
+
+if (
+  isMixedInlineParagraph
+) {
+  const content =
+    normalizeDiagnosticText(
+      element.textContent || ""
+    );
+
+  if (!content) {
+    return [];
+  }
+
+  const typographyStyle =
+    extractTypographyStyles(
+      element
+    );
+
+  return [
+    {
+      id:
+        generateNodeId(
+          COMPILER_BLOCK_TYPES.TEXT,
+          path
+        ),
+
+      type:
+        COMPILER_BLOCK_TYPES.TEXT,
+
+      data: {
+        props: {
+          content
+        },
+
+        style: {
+          ...typographyStyle,
+
+          desktop: {
+            ...(typographyStyle.desktop || {}),
+
+            display:
+              "block",
+
+            width:
+              "100%",
+
+            maxWidth:
+              "100%",
+
+            minWidth:
+              "0",
+
+            whiteSpace:
+              "normal",
+
+            wordBreak:
+              "normal",
+
+            overflowWrap:
+              "break-word",
+
+            boxSizing:
+              "border-box",
+
+            overflow:
+              "visible"
+          },
+
+          tablet: {
+            ...(typographyStyle.tablet || {}),
+
+            display:
+              "block",
+
+            width:
+              "100%",
+
+            maxWidth:
+              "100%",
+
+            minWidth:
+              "0",
+
+            whiteSpace:
+              "normal",
+
+            overflowWrap:
+              "break-word"
+          },
+
+          mobile: {
+            ...(typographyStyle.mobile || {}),
+
+            display:
+              "block",
+
+            width:
+              "100%",
+
+            maxWidth:
+              "100%",
+
+            minWidth:
+              "0",
+
+            whiteSpace:
+              "normal",
+
+            overflowWrap:
+              "break-word"
+          }
+        }
+      },
+
+      children: []
+    }
+  ];
+}
   // =========================================
   // TEXT
   // =========================================
@@ -4005,11 +4807,29 @@ if (
   ].includes(
     tagName
   )
-
 ) 
-
 {
+const directTextComputed =
+  extractComputedStyles(
+    element
+  );
 
+const hasVisualTextBox =
+  (
+    tagName === "div" ||
+    tagName === "span"
+  ) &&
+  (
+    hasRealPaint(
+      directTextComputed
+    ) ||
+    directTextComputed.padding !==
+      "0px" ||
+    directTextComputed.border !==
+      "0px none rgb(0, 0, 0)" ||
+    directTextComputed.borderRadius !==
+      "0px"
+  );
   return [
     {
       id:
@@ -4029,26 +4849,30 @@ if (
             element.textContent?.trim() || ""
         },
 
- style:
-  (
-    tagName === "span" ||
-    (
-      normalizeDiagnosticText(
-        element.textContent || ""
-      ).length <= 40 &&
-      !normalizeDiagnosticText(
-        element.textContent || ""
-      ).includes(" ")
-    )
-  )
-    ? makeShortInlineTextSafe(
-        extractTypographyStyles(
-          element
-        )
-      )
-    : extractTypographyStyles(
+style:
+  hasVisualTextBox
+    ? mergeExtractedVisualStyles(
         element
       )
+    : (
+        tagName === "span" ||
+        (
+          normalizeDiagnosticText(
+            element.textContent || ""
+          ).length <= 40 &&
+          !normalizeDiagnosticText(
+            element.textContent || ""
+          ).includes(" ")
+        )
+      )
+        ? makeShortInlineTextSafe(
+            extractTypographyStyles(
+              element
+            )
+          )
+        : extractTypographyStyles(
+            element
+          )
       },
 
       children: []
@@ -5161,9 +5985,18 @@ const containerStyle = {
       marginLeft: "auto",
       marginRight: "auto",
       boxSizing: "border-box",
-      minWidth: "0"
-    }
+    minWidth: "0"
+  }
   };
+
+  const safeContainerStyle =
+    sanitizeImportedFlowStyle(
+      containerStyle,
+      {
+        centered: true,
+        preserveMaxWidth: true
+      }
+    );
   const createContainerSegment = (
     segmentChildren:
       SerializedBlock[],
@@ -5193,7 +6026,7 @@ const containerStyle = {
       data: {
         props: {},
         style:
-          containerStyle
+          safeContainerStyle
       },
       children: [
         {
@@ -5363,6 +6196,197 @@ function compileServiceContainerInDomOrder(
   return orderedBlocks;
 }
 
+const isIndustriesImportDebugContext = (
+  context: ImportHtmlContext
+) =>
+  [
+    context.slug,
+    context.sourceFile
+  ]
+    .filter(Boolean)
+    .some(value =>
+      String(value)
+        .toLowerCase()
+        .includes("industries")
+    );
+
+const collectSemanticTypesFromBlocks = (
+  blocks: any[] = []
+): string[] => {
+  const result: string[] = [];
+
+  const walk = (
+    items: any[]
+  ) => {
+    items.forEach(
+      item => {
+        const semanticType =
+          item?.meta?.semanticType ||
+          item?.data?.meta?.semanticType ||
+          item?.data?.props?.semantic?.semanticIntent;
+
+        if (semanticType) {
+          result.push(
+            String(semanticType)
+          );
+        }
+
+        if (
+          item?.children?.length
+        ) {
+          walk(
+            item.children
+          );
+        }
+      }
+    );
+  };
+
+  walk(blocks);
+
+  return Array.from(
+    new Set(result)
+  );
+};
+
+const hasSemanticType = (
+  blocks: any[] = [],
+  allowedTypes: string[]
+) =>
+  collectSemanticTypesFromBlocks(
+    blocks
+  ).some(type =>
+    allowedTypes.includes(type)
+  );
+
+const ensureSemanticHeroPreserved = (
+  blocks: SerializedBlock[],
+  semanticBlocks: any[]
+): SerializedBlock[] => {
+  if (
+    hasSemanticType(
+      blocks,
+      ["HERO_SECTION", "HERO"]
+    )
+  ) {
+    return blocks;
+  }
+
+  const emittedHero =
+    semanticBlocks.find(
+      entry => {
+        const semanticType =
+          entry?.emitted?.meta?.semanticType ||
+          entry?.semanticResult?.type;
+
+        return (
+          semanticType === "HERO_SECTION" ||
+          semanticType === "HERO"
+        );
+      }
+    )?.emitted as SerializedBlock | undefined;
+
+  if (!emittedHero) {
+    return blocks;
+  }
+
+  return [
+    emittedHero,
+    ...blocks
+  ];
+};
+const stripFounderPortraitInnerShell = (
+  block: SerializedBlock
+): SerializedBlock => {
+  const sourceStyle =
+    block.data?.style || {};
+
+  const responsiveStyle = {
+    ...sourceStyle,
+
+    desktop: {
+      ...(sourceStyle.desktop || {})
+    },
+
+    tablet: {
+      ...(sourceStyle.tablet || {})
+    },
+
+    mobile: {
+      ...(sourceStyle.mobile || {})
+    }
+  };
+
+  (
+    [
+      "desktop",
+      "tablet",
+      "mobile"
+    ] as const
+  ).forEach(
+    device => {
+      const style =
+        responsiveStyle[device];
+
+      delete style.background;
+      delete style.backgroundColor;
+      delete style.backgroundImage;
+      delete style.backgroundSize;
+      delete style.backgroundPosition;
+      delete style.backgroundRepeat;
+
+      delete style.border;
+      delete style.borderTop;
+      delete style.borderRight;
+      delete style.borderBottom;
+      delete style.borderLeft;
+      delete style.borderRadius;
+
+      delete style.boxShadow;
+
+      delete style.padding;
+      delete style.paddingTop;
+      delete style.paddingRight;
+      delete style.paddingBottom;
+      delete style.paddingLeft;
+
+      delete style.aspectRatio;
+
+      style.width =
+        "100%";
+
+      style.maxWidth =
+        "100%";
+
+      style.minWidth =
+        "0";
+
+      style.height =
+        "100%";
+
+      style.boxSizing =
+        "border-box";
+
+      style.overflow =
+        "visible";
+    }
+  );
+
+  return {
+    ...block,
+
+    data: {
+      ...(block.data || {}),
+
+      props: {
+        ...(block.data?.props || {})
+      },
+
+      style:
+        responsiveStyle
+    }
+  };
+};
 function emitGridContainer(
   element: HTMLElement,
   path: (string | number)[],
@@ -5509,69 +6533,207 @@ return [
       style: normalizedStyle
     },
 
-    children: getSafeChildren(element).map(
-      (child, index) => {
-        const childLayoutStyle =
-          extractLayoutStyles(child);
-          delete childLayoutStyle.desktop.height;
-delete childLayoutStyle.desktop.minHeight;
-delete childLayoutStyle.desktop.maxHeight;
+   children:
+  getSafeChildren(element)
+    .filter(
+      hasMeaningfulElementContent
+    )
+    .map(
+      (
+        child,
+        index
+      ) => {
+        const childPath = [
+          ...path,
+          index
+        ];
 
-childLayoutStyle.desktop.overflow =
-  "visible";
+        const childClassTokens =
+          getElementClassName(
+            child
+          )
+            .toLowerCase()
+            .split(/\s+/)
+            .filter(Boolean);
 
-        const fallbackChildren =
-          fallbackCompileElement(
-            child,
-            [...path, index],
-            ownership,
-            warnings,
-            matcherHits
+        const isFounderPortraitChild =
+          childClassTokens.includes(
+            "founder-portrait"
           );
 
-        return {
-          id: generateNodeId(
-            COMPILER_BLOCK_TYPES.GRID_ITEM,
-            [...path, index]
-          ),
+        const childLayoutStyle =
+          extractLayoutStyles(
+            child
+          );
 
-          type: COMPILER_BLOCK_TYPES.GRID_ITEM,
+        childLayoutStyle.desktop = {
+          ...(childLayoutStyle.desktop || {})
+        };
+
+        childLayoutStyle.tablet = {
+          ...(childLayoutStyle.tablet || {})
+        };
+
+        childLayoutStyle.mobile = {
+          ...(childLayoutStyle.mobile || {})
+        };
+
+      if (
+  !isFounderPortraitChild
+) {
+  delete childLayoutStyle
+    .desktop.height;
+
+  delete childLayoutStyle
+    .desktop.minHeight;
+
+  delete childLayoutStyle
+    .desktop.maxHeight;
+
+  childLayoutStyle
+    .desktop.overflow =
+      "visible";
+}
+
+ const shouldCompileGridItemContents =
+  !isFounderPortraitChild &&
+  ![
+    "A",
+    "BUTTON",
+    "FORM"
+  ].includes(
+    child.tagName
+  ) &&
+  getSafeChildren(
+    child
+  ).length > 0;
+
+const rawCompiledChildren =
+  shouldCompileGridItemContents
+    ? compileDirectChildNodes(
+        child,
+        childPath,
+        ownership,
+        warnings,
+        matcherHits
+      )
+    : fallbackCompileElement(
+        child,
+        childPath,
+        ownership,
+        warnings,
+        matcherHits
+      );
+
+const compiledChildren =
+  isFounderPortraitChild
+    ? rawCompiledChildren.map(
+        stripFounderPortraitInnerShell
+      )
+    : rawCompiledChildren;
+
+        if (
+          isFounderPortraitChild
+        ) {
+          console.info(
+            "HTML_IMPORT_FOUNDER_PORTRAIT_GRID_CHILD",
+            {
+              sourceFile:
+                activeImportContext
+                  .sourceFile,
+
+              path:
+                childPath.join("."),
+
+              compiledTypes:
+                compiledChildren.map(
+                  block =>
+                    block.type
+                )
+            }
+          );
+        }
+
+        return {
+          id:
+            generateNodeId(
+              COMPILER_BLOCK_TYPES
+                .GRID_ITEM,
+              childPath
+            ),
+
+          type:
+            COMPILER_BLOCK_TYPES
+              .GRID_ITEM,
 
           data: {
             props: {},
 
             style: {
               desktop: {
-                ...(childLayoutStyle.desktop || {}),
+                ...(childLayoutStyle
+                  .desktop || {}),
+
                 width: "100%",
                 maxWidth: "100%",
                 minWidth: "0",
-                overflow: "visible",
-                boxSizing: "border-box"
+                overflow:
+  isFounderPortraitChild
+    ? (
+        childLayoutStyle
+          .desktop?.overflow ||
+        "hidden"
+      )
+    : "visible",
+                boxSizing:
+                  "border-box"
               },
 
               tablet: {
+                ...(isFounderPortraitChild
+                  ? childLayoutStyle
+                      .tablet || {}
+                  : {}),
+
                 width: "100%",
                 maxWidth: "100%",
                 minWidth: "0",
-                overflow: "visible",
-                boxSizing: "border-box"
+                overflow:
+  isFounderPortraitChild
+    ? "hidden"
+    : "visible",
+                boxSizing:
+                  "border-box"
               },
 
               mobile: {
+                ...(isFounderPortraitChild
+                  ? childLayoutStyle
+                      .mobile || {}
+                  : {}),
+
                 width: "100%",
                 maxWidth: "100%",
                 minWidth: "0",
-                overflow: "visible",
-                boxSizing: "border-box"
+                overflow:
+  isFounderPortraitChild
+    ? "hidden"
+    : "visible",
+                boxSizing:
+                  "border-box"
               }
             }
           },
 
-          children: fallbackChildren
+          children:
+            compiledChildren
         };
       }
     )
+    .filter(
+      item =>
+        item.children.length > 0
+     )
   }
 ];
 }
@@ -5582,6 +6744,51 @@ function parseDomToBlocksInternal(
   warnings: ImportWarning[],
   matcherHits: ImportMatcherHit[]
 ): SerializedBlock[] {
+  if (
+    element.tagName === "P" &&
+    !element.querySelector(
+      "a,button,img,input,select,textarea,form"
+    )
+  ) {
+    const content =
+      normalizeDiagnosticText(
+        element.textContent || ""
+      );
+
+    if (content) {
+      const typography =
+        extractTypographyStyles(
+          element
+        );
+      return [
+        {
+          id:
+            generateNodeId(
+              COMPILER_BLOCK_TYPES.TEXT,
+              path
+            ),
+
+          type:
+            COMPILER_BLOCK_TYPES.TEXT,
+
+          data: {
+            props: {
+              content
+            },
+
+           style:
+  makeImportedFlowTextSafe(
+    typography,
+    "text"
+  )
+          },
+
+          children: []
+        }
+      ];
+    }
+  }
+
   const semanticReplacement =
     activeSemanticReplacementMap.get(element);
 
@@ -5703,8 +6910,11 @@ function parseDomToBlocksInternal(
           props: {
             content: text
           },
+          style: makeImportedFlowTextSafe(
+  extractTypographyStyles(element),
+  "title"
+)
 
-          style: extractTypographyStyles(element)
         },
 
         children: []
@@ -6074,18 +7284,59 @@ const hasVisibleBackground = (
   );
 };
 
-const extractDocumentSurface = (
-  body: HTMLElement
+const isDefaultWhiteSurface = (
+  surface: ImportedDocumentSurface
+) => {
+  const normalizedColor =
+    String(
+      surface.backgroundColor || ""
+    )
+      .replace(/\s+/g, "")
+      .toLowerCase();
+
+  const normalizedImage =
+    String(
+      surface.backgroundImage || ""
+    )
+      .trim()
+      .toLowerCase();
+
+  return (
+    (
+      normalizedColor === "rgb(255,255,255)" ||
+      normalizedColor === "#fff" ||
+      normalizedColor === "#ffffff"
+    ) &&
+    (
+      !normalizedImage ||
+      normalizedImage === "none"
+    )
+  );
+};
+
+const surfaceFromElement = (
+  element: HTMLElement
 ): ImportedDocumentSurface => {
   const computed =
-    getElementWindow(body).getComputedStyle(body);
+    getElementWindow(
+      element
+    ).getComputedStyle(
+      element
+    );
+
   const hasColor =
-    !isTransparentColor(computed.backgroundColor);
+    !isTransparentColor(
+      computed.backgroundColor
+    );
+
   const hasImage =
     computed.backgroundImage &&
     computed.backgroundImage !== "none";
 
-  if (!hasColor && !hasImage) {
+  if (
+    !hasColor &&
+    !hasImage
+  ) {
     return {};
   }
 
@@ -6114,12 +7365,155 @@ const extractDocumentSurface = (
         : undefined
   };
 };
+const extractDocumentSurface = (
+  body: HTMLElement
+): ImportedDocumentSurface => {
+  const getSurfaceFromElement = (
+    element: HTMLElement
+  ): ImportedDocumentSurface => {
+    const computed =
+      getElementWindow(element).getComputedStyle(element);
 
-/**
- * The builder has no DOM body of its own for an imported page. Any theme paint
- * declared on the source body would otherwise disappear and transparent root
- * sections would render on the editor's white canvas.
- */
+    const hasColor =
+      !isTransparentColor(computed.backgroundColor);
+
+    const hasImage =
+      computed.backgroundImage &&
+      computed.backgroundImage !== "none";
+
+    if (!hasColor && !hasImage) {
+      return {};
+    }
+
+    return {
+      background:
+        computed.background || undefined,
+
+      backgroundColor:
+        hasColor
+          ? computed.backgroundColor
+          : undefined,
+
+      backgroundImage:
+        hasImage
+          ? computed.backgroundImage
+          : undefined,
+
+      backgroundPosition:
+        hasImage
+          ? computed.backgroundPosition
+          : undefined,
+
+      backgroundRepeat:
+        hasImage
+          ? computed.backgroundRepeat
+          : undefined,
+
+      backgroundSize:
+        hasImage
+          ? computed.backgroundSize
+          : undefined
+    };
+  };
+
+  const isDefaultWhiteSurface = (
+    surface: ImportedDocumentSurface
+  ) => {
+    const value =
+      String(
+        surface.backgroundColor ||
+        surface.background ||
+        ""
+      )
+        .replace(/\s+/g, "")
+        .toLowerCase();
+
+    return (
+      value === "rgb(255,255,255)" ||
+      value === "rgba(255,255,255,1)" ||
+      value === "#fff" ||
+      value === "#ffffff" ||
+      value === "white"
+    );
+  };
+
+  const bodySurface =
+    getSurfaceFromElement(body);
+
+  if (
+    hasVisibleBackground(bodySurface) &&
+    !isDefaultWhiteSurface(bodySurface)
+  ) {
+    return bodySurface;
+  }
+
+  const candidates =
+    Array.from(
+      body.querySelectorAll(
+        "main, .page, .site, .wrapper, .app, header, section"
+      )
+    ).filter(
+      (element): element is HTMLElement =>
+        element instanceof HTMLElement
+    );
+
+  for (const candidate of candidates) {
+    const surface =
+      getSurfaceFromElement(candidate);
+
+    if (
+      hasVisibleBackground(surface) &&
+      !isDefaultWhiteSurface(surface)
+    ) {
+      return surface;
+    }
+  }
+
+  return bodySurface;
+};
+
+const isDefaultWhitePaint = (
+  value?: string
+) => {
+  const normalized =
+    String(value || "")
+      .replace(/\s+/g, "")
+      .toLowerCase();
+
+  return (
+    normalized === "white" ||
+    normalized === "#fff" ||
+    normalized === "#ffffff" ||
+    normalized === "rgb(255,255,255)" ||
+    normalized === "rgba(255,255,255,1)"
+  );
+};
+
+const hasDefaultWhiteBackground = (
+  style: Record<string, any> = {}
+) =>
+  isDefaultWhitePaint(style.backgroundColor) ||
+  isDefaultWhitePaint(style.background);
+
+const blockHasLightText = (
+  block: any
+): boolean => {
+  const desktop =
+    block?.data?.style?.desktop ||
+    block?.style?.desktop ||
+    {};
+
+  if (
+    isLightColor(desktop.color)
+  ) {
+    return true;
+  }
+
+  return (
+    block?.children || []
+  ).some(blockHasLightText);
+};
+
 const applyDocumentSurfaceToRootSections = (
   blocks: SerializedBlock[],
   surface: ImportedDocumentSurface
@@ -6128,7 +7522,7 @@ const applyDocumentSurfaceToRootSections = (
     return blocks;
   }
 
-  return blocks.map(block => {
+  return blocks.map((block) => {
     if (block.type !== "section") {
       return block;
     }
@@ -6136,7 +7530,23 @@ const applyDocumentSurfaceToRootSections = (
     const desktop =
       block.data?.style?.desktop || {};
 
-    if (hasVisibleBackground(desktop)) {
+    const localHasBackground =
+      hasVisibleBackground(desktop);
+
+    const localIsWhite =
+      hasDefaultWhiteBackground(desktop);
+
+    const textIsLight =
+      blockHasLightText(block);
+
+    const needsSurface =
+      !localHasBackground ||
+      (
+        localIsWhite &&
+        textIsLight
+      );
+
+    if (!needsSurface) {
       return block;
     }
 
@@ -6147,8 +7557,31 @@ const applyDocumentSurfaceToRootSections = (
         style: {
           ...(block.data?.style || {}),
           desktop: {
-            ...surface,
-            ...desktop
+            ...desktop,
+
+            background:
+              surface.background ||
+              desktop.background,
+
+            backgroundColor:
+              surface.backgroundColor ||
+              desktop.backgroundColor,
+
+            backgroundImage:
+              surface.backgroundImage ||
+              desktop.backgroundImage,
+
+            backgroundSize:
+              surface.backgroundSize ||
+              desktop.backgroundSize,
+
+            backgroundPosition:
+              surface.backgroundPosition ||
+              desktop.backgroundPosition,
+
+            backgroundRepeat:
+              surface.backgroundRepeat ||
+              desktop.backgroundRepeat
           }
         }
       }
@@ -6156,11 +7589,196 @@ const applyDocumentSurfaceToRootSections = (
   });
 };
 
+const enforceFinalImportedTitleFlow = (
+  blocks: SerializedBlock[]
+): SerializedBlock[] => {
+  return (blocks || []).map(
+    block => {
+      const children =
+        enforceFinalImportedTitleFlow(
+          block.children || []
+        );
+
+      if (
+        block.type !==
+        COMPILER_BLOCK_TYPES.TITLE
+      ) {
+        return {
+          ...block,
+          children
+        };
+      }
+
+      const sourceStyle =
+        block.data?.style || {};
+
+      const hasResponsiveStyle =
+        "desktop" in sourceStyle ||
+        "tablet" in sourceStyle ||
+        "mobile" in sourceStyle;
+
+      const nextStyle:
+        Record<string, any> =
+        hasResponsiveStyle
+          ? {
+              ...sourceStyle,
+
+              desktop: {
+                ...(sourceStyle.desktop || {})
+              },
+
+              tablet: {
+                ...(sourceStyle.tablet || {})
+              },
+
+              mobile: {
+                ...(sourceStyle.mobile || {})
+              }
+            }
+          : {
+              desktop: {
+                ...sourceStyle
+              },
+
+              tablet: {},
+
+              mobile: {}
+            };
+
+      (
+        [
+          "desktop",
+          "tablet",
+          "mobile"
+        ] as const
+      ).forEach(
+        device => {
+          const style =
+            nextStyle[device];
+
+          delete style.height;
+          delete style.minHeight;
+          delete style.maxHeight;
+
+          const fontSize =
+            Number.parseFloat(
+              String(
+                style.fontSize || ""
+              )
+            );
+
+          const rawLineHeight =
+            String(
+              style.lineHeight || ""
+            )
+              .trim()
+              .toLowerCase();
+
+          const lineHeight =
+            Number.parseFloat(
+              rawLineHeight
+            );
+
+          const isPixelLineHeight =
+            rawLineHeight.endsWith(
+              "px"
+            );
+
+          const isUnitlessLineHeight =
+            /^-?\d*\.?\d+$/.test(
+              rawLineHeight
+            );
+
+          const pixelRatio =
+            isPixelLineHeight &&
+            Number.isFinite(fontSize) &&
+            fontSize > 0 &&
+            Number.isFinite(lineHeight)
+              ? lineHeight / fontSize
+              : null;
+
+          const unsafePixelLineHeight =
+            pixelRatio !== null &&
+            pixelRatio < 0.9;
+
+          const unsafeUnitlessLineHeight =
+            isUnitlessLineHeight &&
+            Number.isFinite(lineHeight) &&
+            lineHeight < 0.9;
+
+          if (
+            !rawLineHeight ||
+            rawLineHeight === "normal" ||
+            unsafePixelLineHeight ||
+            unsafeUnitlessLineHeight
+          ) {
+            style.lineHeight =
+              "1.05";
+          }
+
+          style.display =
+            "block";
+
+          style.width =
+            "100%";
+
+          style.maxWidth =
+            "100%";
+
+          style.minWidth =
+            "0";
+
+          style.whiteSpace =
+            "normal";
+
+          style.wordBreak =
+            "normal";
+
+          style.overflowWrap =
+            "break-word";
+
+          style.overflow =
+            "visible";
+
+          style.boxSizing =
+            "border-box";
+
+          if (
+            !style.marginBottom ||
+            style.marginBottom === "0" ||
+            style.marginBottom === "0px"
+          ) {
+            style.marginBottom =
+              "8px";
+          }
+        }
+      );
+
+      return {
+        ...block,
+
+        data: {
+          ...(block.data || {}),
+
+          props: {
+            ...(block.data?.props || {})
+          },
+
+          style:
+            nextStyle
+        },
+
+        children
+      } as SerializedBlock;
+    }
+  );
+};
 export async function importHtmlDocument(
   htmlString: string,
   context: ImportHtmlContext = {}
 ): Promise<ImportHtmlResult> {
   totalImportedNodes = 0;
+  activeImportContext = context;
   elementIds = new WeakMap();
   activeBodyChildTwoContainer = null;
   activeContainerChildCompileTraces =
@@ -6719,10 +8337,14 @@ return css;
     sandboxFrame.style.top = "-99999px";
     sandboxFrame.style.width = "1440px";
     sandboxFrame.style.height = "2400px";
-    sandboxFrame.style.border = "0";
-    sandboxFrame.style.visibility = "hidden";
-    document.body.appendChild(sandboxFrame);
+   sandboxFrame.style.border = "0";
+sandboxFrame.style.visibility = "hidden";
+sandboxFrame.style.opacity = "0";
+sandboxFrame.style.pointerEvents = "none";
 
+document.body.appendChild(
+  sandboxFrame
+);
     const iframeDocument =
       sandboxFrame.contentDocument;
 
@@ -6774,10 +8396,13 @@ return css;
     const documentSurface =
       extractDocumentSurface(body);
 
-    const originalDomTextNodes =
-      collectDomTextNodes(
-        body
-      );
+   const originalDomTextNodes =
+  collectDomTextNodes(
+    body,
+    {
+      respectVisibility: false
+    }
+  );
 
   
 
@@ -6801,7 +8426,6 @@ return css;
       getElementId,
       context
     );
-
 
 logTrustSectionAnalysis(
   "after-semantic-pipeline",
@@ -6872,10 +8496,37 @@ getSafeChildren(body).forEach(
           return claimed === child;
         }
       );
+      const containsForm =
+  child.tagName === "FORM" ||
+  !!child.querySelector(
+    "form"
+  );
+
+  if (containsForm) {
+  const formSubtree = [
+    child,
+    ...Array.from(
+      child.querySelectorAll("*")
+    )
+  ];
+
+  formSubtree.forEach(
+    node => {
+      activeSemanticReplacementMap.delete(
+        node as HTMLElement
+      );
+
+      activeSemanticClaimRoots.delete(
+        node as HTMLElement
+      );
+    }
+  );
+}
 
     if (
-      matchedSemantic?.emitted
-    ) {
+  matchedSemantic?.emitted &&
+  !containsForm
+) {
       finalBlocks.push(
         matchedSemantic.emitted
       );
@@ -6942,12 +8593,6 @@ logLargeLayoutBlocks(
   semanticMergedBlocks
 );
 
-logFeaturePillarsStageTransition(
-  "purgeEmptyBlocks.semanticMergedBlocks",
-  finalBlocks,
-  semanticMergedBlocks,
-  "purgeEmptyBlocks(finalBlocks)"
-);
 
 assertFeaturePillarsPreservedAfterMerge(
   "semanticMergedBlocks",
@@ -6960,16 +8605,7 @@ assertNoNullChildren(
   "FINAL_BLOCKS_AFTER_SEMANTIC_MERGE"
 );
 
-logTrustSectionAnalysis(
-  "after-final-blocks",
-  body,
-  semanticBlocks,
-  semanticMergedBlocks
-);
-logFeatureFlexItemStyles(
-  "FINALBLOCKS",
-  semanticMergedBlocks
-);
+
    // =========================================================
 // PIPELINE
 // =========================================================
@@ -7003,13 +8639,6 @@ const kpiSectionAfterPurge =
       child.children?.length >= 3
   );
 
-
-logFeaturePillarsStageTransition(
-  "cleanedBlocks",
-  semanticMergedBlocks,
-  cleanedBlocks,
-  "purgeEmptyBlocks(semanticMergedBlocks)"
-);
 
 assertFeaturePillarsPreservedAfterMerge(
   "cleanedBlocks",
@@ -7112,11 +8741,6 @@ assertNoSectionInsideLayout(
   normalized
 );
 
-logLargeLayoutBlocks(
-  "normalizedBlocks",
-  normalized
-);
-
 logFeaturePillarsStageTransition(
   "normalizedBlocks",
   cleanedBlocks,
@@ -7139,14 +8763,102 @@ logFeatureFlexItemStyles(
   "NORMALIZED",
   normalized
 );
+const canonicalNormalized =
+  wrapInvalidRootBlocks(
+    normalizeCanonicalContainers(
+      normalized as unknown[]
+    ) as any
+  );
+
+assertNoNullChildren(
+  canonicalNormalized,
+  "CANONICAL_NORMALIZED_BLOCKS"
+);
+
+logFeatureFlexItemStyles(
+  "CANONICAL_NORMALIZED",
+  canonicalNormalized
+);
+const droppedPageText =
+  collectDroppedDomTextNodes(
+    document.body,
+    canonicalNormalized
+  );
+
+if (droppedPageText.length) {
+  console.error(
+    "❌ HTML_IMPORT_DROPPED_PAGE_TEXT",
+    droppedPageText
+  );
+}
+// ============================================
+// DEBUG INVALID FLEXITEM OWNERS
+// ============================================
+const debugInvalidFlexItemOwners = (
+  blocks: any[]
+) => {
+  const allowedParentTypes =
+    new Set([
+      "flex",
+      "navbar",
+      "footer"
+    ]);
+
+  const walk = (
+    block: any,
+    parent: any = null,
+    path: string[] = []
+  ) => {
+    if (!block) {
+      return;
+    }
+
+    const currentPath = [
+      ...path,
+      `${block.type}:${block.id}`
+    ];
+
+    if (
+      block.type === "flexItem" &&
+      !allowedParentTypes.has(
+        String(parent?.type || "")
+      )
+    ) {
+    
+    }
+
+    const children =
+      Array.isArray(block.children)
+        ? block.children
+        : [];
+
+    children.forEach(
+      (child: any) =>
+        walk(
+          child,
+          block,
+          currentPath
+        )
+    );
+  };
+
+  blocks.forEach(
+    block =>
+      walk(block)
+  );
+};
+
+debugInvalidFlexItemOwners(
+  canonicalNormalized as any[]
+);
 
 assertTreeInvariants(
-  normalized as any
+  canonicalNormalized as any
 );
 
 const normalizedWithDocumentSurface =
   applyDocumentSurfaceToRootSections(
-    normalized as any,
+    canonicalNormalized as any,
     documentSurface
   );
 
@@ -7266,23 +8978,6 @@ const blockContainsText = (
   );
 };
 
-const collectSectionsContainingText = (
-  blocks: any[],
-  text: string
-) =>
-  blocks
-    .filter(
-      block =>
-        block?.type === "section" &&
-        blockContainsText(
-          block,
-          text
-        )
-    )
-    .map(
-      summarizeImportBlockTree
-    );
-
 const summarizeStyleBox = (
   block: any
 ) => {
@@ -7309,70 +9004,6 @@ const summarizeStyleBox = (
   };
 };
 
-const collectTitleParentChains = (
-  blocks: any[],
-  text: string
-) => {
-  const chains: any[] = [];
-
-  const walk = (
-    block: any,
-    parents: any[] = []
-  ) => {
-    if (!block) {
-      return;
-    }
-
-    const content =
-      [
-        block?.data?.props?.content,
-        block?.props?.content
-      ]
-        .filter(Boolean)
-        .join(" ");
-
-    if (
-      block.type === "title" &&
-      content
-        .toLowerCase()
-        .includes(
-          text.toLowerCase()
-        )
-    ) {
-      chains.push({
-        title:
-          content,
-        parentChain:
-          [
-            ...parents,
-            block
-          ].map(
-            summarizeStyleBox
-          )
-      });
-    }
-
-    (block.children || []).forEach(
-      (child: any) =>
-        walk(
-          child,
-          [
-            ...parents,
-            block
-          ]
-        )
-    );
-  };
-
-  blocks.forEach(
-    block =>
-      walk(
-        block
-      )
-  );
-
-  return chains;
-};
 logFeaturePillarsStageTransition(
   "visualBlocks",
   sectionProfiled,
@@ -7396,19 +9027,6 @@ logFeatureFlexItemStyles(
   visualBlocks
 );
 
-const finalTextProps =
-  collectTextProps(
-    visualBlocks as any
-  );
-
-const finalDroppedDomTextNodes =
-  originalDomTextNodes.filter(
-    textNode =>
-      !textIsRepresented(
-        textNode.text,
-        finalTextProps
-      )
-  );
 if (
   sandboxFrame?.parentNode
 ) {
@@ -7428,20 +9046,86 @@ assertTreeInvariants(
   visualBlocks as any
 );
 
-// Re-apply the page paint after every semantic/profile reconstruction step.
-// Several of those steps clone or replace root sections, so applying it only
-// before reconstruction is not a strong enough invariant.
 const visualBlocksWithDocumentSurface =
   applyDocumentSurfaceToRootSections(
     visualBlocks as any,
     documentSurface
   );
 
+
+const semanticBlocksWithoutFormRoots =
+  semanticBlocks.filter(
+    (entry: any) => {
+      const claimed =
+        entry?.claimedNode?.element as
+          | HTMLElement
+          | undefined;
+
+      if (!claimed) {
+        return true;
+      }
+
+      const containsForm =
+        claimed.tagName === "FORM" ||
+        !!claimed.querySelector("form");
+
+      return !containsForm;
+    }
+  );
+
+  const responsiveVisualBlocks =
+  applyImportedResponsiveDefaults(
+    ensureSemanticHeroPreserved(
+      flattenImportedNestedCards(
+        visualBlocksWithDocumentSurface as any
+      ) as any,
+      semanticBlocksWithoutFormRoots
+    ) as any
+  );
+
+const finalTypographySafeBlocks =
+  enforceFinalImportedTitleFlow(
+    responsiveVisualBlocks as any
+  );
+
 const serializableVisualBlocks =
   sanitizeBlockTreeStyles(
-    visualBlocksWithDocumentSurface as any,
+    finalTypographySafeBlocks as any,
     "importHtmlDocument.finalBlocks"
   );
+  
+const finalTextProps =
+  collectTextProps(
+    serializableVisualBlocks as any
+  );
+
+const finalDroppedDomTextNodes =
+  originalDomTextNodes.filter(
+    textNode =>
+      !textIsRepresented(
+        textNode.text,
+        finalTextProps
+      )
+  );
+if (
+  finalDroppedDomTextNodes.length
+) {
+  console.table(
+    finalDroppedDomTextNodes.map(
+      ({
+        text,
+        tag,
+        className,
+        path
+      }) => ({
+        text,
+        tag,
+        className,
+        path
+      })
+    )
+  );
+}
 return {
   blocks:
     serializableVisualBlocks as any,
@@ -7484,30 +9168,6 @@ return {
     });
     return { blocks: [], warnings, matcherHits };
   }
-
-
-
-
-  /////////////////////////////////////////
-  function findGridItems(blocks: any[]): any[] {
-  const result: any[] = [];
-
-  const walk = (items: any[]) => {
-    items.forEach((item) => {
-      if (item.type === "gridItem") {
-        result.push(item);
-      }
-
-      if (item.children?.length) {
-        walk(item.children);
-      }
-    });
-  };
-
-  walk(blocks);
-
-  return result;
-}
 
 function logFeatureFlexItemStyles(
   label: string,
@@ -7871,186 +9531,6 @@ function collectSemanticBlocks(
   return result;
 }
 
-function collectAllBlocks(
-  blocks: any[]
-) {
-  const result: any[] = [];
-
-  const walk = (
-    items: any[]
-  ) => {
-    items.forEach((item: any) => {
-      if (!item) {
-        return;
-      }
-
-      result.push(item);
-
-      if (item.children?.length) {
-        walk(item.children);
-      }
-    });
-  };
-
-  walk(blocks || []);
-
-  return result;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function preserveMissingSemanticBlocks(
-  stage: string,
-  blocks: any[],
-  semanticBlocks: any[]
-) {
-  const existingIds =
-    new Set(
-      collectAllBlocks(
-        blocks || []
-      ).map((block: any) => block?.id)
-    );
-
-  semanticBlocks.forEach((entry: any) => {
-    const emitted =
-      entry?.emitted;
-    const semanticType =
-      emitted?.meta?.semanticType;
-    const semanticResultType =
-      entry?.semanticResult?.type;
-    const emittedText =
-      normalizeDiagnosticText(
-        collectTextProps(
-          emitted
-            ? [
-                emitted
-              ]
-            : []
-        )
-          .map(
-            textEntry =>
-              textEntry.text
-          )
-          .join(
-            " "
-          )
-      );
-    const alreadyExists =
-      !!emitted &&
-      existingIds.has(
-        emitted.id
-      );
-      if (semanticType === "CTA_SECTION") { return;}
-      if (
-  semanticType === "CTA_SECTION" ||
-  semanticType === "CONTACT_LAYOUT"
-) {return;}
-
-    if (
-      !emitted ||
-      !semanticType ||
-      alreadyExists
-    ) { return;}
-
-   if (
-  emitted.type ===
-  COMPILER_BLOCK_TYPES.SECTION
-) {
-  if (
-    semanticType ===
-    "SERVICE_PAGE_SECTION"
-  ) {
-    return;
-  }
-
-  const emittedSubtreeIds =
-    collectAllBlocks(
-      [emitted]
-    )
-      .map((block: any) => block?.id)
-      .filter(Boolean);
-
-  const overlappingIds =
-    emittedSubtreeIds.filter(
-      (id: string) =>
-        existingIds.has(
-          id
-        )
-    );
-
-  if (
-    overlappingIds.length
-  ) {
-    return;
-  }
-
-  blocks.push(
-    emitted
-  );
-
-  existingIds.add(
-    emitted.id
-  );
-
-  return;
-}
-
-    const emittedSubtreeIds =
-      collectAllBlocks(
-        [emitted]
-      )
-        .map((block: any) => block?.id)
-        .filter(Boolean);
-
-    const overlappingIds =
-      emittedSubtreeIds.filter(
-        (id: string) =>
-          existingIds.has(
-            id
-          )
-      );
-
-    if (
-      overlappingIds.length
-    ) {
-    
-      return;
-    }
-    blocks.push(
-      emitted
-    );
-    existingIds.add(
-      emitted.id
-    );
-  });
-}
-
 function assertNoSectionInsideLayout(
   stage: string,
   blocks: any[]
@@ -8174,43 +9654,6 @@ function summarizeTopLevelSemanticTypes(
   }));
 }
 
-function summarizeFeaturePillarsStage(
-  blocks: any[]
-) {
-  const featureBlocks =
-    collectFeaturePillarsBlocks(
-      blocks || []
-    );
-
-  return {
-    exists:
-      featureBlocks.length > 0,
-    count:
-      featureBlocks.length,
-    topLevelSemanticTypes:
-      summarizeTopLevelSemanticTypes(
-        blocks || []
-      ),
-    featureBlocks:
-      featureBlocks.map((block: any) => ({
-        id:
-          block?.id,
-        type:
-          block?.type,
-        childrenCount:
-          (block?.children || []).length,
-        childTypes:
-          (block?.children || []).map(
-            (child: any) => child?.type
-          ),
-        style:
-          block?.data?.style ||
-          block?.style ||
-          null
-      }))
-  };
-}
-
 function logFeaturePillarsStageTransition(
   stage: string,
   beforeBlocks: any[],
@@ -8243,141 +9686,6 @@ function logFeaturePillarsStageTransition(
     });
 }
 
-function getFeaturePillarsLocationReport(
-  beforePurge: any[],
-  afterPurge: any[]
-) {
-  const summarizeMatches = (
-    blocks: any[]
-  ) => {
-    const topLevelSections =
-      blocks
-        .filter(
-          block =>
-            block?.type === "section" &&
-            block?.meta?.semanticType ===
-              "FEATURE_PILLARS"
-        )
-        .map(summarizeImportBlockTree);
-
-    const nestedSections =
-      collectFeaturePillarsBlocks(
-        blocks
-      )
-        .filter(
-          block =>
-            !topLevelSections.some(
-              (summary: any) =>
-                summary?.id === block?.id
-            )
-        )
-        .map(summarizeImportBlockTree);
-
-    const nestedFlexOnly =
-      collectDescendantsByType(
-        blocks,
-        "flex"
-      )
-        .filter(
-          flex =>
-            flex?.meta?.semanticType ===
-              "FEATURE_PILLARS" ||
-            flex?.data?.props?.semantic
-              ?.semanticIntent ===
-              "FEATURE_PILLARS" ||
-            (flex.children || []).some(
-              (child: any) =>
-                child?.meta?.semanticType ===
-                  "FEATURE_PILLARS"
-            )
-        )
-        .map((flex: any) => ({
-          id:
-            flex.id,
-          type:
-            flex.type,
-          semantic:
-            flex.meta?.semanticType,
-          childTypes:
-            (flex.children || []).map(
-              (child: any) => child?.type
-            )
-        }));
-
-    return {
-      topLevelSectionCount:
-        topLevelSections.length,
-      topLevelSections,
-      nestedSectionCount:
-        nestedSections.length,
-      nestedSections,
-      nestedFlexOnlyCount:
-        nestedFlexOnly.length,
-      nestedFlexOnly
-    };
-  };
-
-  return {
-    beforePurge:
-      summarizeMatches(
-        beforePurge
-      ),
-    afterPurge:
-      summarizeMatches(
-        afterPurge
-      )
-  };
-}
-
-function summarizeImportBlockTree(
-  block: any,
-  depth = 0
-): any {
-  if (!block) {
-    return {
-      invalid:
-        "NULL_BLOCK_SUMMARY"
-    };
-  }
-
-  if (depth > 8) {
-    return {
-      id:
-        block.id,
-      type:
-        block.type,
-      truncated:
-        true
-    };
-  }
-
-  return {
-    id:
-      block.id,
-    type:
-      block.type,
-    semantic:
-      block.meta?.semanticType,
-    childTypes:
-      (block.children || []).map(
-        (child: any) => child.type
-      ),
-    desktop:
-      block.type === "flexItem"
-        ? block.data?.style?.desktop || {}
-        : undefined,
-    children:
-      (block.children || [])
-        .filter(Boolean)
-        .map(
-          (child: any) =>
-            summarizeImportBlockTree(
-              child,
-              depth + 1
-            )
-        )
-  };
-}
 
 function getDesktopStyle(
   block: any
@@ -8505,160 +9813,6 @@ function getOriginalTitleStyle(
   };
 }
 
-function summarizeGlobalScaleSection(
-  block: any,
-  semanticBlocks: any[]
-) {
-  const semanticType =
-    block?.meta?.semanticType || null;
-  const sectionStyle =
-    getDesktopStyle(
-      block
-    );
-  const flexBlock =
-    getFirstBlockByType(
-      block,
-      "flex"
-    );
-  const innerStyle =
-    getDesktopStyle(
-      flexBlock
-    );
-  const titleBlock =
-    getFirstBlockByType(
-      block,
-      "title"
-    );
-  const textBlock =
-    getFirstBlockByType(
-      block,
-      "text"
-    );
-  const titleStyle =
-    getDesktopStyle(
-      titleBlock
-    );
-  const bodyStyle =
-    getDesktopStyle(
-      textBlock
-    );
-  const cardBlocks =
-    [
-      ...collectBlocksByType(
-        block,
-        "gridItem"
-      ),
-      ...collectBlocksByType(
-        block,
-        "flexItem"
-      ).filter(
-        (item: any) =>
-          (item.children || []).some(
-            (child: any) =>
-              child?.type === "title"
-          ) &&
-          (item.children || []).some(
-            (child: any) =>
-              child?.type === "text"
-          )
-      )
-    ];
-  const firstCardStyle =
-    getDesktopStyle(
-      cardBlocks[0]
-    );
-  const semanticEntry =
-    findSemanticEntryForBlock(
-      block,
-      semanticBlocks
-    );
-  const originalTitleStyle =
-    getOriginalTitleStyle(
-      semanticEntry?.claimedNode?.element
-    );
-  const emittedTitlePx =
-    parsePixelValue(
-      titleStyle.fontSize
-    );
-  const originalTitlePx =
-    parsePixelValue(
-      originalTitleStyle?.fontSize
-    );
-
-  return {
-    id:
-      block?.id,
-    semanticType,
-    sectionPadding: {
-      padding:
-        sectionStyle.padding,
-      paddingTop:
-        sectionStyle.paddingTop,
-      paddingBottom:
-        sectionStyle.paddingBottom,
-      paddingLeft:
-        sectionStyle.paddingLeft,
-      paddingRight:
-        sectionStyle.paddingRight
-    },
-    innerMaxWidth:
-      innerStyle.maxWidth,
-    title: {
-      content:
-        titleBlock?.data?.props?.content,
-      fontSize:
-        titleStyle.fontSize,
-      lineHeight:
-        titleStyle.lineHeight,
-      fontWeight:
-        titleStyle.fontWeight
-    },
-    body: {
-      content:
-        textBlock?.data?.props?.content,
-      fontSize:
-        bodyStyle.fontSize,
-      lineHeight:
-        bodyStyle.lineHeight
-    },
-    cards: {
-      count:
-        cardBlocks.length,
-      firstPadding:
-        firstCardStyle.padding ||
-        [
-          firstCardStyle.paddingTop,
-          firstCardStyle.paddingRight,
-          firstCardStyle.paddingBottom,
-          firstCardStyle.paddingLeft
-        ].filter(Boolean).join(" "),
-      firstGap:
-        firstCardStyle.gap
-    },
-    originalComputedTitle:
-      originalTitleStyle,
-    emittedTitleFontSize:
-      titleStyle.fontSize,
-    emittedToOriginalTitleRatio:
-      emittedTitlePx &&
-      originalTitlePx
-        ? Number(
-            (
-              emittedTitlePx /
-              originalTitlePx
-            ).toFixed(3)
-          )
-        : null
-  };
-}
-
-function logGlobalScaleReport(
-  blocks: any[],
-  semanticBlocks: any[]
-) {
- 
-}
-
 function assertNoNullChildren(
   blocks: any[],
   stage: string
@@ -8738,52 +9892,5 @@ function assertNoNullChildren(
       `NULL_CHILDREN_IN_BLOCK_TREE: ${stage}`
     );
   }
-}
-
-function describeClaimedElement(
-  element: HTMLElement | undefined,
-  body: HTMLElement
-) {
-  if (!element) {
-    return null;
-  }
-
-  const bodyChildren =
-    getSafeChildren(body);
-
-  const directBodyIndex =
-    bodyChildren.findIndex(
-      child => child === element
-    );
-
-  const parent =
-    element.parentElement;
-
-  return {
-    tag:
-      element.tagName,
-    id:
-      element.id || "",
-    className:
-      getElementClassName(
-        element
-      ),
-    directBodyIndex,
-    isDirectBodyChild:
-      directBodyIndex >= 0,
-    parent:
-      parent
-        ? {
-            tag:
-              parent.tagName,
-            id:
-              parent.id || "",
-            className:
-              getElementClassName(
-                parent
-              )
-          }
-        : null
-  };
 }
 }

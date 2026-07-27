@@ -2,6 +2,12 @@ import type {
   StructuralNode
 } from "../structure/buildStructuralGraph";
 
+export type HeroStyle = {
+  desktop?: Record<string, any>;
+  tablet?: Record<string, any>;
+  mobile?: Record<string, any>;
+};
+
 export interface HeroPayload {
 
   type:
@@ -30,4 +36,8 @@ export interface HeroPayload {
 
   claimedNode?:
     StructuralNode;
+
+  styles?: {
+    section?: HeroStyle;
+  };
 }

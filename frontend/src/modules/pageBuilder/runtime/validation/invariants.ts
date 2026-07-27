@@ -1,5 +1,6 @@
 import type { Block, BlockType } from "../../types/page.types";
 import { canAcceptChild} from "../../core/schema/canonicalSchema";
+import { blockRegistry } from "../../core/blockRegistry";
 
 export type InvariantSeverity = "error" | "warning";
 
@@ -26,7 +27,8 @@ const primitiveBlockTypes: BlockType[] = [
   "link",
   "input",
   "select",
-  "textarea"
+  "textarea",
+  "form"
 ];
 
 export type InvariantReport = {
@@ -38,60 +40,13 @@ export type InvariantReport = {
 const isKnownType = (
   type: string
 ): type is BlockType => {
-
-  return [
-
-    "root",
-
-    // =====================
-    // LAYOUT
-    // =====================
-
-    "section",
-
-    "flex",
-
-    "flexItem",
-
-    "grid",
-
-    "gridItem",
-
-    "navbar",
-
-    "footer",
-
-    // =====================
-    // PRIMITIVES
-    // =====================
-
-    "title",
-
-    "text",
-
-    "image",
-
-    "button",
-
-    "link",
-
-    "input",
-
-    "select",
-
-    "textarea",
-
-    // =====================
-    // SEMANTIC
-    // =====================
-
-    "hero",
-
-    "cta",
-
-    "features"
-
-  ].includes(type);
+  return (
+    type === "root" ||
+    Object.prototype.hasOwnProperty.call(
+      blockRegistry,
+      type
+    )
+  );
 };
 
 const addViolation = (

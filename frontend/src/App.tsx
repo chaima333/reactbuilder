@@ -146,7 +146,6 @@ const About = lazy(
     .then(m => ({ default: m.AboutPage }))
 );
 
-// ✅ أضف ServicesPage
 const Services = lazy(
   () => import("./app/pages/ServicesPage")
     .then(m => ({ default: m.ServicesPage }))
@@ -289,6 +288,7 @@ const AppContent: React.FC = () => {
                 />
                 
                 {/* 3. Public Page (2 dynamic params: siteId + slug) */}
+                {/* This handles /site/:siteId/login AND /site/:siteId/register */}
                 <Route 
                   path="/site/:siteId/:slug" 
                   element={<PublicSite />} 

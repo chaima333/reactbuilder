@@ -1,5 +1,5 @@
 import type { Block } from "../../types/page.types";
-import { hydrateTree } from "../normalize/NormalizeTree";
+import { normalizeTree } from "../normalize/NormalizeTree";
 import { assertTreeInvariants } from "../validation/invariants";
 
 export type AICanonicalTreeResult = {
@@ -13,7 +13,7 @@ export const acceptAICanonicalTree = (
     throw new Error("AI output must be a canonical block tree array.");
   }
 
-  const blocks = hydrateTree(input as any[]);
+  const blocks = normalizeTree(input as Block[]);
 
   assertTreeInvariants(blocks);
 

@@ -1,4 +1,3 @@
-import { resolveAuthHero } from "../authHero/resolveAuthHero";
 import { resolveContactLayout } from "../contactLayout/resolveContactLayout";
 import { resolveFeaturePillars } from "../featurePillars/resolveFeaturePillars";
 import {
@@ -31,6 +30,9 @@ import { resolveTwoColumnIntro } from "../twoColumnIntro/resolveTwoColumnIntro";
 import { resolveCtaCard } from "../ctaCard/resolveCtaCard";
 import { resolveNavbar } from "../navbar/resolveNavbar";
 import { resolveFooter } from "../footer/resolveFooter";
+import {
+  resolveServicePageSection
+} from "../servicePageSection/resolveServicePageSection";
 
 
 export const semanticResolverRegistry = [
@@ -40,9 +42,9 @@ resolveNavbar,
   
   resolveHero,
 
-  resolveTwoColumnIntro,
+  resolveServicePageSection,
 
-  resolveAuthHero,
+  resolveTwoColumnIntro,
 
   resolveContactLayout,
 

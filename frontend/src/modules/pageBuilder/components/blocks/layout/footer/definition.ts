@@ -1,7 +1,7 @@
-import React from "react";
+﻿import React from "react";
 import VerticalAlignBottomIcon from "@mui/icons-material/VerticalAlignBottom";
 
-import {
+import type {
   BlockConfig
 } from "../../../../types/page.types";
 
@@ -19,21 +19,33 @@ import {
 
 export const footerDefinition: BlockConfig = {
   type: "footer",
+
   label: "Footer",
+
   category: "layout",
-  icon: React.createElement(VerticalAlignBottomIcon),
-  component: FooterBlock as any,
+
+  icon:
+    React.createElement(
+      VerticalAlignBottomIcon
+    ),
+
+  component:
+    FooterBlock as any,
+
   isContainer: true,
+
   rules: {
     allowedParents: [
       "root",
       "section"
     ],
+
     allowedChildren: [
       "flex",
       "flexItem",
       "grid",
       "gridItem",
+
       "title",
       "text",
       "image",
@@ -41,17 +53,10 @@ export const footerDefinition: BlockConfig = {
       "link"
     ]
   },
-  allowedChildren: [
-    "flex",
-    "flexItem",
-    "grid",
-    "gridItem",
-    "title",
-    "text",
-    "image",
-    "button",
-    "link"
-  ],
-  fields: footerFields,
-  defaultData: footerDefaults
+
+  fields:
+    footerFields,
+
+  defaultData:
+    footerDefaults
 };

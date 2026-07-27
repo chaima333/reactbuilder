@@ -1,37 +1,16 @@
 import { v4 as uuidv4 } from "uuid";
-
-import type {
-  Block
-} from "../types/page.types";
-
-import type {
-  HeroPayload
-} from "../runtime/importers/html/semanticContracts/HeroPayload";
-import {
-  extractLayoutStyles,
-  extractTypographyStyles
-} from "../runtime/importers/css/extractStyleProps";
-import {
-  extractTitleSegments
-} from "../runtime/importers/html/typography/extractTitleSegments";
-import {
-  resolveInheritedBackground
-} from "../runtime/importers/design/visualContext";
-import {
-  filterCardStyle,
-  filterHeroSectionStyle,
-  filterTextStyle,
-  mergePresetDesktopStyle
-} from "./styleFilters";
+import type {Block} from "../types/page.types";
+import type {HeroPayload} from "../runtime/importers/html/semanticContracts/HeroPayload";
+import {extractLayoutStyles,extractTypographyStyles} from "../runtime/importers/css/extractStyleProps";
+import {extractTitleSegments} from "../runtime/importers/html/typography/extractTitleSegments";
+import {resolveInheritedBackground} from "../runtime/importers/design/visualContext";
+import {filterCardStyle,filterHeroSectionStyle,filterTextStyle,mergePresetDesktopStyle} from "./styleFilters";
 
 interface HeroLayoutPayload {
 
   variant?:
-
     | "split"
-
     | "centered"
-
     | "minimal";
 }
 
@@ -228,6 +207,238 @@ const formatPxValue = (
       3
     )
   )}px`;
+
+const normalizeColorValue = (
+  value: unknown
+) =>
+  String(value || "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
+
+const isTransparentOrMissingPaint = (
+  value: unknown
+) => {
+  const normalized =
+    normalizeColorValue(
+      value
+    );
+
+  return (
+    !normalized ||
+    normalized === "transparent" ||
+    normalized === "none" ||
+    normalized === "initial" ||
+    normalized === "inherit" ||
+    normalized === "unset" ||
+    normalized === "rgba(0,0,0,0)" ||
+    normalized === "rgb(0,0,0,0)"
+  );
+};
+
+const parseRgbColor = (
+  value: unknown
+) => {
+  const normalized =
+    String(value || "")
+      .trim()
+      .toLowerCase();
+
+  const namedColors: Record<string, string> = {
+    white: "#ffffff",
+    black: "#000000"
+  };
+
+  const normalizedColor =
+    namedColors[normalized] ||
+    normalized;
+
+  const shortHex =
+    normalizedColor.match(
+      /^#([0-9a-f]{3})$/i
+    );
+
+  if (shortHex) {
+    const [r, g, b] =
+      shortHex[1]
+        .split("")
+        .map(part =>
+          parseInt(
+            part + part,
+            16
+          )
+        );
+
+    return {
+      r,
+      g,
+      b
+    };
+  }
+
+  const hex =
+    normalizedColor.match(
+      /^#([0-9a-f]{6})(?:[0-9a-f]{2})?$/i
+    );
+
+  if (hex) {
+    return {
+      r:
+        parseInt(
+          hex[1].slice(
+            0,
+            2
+          ),
+          16
+        ),
+      g:
+        parseInt(
+          hex[1].slice(
+            2,
+            4
+          ),
+          16
+        ),
+      b:
+        parseInt(
+          hex[1].slice(
+            4,
+            6
+          ),
+          16
+        )
+    };
+  }
+
+  const match =
+    normalizedColor
+      .match(
+        /^rgba?\((\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)(?:,\s*([.\d]+))?\)$/i
+      );
+
+  if (!match) {
+    return null;
+  }
+
+  const alpha =
+    match[4] === undefined
+      ? 1
+      : Number(match[4]);
+
+  if (alpha <= 0.05) {
+    return null;
+  }
+
+  return {
+    r:
+      Number(match[1]),
+    g:
+      Number(match[2]),
+    b:
+      Number(match[3])
+  };
+};
+
+const isLightPaint = (
+  value: unknown
+) => {
+  if (
+    isTransparentOrMissingPaint(
+      value
+    )
+  ) {
+    return true;
+  }
+
+  const rgb =
+    parseRgbColor(
+      value
+    );
+
+  if (!rgb) {
+    return false;
+  }
+
+  const luminance =
+    (
+      0.2126 * rgb.r +
+      0.7152 * rgb.g +
+      0.0722 * rgb.b
+    ) / 255;
+
+  return luminance >= 0.72;
+};
+
+const isLightTextColor = (
+  value: unknown
+) => {
+  const rgb =
+    parseRgbColor(
+      value
+    );
+
+  if (!rgb) {
+    return false;
+  }
+
+  const luminance =
+    (
+      0.2126 * rgb.r +
+      0.7152 * rgb.g +
+      0.0722 * rgb.b
+    ) / 255;
+
+  return luminance >= 0.68;
+};
+
+const ensureHeroTextContrast = (
+  sectionStyle: any,
+  textStyles: any[]
+) => {
+  const desktop =
+    sectionStyle?.desktop || {};
+
+  const backgroundPaint =
+    desktop.background ||
+    desktop.backgroundColor ||
+    desktop.backgroundImage;
+
+  const hasLightHeroText =
+    textStyles.some(style =>
+      isLightTextColor(
+        desktopOf(
+          style
+        ).color
+      )
+    );
+
+  if (
+    !hasLightHeroText ||
+    !isLightPaint(
+      backgroundPaint
+    )
+  ) {
+    return sectionStyle;
+  }
+
+  return {
+    ...sectionStyle,
+    desktop: {
+      ...desktop,
+      background:
+        desktop.backgroundImage &&
+        !isTransparentOrMissingPaint(
+          desktop.backgroundImage
+        )
+          ? desktop.background
+          : "#020b16",
+      backgroundColor:
+        "#020b16",
+      color:
+        desktop.color ||
+        "#f8fafc"
+    }
+  };
+};
 
 const applyHeroTitleScale = (
   style: any,
@@ -1375,26 +1586,58 @@ const titleBaseStyle =
       );
     });
 
-  const subtitleBlock =
-    createTextBlock(
-      payload?.subtitle ||
-        textOf(
-          subtitleElement
-        ) ||
-        "Hero subtext content...",
-      mergePresetDesktopStyle(
+ const subtitleText =
+  (
+    payload?.subtitle ||
+    textOf(
+      subtitleElement
+    ) ||
+    ""
+  ).trim();
+
+const subtitleBaseStyle =
+  mergePresetDesktopStyle(
+    {
+      textAlign:
+        "left",
+
+      maxWidth:
+        "720px"
+    },
+    subtitleStyle,
+    filterTextStyle
+  );
+
+const subtitleBlock =
+  subtitleText
+    ? createTextBlock(
+        subtitleText,
         {
-          textAlign: "left",
-          maxWidth: "720px"
+          ...subtitleBaseStyle,
+
+          tablet: {
+            ...(subtitleBaseStyle.tablet || {}),
+            fontSize: "18px",
+            lineHeight: "1.6",
+            maxWidth: "100%"
+          },
+
+          mobile: {
+            ...(subtitleBaseStyle.mobile || {}),
+            fontSize: "16px",
+            lineHeight: "1.55",
+            maxWidth: "100%"
+          }
         },
-        subtitleStyle,
-        filterTextStyle
-      ),
-      {
-        semanticRole: "bodyText",
-        typographyToken: "body-lg"
-      }
-    );
+        {
+          semanticRole:
+            "bodyText",
+
+          typographyToken:
+            "body-lg"
+        }
+      )
+    : null;
 
   const actionsRow =
     createFlexRow(
@@ -1572,6 +1815,11 @@ const titleBaseStyle =
       filterHeroSectionStyle
     );
 
+  const payloadHeroSectionPaint =
+    filterHeroSectionStyle(
+      payload?.styles?.section?.desktop || {}
+    );
+
   const inheritedBackground =
     resolveInheritedBackground(
       claimedElement
@@ -1580,25 +1828,57 @@ const titleBaseStyle =
   const emittedHeroBackground =
     mergedHeroSectionStyle.desktop?.background ||
     mergedHeroSectionStyle.desktop?.backgroundImage ||
-    mergedHeroSectionStyle.desktop?.backgroundColor;
+    mergedHeroSectionStyle.desktop?.backgroundColor ||
+    payloadHeroSectionPaint.background ||
+    payloadHeroSectionPaint.backgroundImage ||
+    payloadHeroSectionPaint.backgroundColor;
+  const normalizePaintValue = (
+  value: unknown
+) =>
+  String(value || "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
 
-  const hasLocalHeroBackground =
-    !!emittedHeroBackground &&
-    ![
-      "transparent",
-      "none",
-      "rgba(0, 0, 0, 0)",
-      "rgba(0,0,0,0)"
-    ].includes(
-      String(
-        emittedHeroBackground
-      ).trim().toLowerCase()
+const isWhiteOrMissingHeroPaint = (
+  value: unknown
+) => {
+  const normalized =
+    normalizePaintValue(
+      value
     );
 
-  const finalHeroSectionStyle = {
+  return (
+    !normalized ||
+    normalized === "transparent" ||
+    normalized === "none" ||
+    normalized === "rgba(0,0,0,0)" ||
+    normalized === "rgb(0,0,0,0)" ||
+    normalized === "white" ||
+    normalized === "#fff" ||
+    normalized === "#ffffff" ||
+    normalized === "rgb(255,255,255)" ||
+    normalized === "rgba(255,255,255,1)" ||
+    normalized.includes(
+      "rgb(255,255,255)"
+    ) ||
+    normalized.includes(
+      "rgba(255,255,255,1)"
+    )
+  );
+};
+const hasLocalHeroBackground =
+  !!emittedHeroBackground &&
+  !isWhiteOrMissingHeroPaint(
+    emittedHeroBackground
+  );
+
+  const finalHeroSectionStyle =
+    ensureHeroTextContrast(
+  {
     ...mergedHeroSectionStyle,
     desktop: {
       ...mergedHeroSectionStyle.desktop,
+      ...payloadHeroSectionPaint,
       ...(!hasLocalHeroBackground && inheritedBackground
         ? {
             background:
@@ -1606,11 +1886,23 @@ const titleBaseStyle =
             backgroundColor:
               inheritedBackground.backgroundColor,
             backgroundImage:
-              inheritedBackground.backgroundImage
+              inheritedBackground.backgroundImage,
+            backgroundSize:
+              (inheritedBackground as any).backgroundSize,
+            backgroundPosition:
+              (inheritedBackground as any).backgroundPosition,
+            backgroundRepeat:
+              (inheritedBackground as any).backgroundRepeat
           }
         : {})
     }
-  };
+  },
+  [
+    scaledTitleBaseStyle,
+    subtitleBaseStyle,
+    eyebrowBlock?.data?.style
+  ]
+);
 
   const heroBlock: Block = {
 

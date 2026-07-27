@@ -6,6 +6,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../redux/store";
 import { setCurrentSite } from "../../redux/features/siteSlice";
+import { PlatformAssistantWidget } from "../../modules/platformAssistant/components/PlatformAssistantWidget";
 
 export const Layout: React.FC = () => {
   const dispatch = useDispatch();
@@ -69,9 +70,11 @@ export const Layout: React.FC = () => {
         }}
       >
         {!isEditorPage && <Toolbar />}
-
         <Outlet />
       </Box>
+      {!isEditorPage && (
+  <PlatformAssistantWidget />
+)}
     </Box>
   );
 };

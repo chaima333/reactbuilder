@@ -20,6 +20,8 @@ export const resolveSemanticStructure = (
   node: StructuralNode,
   context: {
     layout?: "page" | "navbar" | "footer";
+    sourceFile?: string;
+    slug?: string;
   } = {}
 ): any[] => {
 
@@ -135,18 +137,24 @@ const parentClassName =
     ? getElementClassName(parent)
     : "";
 
+const isPricingGrid =
+  className.includes("tiers");
+
 const isCardLikeChild =
-  parentClassName.includes("jobs") ||
-  parentClassName.includes("tiers") ||
-  parentClassName.includes("profiles-grid") ||
-  parentClassName.includes("founder") ||
-  parentClassName.includes("podcast") ||
-  parentClassName.includes("other-svc") ||
-  className.includes("job") ||
-  className.includes("tier") ||
-  className.includes("profile") ||
-  className.includes("info") ||
-  className.includes("founder-body");
+  !isPricingGrid &&
+  (
+    parentClassName.includes("jobs") ||
+    parentClassName.includes("tiers") ||
+    parentClassName.includes("profiles-grid") ||
+    parentClassName.includes("founder") ||
+    parentClassName.includes("podcast") ||
+    parentClassName.includes("other-svc") ||
+    className.includes("job") ||
+    className.includes("tier") ||
+    className.includes("profile") ||
+    className.includes("info") ||
+    className.includes("founder-body")
+  );
 
 if (isCardLikeChild) {
   return [];

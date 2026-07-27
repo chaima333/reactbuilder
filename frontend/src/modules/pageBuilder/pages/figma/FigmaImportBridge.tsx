@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { apiUrl } from "../../../../config/api";
 
 export const FigmaImportBridge = () => {
   const { importId } = useParams();
@@ -13,6 +14,17 @@ export const FigmaImportBridge = () => {
   const [payload, setPayload] =
     useState<any>(null);
 
+    const params =
+  new URLSearchParams(window.location.search);
+
+const siteId =
+  params.get("siteId") ||
+  localStorage.getItem("selectedSiteId");
+
+if (!siteId) {
+  throw new Error("Missing siteId for Figma import");
+}
+
   useEffect(() => {
     const loadImport = async () => {
       try {
@@ -20,7 +32,7 @@ export const FigmaImportBridge = () => {
           localStorage.getItem("accessToken");
 
         const response = await fetch(
-          `https://backend-rmfq.onrender.com/api/sites/2/pages/figma/import/raw/${importId}`,
+          apiUrl(`/sites/${siteId}/pages/figma/import/raw/${importId}`),
           {
             headers: {
               Authorization: `Bearer ${token}`

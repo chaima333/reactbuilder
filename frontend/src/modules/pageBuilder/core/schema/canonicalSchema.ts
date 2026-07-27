@@ -1,4 +1,10 @@
-import type { BlockType } from "../../types/page.types";
+﻿import {
+  blockRegistry
+} from "../blockRegistry";
+
+import type {
+  BlockType
+} from "../../types/page.types";
 
 export type WrapperRule = {
   child: BlockType;
@@ -19,369 +25,119 @@ export type CanonicalBlockSchema = {
   transformRules: TransformRule[];
 };
 
-const primitives: BlockType[] = [
+const registeredTypes =
+  Object.keys(blockRegistry) as BlockType[];
+
+const rootAcceptedTypes =
+  registeredTypes.filter((type) =>
+    blockRegistry[type]
+      ?.rules
+      ?.allowedParents
+      ?.includes("root")
+  );
+
+const wrapperChildren: BlockType[] = [
   "title",
   "text",
   "image",
   "button",
   "link",
-   "input",
+  "input",
   "select",
-  "textarea"
+  "textarea",
+  "collectionList",
+  "form"
 ];
 
-const semanticBlocks: BlockType[] = [
-  "hero",
-  "cta",
-  "features",
-  "navbar",
-  "valuesGrid",
-  "officeTable",
-  "featurePillars"
-];
+const createWrapperRules = (
+  wrapper: BlockType
+): WrapperRule[] =>
+  wrapperChildren.map((child) => ({
+    child,
+    wrapper
+  }));
 
-const containers: BlockType[] = [
-  "section",
-  "flex",
-  "navbar",
-  "footer",
-  "grid",
-  "flexItem",
-  "gridItem"
-];
+const getWrapperRules = (
+  type: BlockType
+): WrapperRule[] => {
+  if (
+    type === "navbar" ||
+    type === "footer" ||
+    type === "flex"
+  ) {
+    return createWrapperRules(
+      "flexItem"
+    );
+  }
 
-const allKnownTypes: BlockType[] = [
-  "root",
-  ...containers,
-  ...primitives,
-  ...semanticBlocks
-];
+  if (type === "grid") {
+    return createWrapperRules(
+      "gridItem"
+    );
+  }
 
-const rejectEverythingExcept = (
-  accepted: BlockType[]
-): BlockType[] =>
+  return [];
+};
 
-  allKnownTypes.filter(
-    (type) =>
-
-      type !== "root" &&
-
-      !accepted.includes(type)
-  );
-
-const schema = (
+const createSchema = (
   type: BlockType,
-  accepts: BlockType[],
-  wrapperRules: WrapperRule[] = [],
-  transformRules: TransformRule[] = []
+  accepts: BlockType[]
 ): CanonicalBlockSchema => ({
-
   type,
 
   accepts,
 
   rejects:
-    rejectEverythingExcept(
-      accepts
+    registeredTypes.filter(
+      (candidate) =>
+        !accepts.includes(candidate)
     ),
 
   allowedChildren:
     accepts,
 
-  wrapperRules,
+  wrapperRules:
+    getWrapperRules(type),
 
-  transformRules
+  transformRules: []
 });
-
-export const canonicalBlockSchemas: Record<
-  BlockType,
-  CanonicalBlockSchema
-> = {
-
-  // =====================================
-  // ROOT
-  // =====================================
-
-  root: schema(
-    "root",
-    [
-      "section",
-      "navbar",
-      "footer"
-    ]
-  ),
-
-  // =====================================
-  // SECTION
-  // =====================================
-
-  section: schema(
-    "section",
-    [
-
-      "title",
-      "text",
-      "image",
-      "button",
-      "link",
-
-      "navbar",
-      "footer",
-      "flex",
-      "grid",
-
-      "hero",
-      "cta",
-      "features",
-
-      "valuesGrid",
-      "officeTable",
-      "featurePillars"
-    ]
-  ),
-
-  // =====================================
-  // FLEX
-  // =====================================
-
-flex: schema(
-
-  "flex",
-
-  [
-
-    "flexItem",
-
-    "title",
-    "text",
-    "image",
-    "button",
-    "link",
-
-    "input",
-    "select",
-    "textarea",
-
-    "flex",
-    "grid",
-    "gridItem"
-  ],
-
-  []
-),
-
-  // =====================================
-  // NAVBAR
-  // =====================================
-
-  navbar: schema(
-
-    "navbar",
-
-    ["flexItem"],
-
-    primitives.map(
-      (child) => ({
-
-        child,
-
-        wrapper:
-          "flexItem"
-      })
-    )
-  ),
-
-  // =====================================
-  // FOOTER
-  // =====================================
-
-  footer: schema(
-    "footer",
-    [
-      "flex",
-      "flexItem",
-      "grid",
-      "gridItem",
-      "title",
-      "text",
-      "image",
-      "button",
-      "link"
-    ],
-    primitives.map(
-      (child) => ({
-        child,
-        wrapper:
-          "flexItem"
-      })
-    )
-  ),
-
-  // =====================================
-  // GRID
-  // =====================================
-
-  grid: schema(
-
-    "grid",
-
-    ["gridItem"],
-
-    primitives.map(
-      (child) => ({
-
-        child,
-
-        wrapper:
-          "gridItem"
-      })
-    )
-  ),
-
-  // =====================================
-  // FLEX ITEM
-  // =====================================
-
-  flexItem: schema(
-    "flexItem",
-    [
-
-      "title",
-      "text",
-      "image",
-      "button",
-      "link",
-
-      "flex",
-      "grid",
-
-      "hero",
-      "cta",
-      "features",
-
-      "valuesGrid",
-      "officeTable",
-      "featurePillars"
-    ]
-  ),
-
-  // =====================================
-  // GRID ITEM
-  // =====================================
-
-  gridItem: schema(
-    "gridItem",
-    [
-
-      "title",
-      "text",
-      "image",
-      "button",
-      "link",
-
-      "flex",
-      "grid",
-
-      "hero",
-      "cta",
-      "features",
-
-      "valuesGrid",
-      "officeTable",
-      "featurePillars",
-
-      "input",
-"select",
-"textarea"
-    ]
-  ),
-
-  // =====================================
-  // PRIMITIVES
-  // =====================================
-
-  title:
-    schema("title", []),
-
-  text:
-    schema("text", []),
-
-  image:
-    schema("image", []),
-
-  button:
-    schema("button", []),
-
-  link:
-    schema("link", []),
-input:
-  schema("input", []),
-
-select:
-  schema("select", []),
-
-textarea:
-  schema("textarea", []),
-  // =====================================
-  // SEMANTIC
-  // =====================================
-
-  hero:
-    schema("hero", []),
-
-  cta:
-    schema("cta", []),
-
-  features:
-    schema("features", []),
-
-  valuesGrid:
-    schema("valuesGrid", []),
-
-  officeTable:
-    schema("officeTable", []),
-
-  featurePillars:
-    schema("featurePillars", [])
-};
 
 export const getCanonicalBlockSchema = (
   type: BlockType
-): CanonicalBlockSchema =>
+): CanonicalBlockSchema => {
+  if (type === "root") {
+    return createSchema(
+      "root",
+      rootAcceptedTypes
+    );
+  }
 
-  canonicalBlockSchemas[type];
+  const config =
+    blockRegistry[type];
+
+  return createSchema(
+    type,
+    config?.rules?.allowedChildren ?? []
+  );
+};
 
 export const canAcceptChild = (
   parentType: BlockType,
   childType: BlockType
-) => {
-
-  return getCanonicalBlockSchema(
+): boolean =>
+  getCanonicalBlockSchema(
     parentType
-  )
-
-    .accepts
-
-    .includes(
-      childType
-    );
-};
+  ).accepts.includes(
+    childType
+  );
 
 export const getWrapperRule = (
   parentType: BlockType,
   childType: BlockType
-) => {
-
-  return getCanonicalBlockSchema(
+): WrapperRule | undefined =>
+  getCanonicalBlockSchema(
     parentType
-  )
-
-    .wrapperRules
-
-    .find(
-      (rule) =>
-
-        rule.child ===
-        childType
-    );
-};
+  ).wrapperRules.find(
+    (rule) =>
+      rule.child === childType
+  );

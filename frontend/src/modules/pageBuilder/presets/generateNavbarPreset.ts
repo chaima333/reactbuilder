@@ -375,10 +375,25 @@ flexShrink: 0,
   paddingRight: "12px",
   marginTop: "0px",
 top: "calc(100% - 1px)",
-  backgroundColor: "red",
-  border: rawStyle.borderBottom || "1px solid rgba(0,0,0,0.12)",
-  borderRadius: "12px",
-  boxShadow: rawStyle.boxShadow || "0 16px 34px rgba(0,0,0,0.18)"
+ background:
+  submenuBg,
+
+backgroundColor:
+  submenuBg.includes("gradient(")
+    ? undefined
+    : submenuBg,
+
+border:
+  rawStyle.submenuBorder ||
+  "1px solid rgba(122,158,192,0.22)",
+
+borderRadius:
+  rawStyle.submenuBorderRadius ||
+  "14px",
+
+boxShadow:
+  rawStyle.submenuBoxShadow ||
+  "0 18px 38px rgba(0,0,0,0.28)"
 },
                               tablet: {
                                 marginTop: "6px"
@@ -423,7 +438,7 @@ top: "calc(100% - 1px)",
                                     style: {
                                       desktop: {
                                         textDecoration: "none",
-                                        color: navTextColor,
+                                        color:  rawStyle.submenuColor ||navTextColor,
                                         fontSize: "12px",
                                         fontWeight: "650",
                                         whiteSpace: "nowrap"

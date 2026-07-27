@@ -83,7 +83,30 @@ const CATEGORY_LABELS:
 // =========================
 // Component
 // =========================
+const extractControlValue = (
+  input: unknown
+): unknown => {
+  if (
+    input &&
+    typeof input === "object" &&
+    "target" in input
+  ) {
+    const target =
+      (input as any).target;
 
+    if (
+      target?.type === "checkbox"
+    ) {
+      return Boolean(
+        target.checked
+      );
+    }
+
+    return target?.value;
+  }
+
+  return input;
+};
 export const DynamicInspector = ({
   block,
   fields,
@@ -178,8 +201,21 @@ export const DynamicInspector = ({
     // =========================
 
     const handleFieldChange = (
-      newValue: unknown
-    ) => {
+  input: unknown
+) => {
+  const rawValue =
+    extractControlValue(input);
+
+  const newValue =
+    field.validation?.cssUnit &&
+    typeof rawValue === "string"
+      ? rawValue
+          .trim()
+          .replace(
+            /[٪﹪％]/g,
+            "%"
+          )
+      : rawValue;
 
       const error =
         validateField(
@@ -197,8 +233,6 @@ export const DynamicInspector = ({
           error
       }));
 
-      if (error) return;
-
       // =========================
       // Props Update
       // =========================
@@ -207,20 +241,27 @@ export const DynamicInspector = ({
         field.target === "props"
       ) {
 
-        const updatedProps =
+        let updatedProps =
           setNestedValue(
-
             block.data.props || {},
-
             field.key,
-
             newValue
           );
 
-        onChange({
+        for (
+          const dependentField
+          of field.resetFields || []
+        ) {
+          updatedProps =
+            setNestedValue(
+              updatedProps,
+              dependentField,
+              ""
+            );
+        }
 
-          props:
-            updatedProps
+        onChange({
+          props: updatedProps
         });
 
         return;
@@ -250,8 +291,29 @@ export const DynamicInspector = ({
     // =========================
     // Control Lookup
     // =========================
-        const Control =
+    const Control =
       resolveControl(field);
+
+    if (!Control) {
+      return (
+        <Box
+          key={field.key}
+          sx={{
+            border: "1px solid",
+            borderColor: "warning.light",
+            borderRadius: 1,
+            p: 1
+          }}
+        >
+          <Typography
+            variant="caption"
+            color="warning.main"
+          >
+            Unsupported inspector control: {field.type}
+          </Typography>
+        </Box>
+      );
+    }
 
     // =========================
     // Render
@@ -261,11 +323,10 @@ export const DynamicInspector = ({
 
       <Control
         key={field.key}
-
+        field={field}
+        block={block}
         label={field.label}
-
         value={value}
-
         error={fieldError}
 
         options={

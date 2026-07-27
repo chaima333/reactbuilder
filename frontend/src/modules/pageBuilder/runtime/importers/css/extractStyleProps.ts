@@ -40,6 +40,9 @@ const VISUAL_STYLE_KEYS = [
   "marginRight",
   "background",
   "backgroundColor",
+  "backgroundSize",
+  "backgroundPosition",
+  "backgroundRepeat",
   "color",
   "border",
   "borderRadius",
@@ -159,6 +162,12 @@ export const extractStyleProps = (
     computed.backgroundImage.includes("var(--")
     ? undefined
     : computed.backgroundImage,
+    backgroundSize:
+      computed.backgroundSize,
+    backgroundPosition:
+      computed.backgroundPosition,
+    backgroundRepeat:
+      computed.backgroundRepeat,
     backgroundColor:
   computed.backgroundColor.includes("var(--")
     ? undefined

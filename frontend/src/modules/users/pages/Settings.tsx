@@ -46,6 +46,7 @@ import {
   useVerify2FASetupMutation,
   useDisable2FAMutation,
 } from '../../../redux/services/auth.api';
+import { apiUrl } from '../../../config/api';
 
 // 360 Brand Colors
 const colors = {
@@ -360,7 +361,7 @@ export const Settings: React.FC = () => {
       }
 
       const response = await fetch(
-        "https://backend-rmfq.onrender.com/api/export/all",
+        apiUrl("/export/all"),
         {
           method: "GET",
           headers: {

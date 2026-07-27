@@ -7,10 +7,6 @@ import type {
 } from "../../semanticContracts/FeaturePillarsPayload";
 
 import {
-  getElementClassName
-} from "../../domGuards";
-
-import {
   detectFeaturePillars
 } from "./detectFeaturePillars";
 
@@ -22,98 +18,98 @@ import {
   validateFeaturePillars
 } from "./validateFeaturePillars";
 
-const hasClassToken = (
-  element: HTMLElement,
-  token: string
-) =>
-  element.classList.contains(
-    token
-  );
+import {
+  extractLayoutStyles,
+  extractTypographyStyles
+} from "../../../css/extractStyleProps";
 
-const findExpandedClaimElement = (
+const findFeatureSectionRoot = (
   element: HTMLElement
-) => {
-  const className =
-    element.className
-      ?.toString()
-      .toLowerCase() || "";
-
-  const isPillarsElement =
-    element.classList.contains("pillars") ||
-    className.includes("pillars") ||
-    className.includes("pillar");
-
-  if (!isPillarsElement) {
-    return element;
-  }
-
+): HTMLElement => {
   const section =
     element.closest(
-      "section, article, main"
+      "section"
     ) as HTMLElement | null;
 
-  if (
-    section &&
-    (
-      section.querySelector(".pillars") ||
-      section.querySelector("[class*='pillars']") ||
-      section.querySelector("[class*='pillar']")
-    ) &&
-    section.querySelector(
-      ".sec-head, h1, h2, h3, p"
-    )
-  ) {
+  if (section) {
     return section;
   }
 
-  const container =
-    element.closest(
-      ".container"
+  return element;
+};
+
+const findFeatureGridRoot = (
+  element: HTMLElement
+): HTMLElement => {
+  const selector =
+    [
+      ".feat-grid",
+      ".feature-grid",
+      ".features-grid",
+      ".pillars",
+      ".pillars-grid",
+      ".industry-grid",
+      ".ind-grid",
+      "[class*='feat-grid']",
+      "[class*='feature-grid']",
+      "[class*='features-grid']",
+      "[class*='pillars-grid']",
+      "[class*='industry-grid']",
+      "[class*='ind-grid']"
+    ].join(",");
+
+  const grid =
+    (
+      element.matches(selector)
+        ? element
+        : element.querySelector(selector)
     ) as HTMLElement | null;
 
-  return (
-    container ||
-    element.parentElement ||
-    element
-  );
+  return grid || element;
 };
-const createExpandedClaimNode = (
-  node: StructuralNode
-): StructuralNode => {
-  const claimedElement =
-    findExpandedClaimElement(
-      node.element
-    );
 
-  if (
-    claimedElement === node.element
-  ) {
-    return node;
+const mergeElementStyles = (
+  element?: HTMLElement | null
+) => {
+  if (!element) {
+    return undefined;
   }
 
   return {
-    ...node,
-    element:
-      claimedElement,
-    path: [
-      ...node.path,
-      "featurePillarsClaim"
-    ],
-    children: [
-      node
-    ],
-    claimed:
-      false
+    desktop: {
+      ...extractLayoutStyles(
+        element
+      ).desktop,
+      ...extractTypographyStyles(
+        element
+      ).desktop
+    },
+    tablet: {},
+    mobile: {}
   };
 };
+
+const findIntroElement = (
+  sectionElement: HTMLElement,
+  selector: string,
+  excludedRoot?: HTMLElement | null
+) =>
+  Array.from(
+    sectionElement.querySelectorAll(
+      selector
+    )
+  ).find(
+    element =>
+      !excludedRoot ||
+      !excludedRoot.contains(
+        element
+      )
+  ) as HTMLElement | undefined;
 
 export const resolveFeaturePillars = (
   node: StructuralNode
 ): FeaturePillarsPayload | null => {
- console.log(
-    "🚀 resolveFeaturePillars CALLED",
-    node.element.className
-  );
+ 
   // =====================================
   // DETECT
   // =====================================
@@ -129,52 +125,105 @@ export const resolveFeaturePillars = (
     return null;
   }
 
-  // =====================================
-  // EXTRACT
-  // Keep extraction rooted at the actual .pillars grid.
-  // =====================================
+  const featureGridElement =
+    findFeatureGridRoot(
+      node.element
+    );
+
+  const gridNode: StructuralNode = {
+    ...node,
+    element: featureGridElement,
+    path: [
+      ...node.path,
+      "featurePillarsGrid"
+    ],
+    children: [],
+    claimed: false
+  };
 
   const items =
     extractFeaturePillars(
-      node
+      gridNode
     );
-
-  // =====================================
-  // VALIDATE
-  // =====================================
 
   const valid =
     validateFeaturePillars(
       items
     );
 
-  if (
-    !valid
-  ) {
+  if (!valid) {
     return null;
   }
 
-  const claimedNode =
-    createExpandedClaimNode(
-      node
+  const sectionElement =
+    findFeatureSectionRoot(
+      featureGridElement
     );
 
-  // =====================================
-  // RESULT
-  // =====================================
+  const claimedNode: StructuralNode =
+    gridNode;
 
-  return {
-    type:
-      "FEATURE_PILLARS",
+  const titleElement =
+    findIntroElement(
+      sectionElement,
+      ".sec-head h1, .sec-head h2, .sec-head h3, h1, h2, h3",
+      featureGridElement
+    );
 
+  const descriptionElement =
+    findIntroElement(
+      sectionElement,
+      ".sec-head p, .lead, p",
+      featureGridElement
+    );
+
+  const eyebrowElement =
+    findIntroElement(
+      sectionElement,
+      ".section-tag, .eyebrow, .badge, .pill, [class*='tag'], [class*='eyebrow'], [class*='badge'], [class*='pill']",
+      featureGridElement
+    );
+
+  const containerElement =
+    (
+      featureGridElement.closest(
+        ".container, [class~='container'], .inner, [class*='inner'], .wrap, [class*='wrap']"
+      ) ||
+      sectionElement.querySelector(
+        ".container, [class~='container'], .inner, [class*='inner'], .wrap, [class*='wrap']"
+      )
+    ) as HTMLElement | null;
+
+  const payload: FeaturePillarsPayload = {
+    type: "FEATURE_PILLARS",
     items,
-
     claimedNode,
-
-    gridNode:
-      node,
-
-    sourceNode:
-      node
+    gridNode,
+    sourceNode: gridNode,
+    suppressIntro: true,
+    styles: { section:  mergeElementStyles( sectionElement  ),
+      container:
+        mergeElementStyles(
+          containerElement
+        ),
+      eyebrow:
+        mergeElementStyles(
+          eyebrowElement
+        ),
+      title:
+        mergeElementStyles(
+          titleElement
+        ),
+      description:
+        mergeElementStyles(
+          descriptionElement
+        ),
+      grid:
+        mergeElementStyles(
+          featureGridElement
+        )
+    }
   };
+
+  return payload;
 };

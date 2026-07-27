@@ -20,6 +20,9 @@ export type PageSeo = {
   twitterDescription?: string;
   twitterImage?: string;
 };
+export type PageVisibility =
+  | "public"
+  | "members_only";
 
 export type Page = {
   id: number;
@@ -32,6 +35,7 @@ export type Page = {
   theme: any;
   isHomepage?: boolean;
   seo?: PageSeo | null;
+  visibility: PageVisibility;
 };
 
 export type PageVersion = {
@@ -299,7 +303,7 @@ export const pagesApi = api.injectEndpoints({
       ],
     }),
 
-    createPage: builder.mutation<Page, { siteId: number; title: string; slug: string; blocks: Block[]; theme?: any; isHomepage?: boolean; }>({
+    createPage: builder.mutation<Page, { siteId: number; title: string; slug: string; blocks: Block[]; theme?: any; isHomepage?: boolean;    visibility?: PageVisibility; }>({
       query: ({ siteId, ...data }) => {
         const sanitizedData = sanitizePageMutationData(data, "createPage");
         return {
@@ -325,7 +329,7 @@ export const pagesApi = api.injectEndpoints({
       ],
     }),
 
-    updatePage: builder.mutation<Page, { siteId: number | string; pageId: number | string; title?: string; slug?: string; blocks?: Block[]; theme?: any; }>({
+    updatePage: builder.mutation<Page, { siteId: number | string; pageId: number | string; title?: string; slug?: string; blocks?: Block[]; theme?: any; visibility?: PageVisibility; }>({
       query: ({ siteId, pageId, ...data }) => {
         const sanitizedData = sanitizePageMutationData(data, "updatePage");
         return {
@@ -362,7 +366,7 @@ export const pagesApi = api.injectEndpoints({
         success: boolean;
         assetMap: Record<string, string>;
         globalLayout?: { navHtml?: string; footerHtml?: string; };
-        pages: { title: string; slug: string; sourceFile: string; processedHtml: string; isHomepage?: boolean; }[];
+        pages: { title: string; originalSlug?: string; slug: string; sourceFile: string; processedHtml: string; isHomepage?: boolean; }[];
       },
       { siteId: number | string; file: File; }
     >({
@@ -468,6 +472,7 @@ export const pagesApi = api.injectEndpoints({
 
 export const {
   useGetPagesQuery,
+  useLazyGetPagesQuery,
   useGetPageByIdQuery,
   useGetPageVersionsQuery,
   useRestorePageVersionMutation,

@@ -2,13 +2,17 @@ import React from "react";
 import {
   Alert,
   Box,
+  Button,
   Chip,
   CircularProgress,
   Paper,
   Stack,
   Typography
 } from "@mui/material";
-import { useGetAiActivityHistoryQuery } from "../../../redux/services/ai.api";
+import {
+  useGetAiActivityHistoryQuery,
+  useSubmitAiFeedbackMutation
+} from "../../../redux/services/ai.api";
 import type { AiActivityEvent } from "../../../redux/services/ai.api";
 
 type Props = {
@@ -60,11 +64,53 @@ const getCardContent = (event: AiActivityEvent) => {
 
 export const AiActivityHistoryPanel: React.FC<Props> = ({ siteId }) => {
   const validSiteId = Number.isFinite(siteId) && siteId > 0;
+  
+  const [
+    submitAiFeedback,
+    { isLoading: isSubmittingFeedback }
+  ] = useSubmitAiFeedbackMutation();
+
+  const [
+    feedbackError,
+    setFeedbackError
+  ] = React.useState<string | null>(null);
+
+  const [
+    feedbackSavedId,
+    setFeedbackSavedId
+  ] = React.useState<number | string | null>(null);
+
+  const handleFeedback = async (
+    event: AiActivityEvent,
+    rating: "positive" | "negative"
+  ) => {
+    try {
+      setFeedbackError(null);
+
+     await submitAiFeedback({
+  siteId,
+  targetActivityId: Number(event.id) || null,
+  targetEventType: event.eventType,
+  pageId: event.pageId ?? null,
+  rating
+}).unwrap();
+
+      setFeedbackSavedId(event.id);
+    } catch {
+      setFeedbackError("Unable to save AI feedback.");
+    }
+  };
+
   const { data: events = [], isLoading, isFetching, isError } =
     useGetAiActivityHistoryQuery(siteId, {
       skip: !validSiteId,
       refetchOnMountOrArgChange: true
     });
+    const visibleEvents =
+  events.filter(
+    (event) =>
+      event.eventType !== "AI_FEEDBACK"
+  );
 
   if (!validSiteId) {
     return <Alert severity="info">Select a site to view AI history.</Alert>;
@@ -82,13 +128,18 @@ export const AiActivityHistoryPanel: React.FC<Props> = ({ siteId }) => {
     return <Alert severity="error">Unable to load AI activity history.</Alert>;
   }
 
-  if (events.length === 0) {
-    return <Alert severity="info">No AI activity recorded yet.</Alert>;
-  }
+if (visibleEvents.length === 0) {
+  return <Alert severity="info">No AI activity recorded yet.</Alert>;
+}
 
   return (
     <Stack spacing={1.5}>
-      {events.map((event) => {
+      {feedbackError && (
+        <Alert severity="error">
+          {feedbackError}
+        </Alert>
+      )}
+        {visibleEvents.map((event) => {
         const card = getCardContent(event);
         const actions = Array.isArray(event.details?.actions)
           ? event.details.actions
@@ -98,6 +149,7 @@ export const AiActivityHistoryPanel: React.FC<Props> = ({ siteId }) => {
             .map((action) => action?.improvement)
             .filter((value): value is string => Boolean(value))
         ));
+        const telemetry = (event.details as any)?.aiTelemetry;
 
         return (
           <Paper key={event.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
@@ -124,9 +176,15 @@ export const AiActivityHistoryPanel: React.FC<Props> = ({ siteId }) => {
 
               <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
                 <Chip size="small" label={event.eventType} />
+
                 {event.pageId != null && (
-                  <Chip size="small" variant="outlined" label={`Page ${event.pageId}`} />
+                  <Chip
+                    size="small"
+                    variant="outlined"
+                    label={`Page ${event.pageId}`}
+                  />
                 )}
+
                 {(event.details?.actionsCount != null || actions.length > 0) && (
                   <Chip
                     size="small"
@@ -134,6 +192,7 @@ export const AiActivityHistoryPanel: React.FC<Props> = ({ siteId }) => {
                     label={`${event.details?.actionsCount ?? actions.length} actions`}
                   />
                 )}
+
                 {improvements.map((improvement) => (
                   <Chip
                     key={improvement}
@@ -143,6 +202,80 @@ export const AiActivityHistoryPanel: React.FC<Props> = ({ siteId }) => {
                     label={improvement}
                   />
                 ))}
+
+                {telemetry && (
+                  <>
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      label={`Provider: ${telemetry.provider}`}
+                    />
+
+                    {telemetry.model && (
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        label={`Model: ${telemetry.model}`}
+                      />
+                    )}
+
+                    {telemetry.durationMs != null && (
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        label={`Duration: ${telemetry.durationMs}ms`}
+                      />
+                    )}
+
+                    {telemetry.fallbackReason && (
+                      <Chip
+                        size="small"
+                        color="warning"
+                        variant="outlined"
+                        label={`Fallback: ${telemetry.fallbackReason}`}
+                      />
+                    )}
+
+                    {telemetry.usedFallback && (
+                      <Chip
+                        size="small"
+                        color="warning"
+                        label="Used fallback"
+                      />
+                    )}
+                  </>
+                )}
+              </Stack>
+
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+              >
+                <Button
+                  size="small"
+                  variant={feedbackSavedId === event.id ? "contained" : "outlined"}
+                  disabled={isSubmittingFeedback}
+                  onClick={() => handleFeedback(event, "positive")}
+                >
+                  👍 Useful
+                </Button>
+
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="warning"
+                  disabled={isSubmittingFeedback}
+                  onClick={() => handleFeedback(event, "negative")}
+                >
+                  👎 Not useful
+                </Button>
+
+                {feedbackSavedId === event.id && (
+                  <Typography variant="caption" color="success.main">
+                    Feedback saved
+        </Typography>
+                )}
               </Stack>
             </Stack>
           </Paper>

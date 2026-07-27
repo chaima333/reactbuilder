@@ -4,23 +4,54 @@ import {
   Typography,
   Button,
   Divider,
-  Stack
+  Stack,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from "@mui/material";
 
+type PageVisibility =
+  | "public"
+  | "members_only";
+
 type Props = {
+  pageVisibility: PageVisibility;
+
+  setPageVisibility: (
+    value: PageVisibility
+  ) => void;
+
   pageTitle: string;
-  setPageTitle: (value: string) => void;
+
+  setPageTitle: (
+    value: string
+  ) => void;
+
   slug: string;
-  setSlug: (value: string) => void;
+
+  setSlug: (
+    value: string
+  ) => void;
+
   onExport?: () => void;
-  onImport?: (file: File) => void;
+
+  onImport?: (
+    file: File
+  ) => void;
+
   onImportHtml?: () => void;
+
   onImportFigma?: () => void;
+
   figmaPluginEnabled?: boolean;
+
   figmaPluginLoading?: boolean;
 };
 
 export const SettingsPanel = ({
+  pageVisibility,
+  setPageVisibility,
   pageTitle,
   setPageTitle,
   slug,
@@ -34,7 +65,10 @@ export const SettingsPanel = ({
 }: Props) => {
   return (
     <Box p={2}>
-      <Typography variant="h6" fontWeight="bold">
+      <Typography
+        variant="h6"
+        fontWeight="bold"
+      >
         Settings
       </Typography>
 
@@ -42,24 +76,73 @@ export const SettingsPanel = ({
         fullWidth
         label="Page Title"
         value={pageTitle}
-        onChange={(e) => setPageTitle(e.target.value)}
-        sx={{ mt: 2 }}
+        onChange={(event) =>
+          setPageTitle(
+            event.target.value
+          )
+        }
+        sx={{
+          mt: 2
+        }}
       />
 
       <TextField
         fullWidth
         label="Slug"
         value={slug}
-        onChange={(e) => setSlug(e.target.value)}
-        sx={{ mt: 2 }}
+        onChange={(event) =>
+          setSlug(
+            event.target.value
+          )
+        }
+        sx={{
+          mt: 2
+        }}
       />
 
-      <Divider sx={{ my: 3 }} />
+      <FormControl
+        fullWidth
+        sx={{
+          mt: 2
+        }}
+      >
+        <InputLabel id="page-visibility-label">
+          Page visibility
+        </InputLabel>
+
+        <Select
+          labelId="page-visibility-label"
+          value={pageVisibility}
+          label="Page visibility"
+          onChange={(event) =>
+            setPageVisibility(
+              event.target
+                .value as PageVisibility
+            )
+          }
+        >
+          <MenuItem value="public">
+            Public
+          </MenuItem>
+
+          <MenuItem value="members_only">
+            Members only
+          </MenuItem>
+        </Select>
+      </FormControl>
+
+      <Divider
+        sx={{
+          my: 3
+        }}
+      />
 
       <Typography
         variant="subtitle2"
         color="primary"
-        sx={{ mb: 2 }}
+        sx={{
+          mb: 2
+        }}
       >
         JSON SCHEMA TOOLS
       </Typography>
@@ -79,16 +162,25 @@ export const SettingsPanel = ({
           fullWidth
         >
           Import JSON
+
           <input
             type="file"
             hidden
             accept=".json"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
+            onChange={(event) => {
+              const file =
+                event.target
+                  .files?.[0];
 
-              if (file && onImport) {
+              if (
+                file &&
+                onImport
+              ) {
                 onImport(file);
               }
+
+              event.target.value =
+                "";
             }}
           />
         </Button>
@@ -97,44 +189,74 @@ export const SettingsPanel = ({
           <Button
             variant="contained"
             fullWidth
-            onClick={onImportHtml}
+            onClick={
+              onImportHtml
+            }
             sx={{
-              bgcolor: "#1976d2",
-              color: "#fff",
-              fontWeight: "bold",
-              textTransform: "none",
+              bgcolor:
+                "#1976d2",
+
+              color:
+                "#fff",
+
+              fontWeight:
+                "bold",
+
+              textTransform:
+                "none",
+
               "&:hover": {
-                bgcolor: "#115293"
+                bgcolor:
+                  "#115293"
               }
             }}
           >
-             IMPORT FROM HTML
+            IMPORT FROM HTML
           </Button>
         )}
 
         <Button
           variant="contained"
           fullWidth
-          disabled={figmaPluginLoading || !figmaPluginEnabled}
-          onClick={onImportFigma}
+          disabled={
+            figmaPluginLoading ||
+            !figmaPluginEnabled
+          }
+          onClick={
+            onImportFigma
+          }
           sx={{
-            bgcolor: "#7c3aed",
-            color: "#fff",
-            fontWeight: "bold",
-            textTransform: "none",
+            bgcolor:
+              "#7c3aed",
+
+            color:
+              "#fff",
+
+            fontWeight:
+              "bold",
+
+            textTransform:
+              "none",
+
             "&:hover": {
-              bgcolor: "#5b21b6"
+              bgcolor:
+                "#5b21b6"
             }
           }}
         >
-           CONNECT FIGMA PLUGIN
+          CONNECT FIGMA PLUGIN
         </Button>
 
-        {!figmaPluginLoading && !figmaPluginEnabled && (
-          <Typography variant="body2" color="text.secondary">
-            Figma Plugin is disabled by administrator
-          </Typography>
-        )}
+        {!figmaPluginLoading &&
+          !figmaPluginEnabled && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+            >
+              Figma Plugin is disabled
+              by administrator
+            </Typography>
+          )}
       </Stack>
     </Box>
   );

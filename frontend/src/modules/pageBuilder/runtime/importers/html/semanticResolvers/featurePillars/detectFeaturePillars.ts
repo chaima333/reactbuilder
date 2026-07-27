@@ -2,17 +2,21 @@ import type {
   StructuralNode
 } from "../../structure/buildStructuralGraph";
 
-const hasClassToken = (
-  element: HTMLElement,
-  token: string
+const classText = (
+  element: Element
 ) =>
-  element.classList.contains(
-    token
-  );
+  String(
+    (element as HTMLElement).className || ""
+  ).toLowerCase();
 
 const isCardLike = (
   element: Element
 ) => {
+  const className =
+    classText(
+      element
+    );
+
   const hasTitle =
     !!element.querySelector(
       "h1,h2,h3,h4,h5,h6"
@@ -23,11 +27,45 @@ const isCardLike = (
       "p"
     );
 
+  const hasCardIdentity =
+    element.tagName.toLowerCase() === "article" ||
+    className.includes("feat") ||
+    className.includes("card") ||
+    className.includes("pillar") ||
+    className.includes("feature") ||
+    className.includes("industry") ||
+    className.includes("ind-");
+
   return (
     hasTitle &&
-    hasText
+    hasText &&
+    hasCardIdentity
   );
 };
+
+const getDirectCards = (
+  element: HTMLElement
+) =>
+  Array.from(
+    element.children
+  ).filter(
+    isCardLike
+  );
+
+const getNestedCards = (
+  element: HTMLElement
+) =>
+  Array.from(
+    element.querySelectorAll(
+      "article, .feat, .ind-card, .feature-card, .pillar, .pillar-card, .card, [class*='feat'], [class*='card'], [class*='pillar'], [class*='feature']"
+    )
+  ).filter(
+    child =>
+      child !== element &&
+      isCardLike(
+        child
+      )
+  );
 
 export const detectFeaturePillars = (
   node: StructuralNode
@@ -36,39 +74,44 @@ export const detectFeaturePillars = (
     node.element;
 
   const className =
-  element.className
-    ?.toString()
-    .toLowerCase() || "";
+    classText(
+      element
+    );
 
-const isPillarsRoot =
-  hasClassToken(
-    element,
-    "pillars"
-  ) ||
-  className.includes(
-    "pillars"
-  ) ||
-  className.includes(
-    "pillar"
-  );
-  if (!isPillarsRoot) {
+  const hasGridIdentity =
+    className.includes("pillars") ||
+    className.includes("pillar") ||
+    className.includes("features") ||
+    className.includes("feature") ||
+    className.includes("feat") ||
+    className.includes("feat-grid") ||
+    className.includes("ind-grid") ||
+    className.includes("industry") ||
+    className.includes("grid");
+
+  if (
+    !hasGridIdentity
+  ) {
     return false;
   }
 
-  const children =
-    Array.from(
-      element.children
+  const directCards =
+    getDirectCards(
+      element
     );
 
-  const cardCount =
-    children.filter(
-      child =>
-        isCardLike(
-          child
-        )
-    ).length;
+  const nestedCards =
+    getNestedCards(
+      element
+    );
+
+  if (
+    directCards.length >= 3
+  ) {
+    return true;
+  }
 
   return (
-    cardCount >= 3
+    nestedCards.length >= 3
   );
 };

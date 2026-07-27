@@ -2,14 +2,16 @@ import { BlockConfig } from "../../../../types/page.types";
 
 export const titleDefaults = {
   props: {
-    content: "Title Text Content",
+    content: "Title Text Content"
   },
   style: {
     desktop: {
-      fontSize: "displayXL",
-      fontWeight: "bold",
-      color: "primary",
-      textAlign: "center"
-    }
+      fontSize: "headingXL",
+      fontWeight: 700,
+      color: "text",
+      textAlign: "left"
+    },
+    tablet: {},
+    mobile: {}
   }
-} satisfies BlockConfig["defaultData"]; 
+} satisfies BlockConfig["defaultData"];

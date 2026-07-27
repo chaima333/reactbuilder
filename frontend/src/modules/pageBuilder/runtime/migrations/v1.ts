@@ -21,19 +21,21 @@ const toSerializedBlock = (
   return {
     id: String(value.id || crypto.randomUUID()),
     type: String(value.type || ""),
-    props: {
-      ...(
+    data: {
+      props: {
+        ...(
         isRecord(value.props)
           ? value.props
           : isRecord(data.props)
           ? data.props
           : {}
-      )
+        )
+      },
+      style:
+        value.style !== undefined
+          ? value.style
+          : data.style
     },
-    style:
-      value.style !== undefined
-        ? value.style
-        : data.style,
     children: Array.isArray(value.children)
       ? value.children.map(toSerializedBlock)
       : []

@@ -17,8 +17,8 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import GoogleIcon from '@mui/icons-material/Google';
 import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
+import { API_URL } from '../../../config/api';
 
-const BACKEND = 'https://backend-rmfq.onrender.com';
 
 export const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -36,7 +36,7 @@ export const Register: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post(`${BACKEND}/api/auth/register`, form);
+      const res = await axios.post(`${API_URL}/auth/register`, form);
       navigate('/waiting-approval', {
         state: { message: res.data.message }
       });
@@ -55,7 +55,7 @@ export const Register: React.FC = () => {
           { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } }
         );
 
-        const res = await axios.post(`${BACKEND}/api/auth/google`, {
+        const res = await axios.post(`${API_URL}/auth/register`, {
           email: userInfo.data.email,
           name: userInfo.data.name,
           googleId: userInfo.data.sub,

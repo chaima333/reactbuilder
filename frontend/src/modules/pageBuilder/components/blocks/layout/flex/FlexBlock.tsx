@@ -349,33 +349,7 @@ const enhancedFlexStyle: React.CSSProperties = {
   if (
     device === "mobile"
   ) {
-    console.log(
-      "MOBILE_LAYOUT_REPORT",
-      {
-        blockType:
-          "flex",
-        id:
-          block?.id,
-        semanticTypeAncestor:
-          findSemanticType(
-            block
-          ),
-        childTypes:
-          (block?.children || []).map(
-            (child: any) => child.type
-          ),
-        rawStyle:
-          source.style,
-        rawDesktop:
-          source.style?.desktop,
-        rawMobile:
-          source.style?.mobile,
-        resolvedStyle:
-          resolved,
-        finalStyle:
-          flexStyle
-      }
-    );
+   
   }
 
   if (
@@ -385,19 +359,7 @@ const enhancedFlexStyle: React.CSSProperties = {
         child?.type === "flexItem"
     )
   ) {
-    console.log(
-      "FEATURE_CARDS_PARENT",
-      JSON.stringify(
-        {
-          id: block.id,
-          childCount: block.children.length,
-          resolvedStyle: resolved,
-          finalStyle: flexStyle
-        },
-        null,
-        2
-      )
-    );
+    
   }
 
   if (
@@ -406,37 +368,7 @@ const enhancedFlexStyle: React.CSSProperties = {
       "kpiNumber"
     )
   ) {
-    console.log(
-      "KPI_ROW_RUNTIME",
-      JSON.stringify(
-        {
-          id:
-            block?.id,
-          childTypes:
-            (block?.children || []).map(
-              (child: any) => child.type
-            ),
-          childCount:
-            (block?.children || []).length,
-          resolvedStyle:
-            resolved,
-          finalDomStyle:
-            flexStyle,
-          flexDirection:
-            flexStyle.flexDirection,
-          flexWrap:
-            flexStyle.flexWrap,
-          gap:
-            flexStyle.gap,
-          justifyContent:
-            flexStyle.justifyContent,
-          alignItems:
-            flexStyle.alignItems
-        },
-        null,
-        2
-      )
-    );
+   
   }
 
   // =====================================
@@ -447,22 +379,11 @@ const isNavbarSubmenu =
   String(block?.id || "").startsWith("navbar-submenu-");
 
 if (isNavbarSubmenu) {
-  console.log(
-    "SUBMENU_BLOCK_FOUND",
-    block.id
-  );
+
 }
 
 if (isNavbarSubmenu) {
-  console.log(
-    "SUBMENU_CHILDREN",
-    block.children?.map(
-      (c:any) => ({
-        id: c.id,
-        type: c.type
-      })
-    )
-  );
+ 
 }
   return (
 

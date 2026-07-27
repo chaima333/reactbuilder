@@ -1,17 +1,5 @@
 import React from "react";
-import {
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Toolbar,
-  Box,
-  Typography,
-  Divider,
-  useTheme,
-} from "@mui/material";
+import {Drawer,List,ListItem, ListItemButton, ListItemIcon,ListItemText,Toolbar, Box, Typography,Divider,useTheme,} from "@mui/material";
 import {
   Dashboard as DashboardIcon,
   Web as SitesIcon,
@@ -21,6 +9,10 @@ import {
   AdminPanelSettings as AdminIcon,
   AutoAwesome as AIIcon,
   Extension as ExtensionIcon,
+  Handshake as PartnerIcon,
+  HelpOutline as HelpIcon,
+  Storage as CmsIcon,
+  DynamicForm as FormsIcon,
 } from "@mui/icons-material";
 import {
   useNavigate,
@@ -105,21 +97,50 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: <SitesIcon />,
       path: "/sites",
     },
+    {
+  text: "Help Center",
+  icon: <HelpIcon />,
+  path: "/help",
+},
   ];
 
-  const workspaceItems: SidebarItem[] = [
-    {
-      text: "Médiathèque",
-      icon: <MediaIcon />,
-      path: currentSiteId ? `/sites/${currentSiteId}/media` : "/sites",
-      pluginKey: "mediaPlugin",
-    },
-    {
-      text: "Marketplace",
-      icon: <ExtensionIcon />,
-      path: currentSiteId ? `/sites/${currentSiteId}/plugins` : "/sites",
-    },
-  ];
+const workspaceItems: SidebarItem[] = [
+  {
+    text: "CMS",
+    icon: <CmsIcon />,
+    path: currentSiteId
+      ? `/sites/${currentSiteId}/cms`
+      : "/sites",
+    siteAdminOnly: true,
+  },
+  {
+    text: "Forms",
+    icon: <FormsIcon />,
+    path: currentSiteId
+      ? `/sites/${currentSiteId}/forms`
+      : "/sites",
+    siteAdminOnly: true,
+  },
+  {
+    text: "Médiathèque",
+    icon: <MediaIcon />,
+    path: currentSiteId ? `/sites/${currentSiteId}/media` : "/sites",
+    pluginKey: "mediaPlugin",
+  },
+  {
+    text: "Marketplace",
+    icon: <ExtensionIcon />,
+    path: currentSiteId ? `/sites/${currentSiteId}/plugins` : "/sites",
+  },
+  {
+    text: "Demandes partenaires",
+    icon: <PartnerIcon />,
+    path: currentSiteId
+      ? `/sites/${currentSiteId}/partner-applications`
+      : "/sites",
+    siteAdminOnly: true,
+  },
+];
 
   const bottomItems: SidebarItem[] = [
     {

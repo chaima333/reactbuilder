@@ -55,6 +55,7 @@ import {
   useGenerateAdminApiKeyMutation,
   useTestWebhookMutation,
 } from "../../../redux/services/admin.api";
+import { apiUrl } from "../../../config/api";
 
 // 360 Brand Colors
 const colors = {
@@ -362,7 +363,7 @@ export default function AdminSettings() {
       }
 
       const response = await fetch(
-        "https://backend-rmfq.onrender.com/api/export/all",
+        apiUrl("/export/all"),
         {
           method: "GET",
           headers: {

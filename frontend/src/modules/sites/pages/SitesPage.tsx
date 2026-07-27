@@ -1,3 +1,5 @@
+// frontend/src/modules/sites/pages/SitesPage.tsx
+
 import React, {
   useState,
   useEffect
@@ -27,7 +29,8 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Visibility as VisibilityIcon,
-  Group as GroupIcon
+  Group as GroupIcon,
+  Download as DownloadIcon,
 } from "@mui/icons-material";
 
 import {
@@ -61,6 +64,7 @@ import {
 } from "../../../redux/api/errorMessages";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";
+import { downloadSiteExport } from "../services/siteExport";
 
 export const Sites: React.FC = () => {
   const { t } =
@@ -68,8 +72,14 @@ export const Sites: React.FC = () => {
 
   const navigate =
     useNavigate();
-  const userRole = useSelector(
-  (state: RootState) => state.auth.user?.role
+ const userRole = useSelector(
+  (state: RootState) =>
+    state.auth.user?.role
+);
+
+const accessToken = useSelector(
+  (state: RootState) =>
+    state.auth.accessToken
 );
 
 const isGlobalAdmin =
@@ -88,6 +98,9 @@ const canCreateSite =
 
   const [selectedSite, setSelectedSite] =
     useState<any>(null);
+
+  const [exportingSiteId, setExportingSiteId] =
+    useState<number | null>(null);
 
     const {
   data,
@@ -404,6 +417,82 @@ const canDeletePage = (
     }
   };
 
+  // =========================
+  // EXPORT SITE
+  // =========================
+
+ const handleExportSite = async (
+  site: any
+) => {
+  if (
+    !site?.id ||
+    exportingSiteId !== null
+  ) {
+    return;
+  }
+
+  if (!canUpdateSite(site)) {
+    enqueueSnackbar(
+      "Vous n'avez pas la permission d'exporter ce site.",
+      {
+        variant: "warning",
+      }
+    );
+
+    return;
+  }
+
+  const enteredBaseUrl =
+    window.prompt(
+      "Domaine public du site pour le SEO et le sitemap. Laissez vide si vous ne le connaissez pas encore.",
+      ""
+    );
+
+  if (enteredBaseUrl === null) {
+    return;
+  }
+
+  try {
+    setExportingSiteId(
+      Number(site.id)
+    );
+
+    await downloadSiteExport({
+      siteId:
+        Number(site.id),
+
+      baseUrl:
+        enteredBaseUrl.trim(),
+
+      accessToken,
+    });
+
+    enqueueSnackbar(
+      "Site exporté avec succès.",
+      {
+        variant: "success",
+      }
+    );
+  } catch (error) {
+    console.error(
+      "SITE_EXPORT_FAILED",
+      error
+    );
+
+    enqueueSnackbar(
+      error instanceof Error
+        ? error.message
+        : "Échec de l'export du site.",
+      {
+        variant: "error",
+      }
+    );
+  } finally {
+    setExportingSiteId(
+      null
+    );
+  }
+};
   // =========================
   // LOADING
   // =========================
@@ -746,44 +835,67 @@ const getPublicSitePath = (
                           {t.edit}
                         </Button>
                       )}
-{canManageMembers(site) && (
-  <Button
-    size="small"
-    startIcon={<GroupIcon />}
-    onClick={() =>
-      navigate(
-        `/sites/${site.id}/members`
-      )
-    }
-  >
-    Membres
-  </Button>
-)}
+                      {canManageMembers(site) && (
+                        <Button
+                          size="small"
+                          startIcon={<GroupIcon />}
+                          onClick={() =>
+                            navigate(
+                              `/sites/${site.id}/members`
+                            )
+                          }
+                        >
+                          Membres
+                        </Button>
+                      )}
+                      
+                      {/* ✅ Export Site Button */}
+                      {canUpdateSite(site) && (
+                        <Button
+                          size="small"
+                          startIcon={
+                            exportingSiteId === site.id
+                              ? (
+                                  <CircularProgress
+                                    size={16}
+                                  />
+                                )
+                              : (
+                                  <DownloadIcon />
+                                )
+                          }
+                          disabled={
+                            exportingSiteId !== null
+                          }
+                          onClick={() =>
+                            handleExportSite(site)
+                          }
+                        >
+                          {exportingSiteId === site.id
+                            ? "Export..."
+                            : "Export"}
+                        </Button>
+                      )}
+
                       <Button
                         size="small"
                         variant="outlined"
-                        startIcon={
-                          <VisibilityIcon />
-                        }
+                        startIcon={<VisibilityIcon />}
                         onClick={() =>
-                         window.open(
-                        getPublicSitePath(site),
-                       "_blank"
-                           )
-                          }
-                        
+                          window.open(
+                            getPublicSitePath(site),
+                            "_blank"
+                          )
+                        }
                       >
                         Voir
                       </Button>
-                      
 
                       {canDeleteSite(site) && (
                         <Button
                           size="small"
                           color="error"
-                          startIcon={
-                            <DeleteIcon />
-                          }
+                          startIcon={<DeleteIcon />}
                           onClick={() => {
                             setSelectedSite(site);
                             setDeleteDialogOpen(true);

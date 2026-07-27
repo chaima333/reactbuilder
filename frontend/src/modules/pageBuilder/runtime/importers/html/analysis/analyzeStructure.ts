@@ -297,7 +297,7 @@ if (
         const childCandidates =
 
           analyzeStructure(
-            child,
+            child as HTMLElement,
             [...path, index],
             getElementId
           );

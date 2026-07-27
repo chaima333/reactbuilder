@@ -17,12 +17,10 @@ import type {
 // =========================
 
 interface RuntimeRendererProps {
-
   block: Block;
-
   device: Device;
-
   children?: React.ReactNode;
+  context?: any;
 }
 
 // =========================
@@ -32,26 +30,18 @@ interface RuntimeRendererProps {
 export const RuntimeRenderer = ({
   block,
   device,
-  children
+  children,
+  context
 }: RuntimeRendererProps) => {
 
+  const config =
+    blockRegistry[
+      block.type
+    ];
 
-
-const config =
-  blockRegistry[
-    block.type
-  ];
-
- if (!config) {
-
-  console.error(
-    "❌ MISSING BLOCK CONFIG",
-    block.type,
-    block
-  );
-
-  return null;
-}
+  if (!config) {
+    return null;
+  }
 
   const Component =
     config.component as React.ComponentType<
@@ -59,41 +49,33 @@ const config =
         children?: React.ReactNode;
       }
     >;
-const blockText =
-  block?.data?.props?.text ||
-  block?.data?.props?.content ||
-  block?.data?.props?.label;
 
-if (
-  blockText === "Healthcare Services" ||
-  blockText === "Our Impact" ||
-  block?.id?.includes("services") ||
-  block?.id?.includes("impact")
-) {
-  console.log("TARGET_BLOCK_TRACE", {
-    id: block?.id,
-    type: block?.type,
-    text: blockText,
-    style: block?.data?.style,
-    children: block?.children?.map((child: any) => ({
-      id: child.id,
-      type: child.type,
-      text:
-        child?.data?.props?.text ||
-        child?.data?.props?.content ||
-        child?.data?.props?.label,
-      style: child?.data?.style
-    }))
-  });
-}
+  // توليد children من block.children
+  const renderChildren = () => {
+    if (!block.children || block.children.length === 0) {
+      return null;
+    }
+
+    return block.children.map((child: Block, index: number) => (
+      <RuntimeRenderer
+        key={child.id || index}
+        block={child}
+        device={device}
+        context={context}
+      />
+    ));
+  };
+
+  // استخدم children من props إذا وجدت، وإلا استخدم renderChildren
+  const childNodes = children || renderChildren();
+
   return (
-
     <Component
-     block={block}
+      block={block}
       data={block.data}
       device={device}
     >
-    {children}
+      {childNodes}
     </Component>
   );
 };

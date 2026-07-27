@@ -6,15 +6,27 @@ import { flexItemFields } from "./fields";
 import { BlockConfig } from "../../../../types/page.types";
 
 export const flexItemDefinition: BlockConfig = {
-  type: "flexItem", // 👑 هذا الـ Key الأصلي اللّي الـ Engine يفرز بيه
-  label: "Column",   // 👑 هذا الـ الاسم التجاري المزيان اللّي يظهر للـ User
+  type: "flexItem", 
+  label: "Column",  
   category: "layout", 
   icon: React.createElement(ViewColumnIcon),
   component: FlexItemBlock as any,
   isContainer: true,
   rules: {
     allowedParents: ["flex"],
-    allowedChildren: ["title", "text", "image", "button", "section", "flex"] 
+    allowedChildren: [
+  "title",
+  "text",
+  "image",
+  "button",
+  "link",
+  "input",
+  "select",
+  "textarea",
+  "section",
+  "flex",
+  "form",
+],
   },
   fields: flexItemFields as any, 
   defaultData: flexItemDefaults

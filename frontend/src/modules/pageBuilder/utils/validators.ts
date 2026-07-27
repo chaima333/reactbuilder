@@ -1,4 +1,4 @@
-export type ValidationRules = {
+﻿export type ValidationRules = {
   required?: boolean;
   cssUnit?: boolean;
   url?: boolean;
@@ -7,38 +7,106 @@ export type ValidationRules = {
   max?: number;
 };
 
-export const validateField = (value: any, rules?: ValidationRules): string | null => {
-  if (!rules) return null;
+const normalizeCssValue = (
+  value: unknown
+): string =>
+  String(value ?? "")
+    .trim()
+    .replace(/\s+/g, "")
+    .replace(/[٪﹪％]/g, "%");
 
-  // 1. Required
-  if (rules.required && (!value || value.toString().trim() === "")) {
+export const validateField = (
+  value: unknown,
+  rules?: ValidationRules
+): string | null => {
+  if (!rules) {
+    return null;
+  }
+
+  const normalizedValue =
+    String(value ?? "").trim();
+
+  if (
+    rules.required &&
+    normalizedValue === ""
+  ) {
     return "This field is required";
   }
 
-  if (!value) return null; // إذا موش required وفارغ، نتعداو
+  if (normalizedValue === "") {
+    return null;
+  }
 
-  // 2. CSS Unit (px, rem, em, %, vh, vw)
   if (rules.cssUnit) {
-    const cssRegex = /^(-?\d*\.?\d+)(px|rem|em|%|vh|vw|pt|pc|in|cm|mm)$/;
-    if (!cssRegex.test(value)) {
-      return "Invalid CSS unit (e.g., 16px, 1.5rem)";
+    const cssValue =
+      normalizeCssValue(value);
+
+    const fallbackRegex =
+      /^-?(?:\d+(?:\.\d+)?|\.\d+)(?:px|rem|em|%|vh|vw|vmin|vmax|pt|pc|in|cm|mm|ch|ex)$/i;
+
+    const keywords = new Set([
+      "0",
+      "auto",
+      "inherit",
+      "initial",
+      "unset",
+      "min-content",
+      "max-content",
+      "fit-content"
+    ]);
+
+    const browserAccepts =
+      typeof CSS !== "undefined" &&
+      typeof CSS.supports === "function" &&
+      CSS.supports("width", cssValue);
+
+    const isValid =
+      browserAccepts ||
+      fallbackRegex.test(cssValue) ||
+      keywords.has(cssValue.toLowerCase()) ||
+      /^(?:calc|min|max|clamp)\(.+\)$/i.test(cssValue);
+
+    if (!isValid) {
+      return "Invalid CSS value (e.g., 40px, 100%, 1.5rem, auto)";
     }
   }
 
-  // 3. URL
   if (rules.url) {
     try {
-      if (value !== "#") new URL(value);
+      if (
+        normalizedValue !== "#" &&
+        !normalizedValue.startsWith("/") &&
+        !normalizedValue.startsWith("./") &&
+        !normalizedValue.startsWith("../")
+      ) {
+        new URL(normalizedValue);
+      }
     } catch {
       return "Please enter a valid URL";
     }
   }
 
-  // 4. Numbers
   if (rules.number) {
-    if (isNaN(Number(value))) return "Must be a number";
-    if (rules.min !== undefined && Number(value) < rules.min) return `Min value is ${rules.min}`;
-    if (rules.max !== undefined && Number(value) > rules.max) return `Max value is ${rules.max}`;
+    const numericValue =
+      Number(normalizedValue);
+
+    if (Number.isNaN(numericValue)) {
+      return "Must be a number";
+    }
+
+    if (
+      rules.min !== undefined &&
+      numericValue < rules.min
+    ) {
+      return `Min value is ${rules.min}`;
+    }
+
+    if (
+      rules.max !== undefined &&
+      numericValue > rules.max
+    ) {
+      return `Max value is ${rules.max}`;
+    }
   }
 
   return null;

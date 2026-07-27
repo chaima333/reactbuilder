@@ -40,24 +40,7 @@ export const useResolvedStyle = (
       defaults
     );
 
-  console.log(
-    "USE_RESOLVED_STYLE_TRACE",
-    {
-      device,
-      rawStyle:
-        style || {},
-      defaults,
-      runtimeTokens:
-        runtime.tokens || {},
-      responsiveResolved:
-        resolved
-    }
-  );
-
-    console.log(
-  "🚨 BEFORE TOKENS",
-  resolved
-);
+ 
 
   const tokenResolved =
 
@@ -65,33 +48,6 @@ export const useResolvedStyle = (
       resolved,
       runtime.tokens || {}
     );
-
-  console.log(
-    "USE_RESOLVED_STYLE_AFTER_TOKENS",
-    {
-      device,
-      responsiveResolved:
-        resolved,
-      tokenResolved
-    }
-  );
-    console.log(
-  "🚨 AFTER TOKENS",
-  tokenResolved
-);
-
-  // =====================================
-  // DEBUG
-  // =====================================
-
-  console.log(
-    "🔥 RESOLVED STYLE OUTPUT",
-    tokenResolved
-  );
-
-  // =====================================
-  // RETURN
-  // =====================================
 
   return tokenResolved;
 };

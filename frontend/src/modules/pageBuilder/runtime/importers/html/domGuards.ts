@@ -14,15 +14,6 @@ export const getElementClassName = (
     return rawClassName;
   }
 
-  if (
-    rawClassName &&
-    typeof rawClassName === "object" &&
-    "baseVal" in rawClassName &&
-    typeof rawClassName.baseVal === "string"
-  ) {
-    return rawClassName.baseVal;
-  }
-
   return element.getAttribute("class") || "";
 };
 

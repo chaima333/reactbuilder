@@ -1,192 +1,351 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
+  Alert,
   Box,
-  Typography,
-  Grid,
+  Button,
   Card,
   CardContent,
-  CircularProgress,
-  Stack,
-  Paper,
   Chip,
-  Alert,
+  CircularProgress,
+  Grid,
   LinearProgress,
+  Paper,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
-  Button,
+  Typography,
 } from "@mui/material";
+import { alpha, useTheme } from "@mui/material/styles";
 
 import {
   AutoAwesome,
-  Image,
   Category,
+  Image,
   Public,
-  TrendingUp,
   Timeline,
+  TrendingUp,
 } from "@mui/icons-material";
 
-import { useGetAIStatsQuery, useGetAdminStatsQuery } from "../../../redux/services/admin.api";
+import {
+  useGetAIStatsQuery,
+  useGetAdminStatsQuery,
+} from "../../../redux/services/admin.api";
 
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
+
+import AiTelemetryAnalyticsPanel from "../components/AiTelemetryAnalyticsPanel";
+import { useNavigate } from "react-router-dom";
 
 // ==================== TYPES ====================
 interface AIStats {
   generatedPages: number;
   generatedImages: number;
   lastGenerationAt: string | null;
-  dailyGenerations: { date: string; count: number }[];
-  topCategories: { category: string; count: number }[];
-  topSites?: { siteId: string; siteName: string; count: number }[];
+  dailyGenerations: DailyGeneration[];
+  topCategories: CategoryCount[];
+  topSites?: SiteGeneration[];
   generatedToday: number;
   generatedThisWeek: number;
-  recentGenerations?: { id: string; siteId: string; siteName?: string; category: string; createdAt: string }[];
-  lastActiveSites?: {
-    siteId: string;
-    siteName: string;
-    count: number;
-    lastActivityAt: string | null;
-  }[];
+  recentGenerations?: RecentGeneration[];
+  lastActiveSites?: LastActiveSite[];
 }
 
-// ==================== COLORS ====================
-const COLORS = ["#00C49A", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d"];
+interface DailyGeneration {
+  date: string;
+  count: number;
+}
 
-// ==================== COMPONENTS ====================
-const SectionCard = ({
-  title,
-  children,
-  action,
-}: {
+interface CategoryCount {
+  category: string;
+  count: number;
+}
+
+interface SiteGeneration {
+  siteId: string;
+  siteName: string;
+  count: number;
+}
+
+interface RecentGeneration {
+  id: string;
+  siteId: string;
+  siteName?: string;
+  category: string;
+  createdAt: string;
+}
+
+interface LastActiveSite {
+  siteId: string;
+  siteName: string;
+  count: number;
+  lastActivityAt: string | null;
+}
+
+interface SectionCardProps {
   title: string;
   children: React.ReactNode;
   action?: React.ReactNode;
-}) => (
-  <Paper
-    sx={{
-      p: 3,
-      borderRadius: 4,
-      boxShadow: "0 10px 30px rgba(0,0,0,0.07)",
-      border: "1px solid rgba(0,0,0,0.06)",
-      height: "100%",
-    }}
-  >
-    <Stack
-      direction="row"
-      justifyContent="space-between"
-      alignItems="center"
-      mb={2}
+}
+
+interface MetricCardProps {
+  title: string;
+  value: React.ReactNode;
+  helper?: React.ReactNode;
+  icon: React.ReactNode;
+  color: string;
+}
+
+interface EmptyStateProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}
+
+// ==================== CONSTANTS ====================
+const RANGE_OPTIONS = [
+  { value: 7, label: "7 Days" },
+  { value: 30, label: "30 Days" },
+  { value: 90, label: "90 Days" },
+  { value: 365, label: "365 Days" },
+];
+
+// ==================== HELPERS ====================
+const isValidDate = (dateString: string | null) => {
+  if (!dateString) return false;
+  return !Number.isNaN(new Date(dateString).getTime());
+};
+
+const formatTimeAgo = (dateString: string | null) => {
+  if (!isValidDate(dateString)) return "No AI activity";
+
+  const diff = Date.now() - new Date(dateString as string).getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
+  if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+  if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+
+  return "Just now";
+};
+
+const formatDateTime = (dateString: string | null) => {
+  if (!isValidDate(dateString)) return "No AI activity";
+
+  const date = new Date(dateString as string);
+  const today = new Date();
+  const isToday = date.toDateString() === today.toDateString();
+
+  if (isToday) {
+    return `Today at ${date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    })}`;
+  }
+
+  return date.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const formatRelativeTime = (dateString: string | null) => {
+  if (!isValidDate(dateString)) return "N/A";
+
+  const diff = Date.now() - new Date(dateString as string).getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  if (hours < 24) return `${hours} h ago`;
+
+  return new Date(dateString as string).toLocaleDateString();
+};
+
+// ==================== SMALL COMPONENTS ====================
+const SectionCard = ({ title, children, action }: SectionCardProps) => {
+  const theme = useTheme();
+
+  return (
+    <Paper
+      variant="outlined"
+      sx={{
+        p: { xs: 2, md: 2.5 },
+        height: "100%",
+        borderRadius: 3,
+        borderColor: "divider",
+        bgcolor: "background.paper",
+        boxShadow: theme.palette.mode === "dark" ? "none" : theme.shadows[1],
+      }}
     >
-      <Typography variant="h6" fontWeight={800}>
-        {title}
-      </Typography>
-      {action}
-    </Stack>
-    {children}
-  </Paper>
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        spacing={2}
+        mb={2}
+      >
+        <Typography variant="h6" fontWeight={800} color="text.primary">
+          {title}
+        </Typography>
+        {action}
+      </Stack>
+
+      {children}
+    </Paper>
+  );
+};
+
+const MetricCard = ({ title, value, helper, icon, color }: MetricCardProps) => {
+  const theme = useTheme();
+
+  return (
+    <Card
+      variant="outlined"
+      sx={{
+        height: "100%",
+        borderRadius: 3,
+        bgcolor: "background.paper",
+        borderColor: "divider",
+        transition: theme.transitions.create(["transform", "border-color"], {
+          duration: theme.transitions.duration.short,
+        }),
+        "&:hover": {
+          transform: "translateY(-2px)",
+          borderColor: alpha(color, 0.5),
+        },
+      }}
+    >
+      <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
+          <Box minWidth={0}>
+            <Typography variant="body2" color="text.secondary" fontWeight={700}>
+              {title}
+            </Typography>
+
+            <Typography
+              variant="h4"
+              fontWeight={900}
+              color="text.primary"
+              mt={0.5}
+              noWrap
+            >
+              {value}
+            </Typography>
+
+            {helper && (
+              <Typography variant="caption" color="text.secondary" noWrap>
+                {helper}
+              </Typography>
+            )}
+          </Box>
+
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              flexShrink: 0,
+              borderRadius: 2.5,
+              display: "grid",
+              placeItems: "center",
+              color,
+              bgcolor: alpha(color, theme.palette.mode === "dark" ? 0.16 : 0.1),
+            }}
+          >
+            {icon}
+          </Box>
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+};
+
+const EmptyState = ({ icon, title, description }: EmptyStateProps) => (
+  <Box
+    minHeight={220}
+    display="flex"
+    flexDirection="column"
+    alignItems="center"
+    justifyContent="center"
+    textAlign="center"
+    gap={1}
+    px={2}
+  >
+    <Box sx={{ color: "text.disabled" }}>{icon}</Box>
+    <Typography color="text.secondary" fontWeight={700}>
+      {title}
+    </Typography>
+    <Typography variant="caption" color="text.secondary">
+      {description}
+    </Typography>
+  </Box>
+);
+
+const RangeFilter = ({ days, onChange }: { days: number; onChange: (days: number) => void }) => (
+  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+    {RANGE_OPTIONS.map((option) => (
+      <Button
+        key={option.value}
+        size="small"
+        color="primary"
+        variant={days === option.value ? "contained" : "outlined"}
+        onClick={() => onChange(option.value)}
+        sx={{
+          borderRadius: 2,
+          textTransform: "none",
+          fontWeight: 700,
+        }}
+      >
+        {option.label}
+      </Button>
+    ))}
+  </Stack>
 );
 
 // ==================== MAIN COMPONENT ====================
 export default function AdminAIAnalytics() {
-  // ===== STATE =====
+  const theme = useTheme();
   const [days, setDays] = useState<number>(7);
+  const navigate = useNavigate();
 
-  // ===== HOOKS =====
-  const { data: aiStats, isLoading: aiLoading, isError: aiError } = useGetAIStatsQuery(days);
+  const {
+    data: aiStats,
+    isLoading: aiLoading,
+    isError: aiError,
+    error,
+  } = useGetAIStatsQuery(days);
+
   const { data: stats, isLoading: statsLoading } = useGetAdminStatsQuery(days);
 
-  // ===== HELPERS =====
-  const timeAgo = (dateString: string | null) => {
-    if (!dateString) return "No AI activity";
+  const chartColors = useMemo(
+    () => [
+      theme.palette.primary.main,
+      theme.palette.secondary.main,
+      theme.palette.warning.main,
+      theme.palette.info.main,
+      theme.palette.success.main,
+    ],
+    [theme]
+  );
 
-    const diff = Date.now() - new Date(dateString).getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
-    if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
-    if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
-    return "Just now";
-  };
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "No AI activity";
-
-    const date = new Date(dateString);
-    const today = new Date();
-    const isToday = date.toDateString() === today.toDateString();
-    return isToday
-      ? `Today at ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-      : date.toLocaleString([], {
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-  };
-const formatRelativeTime = (dateString: string) => {
-  const diff = Date.now() - new Date(dateString).getTime();
-
-  const mins = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-
-  if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins} min ago`;
-  if (hours < 24) return `${hours} h ago`;
-
-  return new Date(dateString).toLocaleDateString();
-};
-  // ===== LOADING =====
-  if (aiLoading || statsLoading) {
-    return (
-      <Box
-        minHeight="60vh"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        flexDirection="column"
-        gap={2}
-      >
-        <CircularProgress size={48} sx={{ color: "#00C49A" }} />
-        <Typography variant="body2" color="text.secondary">
-          Loading AI Analytics...
-        </Typography>
-      </Box>
-    );
-  }
-
-  // ===== ERROR =====
-  if (aiError) {
-    return (
-      <Box
-        minHeight="60vh"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-      >
-        <Alert severity="error" sx={{ maxWidth: 500 }}>
-          {/* @ts-ignore */}
-          {aiError?.data?.message || "Failed to load AI analytics data. Please try again later."}
-        </Alert>
-      </Box>
-    );
-  }
-
-  // ===== SAFE DATA =====
   const safeAiStats: AIStats = {
     generatedPages: aiStats?.generatedPages ?? 0,
     generatedImages: aiStats?.generatedImages ?? 0,
@@ -200,358 +359,192 @@ const formatRelativeTime = (dateString: string) => {
     lastActiveSites: aiStats?.lastActiveSites ?? [],
   };
 
-  // ===== AI ADOPTION RATE =====
-  const aiAdoptionRate = stats?.totalPages && stats?.totalPages > 0
-    ? Math.round((safeAiStats.generatedPages / stats.totalPages) * 100)
-    : 0;
+  const totalGenerations =
+    safeAiStats.generatedPages + safeAiStats.generatedImages;
 
-  // ===== CALCULS =====
-  const totalGenerations = safeAiStats.generatedPages + safeAiStats.generatedImages;
-  const hasData = safeAiStats.generatedPages > 0 || 
-                  safeAiStats.generatedImages > 0 ||
-                  safeAiStats.dailyGenerations.length > 0 || 
-                  safeAiStats.topCategories.length > 0 || 
-                  (safeAiStats.topSites?.length ?? 0) > 0;
+  const aiAdoptionRate =
+    stats?.totalPages && stats.totalPages > 0
+      ? Math.round((safeAiStats.generatedPages / stats.totalPages) * 100)
+      : 0;
 
-  // ===== RENDER =====
+  const hasData =
+    totalGenerations > 0 ||
+    safeAiStats.dailyGenerations.length > 0 ||
+    safeAiStats.topCategories.length > 0 ||
+    (safeAiStats.topSites?.length ?? 0) > 0;
+
+  const tooltipStyle = {
+    backgroundColor: theme.palette.background.paper,
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: 12,
+    color: theme.palette.text.primary,
+    boxShadow: theme.palette.mode === "dark" ? "none" : theme.shadows[3],
+  };
+
+  if (aiLoading || statsLoading) {
+    return (
+      <Box
+        minHeight="60vh"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        flexDirection="column"
+        gap={2}
+        sx={{ bgcolor: "background.default", color: "text.primary" }}
+      >
+        <CircularProgress size={42} color="primary" />
+        <Typography variant="body2" color="text.secondary">
+          Loading AI Analytics...
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (aiError) {
+    const errorMessage =
+      "data" in ((error as any) ?? {})
+        ? (error as any)?.data?.message
+        : undefined;
+
+    return (
+      <Box
+        minHeight="60vh"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        sx={{ bgcolor: "background.default", px: 2 }}
+      >
+        <Alert severity="error" sx={{ width: "100%", maxWidth: 560 }}>
+          {errorMessage || "Failed to load AI analytics data. Please try again later."}
+        </Alert>
+      </Box>
+    );
+  }
+
   return (
     <Box
       sx={{
-        p: { xs: 2, md: 4 },
         minHeight: "100vh",
-        backgroundColor: "#F4F7FE",
+        p: { xs: 2, md: 3 },
+        bgcolor: "background.default",
+        color: "text.primary",
       }}
     >
       {/* ===== HEADER ===== */}
-      <Box mb={4}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
-          <Box>
-            <Typography variant="h4" fontWeight={900} color="#1B2559">
-              🤖 AI Analytics
-            </Typography>
-            <Typography color="text.secondary" mt={0.5}>
-              AI content generation insights and trends from real data
-            </Typography>
-            {totalGenerations > 0 && (
-              <Chip
-                label={`${totalGenerations} total generations`}
-                size="small"
-                sx={{
-                  mt: 1,
-                  bgcolor: "rgba(0,196,154,0.12)",
-                  color: "#00C49A",
-                  fontWeight: 600,
-                }}
-              />
-            )}
-          </Box>
+      <Stack
+        direction={{ xs: "column", md: "row" }}
+        alignItems={{ xs: "flex-start", md: "center" }}
+        justifyContent="space-between"
+        spacing={2}
+        mb={3}
+      >
+        <Box>
+          <Typography variant="h4" fontWeight={900} color="text.primary">
+            AI Analytics
+          </Typography>
 
-          {/* ===== DATE FILTER ===== */}
-          <Stack direction="row" spacing={1}>
-            <Button
-              variant={days === 7 ? "contained" : "outlined"}
-              size="small"
-              onClick={() => setDays(7)}
-              sx={{
-                borderRadius: 2,
-                textTransform: "none",
-                fontWeight: 600,
-                ...(days === 7 && {
-                  bgcolor: "#00C49A",
-                  "&:hover": {
-                    bgcolor: "#009E7C",
-                  },
-                }),
-              }}
-            >
-              7 Days
-            </Button>
-            <Button
-              variant={days === 30 ? "contained" : "outlined"}
-              size="small"
-              onClick={() => setDays(30)}
-              sx={{
-                borderRadius: 2,
-                textTransform: "none",
-                fontWeight: 600,
-                ...(days === 30 && {
-                  bgcolor: "#00C49A",
-                  "&:hover": {
-                    bgcolor: "#009E7C",
-                  },
-                }),
-              }}
-            >
-              30 Days
-            </Button>
-            <Button
-              variant={days === 90 ? "contained" : "outlined"}
-              size="small"
-              onClick={() => setDays(90)}
-              sx={{
-                borderRadius: 2,
-                textTransform: "none",
-                fontWeight: 600,
-                ...(days === 90 && {
-                  bgcolor: "#00C49A",
-                  "&:hover": {
-                    bgcolor: "#009E7C",
-                  },
-                }),
-              }}
-            >
-              90 Days
-            </Button>
-            <Button
-              variant={days === 365 ? "contained" : "outlined"}
-              size="small"
-              onClick={() => setDays(365)}
-              sx={{
-                borderRadius: 2,
-                textTransform: "none",
-                fontWeight: 600,
-                ...(days === 365 && {
-                  bgcolor: "#00C49A",
-                  "&:hover": {
-                    bgcolor: "#009E7C",
-                  },
-                }),
-              }}
-            >
-              All Time
-            </Button>
-          </Stack>
-        </Stack>
-      </Box>
+          <Typography color="text.secondary" mt={0.5}>
+            Simple overview of AI content generation activity.
+          </Typography>
 
-      {/* ===== AI SUMMARY CARDS ===== */}
-      <Grid container spacing={3} mb={3}>
+          {totalGenerations > 0 && (
+            <Chip
+              size="small"
+              color="primary"
+              variant="outlined"
+              label={`${totalGenerations} total generations`}
+              sx={{ mt: 1, fontWeight: 700 }}
+            />
+          )}
+        </Box>
+
+        <RangeFilter days={days} onChange={setDays} />
+      </Stack>
+
+      {/* ===== SUMMARY CARDS ===== */}
+      <Grid container spacing={2.5} mb={2.5}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              borderRadius: 4,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-              height: "100%",
-              transition: "transform 0.2s",
-              "&:hover": {
-                transform: "translateY(-4px)",
-                boxShadow: "0 20px 40px rgba(0,0,0,0.12)",
-              },
-            }}
-          >
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                    AI Generated Pages
-                  </Typography>
-                  <Typography variant="h4" fontWeight={900} color="#1B2559" mt={0.5}>
-                    {safeAiStats.generatedPages}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    width: 46,
-                    height: 46,
-                    borderRadius: 3,
-                    display: "grid",
-                    placeItems: "center",
-                    bgcolor: "rgba(0,196,154,0.12)",
-                    color: "#00C49A",
-                  }}
-                >
-                  <AutoAwesome />
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
+          <MetricCard
+            title="AI Generated Pages"
+            value={safeAiStats.generatedPages}
+            icon={<AutoAwesome />}
+            color={theme.palette.primary.main}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              borderRadius: 4,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-              height: "100%",
-              transition: "transform 0.2s",
-              "&:hover": {
-                transform: "translateY(-4px)",
-                boxShadow: "0 20px 40px rgba(0,0,0,0.12)",
-              },
-            }}
-          >
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                    AI Generated Images
-                  </Typography>
-                  <Typography variant="h4" fontWeight={900} color="#1B2559" mt={0.5}>
-                    {safeAiStats.generatedImages}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    width: 46,
-                    height: 46,
-                    borderRadius: 3,
-                    display: "grid",
-                    placeItems: "center",
-                    bgcolor: "rgba(255,187,40,0.12)",
-                    color: "#FFBB28",
-                  }}
-                >
-                  <Image />
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
+          <MetricCard
+            title="AI Generated Images"
+            value={safeAiStats.generatedImages}
+            icon={<Image />}
+            color={theme.palette.warning.main}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              borderRadius: 4,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-              height: "100%",
-              transition: "transform 0.2s",
-              "&:hover": {
-                transform: "translateY(-4px)",
-                boxShadow: "0 20px 40px rgba(0,0,0,0.12)",
-              },
-            }}
-          >
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                    Last Generation
-                  </Typography>
-                  <Typography variant="h6" fontWeight={800} color="#1B2559" mt={0.5}>
-                    {timeAgo(safeAiStats.lastGenerationAt)}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {formatDate(safeAiStats.lastGenerationAt)}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    width: 46,
-                    height: 46,
-                    borderRadius: 3,
-                    display: "grid",
-                    placeItems: "center",
-                    bgcolor: "rgba(136,132,216,0.12)",
-                    color: "#8884d8",
-                  }}
-                >
-                  <Timeline />
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
+          <MetricCard
+            title="Last Generation"
+            value={formatTimeAgo(safeAiStats.lastGenerationAt)}
+            helper={formatDateTime(safeAiStats.lastGenerationAt)}
+            icon={<Timeline />}
+            color={theme.palette.info.main}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              borderRadius: 4,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-              height: "100%",
-              transition: "transform 0.2s",
-              "&:hover": {
-                transform: "translateY(-4px)",
-                boxShadow: "0 20px 40px rgba(0,0,0,0.12)",
-              },
-            }}
-          >
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                    Top Category
-                  </Typography>
-                  <Typography variant="h5" fontWeight={800} color="#1B2559" mt={0.5}>
-                    {safeAiStats.topCategories.length > 0 
-                      ? safeAiStats.topCategories[0].category 
-                      : "N/A"}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {safeAiStats.topCategories.length > 0 
-                      ? `${safeAiStats.topCategories[0].count} generations` 
-                      : "No data"}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    width: 46,
-                    height: 46,
-                    borderRadius: 3,
-                    display: "grid",
-                    placeItems: "center",
-                    bgcolor: "rgba(130,202,157,0.12)",
-                    color: "#82ca9d",
-                  }}
-                >
-                  <Category />
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
+          <MetricCard
+            title="Top Category"
+            value={safeAiStats.topCategories[0]?.category || "N/A"}
+            helper={
+              safeAiStats.topCategories[0]
+                ? `${safeAiStats.topCategories[0].count} generations`
+                : "No data"
+            }
+            icon={<Category />}
+            color={theme.palette.success.main}
+          />
         </Grid>
       </Grid>
-
       {/* ===== CHARTS ===== */}
-      <Grid container spacing={3}>
+      <Grid container spacing={2.5}>
         <Grid item xs={12} lg={6}>
-          <SectionCard title={`Daily Generations (Last ${days} Days)`}>
+          <SectionCard title={`Daily Generations - ${days} Days`}>
             <Box sx={{ height: 280, width: "100%" }}>
               {safeAiStats.dailyGenerations.length > 0 ? (
                 <ResponsiveContainer>
                   <BarChart data={safeAiStats.dailyGenerations}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
                     <XAxis
                       dataKey="date"
-                      tickFormatter={(date) => {
-                        const d = new Date(date);
-                        return d.toLocaleDateString([], { day: "numeric" });
-                      }}
-                      stroke="#9e9e9e"
+                      stroke={theme.palette.text.secondary}
+                      tickFormatter={(date) =>
+                        new Date(date).toLocaleDateString([], { day: "numeric" })
+                      }
                     />
-                    <YAxis allowDecimals={false} stroke="#9e9e9e" />
+                    <YAxis allowDecimals={false} stroke={theme.palette.text.secondary} />
                     <Tooltip
-                      contentStyle={{
-                        borderRadius: 12,
-                        border: "none",
-                        boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-                      }}
-                      labelFormatter={(date) => {
-                        const d = new Date(date);
-                        return d.toLocaleDateString([], {
+                      contentStyle={tooltipStyle}
+                      labelFormatter={(date) =>
+                        new Date(date).toLocaleDateString([], {
                           weekday: "long",
                           month: "long",
                           day: "numeric",
-                        });
-                      }}
+                        })
+                      }
                     />
-                    <Bar dataKey="count" fill="#00C49A" radius={[4, 4, 0, 0]} />
+                    <Bar
+                      dataKey="count"
+                      fill={theme.palette.primary.main}
+                      radius={[6, 6, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <Box
-                  display="flex"
-                  flexDirection="column"
-                  alignItems="center"
-                  justifyContent="center"
-                  height="100%"
-                  gap={1}
-                >
-                  <TrendingUp sx={{ fontSize: 40, color: "#e0e0e0" }} />
-                  <Typography color="text.secondary">No data available</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Start generating AI content to see trends
-                  </Typography>
-                </Box>
+                <EmptyState
+                  icon={<TrendingUp sx={{ fontSize: 42 }} />}
+                  title="No data available"
+                  description="Start generating AI content to see trends."
+                />
               )}
             </Box>
           </SectionCard>
@@ -567,70 +560,55 @@ const formatRelativeTime = (dateString: string) => {
                       data={safeAiStats.topCategories}
                       cx="50%"
                       cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
+                      innerRadius={48}
+                      outerRadius={84}
                       paddingAngle={2}
                       dataKey="count"
                       label={({ category, percent }) =>
                         `${category} ${(percent * 100).toFixed(0)}%`
                       }
-                      labelLine={{ stroke: "#9e9e9e", strokeWidth: 1 }}
+                      labelLine={{
+                        stroke: theme.palette.divider,
+                        strokeWidth: 1,
+                      }}
                     >
-                      {safeAiStats.topCategories.map((_, index) => (
+                      {safeAiStats.topCategories.map((category, index) => (
                         <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
+                          key={`${category.category}-${index}`}
+                          fill={chartColors[index % chartColors.length]}
                         />
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{
-                        borderRadius: 12,
-                        border: "none",
-                        boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-                      }}
-                      formatter={(value, name) => [
-                        `${value} generations`,
-                        name,
-                      ]}
+                      contentStyle={tooltipStyle}
+                      formatter={(value) => [`${value} generations`, "Count"]}
                     />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <Box
-                  display="flex"
-                  flexDirection="column"
-                  alignItems="center"
-                  justifyContent="center"
-                  height="100%"
-                  gap={1}
-                >
-                  <Category sx={{ fontSize: 40, color: "#e0e0e0" }} />
-                  <Typography color="text.secondary">No data available</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Categories will appear when AI content is generated
-                  </Typography>
-                </Box>
+                <EmptyState
+                  icon={<Category sx={{ fontSize: 42 }} />}
+                  title="No data available"
+                  description="Categories will appear when AI content is generated."
+                />
               )}
             </Box>
           </SectionCard>
         </Grid>
       </Grid>
 
-      {/* ===== TOP AI SITES & AI USAGE OVERVIEW ===== */}
-      <Grid container spacing={3} mt={1}>
+      {/* ===== TOP SITES + USAGE ===== */}
+      <Grid container spacing={2.5} mt={0}>
         <Grid item xs={12} md={6}>
           <SectionCard
             title="Top AI Sites"
             action={
               <Chip
-                label={`${safeAiStats.topSites?.length || 0} sites`}
                 size="small"
-                sx={{
-                  bgcolor: "rgba(0,196,154,0.12)",
-                  color: "#00C49A",
-                  fontWeight: 600,
-                }}
+                color="primary"
+                variant="outlined"
+                label={`${safeAiStats.topSites?.length || 0} sites`}
+                sx={{ fontWeight: 700 }}
               />
             }
           >
@@ -639,70 +617,68 @@ const formatRelativeTime = (dateString: string) => {
                 {safeAiStats.topSites.slice(0, 5).map((site, index) => {
                   const maxCount = safeAiStats.topSites?.[0]?.count || 1;
                   const percentage = (site.count / maxCount) * 100;
+                  const color = chartColors[index % chartColors.length];
 
                   return (
                     <Box key={site.siteId}>
                       <Stack
                         direction="row"
-                        justifyContent="space-between"
                         alignItems="center"
-                        sx={{ mb: 0.5 }}
+                        justifyContent="space-between"
+                        spacing={2}
+                        mb={0.75}
                       >
-                        <Stack direction="row" alignItems="center" spacing={1.5}>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontWeight: 700,
-                              color: index === 0 ? "#00C49A" : "text.primary",
-                              minWidth: 24,
-                            }}
-                          >
+                        <Stack direction="row" alignItems="center" spacing={1.5} minWidth={0}>
+                          <Typography variant="body2" fontWeight={800} color="text.secondary">
                             #{index + 1}
                           </Typography>
+
                           <Box
                             sx={{
                               width: 32,
                               height: 32,
                               borderRadius: 2,
-                              bgcolor: index === 0 
-                                ? "rgba(0,196,154,0.12)" 
-                                : "rgba(0,0,0,0.04)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
+                              flexShrink: 0,
+                              display: "grid",
+                              placeItems: "center",
+                              color,
+                              bgcolor: alpha(color, theme.palette.mode === "dark" ? 0.16 : 0.1),
                             }}
                           >
-                            <Public
-                              sx={{
-                                fontSize: 16,
-                                color: index === 0 ? "#00C49A" : "#9e9e9e",
-                              }}
-                            />
+                            <Public sx={{ fontSize: 16 }} />
                           </Box>
-                          <Typography fontWeight={600} noWrap>
-                            {site.siteName || `Site #${site.siteId}`}
-                          </Typography>
+                                <Button
+  size="small"
+  variant="text"
+  onClick={() =>
+    navigate(`/admin/ai-analytics/sites/${site.siteId}`)
+  }
+  sx={{
+    textTransform: "none",
+    fontWeight: 800,
+    px: 0,
+    minWidth: 0
+  }}
+>
+  {site.siteName || `Site #${site.siteId}`}
+</Button>
                         </Stack>
-                        <Typography fontWeight={700} color="#00C49A">
+
+                        <Typography fontWeight={800} color="text.primary">
                           {site.count}
                         </Typography>
                       </Stack>
+
                       <LinearProgress
                         variant="determinate"
                         value={percentage}
                         sx={{
-                          height: 4,
-                          borderRadius: 2,
-                          bgcolor: "rgba(0,0,0,0.06)",
+                          height: 5,
+                          borderRadius: 99,
+                          bgcolor: alpha(color, 0.12),
                           "& .MuiLinearProgress-bar": {
-                            bgcolor: index === 0 
-                              ? "#00C49A" 
-                              : index === 1 
-                                ? "#FFBB28" 
-                                : index === 2 
-                                  ? "#FF8042" 
-                                  : "#8884d8",
-                            borderRadius: 2,
+                            bgcolor: color,
+                            borderRadius: 99,
                           },
                         }}
                       />
@@ -711,285 +687,159 @@ const formatRelativeTime = (dateString: string) => {
                 })}
               </Stack>
             ) : (
-              <Box
-                display="flex"
-                flexDirection="column"
-                alignItems="center"
-                justifyContent="center"
-                py={4}
-                gap={1}
-              >
-                <Public sx={{ fontSize: 40, color: "#e0e0e0" }} />
-                <Typography color="text.secondary" fontWeight={500}>
-                  No AI sites yet
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Sites will appear here when AI content is generated
-                </Typography>
-              </Box>
+              <EmptyState
+                icon={<Public sx={{ fontSize: 42 }} />}
+                title="No AI sites yet"
+                description="Sites will appear here when AI content is generated."
+              />
             )}
           </SectionCard>
         </Grid>
 
-        {/* ===== AI USAGE OVERVIEW ===== */}
         <Grid item xs={12} md={6}>
           <SectionCard title="AI Usage Overview">
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <Card
-                  variant="outlined"
-                  sx={{
-                    borderRadius: 3,
-                    p: 2,
-                    textAlign: "center",
-                    transition: "transform 0.2s",
-                    "&:hover": {
-                      transform: "translateY(-2px)",
-                      boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
-                    },
-                  }}
-                >
-                  <Typography variant="h4" fontWeight={900} color="#00C49A">
-                    {safeAiStats.generatedPages}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" fontWeight={500}>
-                    AI Pages
-                  </Typography>
-                </Card>
-              </Grid>
-              <Grid item xs={6}>
-                <Card
-                  variant="outlined"
-                  sx={{
-                    borderRadius: 3,
-                    p: 2,
-                    textAlign: "center",
-                    transition: "transform 0.2s",
-                    "&:hover": {
-                      transform: "translateY(-2px)",
-                      boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
-                    },
-                  }}
-                >
-                  <Typography variant="h4" fontWeight={900} color="#FFBB28">
-                    {safeAiStats.generatedImages}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" fontWeight={500}>
-                    AI Images
-                  </Typography>
-                </Card>
-              </Grid>
-              <Grid item xs={6}>
-                <Card
-                  variant="outlined"
-                  sx={{
-                    borderRadius: 3,
-                    p: 2,
-                    textAlign: "center",
-                    transition: "transform 0.2s",
-                    "&:hover": {
-                      transform: "translateY(-2px)",
-                      boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
-                    },
-                  }}
-                >
-                  <Typography variant="h4" fontWeight={900} color="#8884d8">
-                    {safeAiStats.topCategories.length}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" fontWeight={500}>
-                    Categories
-                  </Typography>
-                </Card>
-              </Grid>
-              <Grid item xs={6}>
-                <Card
-                  variant="outlined"
-                  sx={{
-                    borderRadius: 3,
-                    p: 2,
-                    textAlign: "center",
-                    transition: "transform 0.2s",
-                    "&:hover": {
-                      transform: "translateY(-2px)",
-                      boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
-                    },
-                  }}
-                >
-                  <Typography variant="h4" fontWeight={900} color="#FF8042">
-                    {safeAiStats.topSites?.length || 0}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" fontWeight={500}>
-                    Active Sites
-                  </Typography>
-                </Card>
-              </Grid>
-              <Grid item xs={6}>
-                <Card
-                  variant="outlined"
-                  sx={{
-                    borderRadius: 3,
-                    p: 2,
-                    textAlign: "center",
-                    transition: "transform 0.2s",
-                    "&:hover": {
-                      transform: "translateY(-2px)",
-                      boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
-                    },
-                  }}
-                >
-                  <Typography variant="h4" fontWeight={900} color="#2196F3">
-                    {safeAiStats.generatedToday}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" fontWeight={500}>
-                    AI Today
-                  </Typography>
-                </Card>
-              </Grid>
-              <Grid item xs={6}>
-                <Card
-                  variant="outlined"
-                  sx={{
-                    borderRadius: 3,
-                    p: 2,
-                    textAlign: "center",
-                    transition: "transform 0.2s",
-                    "&:hover": {
-                      transform: "translateY(-2px)",
-                      boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
-                    },
-                  }}
-                >
-                  <Typography variant="h4" fontWeight={900} color="#9C27B0">
-                    {safeAiStats.generatedThisWeek}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" fontWeight={500}>
-                    AI This Week
-                  </Typography>
-                </Card>
-              </Grid>
-              <Grid item xs={6}>
-                <Card
-                  variant="outlined"
-                  sx={{
-                    borderRadius: 3,
-                    p: 2,
-                    textAlign: "center",
-                    transition: "transform 0.2s",
-                    bgcolor: "rgba(156,39,176,0.04)",
-                    borderColor: "rgba(156,39,176,0.2)",
-                    "&:hover": {
-                      transform: "translateY(-2px)",
-                      boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
-                    },
-                  }}
-                >
-                  <Typography variant="h4" fontWeight={900} color="#9C27B0">
-                    {aiAdoptionRate}%
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" fontWeight={500}>
-                    AI Adoption
-                  </Typography>
-                </Card>
-              </Grid>
-              <Grid item xs={6}>
-                <Card
-                  variant="outlined"
-                  sx={{
-                    borderRadius: 3,
-                    p: 2,
-                    textAlign: "center",
-                    visibility: "hidden",
-                  }}
-                >
-                  <Typography variant="h4" fontWeight={900}>
-                    -
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    -
-                  </Typography>
-                </Card>
-              </Grid>
+            <Grid container spacing={1.5}>
+              {[
+                {
+                  label: "AI Pages",
+                  value: safeAiStats.generatedPages,
+                  color: theme.palette.primary.main,
+                },
+                {
+                  label: "AI Images",
+                  value: safeAiStats.generatedImages,
+                  color: theme.palette.warning.main,
+                },
+                {
+                  label: "Categories",
+                  value: safeAiStats.topCategories.length,
+                  color: theme.palette.info.main,
+                },
+                {
+                  label: "Active Sites",
+                  value: safeAiStats.topSites?.length || 0,
+                  color: theme.palette.success.main,
+                },
+                {
+                  label: "AI Today",
+                  value: safeAiStats.generatedToday,
+                  color: theme.palette.secondary.main,
+                },
+                {
+                  label: "AI This Week",
+                  value: safeAiStats.generatedThisWeek,
+                  color: theme.palette.info.main,
+                },
+                {
+                  label: "AI Adoption",
+                  value: `${aiAdoptionRate}%`,
+                  color: theme.palette.primary.main,
+                },
+              ].map((item) => (
+                <Grid item xs={6} sm={4} key={item.label}>
+                  <Card
+                    variant="outlined"
+                    sx={{
+                      p: 2,
+                      height: "100%",
+                      borderRadius: 2.5,
+                      textAlign: "center",
+                      bgcolor: alpha(item.color, theme.palette.mode === "dark" ? 0.08 : 0.04),
+                      borderColor: alpha(item.color, theme.palette.mode === "dark" ? 0.22 : 0.18),
+                    }}
+                  >
+                    <Typography variant="h5" fontWeight={900} color="text.primary">
+                      {item.value}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                      {item.label}
+                    </Typography>
+                  </Card>
+                </Grid>
+              ))}
             </Grid>
           </SectionCard>
         </Grid>
       </Grid>
 
-      {/* ===== LAST ACTIVE AI SITES ===== */}
-      <Grid container spacing={3} mt={1}>
+      {/* ===== LAST ACTIVE SITES ===== */}
+      <Grid container spacing={2.5} mt={0}>
         <Grid item xs={12}>
           <SectionCard
             title="Last Active AI Sites"
             action={
               <Chip
-                label={`${safeAiStats.lastActiveSites?.length || 0} sites`}
                 size="small"
-                sx={{
-                  bgcolor: "rgba(136,132,216,0.12)",
-                  color: "#8884d8",
-                  fontWeight: 600,
-                }}
+                color="secondary"
+                variant="outlined"
+                label={`${safeAiStats.lastActiveSites?.length || 0} sites`}
+                sx={{ fontWeight: 700 }}
               />
             }
           >
             {safeAiStats.lastActiveSites && safeAiStats.lastActiveSites.length > 0 ? (
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 700 }}>Site</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Generations</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>Last Activity</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {safeAiStats.lastActiveSites.slice(0, 10).map((row) => (
-                    <TableRow key={row.siteId} hover>
-                      <TableCell>
-                        <Chip
-                          size="small"
-                          label={row.siteName}
-                          sx={{
-                            bgcolor: "rgba(0,196,154,0.08)",
-                            color: "#00C49A",
-                            fontWeight: 600,
-                          }}
-                        />
+              <Box sx={{ width: "100%", overflowX: "auto" }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 800, color: "text.secondary" }}>
+                        Site
                       </TableCell>
-                      <TableCell>
-                        <Chip
-                          size="small"
-                          label={`${row.count} generations`}
-                          sx={{
-                            bgcolor: "rgba(136,132,216,0.08)",
-                            color: "#8884d8",
-                          }}
-                        />
+                      <TableCell sx={{ fontWeight: 800, color: "text.secondary" }}>
+                        Generations
                       </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {row.lastActivityAt ? formatRelativeTime(row.lastActivityAt): "N/A"}
-                        </Typography>
+                      <TableCell sx={{ fontWeight: 800, color: "text.secondary" }}>
+                        Last Activity
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <Box
-                display="flex"
-                flexDirection="column"
-                alignItems="center"
-                justifyContent="center"
-                py={4}
-                gap={1}
-              >
-                <AutoAwesome sx={{ fontSize: 40, color: "#e0e0e0" }} />
-                <Typography color="text.secondary" fontWeight={500}>
-                  No recent AI generations
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Recent AI content will appear here when generated
-                </Typography>
+                  </TableHead>
+
+                  <TableBody>
+                    {safeAiStats.lastActiveSites.slice(0, 10).map((row) => (
+                      <TableRow key={row.siteId} hover>
+                        <TableCell>
+                          <Button
+  size="small"
+  variant="text"
+  onClick={() =>
+    navigate(`/admin/ai-analytics/sites/${row.siteId}`)
+  }
+  sx={{
+    textTransform: "none",
+    fontWeight: 800,
+    px: 0,
+    minWidth: 0
+  }}
+>
+  {row.siteName || `Site #${row.siteId}`}
+</Button>
+                        </TableCell>
+
+                        <TableCell>
+                          <Chip
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                            label={`${row.count} generations`}
+                          />
+                        </TableCell>
+
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {formatRelativeTime(row.lastActivityAt)}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </Box>
+            ) : (
+              <EmptyState
+                icon={<AutoAwesome sx={{ fontSize: 42 }} />}
+                title="No recent AI generations"
+                description="Recent AI content will appear here when generated."
+              />
             )}
           </SectionCard>
         </Grid>
@@ -997,23 +847,11 @@ const formatRelativeTime = (dateString: string) => {
 
       {/* ===== EMPTY STATE ===== */}
       {!hasData && (
-        <Alert
-          severity="info"
-          sx={{
-            mt: 3,
-            borderRadius: 3,
-            "& .MuiAlert-icon": {
-              fontSize: 24,
-            },
-          }}
-        >
-          <Stack>
-            <Typography fontWeight={600}>No AI generation data available yet</Typography>
-            <Typography variant="body2">
-              Start generating content with AI to see analytics here.
-              Go to any site dashboard and use the AI content generator.
-            </Typography>
-          </Stack>
+        <Alert severity="info" sx={{ mt: 2.5, borderRadius: 3 }}>
+          <Typography fontWeight={800}>No AI generation data available yet</Typography>
+          <Typography variant="body2">
+            Start generating content with AI to see analytics here.
+          </Typography>
         </Alert>
       )}
     </Box>

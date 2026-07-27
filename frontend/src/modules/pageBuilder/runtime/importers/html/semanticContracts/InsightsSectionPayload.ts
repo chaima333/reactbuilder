@@ -21,4 +21,8 @@ export interface InsightsSectionPayload
   title?: string;
   description?: string;
   items: InsightItemPayload[];
+  actions: Array<{
+    label: string;
+    href: string;
+  }>;
 }

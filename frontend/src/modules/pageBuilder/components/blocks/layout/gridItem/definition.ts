@@ -1,27 +1,20 @@
-import React from "react";
-
-import DashboardCustomizeIcon
-from "@mui/icons-material/DashboardCustomize";
-
-import type {
-  BlockConfig
-} from "../../../../types/page.types";
+﻿import React from "react";
+import DashboardCustomizeIcon from "@mui/icons-material/DashboardCustomize";
 
 import {
   GridItemBlock
 } from "./GridItemBlock";
 
-export const gridItemDefinition:
-BlockConfig = {
+import type {
+  BlockConfig
+} from "../../../../types/page.types";
 
-  type:
-    "gridItem",
+export const gridItemDefinition: BlockConfig = {
+  type: "gridItem",
 
-  label:
-    "Grid Item",
+  label: "Grid Item",
 
-  category:
-    "layout",
+  category: "layout",
 
   icon:
     React.createElement(
@@ -31,44 +24,38 @@ BlockConfig = {
   component:
     GridItemBlock,
 
-  isContainer:
-    true,
-
-  allowedChildren: [
-
-    "title",
-    "text",
-    "image",
-    "button",
-    "link",
-
-    "input",
-    "select",
-    "textarea",
-
-    "flex",
-    "grid"
-  ],
+  isContainer: true,
 
   rules: {
-
     allowedParents: [
       "grid"
+    ],
+
+    allowedChildren: [
+      "title",
+      "text",
+      "image",
+      "button",
+      "link",
+
+      "input",
+      "select",
+      "textarea",
+
+      "flex",
+      "grid",
+      "form",
     ]
   },
 
   fields: [],
 
   defaultData: {
-
     props: {},
 
     style: {
-
       desktop: {
-
-        gridColumn:
-          "auto"
+        gridColumn: "auto"
       }
     }
   }

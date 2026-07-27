@@ -142,7 +142,7 @@ const SectionCard = ({
 // ==================== MAIN COMPONENT ====================
 export default function AdminDashboard() {
   // ===== HOOKS =====
-  const { data: stats, isLoading: statsLoading, isError: statsError } = useGetAdminStatsQuery();
+  const { data: stats, isLoading: statsLoading, isError: statsError } = useGetAdminStatsQuery(30);
   const { data: users = [] } = useGetAdminUsersQuery();
   const { data: sites = [] } = useGetAdminSitesQuery();
   const { data: plugins = [] } = useGetAdminPluginsQuery();

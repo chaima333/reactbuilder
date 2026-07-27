@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import {
   CollisionDetection,
   DragEndEvent,
@@ -18,6 +18,9 @@ import { Block, BlockType } from "../../types/page.types";
 import { VIRTUAL_ROOT_ID } from "../../components/editor/EditorCanvas";
 import React from "react";
 import { presetRegistry } from "../../presets/presetRegistry";
+import {
+  canAcceptChild
+} from "../../core/schema/canonicalSchema";
 
 interface InsertionResult {
   position: "before" | "after" | "inside";
@@ -33,11 +36,9 @@ interface DropState {
 }
 
 interface UseDragAndDropProps {
-
   blocks: Block[];
-
+  rootInsertIndex?: number;
   actions: {
-
     addBlock: (
       type: string,
       targetId?: string,
@@ -45,14 +46,12 @@ interface UseDragAndDropProps {
       presetData?: any,
       insertIndex?: number
     ) => void;
-
     addBlockTree: (
       tree: Block,
       targetId?: string,
       position?: string,
       insertIndex?: number
     ) => void;
-
     moveBlock: (
       blockId: string,
       location: {
@@ -67,6 +66,7 @@ interface UseDragAndDropProps {
     ) => void;
   };
 }
+
 const semanticPriority: BlockType[] = [
   "gridItem",
   "flexItem",
@@ -159,9 +159,7 @@ const getDraggedType = (
 };
 
 const isPrimitiveBlock = (type: BlockType) =>
-  ["button", "image", "text", "title", "link"].includes(type);
-
-
+  ["button", "image", "text", "title", "link", "input", "select", "textarea","collectionList","form"].includes(type);
 
 const getTopSemanticTarget = ( elements: Element[]): HTMLElement | null => {
 const semanticElements = elements.filter((el) =>
@@ -187,17 +185,12 @@ const semanticElements = elements.filter((el) =>
 const normalizeTree = (
   node: any
 ): any => {
-
   return {
-
     ...node,
-
     id:
       node.id ||
       crypto.randomUUID(),
-
     children:
-
       (node.children || []).map(
         normalizeTree
       )
@@ -206,7 +199,8 @@ const normalizeTree = (
 
 export const useDragAndDrop = ({
   blocks,
-  actions
+  actions,
+  rootInsertIndex
 }: UseDragAndDropProps) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeData, setActiveData] = useState<any>(null);
@@ -219,20 +213,42 @@ export const useDragAndDrop = ({
 
   const currentResolutionRef = useRef<DropState | null>(null);
   const lastValidResolutionRef = useRef<DropState | null>(null);
+  const pointerPositionRef =
+  useRef({
+    x: 0,
+    y: 0
+  });
 
-  useEffect(() => {
-    if (!activeId) {
-      return;
-    }
+useEffect(() => {
+  if (!activeId) {
+    return;
+  }
 
-    const handleMove = (event: MouseEvent) => {
-      setGhost({ x: event.clientX + 15, y: event.clientY + 15 });
+  const handleMove = (
+    event: PointerEvent
+  ) => {
+    pointerPositionRef.current = {
+      x: event.clientX,
+      y: event.clientY
     };
 
-    window.addEventListener("mousemove", handleMove);
+    setGhost({
+      x: event.clientX + 15,
+      y: event.clientY + 15
+    });
+  };
 
-    return () => window.removeEventListener("mousemove", handleMove);
-  }, [activeId]);
+  window.addEventListener(
+    "pointermove",
+    handleMove
+  );
+
+  return () =>
+    window.removeEventListener(
+      "pointermove",
+      handleMove
+    );
+}, [activeId]);
 
   const resetHoverState = () => {
     setOverId(null);
@@ -245,558 +261,587 @@ export const useDragAndDrop = ({
     setActiveId(null);
     setActiveData(null);
     setGhost(null);
+
+    currentResolutionRef.current = null;
+    lastValidResolutionRef.current = null;
+
     resetHoverState();
   };
 
   const handleDragStart = (event: any) => {
-    setActiveId(event.active.id.toString());
-    setActiveData(event.active.data.current);
-  };
-  const [
-  debugElements,
-  setDebugElements
-] = React.useState<any[]>([]);
+    currentResolutionRef.current = null;
+    lastValidResolutionRef.current = null;
 
-const [
-  pointerDebug,
-  setPointerDebug
-] = React.useState({
-  x: 0,
-  y: 0
-});
+    setOverId(null);
+    setDropPosition(null);
+    setIsAllowed(true);
 
-const [
-  semanticDebug,
-  setSemanticDebug
-] = React.useState({
-  targetId: null as string | null,
-
-  targetType: null as string | null,
-
-  allowed: null as boolean | null
-});
-
- const handleDragOver = (
-  event: DragOverEvent
-) => {
-console.log("🔥 HANDLE DRAG OVER CALLED", event.over?.id);
-
-  const { active } = event;
-
-const draggedType =
-  getDraggedType(
-    active,
-    blocks
-  );
-
-console.log(
-  "DRAGGED TYPE",
-  draggedType
-);
-
-if (!draggedType) {
-
-  resetDragState();
-
-  return;
-}
-
-const effectiveDraggedType =
-  presetRegistry[
-    draggedType as keyof typeof presetRegistry
-  ]
-    ? "section"
-    : draggedType; 
-  // INVALID DRAG
-  // =========================
-
-  if (!draggedType) {
-
-    resetHoverState();
-
-    return;
-  }
-
-  // =========================
-  // POINTER EVENT
-  // =========================
-const translatedRect =
-  active.rect.current.translated;
-
-let pointerX = 0;
-let pointerY = 0;
-
-if (translatedRect) {
-
-  pointerX =
-    translatedRect.left +
-    translatedRect.width / 2;
-
-  pointerY =
-    translatedRect.top +
-    translatedRect.height / 2;
-
-} else {
-
-  const activatorEvent =
-    event.activatorEvent as MouseEvent;
-
-  pointerX =
-    activatorEvent.clientX;
-
-  pointerY =
-    activatorEvent.clientY;
-}
-
-const elements =
-  document.elementsFromPoint(
-    pointerX,
-    pointerY
-  );
-  
-
-  // 👑 debug raw DOM stack
-  setDebugElements(
-    elements.map((el) => ({
-      tag: el.tagName,
-
-      id:
-        (el as HTMLElement).id,
-
-      className:
-        (el as HTMLElement)
-          .className
-    }))
-  );
-
-  console.log(
-    "RAW ELEMENTS",
-    elements
-  );
-
-  // =========================
-  // SEMANTIC TARGET
-  // =========================
-
-  const semanticElement =
-    getTopSemanticTarget(
-      elements
-    );
-  setSemanticDebug({
-    targetId:
-      semanticElement
-        ?.dataset.blockId ||
-      null,
-
-    targetType:
-      semanticElement
-        ?.dataset.blockType ||
-      null,
-
-    allowed: null
-  });
-
-  console.log(
-    "SEMANTIC ELEMENT",
-    semanticElement
-  );
-
- if (!semanticElement) {
-
-  if (
-    lastValidResolutionRef.current
-  ) {
-
-    currentResolutionRef.current =
-      lastValidResolutionRef.current;
-
-    return;
-  }
-
-  resetHoverState();
-
-  currentResolutionRef.current =
-    null;
-
-  return;
-}
-
-  // =========================
-  // TARGET ID
-  // =========================
-
-  const targetId =
-    getSemanticDroppableId(
-      semanticElement
+    setActiveId(
+      event.active.id.toString()
     );
 
-  console.log({
-    semanticElement,
-    targetId
-  });
-
-  // =========================
-  // ROOT DROP
-  // =========================
+    setActiveData(
+      event.active.data.current
+    );
+    const activatorEvent =
+  event.activatorEvent as
+    | PointerEvent
+    | MouseEvent
+    | undefined;
 
 if (
-  targetId ===
-  VIRTUAL_ROOT_ID
+  activatorEvent &&
+  typeof activatorEvent.clientX ===
+    "number"
 ) {
+  pointerPositionRef.current = {
+    x: activatorEvent.clientX,
+    y: activatorEvent.clientY
+  };
+}
+  };
 
-  const allowed =
-    effectiveDraggedType  ===
-    "section";
+  const [
+    debugElements,
+    setDebugElements
+  ] = React.useState<any[]>([]);
 
-  setOverId("ROOT");
-
-  setDropPosition(
-    "inside"
-  );
-
-  setIsAllowed(
-    allowed
-  );
-
-  // 👑 semantic debug
-  setSemanticDebug({
-    targetId:
-      VIRTUAL_ROOT_ID,
-
-    targetType:
-      "root",
-
-    allowed
+  const [
+    pointerDebug,
+    setPointerDebug
+  ] = React.useState({
+    x: 0,
+    y: 0
   });
 
-  currentResolutionRef.current =
-    {
-      allowed,
+  const [
+    semanticDebug,
+    setSemanticDebug
+  ] = React.useState({
+    targetId: null as string | null,
+    targetType: null as string | null,
+    allowed: null as boolean | null
+  });
 
-      position:
-        "inside",
+  const handleDragOver = (
+    event: DragOverEvent
+  ) => {
+    console.log("ðŸ”¥ HANDLE DRAG OVER CALLED", event.over?.id);
 
-      index:
-        blocks.length,
+    const { active } = event;
 
-      targetId:
-        VIRTUAL_ROOT_ID
-    };
+    const draggedType =
+      getDraggedType(
+        active,
+        blocks
+      );
 
-  return;
-}
-  // =========================
-  // TARGET BLOCK
-  // =========================
-
-  const targetBlock =
-    findBlockInTree(
-      blocks,
-      targetId
+    console.log(
+      "DRAGGED TYPE",
+      draggedType
     );
 
-  if (!targetBlock) {
+    if (!draggedType) {
+      resetDragState();
+      return;
+    }
 
-    resetHoverState();
+    const effectiveDraggedType =
+      presetRegistry[
+        draggedType as keyof typeof presetRegistry
+      ]
+        ? "section"
+        : draggedType;
 
-    currentResolutionRef.current =
-      null;
+    // INVALID DRAG
+    // =========================
 
-    return;
+    if (!draggedType) {
+      resetHoverState();
+      return;
+    }
+
+    // =========================
+    // POINTER EVENT
+    // =========================
+   let pointerX =
+  pointerPositionRef.current.x;
+
+let pointerY =
+  pointerPositionRef.current.y;
+
+if (
+  pointerX === 0 &&
+  pointerY === 0
+) {
+  const translatedRect =
+    active.rect.current.translated;
+
+  if (translatedRect) {
+    pointerX =
+      translatedRect.left +
+      translatedRect.width / 2;
+
+    pointerY =
+      translatedRect.top +
+      translatedRect.height / 2;
   }
+}
 
-  // =========================
-  // INSERTION INFO
-  // =========================
+    const elements =
+      document.elementsFromPoint(
+        pointerX,
+        pointerY
+      );
 
-  const insertionInfo =
-    calculateInsertionIndex(
-      event,
-      targetBlock
+    // ðŸ‘‘ debug raw DOM stack
+    setDebugElements(
+      elements.map((el) => ({
+        tag: el.tagName,
+        id:
+          (el as HTMLElement).id,
+        className:
+          (el as HTMLElement)
+            .className
+      }))
     );
 
-  // =========================
-  // RESOLVER
-  // =========================
+    console.log(
+      "RAW ELEMENTS",
+      elements
+    );
 
-  const resolution =
-    resolveDropBehavior({
-      draggedType,
+    // =========================
+    // SEMANTIC TARGET
+    // =========================
 
+    const semanticElement =
+      getTopSemanticTarget(
+        elements
+      );
+      
+    setSemanticDebug({
+      targetId:
+        semanticElement
+          ?.dataset.blockId ||
+        null,
       targetType:
-        targetBlock.type,
-
-      calculatedPosition:
-        insertionInfo.position,
-
-      calculatedIndex:
-        insertionInfo.index,
-
-      targetChildrenCount:
-        targetBlock.children
-          ?.length || 0
+        semanticElement
+          ?.dataset.blockType ||
+        null,
+      allowed: null
     });
 
-  console.log(
-    "RESOLUTION",
-    resolution
-  );
+    console.log(
+      "SEMANTIC ELEMENT",
+      semanticElement
+    );
 
-  // 👑 semantic debug
-  setSemanticDebug({
-    targetId:
-      targetBlock.id,
+    if (!semanticElement) {
+      const lastResolution =
+        lastValidResolutionRef.current;
 
-    targetType:
-      targetBlock.type,
+      if (lastResolution) {
+        currentResolutionRef.current =
+          lastResolution;
 
-    allowed:
+        setOverId(
+          lastResolution.targetId ===
+            VIRTUAL_ROOT_ID
+            ? "ROOT"
+            : lastResolution.targetId
+        );
+
+        setDropPosition(
+          lastResolution.position
+        );
+
+        setIsAllowed(
+          lastResolution.allowed
+        );
+
+        return;
+      }
+
+      resetHoverState();
+      return;
+    }
+
+    // =========================
+    // TARGET ID
+    // =========================
+
+    const targetId =
+      getSemanticDroppableId(
+        semanticElement
+      );
+
+    console.log({
+      semanticElement,
+      targetId
+    });
+
+    // =========================
+    // ROOT DROP
+    // =========================
+
+    if (
+      targetId === VIRTUAL_ROOT_ID
+    ) {
+      const allowed =
+        canAcceptChild(
+          "root",
+          effectiveDraggedType
+        );
+
+      const rootResolution: DropState = {
+        allowed,
+        position: "inside",
+        index: rootInsertIndex ?? blocks.length,
+        targetId: VIRTUAL_ROOT_ID
+      };
+
+      setOverId("ROOT");
+      setDropPosition("inside");
+      setIsAllowed(allowed);
+
+      setSemanticDebug({
+        targetId: VIRTUAL_ROOT_ID,
+        targetType: "root",
+        allowed
+      });
+
+      currentResolutionRef.current =
+        rootResolution;
+
+      if (allowed) {
+        lastValidResolutionRef.current =
+          rootResolution;
+      }
+
+      return;
+    }
+
+    // =========================
+    // TARGET BLOCK
+    // =========================
+
+    const targetBlock =
+      findBlockInTree(
+        blocks,
+        targetId
+      );
+
+    if (!targetBlock) {
+      resetHoverState();
+      currentResolutionRef.current =
+        null;
+      return;
+    }
+
+    // =========================
+    // INSERTION INFO
+    // =========================
+
+    const insertionInfo =
+      calculateInsertionIndex(
+        event,
+        targetBlock
+      );
+
+    // =========================
+    // RESOLVER
+    // =========================
+
+    const resolution =
+      resolveDropBehavior({
+        draggedType,
+        targetType:
+          targetBlock.type,
+        calculatedPosition:
+          insertionInfo.position,
+        calculatedIndex:
+          insertionInfo.index,
+        targetChildrenCount:
+          targetBlock.children
+            ?.length || 0
+      });
+
+    console.log(
+      "RESOLUTION",
+      resolution
+    );
+
+    // ðŸ‘‘ semantic debug
+    setSemanticDebug({
+      targetId:
+        targetBlock.id,
+      targetType:
+        targetBlock.type,
+      allowed:
+        resolution.allowed
+    });
+
+    // =========================
+    // UI STATE
+    // =========================
+
+    setOverId(
+      targetBlock.id
+    );
+
+    setDropPosition(
+      resolution.position
+    );
+
+    setIsAllowed(
       resolution.allowed
-  });
+    );
 
-  // =========================
-  // UI STATE
-  // =========================
+    // =========================
+    // CURRENT RESOLUTION REF
+    // =========================
 
-  setOverId(
-    targetBlock.id
-  );
+    const finalResolution = {
+      ...resolution,
+      targetId:
+        targetBlock.id
+    };
 
-  setDropPosition(
-    resolution.position
-  );
-
-  setIsAllowed(
-    resolution.allowed
-  );
-
-  // =========================
-  // CURRENT RESOLUTION REF
-  // =========================
-
- const finalResolution = {
-
-  ...resolution,
-
-  targetId:
-    targetBlock.id
-};
-
-currentResolutionRef.current =
+    currentResolutionRef.current =
   finalResolution;
 
-lastValidResolutionRef.current =
-  finalResolution;
-
-};
+if (finalResolution.allowed) {
+  lastValidResolutionRef.current =
+    finalResolution;
+}
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     console.log("DRAG END");
     const { active } = event;
     console.log(
-  "LAST VALID",
-  lastValidResolutionRef.current
-);
-  const resolution =
-
-  currentResolutionRef.current ||
-
-  lastValidResolutionRef.current;
-  
-    console.log("RESOLUTION", resolution);
+      "LAST VALID",
+      lastValidResolutionRef.current
+    );
    
+    const currentResolution =
+  currentResolutionRef.current;
+
+const resolution =
+  currentResolution?.allowed
+    ? currentResolution
+    : lastValidResolutionRef.current;
+
+    console.log("RESOLUTION", resolution);
+
     if (!resolution || !resolution.allowed) {
       resetDragState();
       return;
     }
 
     const draggedType = getDraggedType(active, blocks);
- 
+
     console.log("DRAGGED TYPE", draggedType);
-   
+
     if (!draggedType) {
       resetDragState();
       return;
     }
 
-  const isRootDrop =
-  resolution.targetId === VIRTUAL_ROOT_ID;
+    const isRootDrop =
+      resolution.targetId === VIRTUAL_ROOT_ID;
 
     console.log("IS ROOT DROP", isRootDrop);
 
+    const targetBlock =
+      isRootDrop
+        ? null
+        : findBlockInTree(
+            blocks,
+            resolution.targetId
+          );
 
+    if (
+      !isRootDrop &&
+      !targetBlock
+    ) {
+      resetDragState();
+      return;
+    }
 
-const targetBlock =
-  isRootDrop
-    ? null
-    : findBlockInTree(
-        blocks,
-        resolution.targetId
+    const activePayload = active.data.current as
+      | {type: BlockType; isNew: boolean;}
+      | undefined;
+
+    const finalPosition = resolution.position;
+    const finalIndex = resolution.index;
+    const presetFactory =
+      presetRegistry[
+        draggedType as keyof typeof presetRegistry
+      ];
+
+    let wrapperType = resolution.wrapperType;
+
+    const finalTargetId =
+      isRootDrop
+        ? "ROOT"
+        : targetBlock!.id;
+
+    const isPresetDrop = !!presetFactory;
+    
+    // =========================
+    // AUTO WRAP
+    // =========================
+
+    if (
+      !isPresetDrop &&
+      !wrapperType &&
+      !isRootDrop &&
+      isPrimitiveBlock(
+        draggedType
+      ) &&
+      targetBlock!.type === "grid"
+    ) {
+      wrapperType = "gridItem";
+    }
+
+    if (
+      !isPresetDrop &&
+      !wrapperType &&
+      !isRootDrop &&
+      isPrimitiveBlock(
+        draggedType
+      ) &&
+      targetBlock!.type === "flex"
+    ) {
+      wrapperType = "flexItem";
+    }
+
+    if (
+      !isPresetDrop &&
+      !wrapperType &&
+      !isRootDrop &&
+      isPrimitiveBlock(draggedType) &&
+      (
+        targetBlock!.type === "navbar" ||
+        targetBlock!.type === "footer"
+      )
+    ) {
+      wrapperType = "flexItem";
+    }
+
+    if (
+      draggedType === "gridItem" ||
+      draggedType === "flexItem"
+    ) {
+      wrapperType = undefined;
+    }
+
+    // =========================
+    // MOVE EXISTING BLOCK
+    // =========================
+
+    if (
+      activePayload?.isNew === false
+    ) {
+      actions.moveBlock(
+        active.id.toString(),
+        {
+          targetId:
+            finalTargetId,
+          position:
+            finalPosition,
+          index:
+            finalIndex,
+          wrapperType
+        }
       );
 
-if (
-  !isRootDrop &&
-  !targetBlock
-) {
-
-  resetDragState();
-
-  return;
-}
-const activePayload = active.data.current as
-  | {type: BlockType; isNew: boolean;}
-  | undefined;
-
-const finalPosition = resolution.position;
-const finalIndex = resolution.index;
-const presetFactory =
-  presetRegistry[
-    draggedType as keyof typeof presetRegistry
-  ];
-
-let wrapperType = resolution.wrapperType;
-
-const finalTargetId =
-  isRootDrop
-    ? "ROOT"
-    : targetBlock!.id;
-
- const isPresetDrop = !!presetFactory;
-// =========================
-// AUTO WRAP
-// =========================
-
-if (
-  !isPresetDrop &&
-  !wrapperType &&
-  !isRootDrop &&
-  isPrimitiveBlock(
-    draggedType
-  ) &&
-  targetBlock!.type === "grid"
-) { wrapperType = "gridItem";}
-
-if (
-  !isPresetDrop &&
-  !wrapperType &&
-  !isRootDrop &&
-  isPrimitiveBlock(
-    draggedType
-  ) &&
-  targetBlock!.type === "flex"
-) { wrapperType ="flexItem";}
-
-if (
-  !isPresetDrop &&
-  !wrapperType &&
-  !isRootDrop &&
-  isPrimitiveBlock(draggedType) &&
-  (
-    targetBlock!.type === "navbar" ||
-    targetBlock!.type === "footer"
-  )
-) {
-  wrapperType = "flexItem";
-}
-
-
-if (
-  draggedType === "gridItem" ||
-  draggedType === "flexItem"
-) {
-
-  wrapperType = undefined;
-}
-
-// =========================
-// MOVE EXISTING BLOCK
-// =========================
-
-if (
-  activePayload?.isNew === false
-) {
-
-  actions.moveBlock(
-    active.id.toString(),
-    {
-      targetId:
-        finalTargetId,
-
-      position:
-         finalPosition,
-
-      index:
-        finalIndex,
-
-      wrapperType
+      resetDragState();
+      return;
     }
-  );
 
-  resetDragState();
+    // =========================
+    // INSERT NEW BLOCK
+    // =========================
 
-  return;
-}
+    if (presetFactory) {
+      const presetTree =
+        (presetFactory as any)({});
 
-// =========================
-// INSERT NEW BLOCK
-// =========================
+      let presetPosition =
+        finalPosition;
 
+      if (
+        targetBlock?.type === "section" &&
+        finalPosition === "inside"
+      ) {
+        presetPosition =
+          "after";
+      }
 
-if (presetFactory) {
+      const normalizedTree =
+        normalizeTree(
+          presetTree
+        );
 
-  const presetTree =
-  (presetFactory as any)({});
+      actions.addBlockTree(
+        normalizedTree,
+        finalTargetId,
+        presetPosition,
+        finalIndex
+      );
 
-  let presetPosition =
-    finalPosition;
+      resetDragState();
+      return;
+    }
 
-  if (
-    targetBlock?.type === "section" &&
-    finalPosition === "inside"
-  ) {
+    // primitive dropped on section
+    if (
+      !isPresetDrop &&
+      !isRootDrop &&
+      isPrimitiveBlock(draggedType) &&
+      targetBlock!.type === "section"
+    ) {
+      const existingFlex = targetBlock!.children?.find(
+        (child) => child.type === "flex"
+      );
 
-    presetPosition =
-      "after";
-  }
+      if (existingFlex) {
+    const childConfig =
+      blockRegistry[draggedType];
 
-
-
-const normalizedTree =
-  normalizeTree(
-    presetTree
-  );
-
-actions.addBlockTree(
-  normalizedTree,
-
-    finalTargetId,
-
-    presetPosition,
-
-    finalIndex
-  );
-
-  resetDragState();
-
-  return;
-}
-// primitive dropped on section
-if (
-  !isPresetDrop &&
-  !isRootDrop &&
-  isPrimitiveBlock(draggedType) &&
-  targetBlock!.type === "section"
-) {
-  const existingFlex = targetBlock!.children?.find(
-    (child) => child.type === "flex"
-  );
-
-  if (existingFlex) {
     actions.addBlock(
-      draggedType,
+      "flexItem",
       existingFlex.id,
       "inside",
-      null,
+      {
+        presetChildren: [
+          {
+            id: uuidv4(),
+            type: draggedType,
+            data: {
+              props:
+                structuredClone(
+                  childConfig
+                    ?.defaultData
+                    ?.props || {}
+                ),
+
+              style:
+                structuredClone(
+                  childConfig
+                    ?.defaultData
+                    ?.style || {
+                      desktop: {}
+                    }
+                )
+            },
+            children: []
+          }
+        ]
+      },
       existingFlex.children?.length || 0
     );
 
@@ -804,31 +849,19 @@ if (
     return;
   }
 
-  const childConfig = blockRegistry[draggedType];
+      const childConfig = blockRegistry[draggedType];
 
-  actions.addBlockTree(
-    {
-      id: uuidv4(),
-      type: "flex",
-      data: {
-        props: {},
-        style: {
-          desktop: {
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-            width: "100%"
-          }
-        }
-      },
-      children: [
+      actions.addBlockTree(
         {
           id: uuidv4(),
-          type: "flexItem",
+          type: "flex",
           data: {
             props: {},
             style: {
               desktop: {
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
                 width: "100%"
               }
             }
@@ -836,108 +869,103 @@ if (
           children: [
             {
               id: uuidv4(),
-              type: draggedType,
+              type: "flexItem",
               data: {
-                props: structuredClone(childConfig?.defaultData?.props || {}),
-                style: structuredClone(
-                  childConfig?.defaultData?.style || { desktop: {} }
-                )
+                props: {},
+                style: {
+                  desktop: {
+                    width: "100%"
+                  }
+                }
+              },
+              children: [
+                {
+                  id: uuidv4(),
+                  type: draggedType,
+                  data: {
+                    props: structuredClone(childConfig?.defaultData?.props || {}),
+                    style: structuredClone(
+                      childConfig?.defaultData?.style || { desktop: {} }
+                    )
+                  },
+                  children: []
+                }
+              ]
+            }
+          ]
+        },
+        finalTargetId,
+        "inside",
+        finalIndex
+      );
+
+      resetDragState();
+      return;
+    }
+
+    if (wrapperType) {
+      const childConfig = blockRegistry[draggedType];
+      console.log({
+        draggedType,
+        finalTargetId,
+        finalPosition,
+        finalIndex
+      });
+
+      actions.addBlock(
+        wrapperType,
+        finalTargetId,
+        finalPosition,
+        {
+          presetChildren: [
+            {
+              id: uuidv4(),
+              type:
+                draggedType,
+              data: {
+                props:
+                  structuredClone(
+                    childConfig
+                      ?.defaultData
+                      ?.props || {}
+                  ),
+                style:
+                  structuredClone(
+                    childConfig
+                      ?.defaultData
+                      ?.style || {
+                        desktop: {}
+                      }
+                  )
               },
               children: []
             }
           ]
-        }
-      ]
-    },
-    finalTargetId,
-    "inside",
-    finalIndex
-  );
-
-  resetDragState();
-  return;
-}
-////////////
-
-if (wrapperType) {
-const childConfig =  blockRegistry[  draggedType];
-console.log({
-  draggedType,
-  finalTargetId,
-  finalPosition,
-  finalIndex
-});
-
-
-  actions.addBlock(
-    wrapperType,
-
-    finalTargetId,
-
-    finalPosition,
-
-    {
-      presetChildren: [
+        },
+        finalIndex
+      );
+    } else {
+      console.log(
+        "ADDING BLOCK",
         {
-          id: uuidv4(),
-
-          type:
-            draggedType,
-
-          data: {
-
-            props:
-              structuredClone(
-                childConfig
-                  ?.defaultData
-                  ?.props || {}
-              ),
-
-            style:
-              structuredClone(
-                childConfig
-                  ?.defaultData
-                  ?.style || {
-                    desktop: {}
-                  }
-              )
-          },
-
-          children: []
+          draggedType,
+          finalTargetId,
+          finalPosition,
+          finalIndex
         }
-      ]
-    },
+      );
 
-    finalIndex
-  );
+      actions.addBlock(
+        draggedType,
+        finalTargetId,
+        finalPosition,
+        null,
+        finalIndex
+      );
+    }
 
-  
-
-} else {
-  console.log(
-  "ADDING BLOCK",
-  {
-    draggedType,
-    finalTargetId,
-    finalPosition,
-    finalIndex
-  }
-);
-
-  actions.addBlock(
-    draggedType,
-
-    finalTargetId,
-
-    finalPosition,
-
-    null,
-
-    finalIndex
-  );
-}
-
-resetDragState();}
+    resetDragState();
+  };
 
   return {
     activeId,

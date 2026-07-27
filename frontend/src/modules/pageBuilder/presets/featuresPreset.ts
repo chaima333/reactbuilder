@@ -5,8 +5,9 @@ import {
   extractTypographyStyles
 } from "../runtime/importers/css/extractStyleProps";
 import {
-  applySectionTitleScale,
   filterCardStyle,
+  filterGridStyle,
+  filterSectionStyle,
   filterTextStyle,
   mergePresetDesktopStyle
 } from "./styleFilters";
@@ -15,6 +16,7 @@ interface FeatureItemPayload {
   title: string;
   description?: string;
   text?: string;
+  styles?: FeaturePillarItemStyles;
 }
 
 interface FeaturesPresetPayload {
@@ -28,7 +30,34 @@ interface FeaturesPresetPayload {
   sourceNode?: {
     element?: HTMLElement;
   };
+  styles?: FeaturePillarsStyleMap;
+  suppressIntro?: boolean;
 }
+
+type ResponsiveStyle = {
+  desktop?: Record<string, any>;
+  tablet?: Record<string, any>;
+  mobile?: Record<string, any>;
+};
+
+type FeaturePillarItemStyles = {
+  card?: ResponsiveStyle;
+  eyebrow?: ResponsiveStyle;
+  title?: ResponsiveStyle;
+  description?: ResponsiveStyle;
+  tags?: ResponsiveStyle[];
+};
+
+type FeaturePillarsStyleMap = {
+  section?: ResponsiveStyle;
+  container?: ResponsiveStyle;
+  eyebrow?: ResponsiveStyle;
+  title?: ResponsiveStyle;
+  description?: ResponsiveStyle;
+  grid?: ResponsiveStyle;
+  card?: ResponsiveStyle;
+  tag?: ResponsiveStyle;
+};
 
 const defaultItems: FeatureItemPayload[] = [
   {
@@ -87,8 +116,20 @@ const normalizeCssValue = (
 
 const isTransparentBackground = (
   value: unknown
-) =>
-  [
+) => {
+  const normalized =
+    normalizeCssValue(
+      value
+    );
+
+  if (
+    normalized.includes("url(") ||
+    normalized.includes("gradient(")
+  ) {
+    return false;
+  }
+
+  return [
     "",
     "none",
     "transparent",
@@ -98,8 +139,9 @@ const isTransparentBackground = (
     "inherit",
     "unset"
   ].includes(
-    normalizeCssValue(value)
+    normalized
   );
+};
 
 const hasMeaningfulBackground = (
   style: Record<string, any> = {}
@@ -197,6 +239,65 @@ const shouldUseDarkFallback = (
     )
   );
 };
+
+const mergeResponsiveDesktop = (
+  fallback: Record<string, any>,
+  extracted: ResponsiveStyle | undefined,
+  filter: (
+    desktop: Record<string, any>
+  ) => Record<string, any>
+) =>
+  mergePresetDesktopStyle(
+    fallback,
+    extracted,
+    filter
+  );
+
+const mergeElementAndPayloadStyles = (
+  elementStyle: ResponsiveStyle | undefined,
+  payloadStyle: ResponsiveStyle | undefined
+): ResponsiveStyle | undefined => {
+  if (
+    !elementStyle &&
+    !payloadStyle
+  ) {
+    return undefined;
+  }
+
+  return {
+    desktop: {
+      ...(payloadStyle?.desktop || {}),
+      ...(elementStyle?.desktop || {})
+    },
+    tablet: {
+      ...(payloadStyle?.tablet || {}),
+      ...(elementStyle?.tablet || {})
+    },
+    mobile: {
+      ...(payloadStyle?.mobile || {}),
+      ...(elementStyle?.mobile || {})
+    }
+  };
+};
+
+const mergeLayoutAndTypography = (
+  element?: HTMLElement | null
+): ResponsiveStyle | undefined =>
+  element
+    ? {
+        desktop: {
+          ...extractLayoutStyles(
+            element
+          ).desktop,
+          ...extractTypographyStyles(
+            element
+          ).desktop
+        },
+        tablet: {},
+        mobile: {}
+      }
+    : undefined;
+
 const getFeatureSectionPaintStyle = (
   element?: HTMLElement
 ): Record<string, any> => {
@@ -212,8 +313,7 @@ const getFeatureSectionPaintStyle = (
     element;
 
   while (
-    current &&
-    current !== element.ownerDocument.body
+    current
   ) {
     const computed =
       win.getComputedStyle(
@@ -227,6 +327,12 @@ const getFeatureSectionPaintStyle = (
         computed.backgroundColor,
       backgroundImage:
         computed.backgroundImage,
+      backgroundSize:
+        computed.backgroundSize,
+      backgroundPosition:
+        computed.backgroundPosition,
+      backgroundRepeat:
+        computed.backgroundRepeat,
       color:
         computed.color
     };
@@ -275,31 +381,103 @@ const createContainerStyle = (
 ) => {
   const extracted =
     containerElement
-      ? extractLayoutStyles(containerElement)
+      ? extractLayoutStyles(
+          containerElement
+        )
       : undefined;
 
   const desktop = {
     ...(extracted?.desktop || {})
   };
 
-  delete desktop.height;
-  delete desktop.minHeight;
+  const safeDesktop =
+    sanitizeContainerDesktopStyle(
+      desktop
+    );
+
+  const sourceMaxWidth =
+    safeDesktop.maxWidth
+      ? safeDesktop.maxWidth
+      : "1180px";
 
   return {
     ...(extracted || {}),
-    desktop: {
-      ...desktop,
-      display: "flex",
-      flexDirection: "column",
-      width: desktop.width || "100%",
-      marginLeft: desktop.marginLeft || "auto",
-      marginRight: desktop.marginRight || "auto"
-    },
+desktop: {
+  ...safeDesktop,
+
+  display:
+    "flex",
+
+  flexDirection:
+    "column",
+
+  alignItems:
+    "center",
+
+  width:
+    "100%",
+
+  maxWidth:
+    sourceMaxWidth,
+
+  marginLeft:
+    "auto",
+
+  marginRight:
+    "auto",
+
+  margin:
+    "0 auto",
+
+  paddingLeft:
+    safeDesktop.paddingLeft || "24px",
+
+  paddingRight:
+    safeDesktop.paddingRight || "24px",
+
+  boxSizing:
+    "border-box",
+
+  overflow:
+    "visible"
+},
+
     tablet: {
-      ...(extracted?.tablet || {})
+      ...(extracted?.tablet || {}),
+
+      width:
+        "100%",
+
+      maxWidth:
+        "100%",
+
+      marginLeft:
+        "auto",
+
+      marginRight:
+        "auto",
+
+      boxSizing:
+        "border-box"
     },
+
     mobile: {
-      ...(extracted?.mobile || {})
+      ...(extracted?.mobile || {}),
+
+      width:
+        "100%",
+
+      maxWidth:
+        "100%",
+
+      marginLeft:
+        "auto",
+
+      marginRight:
+        "auto",
+
+      boxSizing:
+        "border-box"
     }
   };
 };
@@ -310,32 +488,45 @@ const getFeatureCardElements = (
     return [];
   }
 
+  const isCard = (
+    child: Element
+  ): child is HTMLElement =>
+    isHTMLElementLike(child) &&
+    child !== element &&
+    !!child.querySelector(
+      "h1,h2,h3,h4,h5,h6"
+    ) &&
+    !!child.querySelector(
+      "p"
+    ) &&
+    (
+      child.tagName.toLowerCase() === "article" ||
+      child.classList.contains("feat") ||
+      child.classList.contains("ind-card") ||
+      child.className.toString().toLowerCase().includes("card") ||
+      child.className.toString().toLowerCase().includes("pillar") ||
+      child.className.toString().toLowerCase().includes("feature")
+    );
+
   const directCards =
     Array.from(
       element.children
     ).filter(
-      (child): child is HTMLElement =>
-        isHTMLElementLike(child) &&
-        !!child.querySelector(
-          "h1,h2,h3,h4,h5,h6"
-        )
+      isCard
     );
 
-  if (directCards.length) {
+  if (
+    directCards.length
+  ) {
     return directCards;
   }
 
   return Array.from(
     element.querySelectorAll(
-      ".feature-card, .pillar, .pillar-card, [class*='feature'], [class*='pillar']"
+      "article, .feat, .ind-card, .feature-card, .pillar, .pillar-card, .card, [class*='card'], [class*='feature'], [class*='pillar']"
     )
   ).filter(
-    (child): child is HTMLElement =>
-      isHTMLElementLike(child) &&
-      child !== element &&
-      !!child.querySelector(
-        "h1,h2,h3,h4,h5,h6"
-      )
+    isCard
   );
 };
 
@@ -407,10 +598,187 @@ const getSectionIntroElements = (
       descriptionElement || null
   };
 };
+const parsePx = (
+  value: any
+): number | null => {
+  const match =
+    String(value || "")
+      .match(/^([\d.]+)px$/);
 
+  return match
+    ? Number(match[1])
+    : null;
+};
+
+const scalePx = (
+  value: any,
+  factor: number
+): string | undefined => {
+  const parsed =
+    parsePx(
+      value
+    );
+
+  if (
+    parsed === null
+  ) {
+    return undefined;
+  }
+
+  return `${Math.round(
+    parsed * factor
+  )}px`;
+};
+
+const isReasonableContainerMaxWidth = (
+  value: any
+) => {
+  const normalized =
+    String(
+      value || ""
+    ).trim();
+
+  if (
+    !normalized ||
+    normalized === "none" ||
+    normalized === "auto"
+  ) {
+    return false;
+  }
+
+  if (
+    normalized.includes("%") ||
+    normalized.includes("calc(") ||
+    normalized.includes("min(") ||
+    normalized.includes("max(") ||
+    normalized.includes("clamp(")
+  ) {
+    return true;
+  }
+
+  const parsed =
+    parsePx(
+      normalized
+    );
+
+  return (
+    parsed !== null &&
+    parsed >= 720 &&
+    parsed <= 1600
+  );
+};
+
+const sanitizeContainerDesktopStyle = (
+  style: Record<string, any> = {}
+) => {
+  const result = {
+    ...style
+  };
+
+  delete result.width;
+  delete result.minWidth;
+  delete result.height;
+  delete result.minHeight;
+  delete result.maxHeight;
+  delete result.left;
+  delete result.right;
+  delete result.transform;
+
+  if (
+    !isReasonableContainerMaxWidth(
+      result.maxWidth
+    )
+  ) {
+    delete result.maxWidth;
+  }
+
+  return result;
+};
+
+const makeResponsiveSectionTitleStyle = (
+  titleElement?: HTMLElement | null
+) => {
+  const base =
+    mergePresetDesktopStyle(
+      {
+        textAlign: "left",
+        whiteSpace: "normal",
+        maxWidth: "760px"
+      },
+      titleElement
+        ? extractTypographyStyles(
+            titleElement
+          )
+        : undefined,
+      filterTextStyle
+    );
+
+  const desktop =
+    base.desktop || {};
+
+  return {
+    ...base,
+
+    desktop: {
+      ...desktop,
+      textAlign: "left",
+      whiteSpace: "normal",
+      maxWidth: "760px"
+    },
+
+    tablet: {
+      ...(base.tablet || {}),
+      fontSize:
+        scalePx(
+          desktop.fontSize,
+          0.72
+        ),
+      lineHeight:
+        scalePx(
+          desktop.lineHeight,
+          0.72
+        ) ||
+        desktop.lineHeight,
+      textAlign: "left",
+      whiteSpace: "normal",
+      maxWidth: "100%"
+    },
+
+    mobile: {
+      ...(base.mobile || {}),
+      fontSize:
+        scalePx(
+          desktop.fontSize,
+          0.52
+        ),
+      lineHeight:
+        scalePx(
+          desktop.lineHeight,
+          0.52
+        ) ||
+        desktop.lineHeight,
+      textAlign: "left",
+      whiteSpace: "normal",
+      maxWidth: "100%"
+    }
+  };
+};
+
+const resolveTabletFeatureGridColumns = (
+  itemCount: number
+) => {
+  if (
+    itemCount <= 1
+  ) {
+    return "1fr";
+  }
+
+  return "repeat(2, minmax(0, 1fr))";
+};
 const createSectionIntro = (
   claimedElement?: HTMLElement,
-  cardSourceElement?: HTMLElement
+  cardSourceElement?: HTMLElement,
+  styles?: FeaturePillarsStyleMap
 ): Block | null => {
   const {
     eyebrowElement,
@@ -442,197 +810,44 @@ const createSectionIntro = (
       descriptionElement
     );
 
-  const titleAccentElement =
-    titleElement?.querySelector(
-      ".gradient-text, .accent, span"
-    ) as HTMLElement | null;
-
-  const titleAccentContent =
-    getText(
-      titleAccentElement
+  const titleStyle =
+    makeResponsiveSectionTitleStyle(
+      titleElement
     );
 
-  const titleBaseContent =
-    titleAccentContent
-      ? getDirectText(
-          titleElement
-        )
-      : titleContent;
+  if (
+    styles?.title?.desktop
+  ) {
+    titleStyle.desktop = {
+      ...(titleStyle.desktop || {}),
+      ...filterTextStyle(
+        styles.title.desktop
+      )
+    };
+  }
 
-  const titleBlock: Block | null =
-    titleContent && titleAccentContent
-      ? {
-          id: uuidv4(),
-          type: "flex" as const,
-          data: {
-            props: {
-              direction: "row"
-            },
-            style: {
-              desktop: {
-                display: "flex",
-                flexDirection: "row",
-                flexWrap: "wrap",
-                gap: "10px",
-                alignItems: "baseline"
-              },
-              tablet: {},
-              mobile: {
-                flexDirection: "column"
-              }
-            }
+const titleBlock: Block | null =
+  titleContent
+    ? {
+        id:
+          uuidv4(),
+
+        type:
+          "title" as const,
+
+        data: {
+          props: {
+            content:
+              titleContent
           },
-          children: [
-            ...(
-              titleBaseContent
-                ? [
-                    {
-                      id: uuidv4(),
-                      type: "flexItem" as const,
-                      data: {
-                        props: {},
-                        style: {
-                          desktop: {},
-                          tablet: {},
-                          mobile: {}
-                        }
-                      },
-                      children: [
-                        {
-                          id: uuidv4(),
-                          type: "title" as const,
-                          data: {
-                            props: {
-                              content:
-                                titleBaseContent,
-                              semanticRole: "sectionTitle",
-                              typographyToken: "heading-lg"
-                            },
-                            style: {
-                              ...applySectionTitleScale(
-                                mergePresetDesktopStyle(
-                                  {
-                                    textAlign: "left"
-                                  },
-                                  titleElement
-                                    ? extractTypographyStyles(
-                                        titleElement
-                                      )
-                                    : undefined,
-                                  filterTextStyle
-                                ),
-                                titleElement
-                                  ? extractTypographyStyles(
-                                      titleElement
-                                    )
-                                  : undefined,
-                                "FEATURE_PILLARS"
-                              )
-                            }
-                          },
-                          children: []
-                        }
-                      ]
-                    }
-                  ]
-                : []
-            ),
-            {
-              id: uuidv4(),
-              type: "flexItem" as const,
-              data: {
-                props: {},
-                style: {
-                  desktop: {},
-                  tablet: {},
-                  mobile: {}
-                }
-              },
-              children: [
-                {
-                  id: uuidv4(),
-                  type: "title" as const,
-                  data: {
-                    props: {
-                      content:
-                        titleAccentContent,
-                      semanticRole: "sectionTitle",
-                      typographyToken: "heading-lg"
-                    },
-                    style: {
-                      ...applySectionTitleScale(
-                        mergePresetDesktopStyle(
-                          {
-                            textAlign: "left"
-                          },
-                          titleAccentElement
-                            ? extractTypographyStyles(
-                                titleAccentElement
-                              )
-                            : undefined,
-                          style => ({
-                            ...filterTextStyle(style),
-                            background:
-                              style.background,
-                            backgroundClip:
-                              style.backgroundClip,
-                            WebkitBackgroundClip:
-                              style.WebkitBackgroundClip,
-                            WebkitTextFillColor:
-                              style.WebkitTextFillColor
-                          })
-                        ),
-                        titleElement
-                          ? extractTypographyStyles(
-                              titleElement
-                            )
-                          : undefined,
-                        "FEATURE_PILLARS"
-                      )
-                    }
-                  },
-                  children: []
-                }
-              ]
-            }
-          ]
-        }
-      : titleContent
-        ? {
-            id: uuidv4(),
-            type: "title" as const,
-            data: {
-              props: {
-                content:
-                  titleContent,
-                semanticRole: "sectionTitle",
-                typographyToken: "heading-lg"
-              },
-              style: {
-                ...applySectionTitleScale(
-                  mergePresetDesktopStyle(
-                    {
-                      textAlign: "left"
-                    },
-                    titleElement
-                      ? extractTypographyStyles(
-                          titleElement
-                        )
-                      : undefined,
-                    filterTextStyle
-                  ),
-                  titleElement
-                    ? extractTypographyStyles(
-                        titleElement
-                      )
-                    : undefined,
-                  "FEATURE_PILLARS"
-                )
-              }
-            },
-            children: []
-          }
-        : null;
+
+          style:
+            titleStyle
+        },
+
+        children: []
+      }
+    : null;
 
   const introChildren: Block[] = [
     eyebrowContent
@@ -645,7 +860,7 @@ const createSectionIntro = (
                 eyebrowContent
             },
             style: {
-              ...mergePresetDesktopStyle(
+              ...mergeResponsiveDesktop(
                 {
                   textAlign: "left",
                   display: "inline-flex",
@@ -655,18 +870,12 @@ const createSectionIntro = (
                   paddingLeft: "14px",
                   paddingRight: "14px"
                 },
-                eyebrowElement
-                  ? {
-                      desktop: {
-                        ...extractLayoutStyles(
-                          eyebrowElement
-                        ).desktop,
-                        ...extractTypographyStyles(
-                          eyebrowElement
-                        ).desktop
-                      }
-                    }
-                  : undefined,
+                mergeElementAndPayloadStyles(
+                  mergeLayoutAndTypography(
+                    eyebrowElement
+                  ),
+                  styles?.eyebrow
+                ),
                 style => ({
                   ...filterCardStyle(style),
                   ...filterTextStyle(style)
@@ -688,15 +897,18 @@ const createSectionIntro = (
                 descriptionContent
             },
             style: {
-              ...mergePresetDesktopStyle(
+              ...mergeResponsiveDesktop(
                 {
                   textAlign: "left"
                 },
-                descriptionElement
-                  ? extractTypographyStyles(
-                      descriptionElement
-                    )
-                  : undefined,
+                mergeElementAndPayloadStyles(
+                  descriptionElement
+                    ? extractTypographyStyles(
+                        descriptionElement
+                      )
+                    : undefined,
+                  styles?.description
+                ),
                 filterTextStyle
               )
             }
@@ -739,11 +951,22 @@ const createSectionIntro = (
           props: {},
           style: {
             desktop: {
-              width: "100%",
-              maxWidth: "820px"
-            },
-            tablet: {},
-            mobile: {}
+  width: "100%",
+  maxWidth: "760px",
+  alignSelf: "flex-start"
+},
+
+tablet: {
+  width: "100%",
+  maxWidth: "100%",
+  alignSelf: "flex-start"
+},
+
+mobile: {
+  width: "100%",
+  maxWidth: "100%",
+  alignSelf: "flex-start"
+}
           }
         },
         children:
@@ -759,7 +982,7 @@ const getChipElements = (
   cardElement
     ? Array.from(
         cardElement.querySelectorAll(
-          ".tags span, .chip, .tag, .pill"
+          ".topics span, .tags span, .chips span, .chip, .pill, .badge, .tag, [class*='chip'], [class*='pill'], [class*='badge'], [class*='tag']"
         )
       ).filter(
         (element): element is HTMLElement =>
@@ -770,7 +993,8 @@ const getChipElements = (
     : [];
 
 const createChipList = (
-  chipElements: HTMLElement[]
+  chipElements: HTMLElement[],
+  fallbackStyles: ResponsiveStyle[] = []
 ): Block | null => {
   const chips =
     chipElements
@@ -808,7 +1032,7 @@ const createChipList = (
     },
     children:
       chips.map(
-        chip => ({
+        (chip, index) => ({
           id: uuidv4(),
           type: "flexItem" as const,
           data: {
@@ -829,18 +1053,14 @@ const createChipList = (
                     chip.content
                 },
                 style: {
-                  ...mergePresetDesktopStyle(
+                  ...mergeResponsiveDesktop(
                     {},
-                    {
-                      desktop: {
-                        ...extractLayoutStyles(
-                          chip.element
-                        ).desktop,
-                        ...extractTypographyStyles(
-                          chip.element
-                        ).desktop
-                      }
-                    },
+                    mergeElementAndPayloadStyles(
+                      mergeLayoutAndTypography(
+                        chip.element
+                      ),
+                      fallbackStyles[index]
+                    ),
                     style => ({
                       ...filterCardStyle(style),
                       ...filterTextStyle(style)
@@ -876,9 +1096,9 @@ const createFeatureItem = (
     ) as HTMLElement | null;
 
   const eyebrowElement =
-    cardElement?.querySelector(
-      ".r-num, .eyebrow, .section-tag"
-    ) as HTMLElement | null;
+  cardElement?.querySelector(
+    ":scope > .tag, :scope > .r-num, :scope > .n, :scope > .num, :scope > .number, :scope > .index, :scope > .eyebrow, :scope > .section-tag, :scope > [class*='num'], :scope > [class*='number'], :scope > [class*='index'], :scope > [class*='eyebrow'], :scope > [class*='badge']"
+  ) as HTMLElement | null;
 
   const eyebrowContent =
     getDirectText(
@@ -886,6 +1106,11 @@ const createFeatureItem = (
     ) ||
     getText(
       eyebrowElement
+    );
+
+  const isNumberBadge =
+    /^[0-9]{1,2}$/.test(
+      eyebrowContent.trim()
     );
 
   const titleContent =
@@ -920,15 +1145,22 @@ const createFeatureItem = (
     );
   const chipList =
     createChipList(
-      tagElements
+      tagElements,
+      item.styles?.tags
     );
 
-  const extractedCardStyle =
+  const elementCardStyle =
     cardElement
       ? extractLayoutStyles(
           cardElement
         )
       : undefined;
+
+  const extractedCardStyle =
+    mergeElementAndPayloadStyles(
+      elementCardStyle,
+      item.styles?.card
+    );
 
   const useDarkCardFallback =
     shouldUseDarkFallback(
@@ -974,8 +1206,364 @@ const fallbackCardStyle = {
       extractedCardStyle,
       filterCardStyle
     );
+const gridColumn =
+  cardElement
+    ? cardElement.ownerDocument.defaultView
+        ?.getComputedStyle(cardElement)
+        .gridColumn
+    : "";
 
-  return {
+if (
+  gridColumn &&
+  gridColumn !== "auto"
+) {
+  emittedCardStyle.desktop = {
+    ...(emittedCardStyle.desktop || {}),
+    gridColumn
+  };
+}
+emittedCardStyle.desktop = {
+  ...(emittedCardStyle.desktop || {}),
+
+  width:
+    "100%",
+
+  maxWidth:
+    "100%",
+
+  minWidth:
+    "0",
+
+  boxSizing:
+    "border-box",
+
+  justifySelf:
+    "stretch",
+
+  overflow:
+    "visible"
+};
+
+delete emittedCardStyle.desktop.marginLeft;
+delete emittedCardStyle.desktop.marginRight;
+delete emittedCardStyle.desktop.left;
+delete emittedCardStyle.desktop.right;
+delete emittedCardStyle.desktop.transform;
+
+const badgeBlock: Block | null =
+  eyebrowContent
+    ? {
+        id:
+          uuidv4(),
+
+        type:
+          "text" as const,
+
+        data: {
+          props: {
+            content:
+              eyebrowContent
+          },
+
+          style: {
+            ...mergeResponsiveDesktop(
+              isNumberBadge
+                ? {
+                    display:
+                      "inline-flex",
+
+                    alignItems:
+                      "center",
+
+                    justifyContent:
+                      "center",
+
+                    width:
+                      "44px",
+
+                    height:
+                      "44px",
+
+                    minWidth:
+                      "44px",
+
+                    borderRadius:
+                      "12px",
+
+                    textAlign:
+                      "center"
+                  }
+                : {
+                    textAlign:
+                      "left"
+                  },
+              mergeElementAndPayloadStyles(
+                eyebrowElement
+                  ? extractLayoutStyles(
+                      eyebrowElement
+                    )
+                  : undefined,
+                item.styles?.eyebrow
+              ),
+              style => ({
+                ...filterCardStyle(
+                  style
+                ),
+                ...filterTextStyle(
+                  style
+                )
+              })
+            )
+          }
+        },
+
+        children: []
+      }
+    : null;
+
+const titleBlock: Block = {
+  id:
+    uuidv4(),
+
+  type:
+    "title" as const,
+
+  data: {
+    props: {
+      content:
+        titleContent,
+
+      semanticRole:
+        "sectionTitle"
+    },
+
+    style: {
+      ...mergeResponsiveDesktop(
+        {
+          textAlign:
+            "left",
+
+          maxWidth:
+            "760px",
+
+          whiteSpace:
+            "normal"
+        },
+        mergeElementAndPayloadStyles(
+          titleElement
+            ? extractTypographyStyles(
+                titleElement
+              )
+            : undefined,
+          item.styles?.title
+        ),
+        filterTextStyle
+      )
+    }
+  },
+
+  children: []
+};
+
+const subtitleBlock: Block | null =
+  subtitleContent
+    ? {
+        id:
+          uuidv4(),
+
+        type:
+          "text" as const,
+
+        data: {
+          props: {
+            content:
+              subtitleContent
+          },
+
+          style: {
+            ...mergeResponsiveDesktop(
+              {
+                textAlign:
+                  "left"
+              },
+              mergeElementAndPayloadStyles(
+                subElement
+                  ? extractTypographyStyles(
+                      subElement
+                    )
+                  : undefined,
+                item.styles?.description
+              ),
+              filterTextStyle
+            )
+          }
+        },
+
+        children: []
+      }
+    : null;
+
+const descriptionBlock: Block | null =
+  descriptionContent
+    ? {
+        id:
+          uuidv4(),
+
+        type:
+          "text" as const,
+
+        data: {
+          props: {
+            content:
+              descriptionContent
+          },
+
+          style: {
+            ...mergeResponsiveDesktop(
+              {
+                textAlign:
+                  "left"
+              },
+              mergeElementAndPayloadStyles(
+                textElement
+                  ? extractTypographyStyles(
+                      textElement
+                    )
+                  : undefined,
+                item.styles?.description
+              ),
+              filterTextStyle
+            )
+          }
+        },
+
+        children: []
+      }
+    : null;
+
+const contentStack: Block = {
+  id:
+    uuidv4(),
+
+  type:
+    "flex" as const,
+
+  data: {
+    props: {
+      direction:
+        "column"
+    },
+
+    style: {
+      desktop: {
+        display:
+          "flex",
+
+        flexDirection:
+          "column",
+
+        gap:
+          "10px",
+
+        minWidth:
+          "0",
+
+        flex:
+          "1"
+      },
+      tablet: {},
+      mobile: {}
+    }
+  },
+
+  children:
+    [
+      titleBlock,
+      subtitleBlock,
+      descriptionBlock,
+      chipList
+    ].filter(
+      (child): child is Block =>
+        child !== null
+    )
+};
+
+const cardChildren: Block[] =
+  isNumberBadge && badgeBlock
+    ? [
+        {
+          id:
+            uuidv4(),
+
+          type:
+            "flex" as const,
+
+          data: {
+            props: {},
+
+            style: {
+              desktop: {
+                display:
+                  "flex",
+
+                flexDirection:
+                  "row",
+
+                alignItems:
+                  "flex-start",
+
+                gap:
+                  "22px",
+
+                width:
+                  "100%"
+              },
+
+              tablet: {
+                display:
+                  "flex",
+
+                flexDirection:
+                  "row",
+
+                gap:
+                  "18px",
+
+                width:
+                  "100%"
+              },
+
+              mobile: {
+                display:
+                  "flex",
+
+                flexDirection:
+                  "column",
+
+                gap:
+                  "14px",
+
+                width:
+                  "100%"
+              }
+            }
+          },
+
+          children: [
+            badgeBlock,
+            contentStack
+          ]
+        }
+      ]
+    : [
+        badgeBlock,
+        contentStack
+      ].filter(
+        (child): child is Block =>
+          child !== null
+      );
+
+return {
     id: uuidv4(),
     type: "gridItem" as const,
     data: {
@@ -984,122 +1572,82 @@ const fallbackCardStyle = {
         ...emittedCardStyle
       }
     },
-    children: [
-      eyebrowContent
-        ? {
-            id: uuidv4(),
-            type: "text" as const,
-            data: {
-              props: {
-                content:
-                  eyebrowContent
-              },
-              style: {
-                ...mergePresetDesktopStyle(
-                  {
-                    textAlign: "left"
-                  },
-                  eyebrowElement
-                    ? extractTypographyStyles(
-                        eyebrowElement
-                      )
-                    : undefined,
-                  filterTextStyle
-                )
-              }
-            },
-            children: []
-          }
-        : null,
-      {
-        id: uuidv4(),
-        type: "title" as const,
-        data: {
-          props: {
-            content:
-              titleContent,
-            semanticRole: "sectionTitle",
-            typographyToken: "heading-lg"
-          },
-          style: {
-            ...mergePresetDesktopStyle(
-              {
-                textAlign: "left"
-              },
-              titleElement
-                ? extractTypographyStyles(
-                    titleElement
-                  )
-                : undefined,
-              filterTextStyle
-            )
-          }
-        },
-        children: []
-      },
-      subtitleContent
-        ? {
-            id: uuidv4(),
-            type: "text" as const,
-            data: {
-              props: {
-                content:
-                  subtitleContent
-              },
-              style: {
-                ...mergePresetDesktopStyle(
-                  {
-                    textAlign: "left"
-                  },
-                  subElement
-                    ? extractTypographyStyles(
-                        subElement
-                      )
-                    : undefined,
-                  filterTextStyle
-                )
-              }
-            },
-            children: []
-          }
-        : null,
-      descriptionContent
-        ? {
-            id: uuidv4(),
-            type: "text" as const,
-            data: {
-              props: {
-                content:
-                  descriptionContent
-              },
-              style: {
-                ...mergePresetDesktopStyle(
-                  {
-                    textAlign: "left"
-                  },
-                  textElement
-                    ? extractTypographyStyles(
-                        textElement
-                      )
-                    : undefined,
-                  filterTextStyle
-                )
-              }
-            },
-            children: []
-          }
-        : null,
-      chipList
-    ].filter(
-      (child): child is Block =>
-        child !== null
-    )
+    children: cardChildren
   };
+};
+const countGridTracks = (
+  value?: string
+) => {
+  const columns =
+    String(
+      value || ""
+    ).trim();
+
+  if (
+    !columns ||
+    columns === "none"
+  ) {
+    return 0;
+  }
+
+  const repeatMatch =
+    columns.match(
+      /repeat\(\s*(\d+)\s*,/i
+    );
+
+  if (
+    repeatMatch
+  ) {
+    return Number(
+      repeatMatch[1]
+    );
+  }
+
+  return columns
+    .split(/\s+/)
+    .filter(Boolean)
+    .length;
+};
+
+const resolveFeatureGridColumns = (
+  sourceColumns: string | undefined,
+  itemCount: number
+) => {
+  const sourceTrackCount =
+    countGridTracks(
+      sourceColumns
+    );
+
+  if (
+    sourceTrackCount >= 1 &&
+    sourceTrackCount <= 4
+  ) {
+    return `repeat(${sourceTrackCount}, minmax(0, 1fr))`;
+  }
+
+  if (
+    itemCount === 1
+  ) {
+    return "1fr";
+  }
+
+  if (
+    itemCount === 2
+  ) {
+    return "repeat(2, minmax(0, 1fr))";
+  }
+
+  if (
+    itemCount === 3
+  ) {
+    return "repeat(3, minmax(0, 1fr))";
+  }
+
+  return "repeat(2, minmax(0, 1fr))";
 };
 
 export const generateFeaturePillarsPreset = (
   payload?: FeaturesPresetPayload
-  
 ): Block => {
   const items =
     payload?.items?.length
@@ -1109,38 +1657,118 @@ export const generateFeaturePillarsPreset = (
   const claimedElement =
     payload?.claimedNode?.element;
 
+  const sectionRootElement =
+    claimedElement?.closest(
+      "section, header, main"
+    ) as HTMLElement | null;
+
   const cardSourceElement =
     payload?.gridNode?.element ||
     payload?.sourceNode?.element ||
     claimedElement;
 
+  const visualSectionElement =
+    sectionRootElement ||
+    claimedElement;
+
+  const payloadStyles =
+    payload?.styles || {};
+
+  const containerElement =
+    findContainerElement(
+      visualSectionElement || undefined,
+      cardSourceElement
+    );
+
   const cardElements =
     getFeatureCardElements(
       cardSourceElement
     );
- 
-  const sectionStyle =
-  claimedElement
-    ? extractLayoutStyles(
-        claimedElement
-      )
-    : undefined;
-const sectionPaintStyle =
-  getFeatureSectionPaintStyle(
-    claimedElement
+const sourceGridElement =
+  payload?.gridNode?.element ||
+  (
+    cardSourceElement?.matches?.(
+      ".feat-grid, .profiles-grid, [class*='feat-grid'], [class*='profiles-grid'], [class*='grid']"
+    )
+      ? cardSourceElement
+      : cardSourceElement?.querySelector?.(
+          ".feat-grid, .profiles-grid, [class*='feat-grid'], [class*='profiles-grid'], [class*='grid']"
+        )
+  ) as HTMLElement | null;
+
+const sourceGridColumns =
+  sourceGridElement
+    ? (
+        sourceGridElement.ownerDocument.defaultView ||
+        window
+      ).getComputedStyle(
+        sourceGridElement
+      ).gridTemplateColumns
+    : "";
+
+const desktopGridColumns =
+  resolveFeatureGridColumns(
+    sourceGridColumns,
+    items.length
   );
-console.log(
-  "🔥 FEATURE_PILLARS_PRESET_USED",
-  {
-    items:
-      items.length,
-    claimedClass:
-      claimedElement?.className,
-    sourceClass:
-      cardSourceElement?.className,
-    sectionPaintStyle
-  }
-);
+  const sectionStyle =
+    visualSectionElement
+      ? extractLayoutStyles(
+          visualSectionElement
+        )
+      : undefined;
+
+  const sectionSourceStyle =
+    mergeElementAndPayloadStyles(
+      sectionStyle,
+      payloadStyles.section
+    );
+
+  const sectionDesktopStyle =
+    filterSectionStyle(
+      sectionSourceStyle?.desktop || {}
+    );
+
+  const sectionPaintStyle =
+    getFeatureSectionPaintStyle(
+      visualSectionElement ||
+      claimedElement
+    );
+
+  const containerStyle =
+    createContainerStyle(
+      containerElement
+    );
+
+  const payloadContainerDesktop =
+    payloadStyles.container?.desktop || {};
+
+  const safePayloadContainerDesktop =
+    sanitizeContainerDesktopStyle(
+      payloadContainerDesktop
+    );
+
+  const sourceGridStyle =
+    mergeElementAndPayloadStyles(
+      sourceGridElement
+        ? extractLayoutStyles(
+            sourceGridElement
+          )
+        : undefined,
+      payloadStyles.grid
+    );
+
+  const gridDesktopStyle =
+    filterGridStyle(
+      sourceGridStyle?.desktop || {}
+    );
+
+  const gridGap =
+    gridDesktopStyle.gap ||
+    gridDesktopStyle.columnGap ||
+    gridDesktopStyle.rowGap ||
+    "22px";
+
   const featureCards =
     items.map(
       (
@@ -1153,119 +1781,382 @@ console.log(
         )
     );
 
-  const sectionIntro =
-    createSectionIntro(
-      claimedElement,
-      cardSourceElement
-    );
+const shouldSuppressIntro =
+  !!payload?.suppressIntro;
 
-  const containerElement =
-    findContainerElement(
-      claimedElement,
-      cardSourceElement
-    );
-    const containerStyle =
-  createContainerStyle(
-    containerElement
-  );
-
- const gridStyle =
-  cardSourceElement
-    ? extractLayoutStyles(cardSourceElement)
-    : null;
+const sectionIntro =
+  shouldSuppressIntro
+    ? null
+    : createSectionIntro(
+        visualSectionElement ||
+        claimedElement,
+        cardSourceElement,
+        payloadStyles
+      );
 
 const contentChildren =
   [
     sectionIntro,
-   {
-  id: uuidv4(),
-  type: "grid" as const,
-  data: {
-    props: {},
-    style: {
-      desktop: {
-        ...(gridStyle?.desktop || {}),
-        display: "grid",
-        gridTemplateColumns:
-          gridStyle?.desktop?.gridTemplateColumns &&
-          gridStyle.desktop.gridTemplateColumns !== "none"
-            ? gridStyle.desktop.gridTemplateColumns
-            : "repeat(3, minmax(0, 1fr))",
-        gap:
-          gridStyle?.desktop?.gap || "22px",
-        width: "100%",
-        alignItems: "stretch"
-      },
-      tablet: {
-        ...(gridStyle?.tablet || {}),
-        display: "grid",
-        gridTemplateColumns: "1fr",
-        width: "100%"
-      },
-      mobile: {
-        ...(gridStyle?.mobile || {}),
-        display: "grid",
-        gridTemplateColumns: "1fr",
-        width: "100%"
-      }
-    }
-  },
-  children: featureCards
-}
-  ].filter(
-    (child): child is Block =>
-      child !== null
-  );
-  return {
-    id: uuidv4(),
-    type: "section" as const,
-    meta: {
-      semanticType: "FEATURE_PILLARS"
-    },
-    data: {
-      props: {},
-style: {
- desktop: {
-  ...(sectionStyle?.desktop || {}),
-  ...sectionPaintStyle,
 
-    paddingTop:
-      sectionStyle?.desktop?.paddingTop ||
-      "80px",
+    {
+      id:
+        uuidv4(),
 
-    paddingBottom:
-      sectionStyle?.desktop?.paddingBottom ||
-      "80px",
+      type:
+        "grid" as const,
 
-    paddingLeft:
-      sectionStyle?.desktop?.paddingLeft ||
-      "24px",
-
-    paddingRight:
-      sectionStyle?.desktop?.paddingRight ||
-      "24px",
-
-    overflow:
-      "visible"
-  },
-
-  tablet: {
-    ...(sectionStyle?.tablet || {})
-  },
-
-  mobile: {
-    ...(sectionStyle?.mobile || {})
-  }
-}
-    },
-    children: [
-      {
-        id: uuidv4(),
-        type: "flex" as const,
         data: {
           props: {},
-          style: containerStyle
+
+          style: {
+            desktop: {
+              ...gridDesktopStyle,
+
+              display:
+                "grid",
+              gridTemplateColumns:desktopGridColumns,
+              gap:
+                gridGap,
+
+              width:
+                "100%",
+
+              maxWidth:
+                "100%",
+
+              margin:
+                "0",
+
+              marginLeft:
+                "0",
+
+              marginRight:
+                "0",
+
+              justifyContent:
+                "center",
+
+              justifyItems:
+                "stretch",
+
+              alignItems:
+                "stretch",
+
+              boxSizing:
+                "border-box",
+
+              overflow:
+                "visible"
+            },
+
+            tablet: {
+              display:
+                "grid",
+
+              gridTemplateColumns:
+                "1fr",
+
+              gap:
+                gridGap,
+
+              width:
+                "100%",
+
+              maxWidth:
+                "100%",
+
+              margin:
+                "0",
+
+              boxSizing:
+                "border-box",
+
+              overflow:
+                "visible"
+            },
+
+            mobile: {
+              display:
+                "grid",
+
+              gridTemplateColumns:
+                "1fr",
+
+              gap:
+                gridGap,
+
+              width:
+                "100%",
+
+              maxWidth:
+                "100%",
+
+              margin:
+                "0",
+
+              boxSizing:
+                "border-box",
+
+              overflow:
+                "visible"
+            }
+          }
         },
+
+        children:
+          featureCards
+      }
+    ].filter(
+      (child): child is Block =>
+        child !== null
+    );
+
+  return {
+    id:
+      uuidv4(),
+
+    type:
+      "section" as const,
+
+    meta: {
+      semanticType:
+        "FEATURE_PILLARS"
+    },
+
+    data: {
+      props: {},
+
+      style: {
+        desktop: {
+          ...sectionDesktopStyle,
+          ...sectionPaintStyle,
+
+          display:
+            "flex",
+
+          flexDirection:
+            "column",
+
+          alignItems:
+            "center",
+
+          justifyContent:
+            "center",
+
+          width:
+            "100%",
+
+          maxWidth:
+            "100%",
+
+          margin:
+            sectionDesktopStyle.margin || "0",
+
+          padding:
+            sectionDesktopStyle.padding,
+
+          paddingTop:
+            sectionDesktopStyle.padding
+              ? undefined
+              : sectionDesktopStyle.paddingTop || "64px",
+
+          paddingBottom:
+            sectionDesktopStyle.padding
+              ? undefined
+              : sectionDesktopStyle.paddingBottom || "72px",
+
+          paddingLeft:
+            sectionDesktopStyle.padding
+              ? undefined
+              : sectionDesktopStyle.paddingLeft || "0px",
+
+          paddingRight:
+            sectionDesktopStyle.padding
+              ? undefined
+              : sectionDesktopStyle.paddingRight || "0px",
+
+          boxSizing:
+            "border-box",
+
+          overflow:
+            "visible"
+        },
+
+        tablet: {
+          display:
+            "flex",
+
+          flexDirection:
+            "column",
+
+          alignItems:
+            "center",
+
+          width:
+            "100%",
+
+          maxWidth:
+            "100%",
+
+          margin:
+            "0",
+
+          paddingLeft:
+            "0px",
+
+          paddingRight:
+            "0px",
+
+          boxSizing:
+            "border-box",
+
+          overflow:
+            "visible"
+        },
+
+        mobile: {
+          display:
+            "flex",
+
+          flexDirection:
+            "column",
+
+          alignItems:
+            "center",
+
+          width:
+            "100%",
+
+          maxWidth:
+            "100%",
+
+          margin:
+            "0",
+
+          paddingLeft:
+            "0px",
+
+          paddingRight:
+            "0px",
+
+          boxSizing:
+            "border-box",
+
+          overflow:
+            "visible"
+        }
+      }
+    },
+
+    children: [
+      {
+        id:
+          uuidv4(),
+
+        type:
+          "flex" as const,
+
+        data: {
+          props: {},
+
+          style: {
+            desktop: {
+              ...(containerStyle.desktop || {}),
+              ...safePayloadContainerDesktop,
+
+              display:
+                "flex",
+
+              flexDirection:
+                "column",
+
+              alignItems:
+                "stretch",
+
+              width:
+                "100%",
+
+              maxWidth:
+                safePayloadContainerDesktop.maxWidth ||
+                containerStyle.desktop?.maxWidth ||
+                "1180px",
+
+              margin:
+                safePayloadContainerDesktop.margin ||
+                containerStyle.desktop?.margin ||
+                "0 auto",
+
+              marginLeft:
+                safePayloadContainerDesktop.marginLeft ||
+                containerStyle.desktop?.marginLeft ||
+                "auto",
+
+              marginRight:
+                safePayloadContainerDesktop.marginRight ||
+                containerStyle.desktop?.marginRight ||
+                "auto",
+
+              boxSizing:
+                "border-box",
+
+              overflow:
+                "visible"
+            },
+
+            tablet: {
+              display:
+                "flex",
+
+              flexDirection:
+                "column",
+
+              alignItems:
+                "stretch",
+
+              width:
+                "100%",
+
+              maxWidth:
+                "calc(100% - 56px)",
+
+              margin:
+                "0 auto",
+
+              boxSizing:
+                "border-box",
+
+              overflow:
+                "visible"
+            },
+
+            mobile: {
+              display:
+                "flex",
+
+              flexDirection:
+                "column",
+
+              alignItems:
+                "stretch",
+
+              width:
+                "100%",
+
+              maxWidth:
+                "calc(100% - 40px)",
+
+              margin:
+                "0 auto",
+
+              boxSizing:
+                "border-box",
+
+              overflow:
+                "visible"
+            }
+          }
+        },
+
         children:
           contentChildren
       }

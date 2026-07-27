@@ -28,6 +28,12 @@ import {
 import {
   getElementClassName
 } from "../html/domGuards";
+import {
+  resolveHero
+} from "../html/semanticResolvers/hero/resolveHero";
+import type {
+  StructuralNode
+} from "../html/structure/buildStructuralGraph";
 
 const summarizeDomSubtree = (
   element: HTMLElement | undefined,
@@ -152,6 +158,122 @@ const collectBlockTypes = (
         )
       ].filter(Boolean)
     : [];
+
+const findNodeByElement = (
+  node: StructuralNode | null,
+  element: Element
+): StructuralNode | null => {
+  if (!node) {
+    return null;
+  }
+
+  if (node.element === element) {
+    return node;
+  }
+
+  for (const child of node.children || []) {
+    const match =
+      findNodeByElement(
+        child,
+        element
+      );
+
+    if (match) {
+      return match;
+    }
+  }
+
+  return null;
+};
+
+const recoverExplicitHeroResults = (
+  body: HTMLElement,
+  structuralGraph: StructuralNode,
+  semanticResults: any[]
+) => {
+  const explicitHeroElements =
+    Array.from(
+      body.querySelectorAll(
+        "header.page-hero, section.page-hero, header.hero, section.hero, .hero, [class*='hero']"
+      )
+    ).filter(
+      (element): element is HTMLElement =>
+        !!element &&
+        typeof (element as HTMLElement).tagName === "string" &&
+        typeof (element as HTMLElement).querySelector === "function" &&
+        !!element.querySelector("h1") &&
+        !!(element.textContent || "").trim()
+    );
+
+  for (const element of explicitHeroElements) {
+    const alreadyCovered =
+      semanticResults.some(
+        result => {
+          const claimedElement =
+            result?.claimedNode?.element;
+
+          return (
+            (
+              result?.type === "HERO_SECTION" ||
+              result?.type === "HERO"
+            ) &&
+            !!claimedElement &&
+            (
+              claimedElement === element ||
+              claimedElement?.contains?.(
+                element
+              ) ||
+              element.contains(
+                claimedElement
+              )
+            )
+          );
+        }
+      );
+
+    if (alreadyCovered) {
+      continue;
+    }
+
+    const node =
+      findNodeByElement(
+        structuralGraph,
+        element
+      );
+
+    if (!node) {
+      continue;
+    }
+
+    const recovered =
+      resolveHero(
+        node
+      );
+
+    if (recovered) {
+      console.warn(
+        "HTML_IMPORT_EXPLICIT_HERO_RECOVERED",
+        {
+          tag:
+            element.tagName,
+          className:
+            getElementClassName(
+              element
+            ),
+          title:
+            recovered.title
+        }
+      );
+
+      return [
+        recovered,
+        ...semanticResults
+      ];
+    }
+  }
+
+  return semanticResults;
+};
 
 const summarizePayload = (
   semanticResult: any
@@ -727,9 +849,13 @@ console.log(
 
   const semanticResults =
 
-    resolveSemanticStructure(
+    recoverExplicitHeroResults(
+      body,
+      structuralGraph,
+      resolveSemanticStructure(
       structuralGraph,
       context
+      )
     );
 
   console.log(

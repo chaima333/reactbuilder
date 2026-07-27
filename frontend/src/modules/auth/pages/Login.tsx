@@ -17,8 +17,8 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import GoogleIcon from '@mui/icons-material/Google';
 import LoginIcon from '@mui/icons-material/Login';
 import { useLoginMutation, useVerify2FALoginMutation } from '../../../redux/services/auth.api';
+import { API_URL } from '../../../config/api';
 
-const BACKEND = 'https://backend-rmfq.onrender.com';
 
 export const Login: React.FC = () => {
   const dispatch = useDispatch();
@@ -106,7 +106,7 @@ const handleVerify2FA = async () => {
           { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } }
         );
 
-        const res = await axios.post(`${BACKEND}/api/auth/google`, {
+        const res = await axios.post(`${API_URL}/auth/login`, {
           email: userInfo.data.email,
           name: userInfo.data.name,
           googleId: userInfo.data.sub,

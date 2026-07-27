@@ -1,5 +1,9 @@
 import React from "react";
 
+import type {
+  CSSProperties
+} from "react";
+
 import {
   SectionShell
 } from "../../semantic/shared/SectionShell";
@@ -8,18 +12,28 @@ import {
   useRuntimeNode
 } from "../../../../hooks/useRuntimeNode";
 
+import {
+  useResolvedStyle
+} from "../../../../core/theme/useResolvedStyle";
+
 type Device =
   | "desktop"
   | "tablet"
   | "mobile";
 
-interface SectionBlockProps {
+type ResolvedStyleInput =
+  NonNullable<
+    Parameters<
+      typeof useResolvedStyle
+    >[0]
+  >;
 
+interface SectionBlockProps {
   block?: any;
 
   children?: React.ReactNode;
 
-  data: any;
+  data?: any;
 
   device?: Device;
 }
@@ -30,18 +44,10 @@ export const SectionBlock = ({
   data,
   device = "desktop"
 }: SectionBlockProps) => {
-
-  // =====================================
-  // RUNTIME NODE
-  // =====================================
-
   const runtime =
     useRuntimeNode({
-
       block,
-
       type: "section",
-
       droppable: true
     });
 
@@ -50,256 +56,174 @@ export const SectionBlock = ({
     rootProps
   } = runtime;
 
-  // =====================================
-  // CHILDREN
-  // =====================================
-
   const hasChildren =
-
     React.Children.count(
       children
     ) > 0;
 
-  // =====================================
-  // SEMANTIC ICONS
-  // =====================================
-
   const semanticIcons = {
-
-    HERO_SECTION:
-      "🔥",
-
-    VALUES_GRID:
-      "💎",
-
-    OFFICES_TABLE:
-      "🏢",
-
-    CTA_SECTION:
-      "🚀",
-
-    NAVBAR:
-      "🧭"
+    HERO_SECTION: "✦",
+    VALUES_GRID: "◆",
+    OFFICES_TABLE: "▦",
+    CTA_SECTION: "→",
+    NAVBAR: "☰"
   };
 
-  // =====================================
-  // CONFIDENCE
-  // =====================================
-
   const confidence =
-
     block?.meta?.confidence;
 
-const responsiveStyle =
-  data?.style?.[device] ||
-  data?.style?.desktop ||
-  data?.style ||
-  {};
+  const blockData =
+    data ||
+    block?.data ||
+    {};
 
-const sectionShellStyle = {
-  ...responsiveStyle,
-  minHeight: responsiveStyle.minHeight || "200px",
-  transition: "all 0.15s ease-in-out"
-};
+  /*
+   * Important:
+   * useResolvedStyle fusionne desktop,
+   * tablet et mobile correctement.
+   *
+   * Avant, SectionBlock sélectionnait
+   * uniquement style[device], donc les
+   * propriétés desktop pouvaient disparaître.
+   */
+  const styleInput:
+    ResolvedStyleInput =
+      blockData?.style ??
+      ({} as ResolvedStyleInput);
 
-console.log(
-  "SECTION_RUNTIME_JSON",
-  JSON.stringify(
-    {
-      id:
-        block?.id,
-      semanticType:
-        block?.meta?.semanticType,
-      rawDataStyle:
-        data?.style,
-      resolvedStyle:
-        responsiveStyle,
-      sectionShellStyle,
-      childTypes:
-        (block?.children || []).map(
-          (child: any) => child.type
-        )
-    },
-    null,
-    2
-  )
-);
+  const resolvedStyle =
+    useResolvedStyle(
+      styleInput,
+      device
+    ) as CSSProperties;
 
-  // =====================================
-  // RENDER
-  // =====================================
-if (
-  block?.meta?.semanticType ===
-  "INFO_BANNER"
-) {
-  console.log(
-    "INFO_BANNER_RUNTIME",
-    data?.style
-  );
-}
+  const sectionShellStyle:
+    CSSProperties = {
+      ...resolvedStyle,
+
+      width: "100%",
+
+      maxWidth:
+        resolvedStyle.maxWidth ||
+        "1200px",
+
+      minWidth: 0,
+
+      minHeight:
+        resolvedStyle.minHeight,
+
+      boxSizing:
+        "border-box",
+
+      transition:
+        "all 0.15s ease-in-out"
+    };
+
   return (
-
     <div
       {...rootProps}
-
       style={{
         width: "100%",
         position: "relative",
         pointerEvents: "auto",
-        marginBottom: 0
+        marginBottom: 0,
+        boxSizing: "border-box"
       }}
     >
+      {block?.meta?.semanticType && (
+        <div
+          style={{
+            position: "absolute",
 
-      {/* =====================================
-          SEMANTIC OVERLAY
-      ====================================== */}
+            top: "12px",
+            right: "12px",
 
-      {
-        block?.meta?.semanticType && (
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
 
-          <div
-            style={{
-              position: "absolute",
+            padding:
+              "6px 12px",
 
-              top: "12px",
+            borderRadius:
+              "999px",
 
-              right: "12px",
+            background:
+              "rgba(17, 24, 39, 0.92)",
 
-              background:
-                "rgba(17,24,39,0.92)",
+            color:
+              "#ffffff",
 
-              color:
-                "#ffffff",
+            fontSize:
+              "11px",
 
-              padding:
-                "6px 12px",
+            fontWeight:
+              700,
 
-              borderRadius:
-                "999px",
+            letterSpacing:
+              "0.04em",
 
-              fontSize:
-                "11px",
+            textTransform:
+              "uppercase",
 
-              fontWeight:
-                700,
+            boxShadow:
+              "0 4px 12px rgba(0, 0, 0, 0.12)",
 
-              zIndex:
-                9999,
+            backdropFilter:
+              "blur(6px)",
 
-              pointerEvents:
-                "none",
+            zIndex:
+              9999,
 
-              letterSpacing:
-                "0.04em",
-
-              textTransform:
-                "uppercase",
-
-              boxShadow:
-                "0 4px 12px rgba(0,0,0,0.12)",
-
-              backdropFilter:
-                "blur(6px)",
-
-              display:
-                "flex",
-
-              alignItems:
-                "center",
-
-              gap:
-                "6px"
-            }}
-          >
-
-            {/* =====================================
-                ICON
-            ====================================== */}
-
-            <span>
-
-              {
-              semanticIcons[ block.meta.semanticType as keyof typeof semanticIcons]
-              }
-
-            </span>
-
-            {/* =====================================
-                TYPE
-            ====================================== */}
-
-            <span>
-
-              {
-                block.meta.semanticType
-              }
-
-            </span>
-
-            {/* =====================================
-                CONFIDENCE
-            ====================================== */}
-
+            pointerEvents:
+              "none"
+          }}
+        >
+          <span>
             {
-              typeof confidence ===
-                "number" && (
-
-                <span
-                  style={{
-                    opacity: 0.72
-                  }}
-                >
-
-                  · {
-
-                    (
-                      confidence * 100
-                    ).toFixed(0)
-
-                  }%
-
-                </span>
-              )
+              semanticIcons[
+                block.meta
+                  .semanticType as keyof typeof semanticIcons
+              ]
             }
+          </span>
 
-          </div>
-        )
-      }
+          <span>
+            {block.meta.semanticType}
+          </span>
 
-      {/* =====================================
-          SECTION SHELL
-      ====================================== */}
+          {typeof confidence ===
+            "number" && (
+            <span
+              style={{
+                opacity: 0.72
+              }}
+            >
+              ·{" "}
+              {(
+                confidence * 100
+              ).toFixed(0)}
+              %
+            </span>
+          )}
+        </div>
+      )}
 
       <SectionShell
-        style={sectionShellStyle}
-
+        style={
+          sectionShellStyle
+        }
         device={device}
       >
-
         {children}
 
-        {/* =====================================
-            EMPTY STATE
-        ====================================== */}
-
         {!hasChildren && (
-
           <div
             style={{
               width: "100%",
 
               minHeight:
-                "250px",
-
-              border:
-                isOver
-
-                  ? "2px dashed #3b82f6"
-
-                  : "1px dashed #d1d5db",
-
-              borderRadius:
-                "12px",
+                "220px",
 
               display:
                 "flex",
@@ -310,33 +234,39 @@ if (
               justifyContent:
                 "center",
 
+              border:
+                isOver
+                  ? "2px dashed #3b82f6"
+                  : "1px dashed #d1d5db",
+
+              borderRadius:
+                "16px",
+
               color:
                 isOver
-
                   ? "#2563eb"
-
                   : "#6b7280",
+
+              background:
+                isOver
+                  ? "#eff6ff"
+                  : "#fafafa",
 
               fontSize:
                 "14px",
 
-              background:
-                isOver
+              boxSizing:
+                "border-box",
 
-                  ? "#eff6ff"
-
-                  : "#fafafa"
+              transition:
+                "all 0.15s ease-in-out"
             }}
           >
-
             Drop blocks here
             (Section)
-
           </div>
         )}
-
       </SectionShell>
-
     </div>
   );
 };

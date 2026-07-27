@@ -624,7 +624,7 @@ export const resolveInsightsSection = (
       localGrid
     );
 
-  const payload = {
+  const payload: InsightsSectionPayload = {
     type: "INSIGHTS_SECTION",
     confidence: 0.9,
     reason: [

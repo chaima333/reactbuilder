@@ -43,11 +43,12 @@ export const serializeBlock = (
 
     type: block.type,
 
-    props: {
-      ...(sortPortableValue(block.data.props) as Record<string, unknown>)
+    data: {
+      props: {
+        ...(sortPortableValue(block.data.props) as Record<string, unknown>)
+      },
+      style: sortPortableValue(block.data.style)
     },
-
-    style: sortPortableValue(block.data.style),
 
     children:
       block.children.map(

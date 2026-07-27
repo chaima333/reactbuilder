@@ -22,6 +22,7 @@ export interface OwnershipScore {
 
 const typePriority: Record<StructuralCandidate["type"], number> = {
   NAVBAR: 100,
+  FOOTER: 95,
   GRID: 90,
   REPEATED_PATTERN: 80,
   CARD: 70,
@@ -30,6 +31,7 @@ const typePriority: Record<StructuralCandidate["type"], number> = {
 
 const ownerPriority: Record<SemanticOwnerType, number> = {
   NAVBAR: 100,
+  FOOTER: 98,
   HERO: 95,
   FORM: 90,
   GRID: 85,

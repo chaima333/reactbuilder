@@ -32,6 +32,92 @@ const classOf = (
         .className || "")
     : "";
 
+const hasHeroClass = (
+  element?: Element | null
+) =>
+  /\b(?:page-hero|hero)\b/i.test(
+    classOf(element)
+  ) ||
+  classOf(element)
+    .toLowerCase()
+    .includes("hero");
+
+const hasLeadText = (
+  element?: Element | null
+) =>
+  !!element?.querySelector?.(
+    ".lead, [class*='lead'], p"
+  );
+
+const looksLikeHeroRootElement = (
+  element?: HTMLElement | null
+) => {
+  if (!element) {
+    return false;
+  }
+
+  const tag =
+    element.tagName;
+
+  const explicitHero =
+    tag === "HEADER" ||
+    tag === "SECTION" ||
+    hasHeroClass(element);
+
+  if (
+    explicitHero &&
+    !!element.querySelector("h1")
+  ) {
+    return true;
+  }
+
+  return (
+    (
+      tag === "HEADER" ||
+      tag === "SECTION"
+    ) &&
+    !!element.querySelector("h1") &&
+    hasLeadText(element)
+  );
+};
+
+const findHeroRootNode = (
+  node: StructuralNode
+): StructuralNode => {
+  if (
+    looksLikeHeroRootElement(
+      node.element
+    )
+  ) {
+    return node;
+  }
+
+  const queue = [
+    ...node.children
+  ];
+
+  while (
+    queue.length
+  ) {
+    const current =
+      queue.shift()!;
+
+    if (
+      looksLikeHeroRootElement(
+        current.element
+      )
+    ) {
+      return current;
+    }
+
+    queue.push(
+      ...current.children
+    );
+  }
+
+  return node;
+};
+
 const uniqueTexts = (
   values: string[]
 ) =>
@@ -266,7 +352,7 @@ const getKpiNumberElement = (
 ) => {
   const wrapper =
     item.querySelector(
-      ".num, .number, .value"
+      ".num, .number, .value, .v, [class*='num'], [class*='number'], [class*='value']"
     );
 
   const attrNode =
@@ -283,6 +369,107 @@ const getKpiNumberElement = (
     numberElement:
       wrapper || attrNode
   };
+};
+
+const getKpiLabelElement = (
+  item: Element
+) =>
+  item.querySelector(
+    ".lbl, .label, .caption, .k, [class*='label'], [class*='caption'], [class*='key']"
+  );
+
+const hasKpiValueAndLabelPair = (
+  element: Element
+) =>
+  !!(
+    element.querySelector(
+      ".v, .num, .number, .value, [data-value], [data-target], [data-count], [class*='num'], [class*='number'], [class*='value']"
+    ) &&
+    getKpiLabelElement(
+      element
+    )
+  );
+
+const getHeroKpiCandidateElements = (
+  heroElement: HTMLElement
+) => {
+  const barSelector =
+    ".kpi-bar, .stats, .metrics, [class*='stats'], [class*='kpi'], [class*='metrics']";
+
+  const itemSelector =
+    ".kpi, .stat, .metric, .s, [class*='kpi'], [class*='stat'], [class*='metric']";
+
+  const seen =
+    new Set<Element>();
+
+  const addUnique = (
+    candidates: Element[]
+  ) => {
+    candidates.forEach(candidate => {
+      if (
+        candidate !== heroElement &&
+        !seen.has(candidate)
+      ) {
+        seen.add(candidate);
+      }
+    });
+  };
+
+  Array.from(
+    heroElement.querySelectorAll(
+      barSelector
+    )
+  ).forEach(bar => {
+    const directItems =
+      Array.from(
+        bar.children
+      ).filter(child =>
+        child.matches(
+          itemSelector
+        ) ||
+        hasKpiValueAndLabelPair(
+          child
+        )
+      );
+
+    if (directItems.length) {
+      addUnique(directItems);
+      return;
+    }
+
+    addUnique(
+      Array.from(
+        bar.querySelectorAll(
+          itemSelector
+        )
+      ).filter(candidate =>
+        hasKpiValueAndLabelPair(
+          candidate
+        ) ||
+        /\d/.test(
+          textOf(candidate)
+        )
+      )
+    );
+  });
+
+  if (!seen.size) {
+    addUnique(
+      Array.from(
+        heroElement.querySelectorAll(
+          itemSelector
+        )
+      ).filter(candidate =>
+        hasKpiValueAndLabelPair(
+          candidate
+        )
+      )
+    );
+  }
+
+  return Array.from(
+    seen
+  );
 };
 
 const findKpiNumber = (
@@ -438,21 +625,10 @@ const findKpiNumber = (
 const extractHeroKpiItems = (
   heroElement: HTMLElement
 ) => {
-  const kpiBar =
-    heroElement.querySelector(
-      ".kpi-bar"
-    );
-
   const kpiElements =
-    kpiBar
-      ? Array.from(
-          kpiBar.children
-        ).filter(child =>
-          child.matches(
-            ".kpi, .stat, .metric, [class*='kpi'], [class*='stat'], [class*='metric']"
-          )
-        )
-      : [];
+    getHeroKpiCandidateElements(
+      heroElement
+    );
 
   const debugItems =
     kpiElements.map(item => {
@@ -462,8 +638,8 @@ const extractHeroKpiItems = (
       );
 
       const labelElement =
-        item.querySelector(
-          ".lbl, .label, .caption"
+        getKpiLabelElement(
+          item
         );
       const numberElement =
         getKpiNumberElement(
@@ -540,16 +716,20 @@ const extractHeroKpiItems = (
     "HERO_RESOLVER_KPI_ITEMS",
     {
       kpiBar:
-        kpiBar
+        kpiElements[0]?.parentElement
           ? {
               tag:
-                kpiBar.tagName,
+                kpiElements[0].parentElement.tagName,
               className:
-                classOf(kpiBar),
+                classOf(
+                  kpiElements[0].parentElement
+                ),
               childCount:
-                kpiBar.children.length,
+                kpiElements[0].parentElement.children.length,
               rawText:
-                textOf(kpiBar)
+                textOf(
+                  kpiElements[0].parentElement
+                )
             }
           : null,
       items:
@@ -665,6 +845,240 @@ const extractHeroPartnerItems = (
   );
 };
 
+const normalizeCssValue = (
+  value: unknown
+) =>
+  String(value || "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
+
+const isTransparentPaint = (
+  value: unknown
+) => {
+  const normalized =
+    normalizeCssValue(
+      value
+    );
+
+  return (
+    !normalized ||
+    normalized === "transparent" ||
+    normalized === "none" ||
+    normalized === "initial" ||
+    normalized === "inherit" ||
+    normalized === "unset" ||
+    normalized === "rgba(0,0,0,0)" ||
+    normalized === "rgb(0,0,0,0)"
+  );
+};
+
+const isDefaultWhitePaint = (
+  value: unknown
+) => {
+  const normalized =
+    normalizeCssValue(
+      value
+    );
+
+  return (
+    normalized === "white" ||
+    normalized === "#fff" ||
+    normalized === "#ffffff" ||
+    normalized === "rgb(255,255,255)" ||
+    normalized === "rgba(255,255,255,1)" ||
+    normalized === "rgb(255,255,255)"
+  );
+};
+
+const hasRealPaint = (
+  style: Record<string, any>
+) => {
+  const background =
+    String(style.background || "");
+
+  const backgroundColor =
+    style.backgroundColor;
+
+  const backgroundImage =
+    style.backgroundImage;
+
+  const hasImage =
+    backgroundImage &&
+    !isTransparentPaint(
+      backgroundImage
+    );
+
+  if (
+    hasImage
+  ) {
+    return true;
+  }
+
+  const colorIsReal =
+    backgroundColor &&
+    !isTransparentPaint(
+      backgroundColor
+    ) &&
+    !isDefaultWhitePaint(
+      backgroundColor
+    );
+
+  if (
+    colorIsReal
+  ) {
+    return true;
+  }
+
+  const shorthandLooksWhite =
+    isDefaultWhitePaint(
+      backgroundColor
+    ) ||
+    background
+      .replace(/\s+/g, "")
+      .toLowerCase()
+      .includes(
+        "rgb(255,255,255)"
+      ) ||
+    background
+      .toLowerCase()
+      .includes(
+        "white"
+      ) ||
+    background
+      .includes(
+        "#fff"
+      ) ||
+    background
+      .includes(
+        "#ffffff"
+      );
+
+  if (
+    shorthandLooksWhite
+  ) {
+    return false;
+  }
+
+  return (
+    !!background &&
+    !isTransparentPaint(
+      background
+    )
+  );
+};
+const extractPaintStyle = (
+  element: HTMLElement
+) => {
+  const computed =
+    (
+      element.ownerDocument.defaultView ||
+      window
+    ).getComputedStyle(
+      element
+    );
+
+  return {
+    background:
+      computed.background,
+    backgroundColor:
+      computed.backgroundColor,
+    backgroundImage:
+      computed.backgroundImage,
+    backgroundSize:
+      computed.backgroundSize,
+    backgroundPosition:
+      computed.backgroundPosition,
+    backgroundRepeat:
+      computed.backgroundRepeat
+  };
+};
+
+const resolveHeroSectionStyle = (
+  element?: HTMLElement | null
+) => {
+  let current =
+    element;
+
+  while (
+    current &&
+    current.tagName !== "HTML"
+  ) {
+    const paint =
+      extractPaintStyle(
+        current
+      );
+
+    if (
+      hasRealPaint(
+        paint
+      )
+    ) {
+      return {
+        desktop:
+          paint,
+        tablet: {},
+        mobile: {}
+      };
+    }
+
+    current =
+      current.parentElement;
+  }
+
+  const document =
+    element?.ownerDocument;
+
+  const body =
+    document?.body as HTMLElement | undefined;
+
+  const html =
+    document?.documentElement as HTMLElement | undefined;
+
+  const bodyPaint =
+    body
+      ? extractPaintStyle(
+          body
+        )
+      : null;
+
+  if (
+    bodyPaint &&
+    hasRealPaint(
+      bodyPaint
+    )
+  ) {
+    return {
+      desktop:
+        bodyPaint,
+      tablet: {},
+      mobile: {}
+    };
+  }
+
+  const htmlPaint =
+    html
+      ? extractPaintStyle(
+          html
+        )
+      : null;
+
+  if (
+    htmlPaint &&
+    hasRealPaint(
+      htmlPaint
+    )
+  ) {
+    return {
+      desktop:
+        htmlPaint,
+      tablet: {},
+      mobile: {}
+    };
+  }
+
+  return undefined;
+};
+
 export const resolveHero = (
   node: StructuralNode
 ): HeroPayload | null => {
@@ -690,10 +1104,15 @@ export const resolveHero = (
   // EXTRACT
   // =====================================
 
+  const heroRootNode =
+    findHeroRootNode(
+      node
+    );
+
   const payload =
 
     extractHero(
-      node
+      heroRootNode
     );
 
   // =====================================
@@ -713,23 +1132,8 @@ export const resolveHero = (
     return null;
   }
 
-console.log(
-  "🚨 HERO CLAIM NODE",
-  node.element.className,
-  node.path
-);
-
 const heroClaimNode =
-
-  node.element.tagName === "HEADER"
-
-    ? node
-
-    : node.children.find(
-        child =>
-          child.element.tagName ===
-          "HEADER"
-      );
+  heroRootNode;
 
   const heroElement =
     heroClaimNode?.element ||
@@ -761,6 +1165,13 @@ const heroClaimNode =
     partnerItems,
 
     claimedNode:
-    heroClaimNode || undefined
+    heroClaimNode || node,
+
+    styles: {
+      section:
+        resolveHeroSectionStyle(
+          heroElement
+        )
+    }
   };
 };

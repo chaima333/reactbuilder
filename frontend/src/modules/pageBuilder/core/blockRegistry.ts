@@ -69,6 +69,8 @@ import { selectDefinition } from "../components/blocks/primitives/select/definit
 import { textareaDefinition } from "../components/blocks/primitives/textarea/definition";
 import { collectionListDefinition } from "../components/blocks/data/collectionList/collection";
 import { formDefinition } from "../components/blocks/data/forms";
+import { visitorLoginDefinition } from "../components/blocks/data/visitorLogin";
+import { visitorRegisterDefinition } from "../components/blocks/data/visitorRegister";
 
 // =========================
 // TRANSITIONAL SEMANTIC
@@ -207,4 +209,10 @@ collectionList:
 
 form:
   formDefinition,
+
+visitorLogin:
+  visitorLoginDefinition,
+
+visitorRegister:
+  visitorRegisterDefinition,
 };

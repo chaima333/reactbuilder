@@ -203,14 +203,7 @@ const resolved =
   // =====================================
   // ITEM STYLE
   // =====================================
-  console.log(
-  "DROPDOWN_DETECTION",
-  block?.id,
-  block?.children?.map((c:any) => ({
-    id: c.id,
-    type: c.type
-  }))
-);
+
 const hasDropdownChild =
   (block?.children || []).some(
     (child: any) =>
@@ -225,17 +218,7 @@ const hasDropdownChild =
  if (
   String(block?.id || "").includes("navbar-link-item")
 ) {
-  console.log("NAV_LINK_ITEM_RUNTIME", {
-    id: block.id,
-    hasDropdownChild,
-    children: (block.children || []).map((child: any) => ({
-      id: child.id,
-      type: child.type,
-      semanticRole:
-        child?.data?.props?.semanticRole ||
-        child?.props?.semanticRole
-    }))
-  });
+
 }
 const itemStyle: React.CSSProperties = {
   flexGrow: forceMobileStackItem
@@ -315,125 +298,21 @@ if (
   childTypes.includes("flex") &&
   childTypes.length === 4
 ) {
-  console.log(
-    "FEATURE_CARD_RUNTIME",
-    JSON.stringify(
-      {
-        id: block?.id,
-        childTypes,
-        resolvedStyle: {
-          flex: resolved.flex,
-          width: resolved.width,
-          maxWidth: resolved.maxWidth,
-          padding: resolved.padding,
-          paddingTop: resolved.paddingTop,
-          paddingBottom: resolved.paddingBottom,
-          paddingLeft: resolved.paddingLeft,
-          paddingRight: resolved.paddingRight,
-          background: resolved.background,
-          backgroundColor: resolved.backgroundColor,
-          borderRadius: resolved.borderRadius,
-          display: resolved.display,
-          flexDirection: resolved.flexDirection,
-          gap: resolved.gap
-        },
-        finalStyle: {
-          flexGrow: itemStyle.flexGrow,
-          flexShrink: itemStyle.flexShrink,
-          flexBasis: itemStyle.flexBasis,
-          width: itemStyle.width,
-          maxWidth: itemStyle.maxWidth,
-          padding: itemStyle.padding,
-          paddingTop: itemStyle.paddingTop,
-          paddingBottom: itemStyle.paddingBottom,
-          paddingLeft: itemStyle.paddingLeft,
-          paddingRight: itemStyle.paddingRight,
-          background: itemStyle.background,
-          backgroundColor: itemStyle.backgroundColor,
-          borderRadius: itemStyle.borderRadius,
-          display: itemStyle.display,
-          flexDirection: itemStyle.flexDirection,
-          gap: itemStyle.gap
-        }
-      },
-      null,
-      2
-    )
-  );
+ 
 }
-console.log(
-  "RUNTIME FLEXITEM STYLE TRACE",
-  {
-    id:
-      block?.id,
-    childTypes:
-      childTypes,
-    rawStyle:
-      source.style,
-    resolvedStyle:
-      resolved,
-    finalStyle:
-      itemStyle
-  }
-);
+
 
 if (
   device === "mobile"
 ) {
-  console.log(
-    "MOBILE_LAYOUT_REPORT",
-    {
-      blockType:
-        "flexItem",
-      id:
-        block?.id,
-      semanticTypeAncestor:
-        findSemanticType(
-          block
-        ),
-      childTypes,
-      rawStyle:
-        source.style,
-      rawDesktop:
-        source.style?.desktop,
-      rawMobile:
-        source.style?.mobile,
-      resolvedStyle:
-        resolved,
-      finalStyle:
-        itemStyle
-    }
-  );
+ 
 }
 
 if (
   device === "tablet" &&
   forceTabletTwoColumnItem
 ) {
-  console.log(
-    "TABLET_LAYOUT_REPORT",
-    {
-      blockType:
-        "flexItem",
-      id:
-        block?.id,
-      semanticTypeAncestor:
-        findSemanticType(
-          block
-        ),
-      childTypes,
-      rawStyle:
-        source.style,
-      rawDesktop:
-        source.style?.desktop,
-      rawTablet:
-        source.style?.tablet,
-      resolvedStyle:
-        resolved,
-      finalStyle:
-        itemStyle
-    }
-  );
+ 
 }
 
 if (
@@ -442,41 +321,7 @@ if (
     "kpiNumber"
   )
 ) {
-  console.log(
-    "KPI_ITEM_RUNTIME",
-    JSON.stringify(
-      {
-        id:
-          block?.id,
-        childTypes:
-          childTypes,
-        width:
-          itemStyle.width,
-        maxWidth:
-          itemStyle.maxWidth,
-        resolvedFlex:
-          resolved.flex,
-        resolvedFlexGrow:
-          resolved.flexGrow,
-        resolvedFlexShrink:
-          resolved.flexShrink,
-        resolvedFlexBasis:
-          resolved.flexBasis,
-        flexGrow:
-          itemStyle.flexGrow,
-        flexShrink:
-          itemStyle.flexShrink,
-        flexBasis:
-          itemStyle.flexBasis,
-        resolvedStyle:
-          resolved,
-        finalDomStyle:
-          itemStyle
-      },
-      null,
-      2
-    )
-  );
+ 
 }
 
   // =====================================

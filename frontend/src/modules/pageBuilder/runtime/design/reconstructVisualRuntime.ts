@@ -591,5 +591,5 @@ export const reconstructVisualRuntime = (
     return next;
   };
 
-  return blocks.map(visit);
+  return blocks.map(block => visit(block));
 };

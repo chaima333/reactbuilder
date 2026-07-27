@@ -181,7 +181,7 @@ export const extractDesignTokens = (
       (element): element is HTMLElement =>
         element.nodeType === 1 &&
         typeof (element as HTMLElement).tagName === "string" &&
-        isVisibleElement(element)
+        isVisibleElement(element as HTMLElement)
     );
 
   elements.forEach(element => {

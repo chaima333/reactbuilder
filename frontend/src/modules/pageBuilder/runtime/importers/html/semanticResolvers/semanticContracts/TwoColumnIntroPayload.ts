@@ -6,6 +6,7 @@ export type TwoColumnIntroPayload = {
   claimedNode?: StructuralNode;
 
   columns: {
+    eyebrow?: string;
     title: string;
     text: string;
   }[];

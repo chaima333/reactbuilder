@@ -53,30 +53,7 @@ export const SiteEditor: React.FC = () => {
   title,
   description,
   language,
-  timezone,
-
-  globalLayout: {
-  navbar: {
-    id: "test-navbar",
-    type: "navbar",
-    data: {
-      props: {},
-      style: {
-        desktop: {
-          flexDirection: "row",
-          gap: "24px",
-          padding: "16px 24px",
-          backgroundColor: "#111827",
-          color: "#ffffff"
-        },
-        tablet: {},
-        mobile: {}
-      }
-    },
-    children: []
-  },
-  footer: null
-}
+  timezone
 } as any).unwrap();
       
       enqueueSnackbar('Site mis à jour avec succès!', { variant: 'success' });

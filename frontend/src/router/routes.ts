@@ -34,6 +34,9 @@ export const routes = {
   // Public
   publicSite: (siteId: number) =>
     `/site/${siteId}`,
+//cms
+  cms: (siteId: number | string) =>
+  `/sites/${siteId}/cms`,
 
   // Auth
   login: "/login",

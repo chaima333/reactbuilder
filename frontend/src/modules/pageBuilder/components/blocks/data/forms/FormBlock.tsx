@@ -26,7 +26,8 @@ import {
 
 import type {
   CSSProperties,
-  FormEvent
+  FormEvent,
+  MouseEvent
 } from "react";
 
 import {
@@ -132,6 +133,7 @@ const parsePositiveNumber = (
 export const FormBlock = ({
   block,
   data,
+  children,
   device = "desktop"
 }: any) => {
   const params =
@@ -147,6 +149,11 @@ export const FormBlock = ({
 
   const props =
     sourceData.props || {};
+
+  const renderMode =
+  props.renderMode === "imported"
+    ? "imported"
+    : "schema";
 
   const resolvedStyle =
     useResolvedStyle(
@@ -196,8 +203,7 @@ export const FormBlock = ({
     );
 
   const canSubmit =
-    runtime.mode === "public" &&
-    isPublicRoute;
+  isPublicRoute;
 
   const {
     data: form,
@@ -261,10 +267,272 @@ export const FormBlock = ({
     }));
   };
 
+  const readImportedValues = (
+  formElement: HTMLFormElement
+) => {
+  const normalizeLookupValue = (
+    value: unknown
+  ) =>
+    String(value || "")
+      .normalize("NFD")
+      .replace(
+        /[\u0300-\u036f]/g,
+        ""
+      )
+      .toLowerCase()
+      .replace(
+        /[^a-z0-9]+/g,
+        ""
+      );
+
+  const controls =
+    Array.from(
+      formElement.querySelectorAll<
+        | HTMLInputElement
+        | HTMLSelectElement
+        | HTMLTextAreaElement
+      >(
+        "input, select, textarea"
+      )
+    ).filter(
+      control =>
+        !control.disabled &&
+        !(
+          control instanceof
+            HTMLInputElement &&
+          (
+            control.type ===
+              "submit" ||
+            control.type ===
+              "button"
+          )
+        )
+    );
+
+  const usedControls =
+    new Set<
+      | HTMLInputElement
+      | HTMLSelectElement
+      | HTMLTextAreaElement
+    >();
+
+  const isCompatibleControl = (
+    field: FormSchemaField,
+    control:
+      | HTMLInputElement
+      | HTMLSelectElement
+      | HTMLTextAreaElement
+  ) => {
+    if (
+      field.type === "select"
+    ) {
+      return (
+        control instanceof
+        HTMLSelectElement
+      );
+    }
+
+    if (
+      field.type === "textarea"
+    ) {
+      return (
+        control instanceof
+        HTMLTextAreaElement
+      );
+    }
+
+    if (
+      field.type === "checkbox"
+    ) {
+      return (
+        control instanceof
+          HTMLInputElement &&
+        control.type === "checkbox"
+      );
+    }
+
+    if (
+      field.type === "radio"
+    ) {
+      return (
+        control instanceof
+          HTMLInputElement &&
+        control.type === "radio"
+      );
+    }
+
+    if (
+      field.type === "email"
+    ) {
+      return (
+        control instanceof
+          HTMLInputElement &&
+        control.type === "email"
+      );
+    }
+
+    if (
+      field.type === "tel"
+    ) {
+      return (
+        control instanceof
+          HTMLInputElement &&
+        control.type === "tel"
+      );
+    }
+
+    if (
+      field.type === "number"
+    ) {
+      return (
+        control instanceof
+          HTMLInputElement &&
+        control.type === "number"
+      );
+    }
+
+    return (
+      control instanceof
+        HTMLInputElement &&
+      ![
+        "checkbox",
+        "radio",
+        "submit",
+        "button"
+      ].includes(
+        control.type
+      )
+    );
+  };
+
+  return schema.reduce<
+    Record<string, unknown>
+  >(
+    (
+      result,
+      field
+    ) => {
+      const key =
+        getFieldKey(field);
+
+      if (!key) {
+        return result;
+      }
+
+      const fieldTokens =
+        [
+          key,
+          field.name,
+          field.label,
+          field.placeholder
+        ]
+          .map(
+            normalizeLookupValue
+          )
+          .filter(Boolean);
+
+      const exactControl =
+        controls.find(
+          control => {
+            if (
+              usedControls.has(
+                control
+              )
+            ) {
+              return false;
+            }
+
+            const controlTokens =
+              [
+                control.name,
+                control.id,
+                control.getAttribute(
+                  "aria-label"
+                ),
+                control.getAttribute(
+                  "placeholder"
+                )
+              ]
+                .map(
+                  normalizeLookupValue
+                )
+                .filter(Boolean);
+
+            return controlTokens.some(
+              token =>
+                fieldTokens.includes(
+                  token
+                )
+            );
+          }
+        );
+
+      const compatibleControl =
+        controls.find(
+          control =>
+            !usedControls.has(
+              control
+            ) &&
+            isCompatibleControl(
+              field,
+              control
+            )
+        );
+
+      const control =
+        exactControl ||
+        compatibleControl;
+
+      if (!control) {
+        result[key] = "";
+        return result;
+      }
+
+      usedControls.add(
+        control
+      );
+
+      if (
+        control instanceof
+          HTMLInputElement &&
+        control.type === "checkbox"
+      ) {
+        result[key] =
+          control.checked;
+
+        return result;
+      }
+
+      if (
+        control instanceof
+          HTMLInputElement &&
+        control.type === "radio"
+      ) {
+        result[key] =
+          control.checked
+            ? control.value
+            : "";
+
+        return result;
+      }
+
+      result[key] =
+        control.value;
+
+      return result;
+    },
+    {}
+  );
+};
+
   const handleSubmit = async (
-    event: FormEvent
+    event:
+      FormEvent<HTMLFormElement>
   ) => {
     event.preventDefault();
+
+    const formElement =
+      event.currentTarget;
 
     if (
       !canSubmit ||
@@ -274,11 +542,23 @@ export const FormBlock = ({
       setStatus({
         type: "error",
         message:
-          "Form submission is disabled in the editor."
+          !formId
+            ? "Select a form from the inspector."
+            : "Form submission is disabled in the editor."
       });
 
       return;
     }
+
+    const submitValues =
+      renderMode === "imported"
+        ? readImportedValues(
+            formElement
+          )
+        : normalizeSubmitValues(
+            schema,
+            values
+          );
 
     try {
       await submitPublicForm({
@@ -286,17 +566,22 @@ export const FormBlock = ({
         formId,
         body: {
           values:
-            normalizeSubmitValues(
-              schema,
-              values
-            ),
+            submitValues,
           pageId
         }
       }).unwrap();
 
-      setValues(
-        buildInitialValues(schema)
-      );
+      if (
+        renderMode === "imported"
+      ) {
+        formElement.reset();
+      } else {
+        setValues(
+          buildInitialValues(
+            schema
+          )
+        );
+      }
 
       setStatus({
         type: "success",
@@ -311,6 +596,43 @@ export const FormBlock = ({
           errorMessage
       });
     }
+  };
+
+  const handleImportedClick = (
+    event: MouseEvent<HTMLFormElement>
+  ) => {
+    const target =
+      event.target as HTMLElement;
+
+    const actionElement =
+      target.closest(
+        "button, a"
+      ) as HTMLElement | null;
+
+    if (!actionElement) {
+      return;
+    }
+
+    const text =
+      String(
+        actionElement.textContent || ""
+      )
+        .trim()
+        .toLowerCase();
+
+    const looksLikeSubmit =
+      /envoyer|send|submit|message/.test(
+        text
+      );
+
+    if (!looksLikeSubmit) {
+      return;
+    }
+
+    event.preventDefault();
+
+    event.currentTarget
+      .requestSubmit();
   };
 
   const renderField = (
@@ -480,6 +802,51 @@ export const FormBlock = ({
       />
     );
   };
+
+  if (
+    renderMode === "imported"
+  ) {
+    return (
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        onClickCapture={
+          handleImportedClick
+        }
+        sx={{
+          ...resolvedStyle
+        }}
+      >
+        {children}
+
+        {status && (
+          <Alert
+            severity={
+              status.type
+            }
+            sx={{
+              marginTop: "16px"
+            }}
+          >
+            {status.message}
+          </Alert>
+        )}
+
+        {!formId && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{
+              display: "block",
+              marginTop: "12px"
+            }}
+          >
+            Select a backend form from the inspector.
+          </Typography>
+        )}
+      </Box>
+    );
+  }
 
   if (!formId) {
     return (

@@ -38,6 +38,7 @@ import {
   useUpdateUserMutation,
   useChangeUserRoleMutation,
 } from '../../../redux/services/users.api';
+import { apiUrl } from '../../../config/api';
 
 const roleColors = {
   Admin: 'error',
@@ -71,15 +72,13 @@ export const Users: React.FC = () => {
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
   const [changeRole] = useChangeUserRoleMutation();
 
-  // ✅ تغيير الاسم لـ allUsers لتجنب التداخل مع اسم الـ Component (Users)
   const allUsers = data || [];
 
-  // --- API CALLS MANUELS (PENDING USERS) ---
   
   const fetchPendingUsers = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('https://backend-rmfq.onrender.com/api/admin/pending-users', {
+      const response = await fetch(apiUrl("/admin/pending-users"), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const result = await response.json();
@@ -98,7 +97,7 @@ export const Users: React.FC = () => {
   const handleApprove = async (userId: number) => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`https://backend-rmfq.onrender.com/api/admin/approve-user/${userId}`, {
+      const response = await fetch(apiUrl(`/admin/approve-user/${userId}`), {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -118,7 +117,7 @@ export const Users: React.FC = () => {
   const handleReject = async (userId: number) => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`https://backend-rmfq.onrender.com/api/admin/reject-user/${userId}`, {
+      const response = await fetch(apiUrl(`/admin/reject-user/${userId}`), {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -165,7 +164,6 @@ export const Users: React.FC = () => {
       };
 
       if (editingUser) {
-        // ✅ إصلاح الهيكل: { id, data }
         await updateUser({ 
           id: Number(editingUser.id), 
           data: payload as any 
@@ -297,7 +295,6 @@ export const Users: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {/* ✅ تم استبدال Users بـ allUsers هنا */}
             {allUsers.map((user: any) => (
               <TableRow key={user.id} hover>
                 <TableCell sx={{ fontWeight: 500 }}>{user.name}</TableCell>

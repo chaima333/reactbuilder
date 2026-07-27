@@ -1,265 +1,213 @@
-import {
-  CSSProperties,
-  useEffect,
-  useRef
-} from "react";
+import type { CSSProperties } from "react";
+import { useResolvedStyle } from "../../../../core/theme/useResolvedStyle";
+import { tokens } from "../../../../core/theme/tokens";
 
-import {
-  useResolvedStyle
-} from "../../../../core/theme/useResolvedStyle";
+type Device = "desktop" | "tablet" | "mobile";
 
-type Device =
-  | "desktop"
-  | "tablet"
-  | "mobile";
+type ResolvedStyleInput = NonNullable<Parameters<typeof useResolvedStyle>[0]>;
 
-export const TitleBlock = ({
-  data,
-  device
-}: any) => {
-  const titleRef =
-    useRef<HTMLHeadingElement | null>(
-      null
-    );
+type TitleSegment = {
+  text?: string;
+  variant?: string;
+  style?: {
+    backgroundImage?: string;
+  };
+};
 
+type TitleLevel =
+  | "h1"
+  | "h2"
+  | "h3"
+  | "h4"
+  | "h5"
+  | "h6";
 
-  const resolvedStyle =
-    useResolvedStyle(
-      data?.style,
-      (
-        device ||
-        "desktop"
-      ) as Device
-    );
+type TitleBlockData = {
+  props?: {
+    content?: string;
+    segments?: TitleSegment[];
+    level?: TitleLevel;
+  };
+  style?: ResolvedStyleInput;
+};
 
-  const content =
-    data?.props?.content ||
-    "Title Text Content";
+type TitleBlockProps = {
+  data?: TitleBlockData;
+  device?: Device;
+};
 
-  const segments =
-    Array.isArray(
-      data?.props?.segments
-    )
-      ? data.props.segments
-      : [];
+const isInvisibleColor = (value: unknown): boolean => {
+  const normalized = String(value ?? "").replace(/\s+/g, "").toLowerCase();
+  return (
+    normalized === "transparent" ||
+    normalized === "rgba(0,0,0,0)" ||
+    normalized === "rgb(0,0,0,0)"
+  );
+};
 
-  const hasSegments =
-    segments.length > 0;
+const isHiddenOpacity = (value: unknown): boolean => {
+  if (value === undefined || value === null || value === "") {
+    return false;
+  }
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric <= 0.05;
+};
 
+const normalizeText = (value: unknown): string => {
+  return String(value ?? "").replace(/\s+/g, " ").trim();
+};
+
+const resolveColorToken = (value: unknown): string | undefined => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const tokenValue = (tokens.colors as Record<string, unknown>)[value];
+  return typeof tokenValue === "string" ? tokenValue : value;
+};
+
+const resolveTypographyToken = (value: unknown) => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const tokenValue = (tokens.typography as Record<string, Record<string, unknown>>)[value];
+  return tokenValue && typeof tokenValue === "object" ? tokenValue : undefined;
+};
+
+// ========================
+// Composant Principal
+// ========================
+export const TitleBlock = ({ data, device = "desktop" }: TitleBlockProps) => {
+  const styleInput: ResolvedStyleInput = data?.style ?? ({} as ResolvedStyleInput);
+  const resolvedStyle = useResolvedStyle(styleInput, device) as CSSProperties;
+
+  // Résoudre les tokens
+  const typographyToken = resolveTypographyToken(resolvedStyle.fontSize);
+  const resolvedColor = resolveColorToken(resolvedStyle.color);
+
+  const content = data?.props?.content || "Title Text Content";
+  const segments: TitleSegment[] = Array.isArray(data?.props?.segments) ? data.props.segments : [];
+  
+  // Récupérer le niveau du heading
+  const level: TitleLevel = data?.props?.level || "h2";
+  const HeadingTag = level;
+
+  const fallbackTypography =
+  level === "h1" ||
+  level === "h2"
+    ? tokens.typography.headingXL
+    : undefined;
+
+  const segmentsContent = segments.map((segment) => segment.text || "").join("");
+  const shouldRenderSegments =
+    segments.length > 0 && normalizeText(segmentsContent) === normalizeText(content);
+
+  // Gérer les marges
   const hasMargin =
-    !!resolvedStyle.margin ||
-    !!resolvedStyle.marginTop ||
-    !!resolvedStyle.marginBottom ||
-    !!resolvedStyle.marginLeft ||
-    !!resolvedStyle.marginRight;
+    resolvedStyle.margin !== undefined ||
+    resolvedStyle.marginTop !== undefined ||
+    resolvedStyle.marginBottom !== undefined ||
+    resolvedStyle.marginLeft !== undefined ||
+    resolvedStyle.marginRight !== undefined;
 
-  const finalStyle: CSSProperties  = {
+  const textFillColor = resolvedStyle.WebkitTextFillColor;
+  const hasInvisibleTextFill = isInvisibleColor(textFillColor);
+
+  // Style final
+  const finalStyle: CSSProperties = {
     ...resolvedStyle,
 
-    width:
-      resolvedStyle.width || "auto",
+    // Font Family
+    fontFamily: resolvedStyle.fontFamily || tokens.fonts.sans,
 
-    maxWidth:
-      resolvedStyle.maxWidth || "100%",
-      display:
-  resolvedStyle.display || "block",
+    // Typographie avec fallback basé sur le niveau
+    fontSize:
+      (typographyToken?.fontSize as CSSProperties["fontSize"]) ??
+      resolvedStyle.fontSize ??
+      (fallbackTypography?.fontSize as CSSProperties["fontSize"]),
 
-    minWidth:
-      0,
+    fontWeight:
+      (typographyToken?.fontWeight as CSSProperties["fontWeight"]) ??
+      resolvedStyle.fontWeight ??
+      (fallbackTypography?.fontWeight as CSSProperties["fontWeight"]),
 
-    margin:
-      hasMargin
-        ? resolvedStyle.margin
-        : 0,
+    letterSpacing:
+      (typographyToken?.letterSpacing as CSSProperties["letterSpacing"]) ??
+      resolvedStyle.letterSpacing ??
+      (fallbackTypography?.letterSpacing as CSSProperties["letterSpacing"]),
 
-    marginTop:
-      resolvedStyle.margin
-        ? undefined
-        : resolvedStyle.marginTop,
+    lineHeight:
+      (typographyToken?.lineHeight as CSSProperties["lineHeight"]) ??
+      resolvedStyle.lineHeight ??
+      (fallbackTypography?.lineHeight as CSSProperties["lineHeight"]),
 
-    marginBottom:
-      resolvedStyle.margin
-        ? undefined
-        : resolvedStyle.marginBottom,
+    // Opacity & Visibility
+    opacity: isHiddenOpacity(resolvedStyle.opacity) ? 1 : resolvedStyle.opacity,
+    visibility: resolvedStyle.visibility === "hidden" ? "visible" : resolvedStyle.visibility,
 
-    marginLeft:
-      resolvedStyle.margin
-        ? undefined
-        : resolvedStyle.marginLeft,
+    // Color
+    color: isInvisibleColor(resolvedColor)
+      ? tokens.colors.text
+      : resolvedColor || tokens.colors.text,
 
-    marginRight:
-      resolvedStyle.margin
-        ? undefined
-        : resolvedStyle.marginRight,
+    // WebkitTextFillColor avec resolvedColor
+    WebkitTextFillColor: hasInvisibleTextFill
+      ? resolvedColor || "currentColor"
+      : textFillColor,
 
-    overflowWrap:
-      "break-word",
+    backgroundClip: hasInvisibleTextFill ? undefined : resolvedStyle.backgroundClip,
+    WebkitBackgroundClip: hasInvisibleTextFill ? undefined : resolvedStyle.WebkitBackgroundClip,
+
+    // Layout
+    width: resolvedStyle.width || "auto",
+    maxWidth: resolvedStyle.maxWidth || "100%",
+    display: resolvedStyle.display || "block",
+    minWidth: 0,
+
+    // Margins
+    margin: hasMargin ? resolvedStyle.margin : 0,
+    marginTop: resolvedStyle.margin !== undefined ? undefined : resolvedStyle.marginTop,
+    marginBottom: resolvedStyle.margin !== undefined ? undefined : resolvedStyle.marginBottom,
+    marginLeft: resolvedStyle.margin !== undefined ? undefined : resolvedStyle.marginLeft,
+    marginRight: resolvedStyle.margin !== undefined ? undefined : resolvedStyle.marginRight,
+
+    overflowWrap: "break-word",
     wordBreak: "normal",
-lineHeight:
-  resolvedStyle.lineHeight || "1.15",
-
-overflow:
-  "visible",
-    whiteSpace:
-      "normal",
-
-    boxSizing:
-      "border-box"
+    overflow: "visible",
+    whiteSpace: "normal",
+    boxSizing: "border-box"
   };
 
-  console.log(
-    "RUNTIME TITLE STYLE TRACE",
-    {
-      content,
-      rawStyle:
-        data?.style,
-      resolvedStyle,
-      finalStyle
-    }
-  );
-
-  if (hasSegments) {
-    console.log(
-      "TITLE_SEGMENTS_RENDERED",
-      {
-        content,
-        segments
-      }
-    );
-  }
-
-  if (
-    String(
-      content
-    ).includes(
-      "Prêt à passer"
-    )
-  ) {
-    console.log(
-      "CTA_TITLE_RUNTIME",
-      {
-        content,
-        rawStyle:
-          data?.style,
-        resolvedStyle,
-        finalStyle,
-        resolvedWidth:
-          resolvedStyle.width,
-        resolvedMaxWidth:
-          resolvedStyle.maxWidth,
-        resolvedFontSize:
-          resolvedStyle.fontSize,
-        resolvedLineHeight:
-          resolvedStyle.lineHeight,
-        textAlign:
-          resolvedStyle.textAlign
-      }
-    );
-  }
-
-  useEffect(
-    () => {
-      console.log(
-        "TITLE_DOM_REPORT_EFFECT_START",
-        content
-      );
-
-      console.log(
-        "TITLE_DOM_REPORT_REF",
-        !!titleRef.current
-      );
-
-      if (
-        !String(
-          content
-        ).includes(
-          "Prêt à passer"
-        ) ||
-        !titleRef.current
-      ) {
-        return;
-      }
-
-      const element =
-        titleRef.current;
-
-      const computed =
-        window.getComputedStyle(
-          element
-        );
-
-      console.log(
-        "TITLE_DOM_REPORT",
-        {
-          content,
-          tagName:
-            element.tagName,
-          clientWidth:
-            element.clientWidth,
-          scrollWidth:
-            element.scrollWidth,
-          computedWidth:
-            computed.width,
-          computedMaxWidth:
-            computed.maxWidth,
-          computedDisplay:
-            computed.display,
-          computedWhiteSpace:
-            computed.whiteSpace,
-          computedWordBreak:
-            computed.wordBreak,
-          computedOverflowWrap:
-            computed.overflowWrap
-        }
-      );
-    },
-    [
-      content,
-      finalStyle
-    ]
-  );
-
   return (
-    <h2
-      ref={titleRef}
-      style={finalStyle}
-    >
-     {hasSegments &&
-segments
-  .map((segment: any) => segment?.text || "")
-  .join("")
-  .replace(/\s+/g, " ")
-  .trim() ===
-String(content)
-  .replace(/\s+/g, " ")
-  .trim()
-  ? segments.map(
-      (
-        segment: any,
-        index: number
-      ) => (
-        <span
-          key={`${index}-${segment?.text || ""}`}
-          style={
-            segment?.variant === "accent"
+    <HeadingTag style={finalStyle}>
+      {shouldRenderSegments
+        ? segments.map((segment, index) => {
+            const isAccent = segment.variant === "accent";
+
+            const segmentStyle: CSSProperties = isAccent
               ? {
                   background:
-                    segment?.style?.backgroundImage &&
-                    segment.style.backgroundImage !== "none"
+                    segment.style?.backgroundImage && segment.style.backgroundImage !== "none"
                       ? segment.style.backgroundImage
-                      : "linear-gradient(90deg, #0A84FF, #F77F00)",
+                      : `linear-gradient(90deg, ${tokens.colors.primary}, ${tokens.colors.secondary})`,
+
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
                   WebkitTextFillColor: "transparent"
                 }
-              : undefined
-          }
-        >
-          {segment?.text || ""}
-        </span>
-      )
-    )
-  : content}
-    </h2>
+              : {
+                  color: finalStyle.color || "currentColor",
+                  WebkitTextFillColor: finalStyle.color || "currentColor"
+                };
+
+            return (
+              <span key={`${index}-${segment.text || ""}`} style={segmentStyle}>
+                {segment.text || ""}
+              </span>
+            );
+          })
+        : content}
+    </HeadingTag>
   );
 };

@@ -37,8 +37,21 @@ export type SpacingToken =
 export type TypographyToken =
   | "displayXL"
   | "displayLG"
+  | "displayMD"
+  | "displaySM"
+  | "headingXL"
+  | "headingLG"
+  | "headingMD"
+  | "headingSM"
+  | "headingXS"
+  | "bodyXL"
   | "bodyLG"
-  | "bodyMD";
+  | "bodyMD"
+  | "bodySM"
+  | "bodyXS"
+  | "labelLG"
+  | "labelMD"
+  | "labelSM";
 
 export type RadiusToken =
   | "sm"
@@ -98,6 +111,9 @@ export interface LayoutStyles {
 
   display?: DisplayValue;
   flex?: string | number;
+  flexGrow?: string | number;
+  flexShrink?: string | number;
+  flexBasis?: string;
 
   flexDirection?: FlexDirection;
 

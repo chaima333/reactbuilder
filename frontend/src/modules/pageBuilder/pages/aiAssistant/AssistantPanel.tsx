@@ -25,6 +25,7 @@ import {
 import { findHeroBlock, findBlock } from "./blockFinders";
 import { generateCTAPreset } from "../../presets/generateCTAPreset";
 import AiActivityHistoryPanel from "../../components/AiActivityHistoryPanel";
+import { normalizeCanonicalContainers } from "../../runtime/normalize/normalizeCanonicalContainers";
 
 // ============================================
 // TYPES
@@ -149,15 +150,13 @@ const buttonBlock = (label: string, href: string = "#"): any => ({
     props: {
       label,
       href,
+      useTheme: true,
+      variant: "contained",
     },
     style: responsiveStyle(
       {
         display: "inline-block",
         padding: "12px 28px",
-        backgroundColor: "#2563eb",
-        color: "#ffffff",
-        border: "none",
-        borderRadius: "999px",
         fontSize: "15px",
         fontWeight: "800",
         cursor: "pointer",
@@ -699,11 +698,32 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
-  const commitBlocks = (nextBlocks: any[]) => {
-    const safeNextBlocks = Array.isArray(nextBlocks) ? nextBlocks : [];
-    actions.setBlocks(hydrateBlocks ? hydrateBlocks(safeNextBlocks) : safeNextBlocks);
-  };
+const commitBlocks = (
+  nextBlocks: any[]
+) => {
+  const safeNextBlocks =
+    Array.isArray(nextBlocks)
+      ? nextBlocks
+      : [];
 
+  const hydratedBlocks =
+    hydrateBlocks
+      ? hydrateBlocks(
+          safeNextBlocks
+        )
+      : safeNextBlocks;
+
+  const canonicalBlocks =
+    normalizeCanonicalContainers(
+      hydratedBlocks
+    );
+
+  actions.setBlocks(
+    canonicalBlocks
+  );
+
+  return canonicalBlocks;
+};
   const findBlockById = (tree: any[], id: string | null | undefined): any | null => {
     if (!id) return null;
     for (const block of tree || []) {
@@ -925,26 +945,590 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
           commitBlocks(nextBlocks);
           setSelectedBlockId(pricingBlock.id);
           setAssistantReply((prev) =>
-            prev ? { ...prev, reply: "✅ Pricing section added successfully. You can now edit plans and prices directly in the editor." } : prev
+            prev ? { ...prev, reply: " Pricing section added successfully. You can now edit plans and prices directly in the editor." } : prev
           );
-          showSnackbar("✅ Pricing section added successfully.", "success");
+          showSnackbar(" Pricing section added successfully.", "success");
           break;
         }
 
         default: {
-          showSnackbar(`⚠️ Unknown action: ${suggestion.action}`, "warning");
+          showSnackbar(` Unknown action: ${suggestion.action}`, "warning");
         }
       }
     } catch (error) {
       console.error("APPLY_ERROR", error);
-      showSnackbar("❌ Failed to apply improvement. Please try again.", "error");
+      showSnackbar(" Failed to apply improvement. Please try again.", "error");
     } finally {
       setAppliedSuggestionId(null);
     }
   };
 
   // ===== GENERATE PAGE =====
+ const applyThemeToGeneratedButtons = (
+  tree: any[]
+): any[] =>
+  (tree || []).map((block) => {
+    const children =
+      applyThemeToGeneratedButtons(
+        block.children || []
+      );
 
+    if (block.type !== "button") {
+      return {
+        ...block,
+        children
+      };
+    }
+
+    const cleanStyle = (
+      style: Record<string, any> = {},
+      mobile = false
+    ) => {
+      const cleaned = {
+        ...style
+      };
+
+      delete cleaned.background;
+      delete cleaned.backgroundColor;
+      delete cleaned.backgroundImage;
+      delete cleaned.color;
+      delete cleaned.border;
+      delete cleaned.borderColor;
+      delete cleaned.boxShadow;
+      delete cleaned.padding;
+
+      return {
+        ...cleaned,
+
+        fontSize: "15px",
+        fontWeight: 700,
+
+        paddingTop:
+          mobile
+            ? "11px"
+            : "12px",
+
+        paddingBottom:
+          mobile
+            ? "11px"
+            : "12px",
+
+        paddingLeft:
+          mobile
+            ? "20px"
+            : "24px",
+
+        paddingRight:
+          mobile
+            ? "20px"
+            : "24px",
+
+        borderRadius: "9999px"
+      };
+    };
+
+    return {
+      ...block,
+
+      data: {
+        ...(block.data || {}),
+
+        props: {
+          ...(block.data?.props || {}),
+
+          useTheme: true,
+
+          variant:
+            block.data?.props?.variant ||
+            "contained"
+        },
+
+        style: {
+          ...(block.data?.style || {}),
+
+          desktop:
+            cleanStyle(
+              block.data?.style?.desktop
+            ),
+
+          tablet:
+            cleanStyle(
+              block.data?.style?.tablet
+            ),
+
+          mobile:
+            cleanStyle(
+              block.data?.style?.mobile,
+              true
+            )
+        }
+      },
+
+      children
+    };
+  });
+const applyThemeToGeneratedTypography = (
+  tree: any[]
+): any[] => {
+  const colorMap: Record<string, string> = {
+    "#0f172a": "text",
+    "#334155": "text",
+    "#64748b": "muted",
+    "#2563eb": "primary",
+    "#f59e0b": "secondary",
+
+    "#ffffff": "#ffffff",
+    "#fff": "#ffffff",
+    white: "#ffffff",
+
+    text: "text",
+    muted: "muted",
+    primary: "primary",
+    secondary: "secondary"
+  };
+
+  const normalizeColor = (
+    value: unknown
+  ): string | undefined => {
+    if (typeof value !== "string") {
+      return undefined;
+    }
+
+    return colorMap[
+      value
+        .replace(/\s+/g, "")
+        .toLowerCase()
+    ];
+  };
+
+  const cleanStyle = (
+    style: Record<string, any> = {}
+  ) => {
+    const cleaned = {
+      ...style
+    };
+
+    const normalizedColor =
+      normalizeColor(
+        cleaned.color
+      );
+
+    if (normalizedColor) {
+      cleaned.color =
+        normalizedColor;
+    } else {
+      delete cleaned.color;
+    }
+
+    const textFill =
+      cleaned.WebkitTextFillColor;
+
+    if (
+      typeof textFill === "string" &&
+      textFill
+        .trim()
+        .toLowerCase() !==
+        "transparent"
+    ) {
+      const normalizedFill =
+        normalizeColor(textFill);
+
+      if (normalizedFill) {
+        cleaned.WebkitTextFillColor =
+          normalizedFill;
+      } else {
+        delete cleaned.WebkitTextFillColor;
+      }
+    }
+
+    return cleaned;
+  };
+
+  return (tree || []).map(
+    (block) => {
+      const children =
+        applyThemeToGeneratedTypography(
+          block.children || []
+        );
+
+      if (
+        block.type !== "title" &&
+        block.type !== "text"
+      ) {
+        return {
+          ...block,
+          children
+        };
+      }
+
+      const sourceStyle =
+        block.data?.style || {};
+
+      const hasResponsiveStyle =
+        sourceStyle.desktop ||
+        sourceStyle.tablet ||
+        sourceStyle.mobile;
+
+      const nextStyle =
+        hasResponsiveStyle
+          ? {
+              ...sourceStyle,
+
+              desktop:
+                cleanStyle(
+                  sourceStyle.desktop
+                ),
+
+              tablet:
+                cleanStyle(
+                  sourceStyle.tablet
+                ),
+
+              mobile:
+                cleanStyle(
+                  sourceStyle.mobile
+                )
+            }
+          : cleanStyle(
+              sourceStyle
+            );
+
+      return {
+        ...block,
+
+        data: {
+          ...(block.data || {}),
+          style: nextStyle
+        },
+
+        children
+      };
+    }
+  );
+};
+
+const mergeGeneratedResponsiveStyle = (
+  style: Record<string, any> = {},
+  desktop: Record<string, any> = {},
+  tablet: Record<string, any> = {},
+  mobile: Record<string, any> = {}
+) => {
+  const {
+    desktop: currentDesktop,
+    tablet: currentTablet,
+    mobile: currentMobile,
+    ...otherStyle
+  } = style;
+
+  const hasResponsiveStyle =
+    currentDesktop ||
+    currentTablet ||
+    currentMobile;
+
+  return {
+    ...(hasResponsiveStyle
+      ? otherStyle
+      : {}),
+
+    desktop: {
+      ...(hasResponsiveStyle
+        ? currentDesktop || {}
+        : style),
+      ...desktop
+    },
+
+    tablet: {
+      ...(currentTablet || {}),
+      ...tablet
+    },
+
+    mobile: {
+      ...(currentMobile || {}),
+      ...mobile
+    }
+  };
+};
+
+const applyGeneratedHeroLayout = (
+  tree: any[]
+): any[] => {
+  const safeTree =
+    Array.isArray(tree)
+      ? tree
+      : [];
+
+  const hero =
+    findHeroBlock(safeTree);
+
+  if (!hero) {
+    return safeTree;
+  }
+
+  const heroFlex =
+    findBlock(
+      hero.children || [],
+      (block: any) =>
+        block.type === "flex"
+    );
+
+  const heroTitle =
+    findBlock(
+      hero.children || [],
+      (block: any) =>
+        block.type === "title"
+    );
+
+  const heroText =
+    findBlock(
+      hero.children || [],
+      (block: any) =>
+        block.type === "text"
+    );
+
+  const heroImage =
+    findBlock(
+      hero.children || [],
+      (block: any) =>
+        block.type === "image"
+    );
+
+  const flexItems =
+    Array.isArray(
+      heroFlex?.children
+    )
+      ? heroFlex.children.filter(
+          (block: any) =>
+            block.type === "flexItem"
+        )
+      : [];
+
+  const contentItemId =
+    flexItems[0]?.id;
+
+  const mediaItemId =
+    flexItems[1]?.id;
+
+  const updateTree = (
+    blocks: any[]
+  ): any[] =>
+    (blocks || []).map(
+      (block) => {
+        let nextStyle =
+          block.data?.style || {};
+
+        if (
+          heroFlex &&
+          block.id === heroFlex.id
+        ) {
+          nextStyle =
+            mergeGeneratedResponsiveStyle(
+              nextStyle,
+
+              {
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent:
+                  "space-between",
+
+                gap:
+                  "clamp(32px, 5vw, 72px)",
+
+                width: "100%",
+                maxWidth: "1200px"
+              },
+
+              {
+                flexDirection: "row",
+                alignItems: "center",
+                gap: "32px",
+                width: "100%"
+              },
+
+              {
+                flexDirection: "column",
+                alignItems: "stretch",
+                gap: "32px",
+                width: "100%"
+              }
+            );
+        }
+
+        if (
+          contentItemId &&
+          block.id === contentItemId
+        ) {
+          nextStyle =
+            mergeGeneratedResponsiveStyle(
+              nextStyle,
+
+              {
+                width: "54%",
+                maxWidth: "660px",
+                flex: "1 1 54%"
+              },
+
+              {
+                width: "52%",
+                maxWidth: "560px",
+                flex: "1 1 52%"
+              },
+
+              {
+                width: "100%",
+                maxWidth: "100%",
+                flex: "1 1 100%"
+              }
+            );
+        }
+
+        if (
+          mediaItemId &&
+          block.id === mediaItemId
+        ) {
+          nextStyle =
+            mergeGeneratedResponsiveStyle(
+              nextStyle,
+
+              {
+                width: "46%",
+                maxWidth: "540px",
+                flex: "1 1 46%"
+              },
+
+              {
+                width: "48%",
+                maxWidth: "480px",
+                flex: "1 1 48%"
+              },
+
+              {
+                width: "100%",
+                maxWidth: "100%",
+                flex: "1 1 100%"
+              }
+            );
+        }
+
+        if (
+          heroTitle &&
+          block.id === heroTitle.id
+        ) {
+          nextStyle =
+            mergeGeneratedResponsiveStyle(
+              nextStyle,
+
+              {
+                fontSize:
+                  "clamp(44px, 5vw, 68px)",
+
+                lineHeight: "1.05",
+                letterSpacing: "-0.035em",
+                width: "100%",
+                maxWidth: "680px",
+                textAlign: "left"
+              },
+
+              {
+                fontSize:
+                  "clamp(40px, 5vw, 56px)",
+
+                maxWidth: "560px",
+                textAlign: "left"
+              },
+
+              {
+                fontSize:
+                  "clamp(36px, 10vw, 48px)",
+
+                maxWidth: "100%",
+                textAlign: "left"
+              }
+            );
+        }
+
+        if (
+          heroText &&
+          block.id === heroText.id
+        ) {
+          nextStyle =
+            mergeGeneratedResponsiveStyle(
+              nextStyle,
+
+              {
+                fontSize: "18px",
+                lineHeight: "1.7",
+                maxWidth: "620px",
+                textAlign: "left"
+              },
+
+              {
+                fontSize: "17px",
+                maxWidth: "520px",
+                textAlign: "left"
+              },
+
+              {
+                fontSize: "16px",
+                maxWidth: "100%",
+                textAlign: "left"
+              }
+            );
+        }
+
+        if (
+          heroImage &&
+          block.id === heroImage.id
+        ) {
+          nextStyle =
+            mergeGeneratedResponsiveStyle(
+              nextStyle,
+
+              {
+                width: "100%",
+                maxWidth: "540px",
+                marginLeft: "auto",
+                borderRadius: "24px"
+              },
+
+              {
+                width: "100%",
+                maxWidth: "480px",
+                marginLeft: "auto"
+              },
+
+              {
+                width: "100%",
+                maxWidth: "100%",
+                marginLeft: "0"
+              }
+            );
+        }
+
+        return {
+          ...block,
+
+          data: {
+            ...(block.data || {}),
+            style: nextStyle
+          },
+
+          children:
+            Array.isArray(
+              block.children
+            )
+              ? updateTree(
+                  block.children
+                )
+              : []
+        };
+      }
+    );
+
+  return updateTree(
+    safeTree
+  );
+};
   const handleGeneratePage = async () => {
     if (!aiPrompt.trim()) {
       showSnackbar("Please describe what you want to generate.", "warning");
@@ -959,11 +1543,11 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
       setAiLoading(true);
       const result = await generateAiPage({ siteId: Number(siteId), prompt: aiPrompt }).unwrap();
       const generatedPage = result?.data || result;
-
       if (!generatedPage?.id) throw new Error("AI generation returned a page without an id");
-
-      const hydrated = hydrateBlocks(generatedPage.blocks || []);
-      actions.setBlocks(hydrated as any);
+      const buttonThemedBlocks = applyThemeToGeneratedButtons(generatedPage.blocks || []);
+      const themedBlocks = applyThemeToGeneratedTypography(buttonThemedBlocks);
+      const heroLayoutBlocks = applyGeneratedHeroLayout(themedBlocks);
+      const hydrated = commitBlocks(heroLayoutBlocks);
       setPageTitle(generatedPage.title || "Generated Page");
       setSelectedBlockId(hydrated[0]?.id || null);
       setAssistantReply(null);
@@ -972,10 +1556,10 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
         onNavigate(`/sites/${siteId}/pages/${generatedPage.id}/edit`);
       }
 
-      showSnackbar(`✅ Page "${generatedPage.title}" generated successfully!`, "success");
+      showSnackbar(` Page "${generatedPage.title}" generated successfully!`, "success");
     } catch (error) {
       console.error("AI_GENERATION_FAILED", error);
-      showSnackbar("❌ Generation failed. Please try again.", "error");
+      showSnackbar("Generation failed. Please try again.", "error");
     } finally {
       setAiLoading(false);
     }

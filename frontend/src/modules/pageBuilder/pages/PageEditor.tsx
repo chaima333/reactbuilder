@@ -39,8 +39,10 @@ import { findBlockById } from "../core/tree/findBlockById";
 import { importHtmlDocument } from "../runtime/importers/html/importHtmlDocument";
 import {
   useCreatePageMutation,
+  useLazyGetPagesQuery,
   usePublishPageMutation,
   useUploadHtmlZipMutation,
+  useUpdatePageMutation,
   useUpdateGlobalLayoutMutation,
   useGenerateFigmaPluginTokenMutation,
   useGenerateAiPageMutation,
@@ -59,6 +61,7 @@ import {
   useEditSelectedBlockMutation,
 } from "../../../redux/services/ai.api";
 import { executeZipWebsiteImport } from "../runtime/importers/html/zip/executeZipWebsiteImport";
+import { ZipWebsiteImportError } from "../runtime/importers/html/zip/executeZipWebsiteImport";
 import { apiUrl } from "../../../config/api";
 import { normalizeTree } from "../runtime/normalize/NormalizeTree";
 
@@ -96,58 +99,92 @@ const hydrateBlocks = (blocks: any[]): any[] => {
   }));
 };
 
+const mergeResponsiveStyle = (
+  current: any = {},
+  incoming: any = {}
+) => ({
+  ...current,
+  ...incoming,
+
+  desktop:
+    incoming.desktop
+      ? {
+          ...(current.desktop || {}),
+          ...incoming.desktop
+        }
+      : current.desktop,
+
+  tablet:
+    incoming.tablet
+      ? {
+          ...(current.tablet || {}),
+          ...incoming.tablet
+        }
+      : current.tablet,
+
+  mobile:
+    incoming.mobile
+      ? {
+          ...(current.mobile || {}),
+          ...incoming.mobile
+        }
+      : current.mobile
+});
+
 const mergeBlockUpdate = (
   block: any,
   update: any
-) => ({
-  ...block,
-  ...update,
+) => {
+  const incomingData =
+    update?.data || {};
 
-  props:
-    update?.props
-      ? {
-          ...(block?.props || {}),
-          ...update.props
-        }
-      : block?.props,
+  const incomingProps =
+    incomingData.props ??
+    update?.props;
 
-  style:
-    update?.style
-      ? {
-          ...(block?.style || {}),
-          ...update.style
-        }
-      : block?.style,
+  const incomingStyle =
+    incomingData.style ??
+    update?.style;
 
-  data:
-    update?.data
-      ? {
-          ...(block?.data || {}),
-          ...update.data,
+  const {
+    props: _props,
+    style: _style,
+    data: _data,
+    children,
+    ...topLevelUpdate
+  } = update || {};
 
-          props:
-            update.data?.props
-              ? {
-                  ...(block?.data
-                    ?.props || {}),
-                  ...update.data.props
-                }
-              : block?.data?.props,
+  return {
+    ...block,
+    ...topLevelUpdate,
 
-          style:
-            update.data?.style
-              ? {
-                  ...(block?.data
-                    ?.style || {}),
-                  ...update.data.style
-                }
-              : block?.data?.style
-        }
-      : block?.data,
+    data: {
+      ...(block?.data || {}),
+      ...incomingData,
 
-  children:
-    block?.children || []
-});
+      props:
+        incomingProps
+          ? {
+              ...(block?.data?.props || {}),
+              ...incomingProps
+            }
+          : block?.data?.props,
+
+      style:
+        incomingStyle
+          ? mergeResponsiveStyle(
+              block?.data?.style || {},
+              incomingStyle
+            )
+          : block?.data?.style
+    },
+
+    children:
+      children ??
+      block?.children ??
+      []
+  };
+};
 
 const updateBlockInTree = (
   block: any,
@@ -208,6 +245,194 @@ const removeBlockFromTree = (
             )
             .filter(Boolean)
         : []
+  };
+};
+
+type DndInsertPosition =
+  | "before"
+  | "after"
+  | "inside";
+
+type DndSlot =
+  | "page"
+  | "navbar"
+  | "footer";
+
+const collectBlockIds = (
+  block: any,
+  result = new Set<string>()
+): Set<string> => {
+  if (!block) {
+    return result;
+  }
+
+  if (block.id) {
+    result.add(
+      String(block.id)
+    );
+  }
+
+  const children =
+    Array.isArray(block.children)
+      ? block.children
+      : [];
+
+  children.forEach(
+    (child: any) =>
+      collectBlockIds(
+        child,
+        result
+      )
+  );
+
+  return result;
+};
+
+const normalizeDndPosition = (
+  position?: string
+): DndInsertPosition => {
+  if (
+    position === "before" ||
+    position === "after" ||
+    position === "inside"
+  ) {
+    return position;
+  }
+
+  return "inside";
+};
+
+const createDndBlock = (
+  type: string,
+  presetData?: any
+): any => {
+  const config =
+    blockRegistry[type];
+
+  return {
+    id:
+      crypto.randomUUID(),
+
+    type,
+
+    data: {
+      props:
+        structuredClone(
+          presetData?.props ??
+          config?.defaultData?.props ??
+          {}
+        ),
+
+      style:
+        structuredClone(
+          presetData?.style ??
+          config?.defaultData?.style ??
+          {
+            desktop: {}
+          }
+        )
+    },
+
+    children:
+      structuredClone(
+        presetData?.presetChildren ??
+        []
+      )
+  };
+};
+
+const insertBlockIntoTree = (
+  root: any,
+  newBlock: any,
+  targetId: string,
+  position: DndInsertPosition,
+  requestedIndex?: number
+): any => {
+  if (!root) {
+    return root;
+  }
+
+  if (
+    root.id === targetId &&
+    position === "inside"
+  ) {
+    const children =
+      Array.isArray(root.children)
+        ? [...root.children]
+        : [];
+
+    const index =
+      Math.max(
+        0,
+        Math.min(
+          requestedIndex ??
+            children.length,
+          children.length
+        )
+      );
+
+    children.splice(
+      index,
+      0,
+      newBlock
+    );
+
+    return {
+      ...root,
+      children
+    };
+  }
+
+  const children =
+    Array.isArray(root.children)
+      ? root.children
+      : [];
+
+  const targetIndex =
+    children.findIndex(
+      (child: any) =>
+        child.id === targetId
+    );
+
+  if (
+    targetIndex !== -1 &&
+    position !== "inside"
+  ) {
+    const nextChildren =
+      [...children];
+
+    const insertionIndex =
+      position === "before"
+        ? targetIndex
+        : targetIndex + 1;
+
+    nextChildren.splice(
+      insertionIndex,
+      0,
+      newBlock
+    );
+
+    return {
+      ...root,
+      children:
+        nextChildren
+    };
+  }
+
+  return {
+    ...root,
+
+    children:
+      children.map(
+        (child: any) =>
+          insertBlockIntoTree(
+            child,
+            newBlock,
+            targetId,
+            position,
+            requestedIndex
+          )
+      )
   };
 };
 // ============================================
@@ -447,14 +672,13 @@ export const PageEditor = ({ mode }: PageEditorProps) => {
     canRedo,
     slug,
     setSlug,
+    pageVisibility,
+    setPageVisibility,
     setPageTitle,
     errors = [],
     versions = [],
     isLoadingVersions,
   } = editor;
-
-  const { activeId, activeData, overId, dropPosition, isAllowed, ghost, handleDragStart, handleDragOver, handleDragEnd } =
-    useDragAndDrop({ blocks, actions });
 
   const { seoForm, handleSeoChange, handleSeoSave, isSeoSaving } = useSeoManager(pageId, siteId, pageTitle);
 
@@ -485,6 +709,8 @@ export const PageEditor = ({ mode }: PageEditorProps) => {
   const [uploadHtmlZip] = useUploadHtmlZipMutation();
   const [createPage] = useCreatePageMutation();
   const [publishPage] = usePublishPageMutation();
+  const [getPages] = useLazyGetPagesQuery();
+  const [updatePage] = useUpdatePageMutation();
   
   const [
     updateGlobalLayout,
@@ -783,6 +1009,60 @@ const isFooterLikeBlock = (
       globalFooter
     ]
   );
+
+  const globalNavbarBlockIds =
+    useMemo(
+      () =>
+        collectBlockIds(
+          globalNavbar
+        ),
+      [globalNavbar]
+    );
+
+  const globalFooterBlockIds =
+    useMemo(
+      () =>
+        collectBlockIds(
+          globalFooter
+        ),
+      [globalFooter]
+    );
+
+  const resolveDndSlot =
+    useCallback(
+      (
+        blockId?: string
+      ): DndSlot => {
+        if (!blockId) {
+          return "page";
+        }
+
+        const normalizedId =
+          String(blockId);
+
+        if (
+          globalNavbarBlockIds.has(
+            normalizedId
+          )
+        ) {
+          return "navbar";
+        }
+
+        if (
+          globalFooterBlockIds.has(
+            normalizedId
+          )
+        ) {
+          return "footer";
+        }
+
+        return "page";
+      },
+      [
+        globalNavbarBlockIds,
+        globalFooterBlockIds
+      ]
+    );
   // ============================================
   // GLOBAL LAYOUT HANDLER
   // ============================================
@@ -947,6 +1227,8 @@ const isFooterLikeBlock = (
         updateGlobalLayout,
         createPage,
         publishPage,
+        getPages,
+        updatePage,
         onHomepageImported: (hydrated) => {
           const canonicalHomepage =
             normalizeTree(hydrated as any) as any;
@@ -965,11 +1247,26 @@ const isFooterLikeBlock = (
       setZipFile(null);
     } catch (error) {
       console.error("ZIP import failed", error);
-      setZipImportStep("Import failed. Check console.");
+      if (error instanceof ZipWebsiteImportError) {
+        const firstFailure =
+          error.result.failedPages[0];
+
+        setZipImportStep(
+          firstFailure
+            ? `Import failed: ${firstFailure.sourceFile || firstFailure.slug} - ${firstFailure.backendCode || firstFailure.message}`
+            : error.message
+        );
+      } else {
+        setZipImportStep(
+          error instanceof Error
+            ? `Import failed: ${error.message}`
+            : "Import failed. Check console."
+        );
+      }
     } finally {
       setZipImporting(false);
     }
-  }, [zipFile, zipImporting, siteId, actions, uploadHtmlZip, updateGlobalLayout, createPage, publishPage, setSelectedBlockId]);
+  }, [zipFile, zipImporting, siteId, actions, uploadHtmlZip, updateGlobalLayout, createPage, publishPage, getPages, updatePage, setSelectedBlockId]);
 
   const handleFigmaTokenGenerate = useCallback(async () => {
     if (!isFigmaPluginEnabled) return;
@@ -1052,7 +1349,7 @@ const isFooterLikeBlock = (
         </Stack>
 
         <StructurePanel
-          blocks={blocks}
+          blocks={canvasBlocks}
           selectedId={selectedBlockId}
           onSelect={setSelectedBlockId}
           hoveredId={hoveredBlockId}
@@ -1107,6 +1404,8 @@ const isFooterLikeBlock = (
               setPageTitle={setPageTitle}
               slug={slug}
               setSlug={setSlug}
+              pageVisibility={pageVisibility}
+              setPageVisibility={setPageVisibility}
               onExport={handleExport}
               onImport={handleImport}
               onImportHtml={() => setIsModalOpen(true)}
@@ -1260,6 +1559,286 @@ const isFooterLikeBlock = (
       },
       []
     );
+
+  const insertIntoGlobalSlot =
+    useCallback(
+      (
+        slot:
+          | "navbar"
+          | "footer",
+        newBlock: any,
+        targetId: string,
+        position:
+          DndInsertPosition,
+        index?: number
+      ) => {
+        const updateSlot = (
+          current: any
+        ) => {
+          if (!current) {
+            return current;
+          }
+
+          return insertBlockIntoTree(
+            current,
+            newBlock,
+            targetId,
+            position,
+            index
+          );
+        };
+
+        if (slot === "navbar") {
+          setGlobalNavbarDraft(
+            updateSlot
+          );
+
+          return;
+        }
+
+        setGlobalFooterDraft(
+          updateSlot
+        );
+      },
+      []
+    );
+
+  const dndActions =
+    useMemo(
+      () => ({
+        addBlock: (
+          type: string,
+          targetId?: string,
+          position?: string,
+          presetData?: any,
+          insertIndex?: number
+        ) => {
+          const slot =
+            resolveDndSlot(
+              targetId
+            );
+
+          if (
+            slot === "page" ||
+            !targetId
+          ) {
+            actions.addBlock(
+              type,
+              targetId,
+              position,
+              presetData,
+              insertIndex
+            );
+
+            return;
+          }
+
+          const newBlock =
+            createDndBlock(
+              type,
+              presetData
+            );
+
+          insertIntoGlobalSlot(
+            slot,
+            newBlock,
+            targetId,
+            normalizeDndPosition(
+              position
+            ),
+            insertIndex
+          );
+        },
+
+        addBlockTree: (
+          tree: any,
+          targetId?: string,
+          position?: string,
+          insertIndex?: number
+        ) => {
+          const slot =
+            resolveDndSlot(
+              targetId
+            );
+
+          if (
+            slot === "page" ||
+            !targetId
+          ) {
+            actions.addBlockTree(
+              tree,
+              targetId,
+              position,
+              insertIndex
+            );
+
+            return;
+          }
+
+          insertIntoGlobalSlot(
+            slot,
+            structuredClone(
+              tree
+            ),
+            targetId,
+            normalizeDndPosition(
+              position
+            ),
+            insertIndex
+          );
+        },
+
+        moveBlock: (
+          blockId: string,
+          location: {
+            targetId?: string;
+
+            position:
+              | "before"
+              | "after"
+              | "inside";
+
+            index?: number;
+            wrapperType?: string;
+          }
+        ) => {
+          const sourceSlot =
+            resolveDndSlot(
+              blockId
+            );
+
+          const targetSlot =
+            resolveDndSlot(
+              location.targetId
+            );
+
+          if (
+            sourceSlot === "page" &&
+            targetSlot === "page"
+          ) {
+            actions.moveBlock(
+              blockId,
+              location
+            );
+
+            return;
+          }
+
+          if (
+            sourceSlot !== targetSlot ||
+            sourceSlot === "page" ||
+            !location.targetId
+          ) {
+            return;
+          }
+
+          const updateSlot = (
+            current: any
+          ) => {
+            if (
+              !current ||
+              current.id === blockId
+            ) {
+              return current;
+            }
+
+            const movingBlock =
+              findBlockById(
+                [current],
+                blockId
+              );
+
+            if (!movingBlock) {
+              return current;
+            }
+
+            const targetInsideMovingBlock =
+              findBlockById(
+                [movingBlock],
+                location.targetId!
+              );
+
+            if (targetInsideMovingBlock) {
+              return current;
+            }
+
+            const treeWithoutBlock =
+              removeBlockFromTree(
+                current,
+                blockId
+              );
+
+            if (!treeWithoutBlock) {
+              return current;
+            }
+
+            const blockToInsert =
+              location.wrapperType
+                ? createDndBlock(
+                    location.wrapperType,
+                    {
+                      presetChildren: [
+                        structuredClone(
+                          movingBlock
+                        )
+                      ]
+                    }
+                  )
+                : structuredClone(
+                    movingBlock
+                  );
+
+            return insertBlockIntoTree(
+              treeWithoutBlock,
+              blockToInsert,
+              location.targetId!,
+              location.position,
+              location.index
+            );
+          };
+
+          if (
+            sourceSlot === "navbar"
+          ) {
+            setGlobalNavbarDraft(
+              updateSlot
+            );
+
+            return;
+          }
+
+          setGlobalFooterDraft(
+            updateSlot
+          );
+        }
+      }),
+      [
+        actions,
+        insertIntoGlobalSlot,
+        resolveDndSlot
+      ]
+    );
+
+  const {
+    activeId,
+    activeData,
+    overId,
+    dropPosition,
+    isAllowed,
+    ghost,
+    handleDragStart,
+    handleDragOver,
+    handleDragEnd
+  } = useDragAndDrop({
+    blocks:
+      canvasBlocks,
+
+    rootInsertIndex:
+      blocks.length,
+
+    actions:
+      dndActions
+  });
 
   const handleSelectedBlockChange =
     useCallback(

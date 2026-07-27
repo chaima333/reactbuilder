@@ -28,7 +28,7 @@ const titleBlock = (
         fontWeight: 800,
         textAlign: "center",
         color: "#111827",
-        marginBottom: "12px",
+        marginBottom: "0",
         ...style
       },
       {},
@@ -162,9 +162,7 @@ export const generateFAQPreset = () => ({
         width: "100%",
         padding: "88px 40px",
         backgroundColor: "#f8fafc",
-        boxSizing: "border-box",
-        display: "flex",
-        justifyContent: "center"
+        boxSizing: "border-box"
       },
       {
         padding: "72px 28px"
@@ -176,40 +174,38 @@ export const generateFAQPreset = () => ({
   },
   children: [
     {
-      id: makeId("faq-container"),
+      id: makeId("faq-intro"),
       type: "flex",
       data: {
         props: {},
-        style: responsive({
-          width: "100%",
-          maxWidth: "1080px",
-          margin: "0 auto",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "34px",
-        })
+        style: responsive(
+          {
+            width: "100%",
+            maxWidth: "760px",
+            margin: "0 auto 34px auto",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "14px"
+          }
+        )
       },
       children: [
-        flexItem(
-          [
-            titleBlock("Frequently Asked Questions"),
-            textBlock(
-              "Quick answers to help visitors understand your services, process, and next steps.",
-              {
-                maxWidth: "680px",
-                marginLeft: "auto",
-                marginRight: "auto"
-              }
-            )
-          ],
-          {
-            maxWidth: "760px",
-            margin: "0 auto"
-          }
-        ),
-        flexItem(
-  [
+        flexItem([
+          titleBlock("Frequently Asked Questions")
+        ]),
+        flexItem([
+          textBlock(
+            "Quick answers to help visitors understand your services, process, and next steps.",
+            {
+              maxWidth: "680px",
+              marginLeft: "auto",
+              marginRight: "auto"
+            }
+          )
+        ])
+      ]
+    },
     {
       id: makeId("faq-grid"),
       type: "grid",
@@ -220,7 +216,9 @@ export const generateFAQPreset = () => ({
             display: "grid",
             gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
             gap: "22px",
-            width: "100%"
+            width: "100%",
+            maxWidth: "1080px",
+            margin: "0 auto"
           },
           {
             gridTemplateColumns: "1fr"
@@ -248,15 +246,6 @@ export const generateFAQPreset = () => ({
           "Can I add more questions?",
           "Yes. Duplicate an item or add new editable blocks to expand the FAQ."
         )
-      ]
-    }
-  ],
-  {
-    width: "100%",
-    maxWidth: "1180px",
-    margin: "0 auto"
-  }
-)
       ]
     }
   ]

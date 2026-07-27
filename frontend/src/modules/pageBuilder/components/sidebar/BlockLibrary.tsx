@@ -276,6 +276,10 @@ export const BlockLibrary = () => {
           type="button"
           config={blockRegistry.button}
         />
+        <DraggableBlockItem
+        type="collectionList"
+       config={blockRegistry.collectionList}
+       />
 
         <Box
           sx={{

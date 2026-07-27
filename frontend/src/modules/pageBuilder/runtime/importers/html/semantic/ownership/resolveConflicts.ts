@@ -7,6 +7,7 @@ import type { OwnershipScore } from "./scoreOwnership";
 
 const ownerPriority: Record<SemanticOwnerType, number> = {
   NAVBAR: 100,
+  FOOTER: 98,
   HERO: 95,
   FORM: 90,
   GRID: 85,
@@ -31,6 +32,7 @@ const relationPriority: Record<
 
 const ownerTypeKindPriority: Record<SemanticOwnerType, number> = {
   NAVBAR: 100,
+  FOOTER: 98,
   HERO: 95,
   FORM: 90,
   GRID: 85,
