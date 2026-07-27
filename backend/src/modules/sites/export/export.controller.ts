@@ -1197,6 +1197,8 @@ export const exportSite = async (
                   type === "visitorLogin" ||
                   type === "visitorRegister"
                 ),
+                neutralizeUnsupportedContainers:
+                 true,
           }
         );
 

@@ -204,12 +204,14 @@ type RenderContext = {
   rewriteUrl?: (url: string) => string;
   clientRuntimeBlockTypes?: Set<string>;
   pageId?: number | string | null;
+  neutralizeUnsupportedContainers?: boolean;
 };
 
 export type RenderBlocksOptions = {
   rewriteUrl?: (url: string) => string;
   clientRuntimeBlockTypes?: string[];
   pageId?: number | string | null;
+  neutralizeUnsupportedContainers?: boolean;
 };
 
 const UNIT_LESS_CSS_PROPS = new Set([
@@ -550,6 +552,89 @@ const getDesktopStyle = (
   data: any
 ): Record<string, unknown> => {
   return extractResponsiveStyle(data).desktop || {};
+};
+const UNSUPPORTED_CONTAINER_SHELL_KEYS = [
+  "height",
+  "minHeight",
+  "maxHeight",
+
+  "padding",
+  "paddingTop",
+  "paddingRight",
+  "paddingBottom",
+  "paddingLeft",
+
+  "background",
+  "backgroundColor",
+  "backgroundImage",
+  "backgroundSize",
+  "backgroundPosition",
+  "backgroundRepeat",
+
+  "border",
+  "borderTop",
+  "borderRight",
+  "borderBottom",
+  "borderLeft",
+  "borderColor",
+  "borderStyle",
+  "borderWidth",
+  "borderRadius",
+
+  "boxShadow",
+
+  "overflow",
+  "overflowX",
+  "overflowY",
+
+  "gridTemplateRows",
+  "gridAutoRows"
+];
+
+const neutralizeUnsupportedContainerData = (
+  data: any
+) => {
+  const responsive =
+    extractResponsiveStyle(data);
+
+  const stripShell = (
+    style:
+      Record<string, unknown> = {}
+  ) => {
+    const result = {
+      ...style
+    };
+
+    for (
+      const key of
+      UNSUPPORTED_CONTAINER_SHELL_KEYS
+    ) {
+      delete result[key];
+    }
+
+    return result;
+  };
+
+  return {
+    ...data,
+
+    style: {
+      desktop:
+        stripShell(
+          responsive.desktop || {}
+        ),
+
+      tablet:
+        stripShell(
+          responsive.tablet || {}
+        ),
+
+      mobile:
+        stripShell(
+          responsive.mobile || {}
+        )
+    }
+  };
 };
 
 const resolveHref = (
@@ -2391,15 +2476,61 @@ const renderBlocksInternal = async (
           block.type
         )}`
       );
+const shouldNeutralize =
+  context
+    .neutralizeUnsupportedContainers ===
+    true &&
+  Array.isArray(block.children) &&
+  block.children.length > 0;
 
-      const className =
-        registerBlockCss(
-          renderData,
-          {
-            width: "100%",
-            boxSizing: "border-box",
-          }
-        );
+const fallbackData =
+  shouldNeutralize
+    ? neutralizeUnsupportedContainerData(
+        renderData
+      )
+    : renderData;
+
+const fallbackDefaults =
+  shouldNeutralize
+    ? {
+        width: "100%",
+        minWidth: 0,
+        maxWidth: "100%",
+
+        height: "auto",
+        minHeight: 0,
+        maxHeight: "none",
+
+        padding: 0,
+
+        background:
+          "transparent",
+
+        border:
+          "none",
+
+        borderRadius: 0,
+
+        boxShadow:
+          "none",
+
+        overflow:
+          "visible",
+
+        boxSizing:
+          "border-box"
+      }
+    : {
+        width: "100%",
+        boxSizing:
+          "border-box"
+      };
+
+    const className =
+  registerBlockCss(
+    fallbackData,
+    fallbackDefaults
+  );
 
       html += `
         <div
@@ -2437,20 +2568,28 @@ export const renderBlocks = async (
   siteId?: number,
   options: RenderBlocksOptions = {}
 ): Promise<string> => {
+ 
   const context: RenderContext = {
-    responsiveCss: [],
-    nextBlockId: 1,
-    rewriteUrl:
-      options.rewriteUrl,
-    clientRuntimeBlockTypes:
-      options.clientRuntimeBlockTypes
-        ? new Set(
-            options.clientRuntimeBlockTypes
-          )
-        : undefined,
-    pageId:
-      options.pageId,
-  };
+  responsiveCss: [],
+  nextBlockId: 1,
+
+  rewriteUrl:
+    options.rewriteUrl,
+
+  clientRuntimeBlockTypes:
+    options.clientRuntimeBlockTypes
+      ? new Set(
+          options.clientRuntimeBlockTypes
+        )
+      : undefined,
+
+  pageId:
+    options.pageId,
+
+  neutralizeUnsupportedContainers:
+    options
+      .neutralizeUnsupportedContainers
+};
 
   const html =
     await renderBlocksInternal(
