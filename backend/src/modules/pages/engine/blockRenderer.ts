@@ -1244,10 +1244,8 @@ const renderSectionBlock = (
                 maxWidth:
                   inferredContainerMaxWidth ||
                   style.maxWidth,
-                marginLeft:
-                  style.marginLeft,
-                marginRight:
-                  style.marginRight,
+               marginLeft: inferredContainerMaxWidth ? "auto" : style.marginLeft,
+               marginRight: inferredContainerMaxWidth ? "auto" : style.marginRight,
                 ...pickStyleProps(
                   style,
                   SECTION_INNER_LAYOUT_PROPS
@@ -1665,6 +1663,34 @@ const renderTitleSegments = (
     })
     .join("");
 };
+const normalizeStaticTextVisibility = (
+  style: Record<string, unknown>
+): Record<string, unknown> => {
+  const result = {
+    ...style,
+  };
+
+  const opacity =
+    Number(result.opacity);
+
+  if (
+    Number.isFinite(opacity) &&
+    opacity <= 0.05
+  ) {
+    result.opacity = 1;
+  }
+
+  if (
+    String(
+      result.visibility || ""
+    ).toLowerCase() === "hidden"
+  ) {
+    result.visibility =
+      "visible";
+  }
+
+  return result;
+};
 
 const renderTitleBlock = (data: any): string => {
   const resolvedData =
@@ -1699,10 +1725,12 @@ const renderTitleBlock = (data: any): string => {
       mapResponsiveStyle(
         responsive,
         (style) =>
-          omitStyleProps(
-            style,
-            TITLE_RUNTIME_OVERRIDE_PROPS
-          )
+        normalizeStaticTextVisibility(
+        omitStyleProps(
+        style,
+        TITLE_RUNTIME_OVERRIDE_PROPS
+       )
+       )
       ),
       data?.__rbClassName || "rb-title"
     );
@@ -1746,8 +1774,22 @@ const renderTextBlock = (data: any): string => {
     resolvedData?.props?.semanticRole ===
     "kpiNumber";
 
+  const responsive =
+  extractResponsiveStyle(data);
+
+  const renderData =
+  withResponsiveStyle(
+    data,
+    mapResponsiveStyle(
+      responsive,
+      normalizeStaticTextVisibility
+    ),
+    data?.__rbClassName ||
+      "rb-text"
+  );
+  
   const className =
-    registerBlockCss(data, {
+  registerBlockCss(renderData, {
       width: isKpiNumber
         ? "auto"
         : "100%",
