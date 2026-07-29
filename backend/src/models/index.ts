@@ -28,6 +28,7 @@ import { FormSubmission } from "./FormSubmission.model";
 import { Form } from "./Form.model";
 import { SiteVisitor } from "./SiteVisitor";
 import { SiteVisitorSession } from "./SiteVisitorSession";
+import { BlockPattern } from "./BlockPattern.model";
 
 export const models = [
   User,
@@ -57,7 +58,8 @@ export const models = [
   FormSubmission,
   Form,
   SiteVisitor,
-  SiteVisitorSession
+  SiteVisitorSession,
+  BlockPattern
 ];
 
 export {
@@ -88,5 +90,6 @@ export {
   FormSubmission,
   Form,
   SiteVisitor,
-  SiteVisitorSession
+  SiteVisitorSession,
+  BlockPattern
 };
