@@ -12,6 +12,9 @@ console.log(
 
 import express, { Application, Request, Response } from "express";
 import cors from "cors";
+import {
+  corsOptionsDelegate
+} from "./core/middleware/corsPolicy";
 import path from "path";
 
 // DB
@@ -77,7 +80,7 @@ const authStack = [authenticateJWT, maintenanceMode];
 /* ========================
    GLOBAL MIDDLEWARE
 ======================== */
-app.use(cors());
+app.use(cors(corsOptionsDelegate));
 
 app.use(rejectOversizedAiContentLength);
 app.use(rejectOversizedChatbotContentLength);
