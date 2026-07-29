@@ -65,6 +65,12 @@ import { attachOptionalSiteVisitorAuth } from "./modules/siteVisitors/siteVisito
 import blockPatternRoutes from "./modules/patterns/blockPattern.routes";
 
 const app: Application = express();
+
+if (
+  process.env.NODE_ENV === "production"
+) {
+  app.set("trust proxy", 1);
+}
 const PORT = Number(process.env.PORT) || 10000;
 const authStack = [authenticateJWT, maintenanceMode];
 
