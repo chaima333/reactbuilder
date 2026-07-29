@@ -5,6 +5,10 @@ import {
 } from "./partnerApplication.controller";
 
 import {
+  publicPartnerApplicationLimiter
+} from "./partnerApplication.public.rateLimit";
+
+import {
   requirePermission
 } from "../../core/middleware/role.middleware";
 
@@ -19,6 +23,7 @@ export const publicPartnerApplicationRoutes =
 
 publicPartnerApplicationRoutes.post(
   "/",
+  publicPartnerApplicationLimiter,
   partnerApplicationController.createPublicApplication
 );
 
