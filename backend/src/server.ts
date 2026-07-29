@@ -62,6 +62,7 @@ import formsPublicRoutes from "./modules/forms/forms.public.routes";
 import formsRoutes from "./modules/forms/forms.routes";
 import siteVisitorAuthRoutes from "./modules/siteVisitors/siteVisitorAuth.routes";
 import { attachOptionalSiteVisitorAuth } from "./modules/siteVisitors/siteVisitorAuth.middleware";
+import blockPatternRoutes from "./modules/patterns/blockPattern.routes";
 
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 10000;
@@ -143,6 +144,7 @@ app.use("/api/sites/:siteId/media", tenantStack, mediaRoutes);
 app.use("/api/sites/:siteId/partner-applications", tenantStack, partnerApplicationRoutes);
 app.use("/api/sites/:siteId/import", tenantStack, importRoutes);
 app.use("/api/sites/:siteId/cms", tenantStack, cmsRoutes);
+app.use("/api/sites/:siteId/patterns", tenantStack, blockPatternRoutes);
 app.use("/api/figma-plugin", figmaPluginRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/sites/:siteId/ia", tenantStack, iaRoutes);

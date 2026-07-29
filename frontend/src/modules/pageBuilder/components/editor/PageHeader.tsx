@@ -21,7 +21,8 @@ import {
   Undo,
   VerticalAlignBottom,
   VerticalAlignTop,
-  Visibility
+  Visibility,
+  Widgets
 } from "@mui/icons-material";
 
 interface PageHeaderProps {
@@ -71,6 +72,12 @@ interface PageHeaderProps {
   canSetGlobalFooter?: boolean;
 
   globalLayoutLoading?: boolean;
+
+  onSaveAsPattern?: () => void;
+  canSaveAsPattern?: boolean;
+  patternSaveDisabledReason?: string;
+  onOpenPatternLibrary?: () => void;
+  canOpenPatternLibrary?: boolean;
 }
 
 export const PageHeader = ({
@@ -94,7 +101,12 @@ export const PageHeader = ({
   onSetGlobalFooter,
   canSetGlobalNavbar = false,
   canSetGlobalFooter = false,
-  globalLayoutLoading = false
+  globalLayoutLoading = false,
+  onSaveAsPattern,
+  canSaveAsPattern = false,
+  patternSaveDisabledReason = "Select a page section to save it as a pattern",
+  onOpenPatternLibrary,
+  canOpenPatternLibrary = false
 }: PageHeaderProps) => {
   const isBusy =
     loading ||
@@ -309,6 +321,71 @@ export const PageHeader = ({
             </IconButton>
           </span>
         </Tooltip>
+
+        <Divider
+          orientation="vertical"
+          flexItem
+          sx={{
+            height: "24px",
+            mx: 0.5
+          }}
+        />
+
+        {/* =========================
+            PATTERNS
+        ========================= */}
+
+        <Tooltip
+          title={
+            canSaveAsPattern
+              ? "Save selected section as a pattern"
+              : patternSaveDisabledReason
+          }
+        >
+          <span>
+            <Button
+              size="small"
+              variant="outlined"
+              color="primary"
+              disabled={
+                !canSaveAsPattern ||
+                !onSaveAsPattern
+              }
+              onClick={onSaveAsPattern}
+              startIcon={
+                <Widgets fontSize="small" />
+              }
+              sx={{
+                textTransform: "none",
+                borderRadius: "6px",
+                whiteSpace: "nowrap"
+              }}
+            >
+              Save as Pattern
+            </Button>
+          </span>
+        </Tooltip>
+
+        <Button
+          size="small"
+          variant="outlined"
+          color="primary"
+          disabled={
+            !canOpenPatternLibrary ||
+            !onOpenPatternLibrary
+          }
+          onClick={onOpenPatternLibrary}
+          startIcon={
+            <Widgets fontSize="small" />
+          }
+          sx={{
+            textTransform: "none",
+            borderRadius: "6px",
+            whiteSpace: "nowrap"
+          }}
+        >
+          Pattern Library
+        </Button>
 
         <Divider
           orientation="vertical"
