@@ -64,6 +64,9 @@ import { executeZipWebsiteImport } from "../runtime/importers/html/zip/executeZi
 import { ZipWebsiteImportError } from "../runtime/importers/html/zip/executeZipWebsiteImport";
 import { apiUrl } from "../../../config/api";
 import { normalizeTree } from "../runtime/normalize/NormalizeTree";
+import { SavePatternDialog } from "../components/patterns/SavePatternDialog";
+import { PatternLibraryPanel } from "../components/patterns/PatternLibraryPanel";
+import { canSaveBlockAsPattern } from "../components/patterns/patternActions";
 
 // ============================================
 // CONSTANTS & TYPES
@@ -640,6 +643,14 @@ export const PageEditor = ({ mode }: PageEditorProps) => {
   const [zipImporting, setZipImporting] = useState<boolean>(false);
   const [zipImportStep, setZipImportStep] = useState<string>("");
   const [figmaDialogOpen, setFigmaDialogOpen] = useState<boolean>(false);
+  const [
+    savePatternDialogOpen,
+    setSavePatternDialogOpen
+  ] = useState<boolean>(false);
+  const [
+    patternLibraryOpen,
+    setPatternLibraryOpen
+  ] = useState<boolean>(false);
   const [figmaToken, setFigmaToken] = useState<string>("");
   const [
     globalNavbarDraft,
@@ -825,6 +836,21 @@ export const PageEditor = ({ mode }: PageEditorProps) => {
     selectedGlobalNavbarBlock ||
     selectedGlobalFooterBlock ||
     null;
+
+  const canSaveSelectedPageBlockAsPattern =
+    canSaveBlockAsPattern(
+      selectedPageBlock
+    );
+
+  const patternSaveDisabledReason =
+    selectedGlobalSlot
+      ? "Global navbar and footer blocks cannot be saved as patterns."
+      : selectedPageBlock
+        ? "Only page sections can be saved as patterns."
+        : "Select a page section to save it as a pattern.";
+
+  const numericSiteId =
+    Number(siteId || 0);
 
   // ============================================
   // GLOBAL LAYOUT HELPERS
@@ -2322,6 +2348,21 @@ const handleCanvasDuplicate =
                   isUpdatingGlobalLayout ||
                   isLoadingEditorSite
                 }
+                onSaveAsPattern={() =>
+                  setSavePatternDialogOpen(true)
+                }
+                canSaveAsPattern={
+                  canSaveSelectedPageBlockAsPattern
+                }
+                patternSaveDisabledReason={
+                  patternSaveDisabledReason
+                }
+                onOpenPatternLibrary={() =>
+                  setPatternLibraryOpen(true)
+                }
+                canOpenPatternLibrary={
+                  numericSiteId > 0
+                }
               />
             }
             leftSidebar={!isPreview && renderLeftSidebar()}
@@ -2331,6 +2372,34 @@ const handleCanvasDuplicate =
 
           {renderImportModal()}
           {renderFigmaModal()}
+          {numericSiteId > 0 && (
+            <>
+              <SavePatternDialog
+                open={savePatternDialogOpen}
+                onClose={() =>
+                  setSavePatternDialogOpen(false)
+                }
+                siteId={numericSiteId}
+                selectedSection={
+                  canSaveSelectedPageBlockAsPattern
+                    ? selectedPageBlock
+                    : null
+                }
+                onSaved={() =>
+                  setSavePatternDialogOpen(false)
+                }
+              />
+
+              <PatternLibraryPanel
+                open={patternLibraryOpen}
+                onClose={() =>
+                  setPatternLibraryOpen(false)
+                }
+                siteId={numericSiteId}
+                actions={actions}
+              />
+            </>
+          )}
           {renderGhost()}
         </DndContext>
       </ThemeContext.Provider>
