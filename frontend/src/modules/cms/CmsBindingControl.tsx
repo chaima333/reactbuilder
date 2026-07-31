@@ -34,20 +34,37 @@ type Props = {
   ) => void;
 };
 
-const bindingPattern =
-  /^\{\{\s*([^{}]+?)\s*\}\}$/;
+const strictBindingPattern =
+  /^\{\{\s*cms\.([A-Za-z0-9_]+)\s*\}\}$/;
 
-const extractBindingKey = (
+const legacyBindingPattern =
+  /^\{\{\s*([A-Za-z0-9_]+)\s*\}\}$/;
+
+export const formatCmsBindingValue = (
+  key: string
+) =>
+  key
+    ? `{{cms.${key}}}`
+    : "";
+
+export const extractCmsBindingKey = (
   value: unknown
 ) => {
   if (typeof value !== "string") {
     return "";
   }
 
-  const match =
-    value.match(bindingPattern);
+  const strictMatch =
+    value.match(strictBindingPattern);
 
-  return match?.[1]?.trim() || "";
+  if (strictMatch) {
+    return strictMatch[1];
+  }
+
+  const legacyMatch =
+    value.match(legacyBindingPattern);
+
+  return legacyMatch?.[1] || "";
 };
 
 export const CmsBindingControl = ({
@@ -66,7 +83,7 @@ export const CmsBindingControl = ({
   }>();
 
   const bindingKey =
-    extractBindingKey(value);
+    extractCmsBindingKey(value);
 
   const [
     sourceMode,
@@ -268,7 +285,7 @@ export const CmsBindingControl = ({
 
             onChange(
               key
-                ? `{{${key}}}`
+                ? formatCmsBindingValue(key)
                 : ""
             );
           }}

@@ -6,12 +6,17 @@ import {
 export type PublicCmsEntry =
   Record<string, any> & {
     id: number;
+    siteId?: number;
+    slug: string;
+    status?: string;
+    data?: Record<string, any>;
   };
 
 type ApiResponse<T> = {
   success: boolean;
   data: T;
   message?: string;
+  code?: string;
 };
 
 const unwrap =

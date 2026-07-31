@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
+  Alert,
   Box,
   CircularProgress,
   Paper,
@@ -67,6 +68,14 @@ import { normalizeTree } from "../runtime/normalize/NormalizeTree";
 import { SavePatternDialog } from "../components/patterns/SavePatternDialog";
 import { PatternLibraryPanel } from "../components/patterns/PatternLibraryPanel";
 import { canSaveBlockAsPattern } from "../components/patterns/patternActions";
+import CmsEntryPreviewSelect, {
+  CmsTemplatePreview,
+  getCmsPreviewSaveBlocks,
+  runUnlessCmsPreviewActive
+} from "../../cms/CmsEntryPreviewSelect";
+import {
+  resolveCmsBindingsInTree
+} from "../../cms/utils/cmsBinding.resolver";
 
 // ============================================
 // CONSTANTS & TYPES
@@ -653,6 +662,15 @@ export const PageEditor = ({ mode }: PageEditorProps) => {
   ] = useState<boolean>(false);
   const [figmaToken, setFigmaToken] = useState<string>("");
   const [
+    selectedCmsPreviewEntryId,
+    setSelectedCmsPreviewEntryId
+  ] = useState<number | "">("");
+
+  const [
+    cmsTemplatePreview,
+    setCmsTemplatePreview
+  ] = useState<CmsTemplatePreview | null>(null);
+  const [
     globalNavbarDraft,
     setGlobalNavbarDraft
   ] = useState<any>(null);
@@ -852,6 +870,9 @@ export const PageEditor = ({ mode }: PageEditorProps) => {
   const numericSiteId =
     Number(siteId || 0);
 
+  const isCmsEntryPreviewActive =
+    Boolean(cmsTemplatePreview);
+
   // ============================================
   // GLOBAL LAYOUT HELPERS
   // ============================================
@@ -995,14 +1016,36 @@ const isFooterLikeBlock = (
       )
     );
 
+  const cmsPreviewBlocks =
+    useMemo(
+      () => {
+        if (!cmsTemplatePreview) {
+          return null;
+        }
+
+        return resolveCmsBindingsInTree(
+          blocks,
+          cmsTemplatePreview.entry.data || {},
+          cmsTemplatePreview.collection.fields || []
+        );
+      },
+      [
+        blocks,
+        cmsTemplatePreview
+      ]
+    );
+
+  const pageBlocksForCanvas =
+    cmsPreviewBlocks || blocks;
+
   const pageOwnsNavbar =
-    blocks.some(
+    pageBlocksForCanvas.some(
       (block: any) =>
         isNavbarLikeBlock(block)
     );
 
   const pageOwnsFooter =
-    blocks.some(
+    pageBlocksForCanvas.some(
       (block: any) =>
         isFooterLikeBlock(block)
     );
@@ -1023,7 +1066,7 @@ const isFooterLikeBlock = (
         ? [globalNavbar]
         : []),
 
-      ...blocks,
+      ...pageBlocksForCanvas,
 
       ...(globalFooter
         ? [globalFooter]
@@ -1031,7 +1074,7 @@ const isFooterLikeBlock = (
     ],
     [
       globalNavbar,
-      blocks,
+      pageBlocksForCanvas,
       globalFooter
     ]
   );
@@ -1100,6 +1143,10 @@ const isFooterLikeBlock = (
           | "navbar"
           | "footer"
       ) => {
+        if (isCmsEntryPreviewActive) {
+          return;
+        }
+
         if (
           !siteId ||
           !selectedBlock ||
@@ -1196,7 +1243,8 @@ const isFooterLikeBlock = (
         updateGlobalLayout,
         globalNavbarDraft,
         globalFooterDraft,
-        selectedGlobalSlot
+        selectedGlobalSlot,
+        isCmsEntryPreviewActive
       ]
     );
 
@@ -1205,6 +1253,7 @@ const isFooterLikeBlock = (
   // ============================================
 
   const handleHtmlImportExecute = useCallback(async () => {
+    if (isCmsEntryPreviewActive) return;
     if (!htmlCode.trim()) return;
 
     try {
@@ -1237,9 +1286,10 @@ const isFooterLikeBlock = (
     } catch (error) {
       console.error("HTML import failed", error);
     }
-  }, [htmlCode, actions, updateToken, tokens]);
+  }, [htmlCode, actions, updateToken, tokens, isCmsEntryPreviewActive]);
 
   const handleZipImportExecute = useCallback(async () => {
+    if (isCmsEntryPreviewActive) return;
     if (!zipFile || zipImporting) return;
 
     setZipImporting(true);
@@ -1292,7 +1342,7 @@ const isFooterLikeBlock = (
     } finally {
       setZipImporting(false);
     }
-  }, [zipFile, zipImporting, siteId, actions, uploadHtmlZip, updateGlobalLayout, createPage, publishPage, getPages, updatePage, setSelectedBlockId]);
+  }, [zipFile, zipImporting, siteId, actions, uploadHtmlZip, updateGlobalLayout, createPage, publishPage, getPages, updatePage, setSelectedBlockId, isCmsEntryPreviewActive]);
 
   const handleFigmaTokenGenerate = useCallback(async () => {
     if (!isFigmaPluginEnabled) return;
@@ -1309,8 +1359,26 @@ const isFooterLikeBlock = (
     downloadJsonFile(`${slug || "page"}-config.json`, json);
   }, [actions, slug]);
 
+  const handlePublish =
+    useCallback(
+      () => {
+        runUnlessCmsPreviewActive(
+          cmsTemplatePreview,
+          actions.publish
+        );
+      },
+      [
+        actions.publish,
+        cmsTemplatePreview
+      ]
+    );
+
   const handleImport = useCallback(
     async (file: File) => {
+      if (isCmsEntryPreviewActive) {
+        return;
+      }
+
       try {
         const content = await readJsonFile(file);
         actions.importPageData(content);
@@ -1318,7 +1386,10 @@ const isFooterLikeBlock = (
         console.error("Failed to read import file", error);
       }
     },
-    [actions]
+    [
+      actions,
+      isCmsEntryPreviewActive
+    ]
   );
 
   const handleTabChange = useCallback((index: number) => {
@@ -1327,10 +1398,30 @@ const isFooterLikeBlock = (
   }, []);
 
   const handleApplyThemeToPage = useCallback(() => {
+    if (isCmsEntryPreviewActive) {
+      return;
+    }
+
     actions.setBlocks(
       applyThemeToBlocks(blocks, tokens)
     );
-  }, [actions, blocks, tokens]);
+  }, [
+    actions,
+    blocks,
+    tokens,
+    isCmsEntryPreviewActive
+  ]);
+
+  useEffect(() => {
+    if (!isCmsEntryPreviewActive) {
+      return;
+    }
+
+    setSavePatternDialogOpen(false);
+    setPatternLibraryOpen(false);
+  }, [
+    isCmsEntryPreviewActive
+  ]);
 
   useEffect(() => {
     if (!isPlatformSettingsLoading && !isFigmaPluginEnabled) {
@@ -1362,17 +1453,28 @@ const isFooterLikeBlock = (
       </Box>
 
       <Box sx={{ p: 2, flexGrow: 1, overflowY: "auto" }}>
+        {isCmsEntryPreviewActive && (
+          <Alert
+            severity="info"
+            sx={{ mb: 2 }}
+          >
+            CMS entry preview is read-only. Clear preview to edit the template.
+          </Alert>
+        )}
+
         {leftSidebarOpen && (
           <Typography variant="overline" sx={{ fontWeight: "bold", mb: 2, display: "block" }}>
             COMPOSANTS
           </Typography>
         )}
 
-        <Stack alignItems={leftSidebarOpen ? "stretch" : "center"}>
-          {Object.entries(blockRegistry).map(([type, config]) => (
-            <DraggableBlockItem key={type} type={type} config={config} compact={!leftSidebarOpen} />
-          ))}
-        </Stack>
+        {!isCmsEntryPreviewActive && (
+          <Stack alignItems={leftSidebarOpen ? "stretch" : "center"}>
+            {Object.entries(blockRegistry).map(([type, config]) => (
+              <DraggableBlockItem key={type} type={type} config={config} compact={!leftSidebarOpen} />
+            ))}
+          </Stack>
+        )}
 
         <StructurePanel
           blocks={canvasBlocks}
@@ -1442,19 +1544,31 @@ const isFooterLikeBlock = (
           )}
 
           {activeTab === TAB_INDEX.style && (
-            <InspectorPanel
-              block={selectedBlock}
-              device={device}
-              onChange={
-                handleSelectedBlockChange
-              }
-            />
+            isCmsEntryPreviewActive ? (
+              <Alert severity="info">
+                CMS entry preview is read-only. Clear preview to edit the template.
+              </Alert>
+            ) : (
+              <InspectorPanel
+                block={selectedBlock}
+                device={device}
+                onChange={
+                  handleSelectedBlockChange
+                }
+              />
+            )
           )}
 
           {activeTab === TAB_INDEX.theme && (
-            <ThemeEditorPanel
-              onApplyThemeToPage={handleApplyThemeToPage}
-            />
+            isCmsEntryPreviewActive ? (
+              <Alert severity="info">
+                CMS entry preview is read-only. Clear preview to edit the template.
+              </Alert>
+            ) : (
+              <ThemeEditorPanel
+                onApplyThemeToPage={handleApplyThemeToPage}
+              />
+            )
           )}
 
           {activeTab === TAB_INDEX.seo && (
@@ -1520,28 +1634,39 @@ const isFooterLikeBlock = (
             <VersionHistory
               versions={versions}
               isLoading={isLoadingVersions || isLoading}
-              onRestore={(id) => actions.restoreVersion?.(id)}
+              onRestore={(id) =>
+                runUnlessCmsPreviewActive(
+                  cmsTemplatePreview,
+                  () => actions.restoreVersion?.(id)
+                )
+              }
             />
           )}
 
           {activeTab === TAB_INDEX.ai && (
-            <AssistantPanel
-              siteId={siteId || ""}
-              pageId={pageId || undefined}
-              blocks={blocks}
-              pageTitle={pageTitle}
-              slug={slug}
-              selectedBlockId={selectedBlockId}
-              actions={actions}
-              setPageTitle={setPageTitle}
-              setSelectedBlockId={setSelectedBlockId}
-              generateAiPage={generateAiPage}
-              askAssistant={askAssistant}
-              editSelectedBlock={editSelectedBlock}
-              hydrateBlocks={hydrateBlocks}
-              designCopilotChat={designCopilotChat}
-              designCopilotApply={designCopilotApply}
-            />
+            isCmsEntryPreviewActive ? (
+              <Alert severity="info">
+                CMS entry preview is read-only. Clear preview to edit the template.
+              </Alert>
+            ) : (
+              <AssistantPanel
+                siteId={siteId || ""}
+                pageId={pageId || undefined}
+                blocks={blocks}
+                pageTitle={pageTitle}
+                slug={slug}
+                selectedBlockId={selectedBlockId}
+                actions={actions}
+                setPageTitle={setPageTitle}
+                setSelectedBlockId={setSelectedBlockId}
+                generateAiPage={generateAiPage}
+                askAssistant={askAssistant}
+                editSelectedBlock={editSelectedBlock}
+                hydrateBlocks={hydrateBlocks}
+                designCopilotChat={designCopilotChat}
+                designCopilotApply={designCopilotApply}
+              />
+            )
           )}
         </Box>
       )}
@@ -1639,6 +1764,10 @@ const isFooterLikeBlock = (
           presetData?: any,
           insertIndex?: number
         ) => {
+          if (isCmsEntryPreviewActive) {
+            return;
+          }
+
           const slot =
             resolveDndSlot(
               targetId
@@ -1682,6 +1811,10 @@ const isFooterLikeBlock = (
           position?: string,
           insertIndex?: number
         ) => {
+          if (isCmsEntryPreviewActive) {
+            return;
+          }
+
           const slot =
             resolveDndSlot(
               targetId
@@ -1728,6 +1861,10 @@ const isFooterLikeBlock = (
             wrapperType?: string;
           }
         ) => {
+          if (isCmsEntryPreviewActive) {
+            return;
+          }
+
           const sourceSlot =
             resolveDndSlot(
               blockId
@@ -1841,7 +1978,8 @@ const isFooterLikeBlock = (
       [
         actions,
         insertIntoGlobalSlot,
-        resolveDndSlot
+        resolveDndSlot,
+        isCmsEntryPreviewActive
       ]
     );
 
@@ -1866,9 +2004,58 @@ const isFooterLikeBlock = (
       dndActions
   });
 
+  const guardedHandleDragStart =
+    useCallback(
+      (event: any) => {
+        if (isCmsEntryPreviewActive) {
+          return;
+        }
+
+        handleDragStart(event);
+      },
+      [
+        handleDragStart,
+        isCmsEntryPreviewActive
+      ]
+    );
+
+  const guardedHandleDragOver =
+    useCallback(
+      (event: any) => {
+        if (isCmsEntryPreviewActive) {
+          return;
+        }
+
+        handleDragOver(event);
+      },
+      [
+        handleDragOver,
+        isCmsEntryPreviewActive
+      ]
+    );
+
+  const guardedHandleDragEnd =
+    useCallback(
+      (event: any) => {
+        if (isCmsEntryPreviewActive) {
+          return;
+        }
+
+        handleDragEnd(event);
+      },
+      [
+        handleDragEnd,
+        isCmsEntryPreviewActive
+      ]
+    );
+
   const handleSelectedBlockChange =
     useCallback(
       (update: any) => {
+        if (isCmsEntryPreviewActive) {
+          return;
+        }
+
         if (!selectedBlockId) {
           return;
         }
@@ -1892,7 +2079,8 @@ const isFooterLikeBlock = (
         actions,
         selectedBlockId,
         selectedGlobalSlot,
-        updateGlobalDraftBlock
+        updateGlobalDraftBlock,
+        isCmsEntryPreviewActive
       ]
     );
 
@@ -1902,6 +2090,10 @@ const isFooterLikeBlock = (
       blockId: string,
       update: any
     ) => {
+      if (isCmsEntryPreviewActive) {
+        return;
+      }
+
       const navbarBlock =
         globalNavbarDraft
           ? findBlockById(
@@ -1947,7 +2139,8 @@ const isFooterLikeBlock = (
       actions,
       globalNavbarDraft,
       globalFooterDraft,
-      updateGlobalDraftBlock
+      updateGlobalDraftBlock,
+      isCmsEntryPreviewActive
     ]
   );
 
@@ -1956,6 +2149,10 @@ const handleCanvasDelete =
     (
       blockId: string
     ) => {
+      if (isCmsEntryPreviewActive) {
+        return;
+      }
+
       const navbarBlock =
         globalNavbarDraft
           ? findBlockById(
@@ -2012,7 +2209,8 @@ const handleCanvasDelete =
       actions,
       globalNavbarDraft,
       globalFooterDraft,
-      setSelectedBlockId
+      setSelectedBlockId,
+      isCmsEntryPreviewActive
     ]
   );
 
@@ -2021,6 +2219,10 @@ const handleCanvasDuplicate =
     (
       blockId: string
     ) => {
+      if (isCmsEntryPreviewActive) {
+        return;
+      }
+
       const isGlobalNavbarBlock =
         Boolean(
           globalNavbarDraft &&
@@ -2053,9 +2255,58 @@ const handleCanvasDuplicate =
     [
       actions,
       globalNavbarDraft,
-      globalFooterDraft
+      globalFooterDraft,
+      isCmsEntryPreviewActive
     ]
   );
+
+  const handleCmsPreviewEntryChange =
+    useCallback(
+      (entryId: number | "") => {
+        setSelectedCmsPreviewEntryId(
+          entryId
+        );
+      },
+      []
+    );
+
+  const handleCmsTemplatePreviewChange =
+    useCallback(
+      (
+        preview:
+          | CmsTemplatePreview
+          | null
+      ) => {
+        setCmsTemplatePreview(
+          preview
+        );
+      },
+      []
+    );
+
+  const cmsRuntimeContext =
+    cmsTemplatePreview
+      ? {
+          collectionId:
+            cmsTemplatePreview
+              .collection.id,
+          collectionSlug:
+            cmsTemplatePreview
+              .collection.slug,
+          entryId:
+            cmsTemplatePreview
+              .entry.id,
+          entrySlug:
+            cmsTemplatePreview
+              .entry.slug,
+          data:
+            cmsTemplatePreview
+              .entry.data || {},
+          fields:
+            cmsTemplatePreview
+              .collection.fields || []
+        }
+      : undefined;
 
   const renderContent = () => (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
@@ -2091,7 +2342,7 @@ const handleCanvasDuplicate =
         <EditorCanvas
   blocks={canvasBlocks}
 
-  validationBlocks={blocks}
+  validationBlocks={getCmsPreviewSaveBlocks(blocks)}
 
   registry={registry}
 
@@ -2115,6 +2366,8 @@ const handleCanvasDuplicate =
 
   preview={isPreview}
 
+  readOnly={isCmsEntryPreviewActive}
+
   tokens={tokens}
 
   siteId={
@@ -2126,6 +2379,8 @@ const handleCanvasDuplicate =
     Number(pageId || 0) ||
     null
   }
+
+  cms={cmsRuntimeContext}
 
   activeId={activeId}
 
@@ -2266,7 +2521,12 @@ const handleCanvasDuplicate =
   );
 
   const renderGhost = () => {
-    if (!ghost || !activeId) return null;
+    if (
+      isCmsEntryPreviewActive ||
+      !ghost ||
+      !activeId
+    ) return null;
+
     return (
       <Box sx={{ position: "fixed", top: ghost.y, left: ghost.x, zIndex: 9999, pointerEvents: "none" }}>
         <DragGhost type={activeData?.type || "block"} isAllowed={isAllowed} />
@@ -2303,31 +2563,101 @@ const handleCanvasDuplicate =
 
         pageId:
           Number(pageId || 0) ||
-          null
+          null,
+
+        cms:
+          cmsRuntimeContext
       }}
     >
       <ThemeContext.Provider value={{ tokens, updateToken }}>
-        <DndContext collisionDetection={customCollisionStrategy} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
+        <DndContext
+          collisionDetection={customCollisionStrategy}
+          onDragStart={guardedHandleDragStart}
+          onDragOver={guardedHandleDragOver}
+          onDragEnd={guardedHandleDragEnd}
+        >
           <EditorLayout
             header={
               <PageHeader
                 title={pageTitle}
+                readOnly={isCmsEntryPreviewActive}
+                readOnlyReason="CMS entry preview is read-only. Clear preview to edit the template."
+                cmsPreviewControl={
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
+                  >
+                    <CmsEntryPreviewSelect
+                      siteId={
+                        Number(siteId || 0) ||
+                        ""
+                      }
+                      pageId={
+                        Number(pageId || 0) ||
+                        null
+                      }
+                      selectedEntryId={
+                        selectedCmsPreviewEntryId
+                      }
+                      onEntryChange={
+                        handleCmsPreviewEntryChange
+                      }
+                      onPreviewChange={
+                        handleCmsTemplatePreviewChange
+                      }
+                    />
+
+                    {isCmsEntryPreviewActive && (
+                      <Alert
+                        severity="info"
+                        sx={{
+                          py: 0,
+                          whiteSpace: "nowrap"
+                        }}
+                      >
+                        CMS entry preview is read-only. Clear preview to edit the template.
+                      </Alert>
+                    )}
+                  </Stack>
+                }
                 onSave={actions.save}
                 loading={isSaving || isLoading}
-                canUndo={canUndo}
-                canRedo={canRedo}
-                onUndo={actions.undo}
-                onRedo={actions.redo}
+                canUndo={
+                  canUndo &&
+                  !isCmsEntryPreviewActive
+                }
+                canRedo={
+                  canRedo &&
+                  !isCmsEntryPreviewActive
+                }
+                onUndo={() =>
+                  runUnlessCmsPreviewActive(
+                    cmsTemplatePreview,
+                    actions.undo
+                  )
+                }
+                onRedo={() =>
+                  runUnlessCmsPreviewActive(
+                    cmsTemplatePreview,
+                    actions.redo
+                  )
+                }
                 device={device}
                 onDeviceChange={setDevice}
                 isPreview={isPreview}
                 onPreview={() => setIsPreview((prev) => !prev)}
-                onPublish={actions.publish}
+                onPublish={handlePublish}
                 hasPageId={!!pageId}
                 errors={errors}
                 onExport={handleExport}
                 onImport={handleImport}
-                onImportHtml={() => setIsModalOpen(true)}
+                onImportHtml={() =>
+                  runUnlessCmsPreviewActive(
+                    cmsTemplatePreview,
+                    () => setIsModalOpen(true)
+                  )
+                }
                 onSetGlobalNavbar={() =>
                   saveSelectedBlockAsGlobal(
                     "navbar"
@@ -2339,40 +2669,52 @@ const handleCanvasDuplicate =
                   )
                 }
                 canSetGlobalNavbar={
-                  canSetGlobalNavbar
+                  canSetGlobalNavbar &&
+                  !isCmsEntryPreviewActive
                 }
                 canSetGlobalFooter={
-                  canSetGlobalFooter
+                  canSetGlobalFooter &&
+                  !isCmsEntryPreviewActive
                 }
                 globalLayoutLoading={
                   isUpdatingGlobalLayout ||
                   isLoadingEditorSite
                 }
                 onSaveAsPattern={() =>
-                  setSavePatternDialogOpen(true)
+                  runUnlessCmsPreviewActive(
+                    cmsTemplatePreview,
+                    () => setSavePatternDialogOpen(true)
+                  )
                 }
                 canSaveAsPattern={
-                  canSaveSelectedPageBlockAsPattern
+                  canSaveSelectedPageBlockAsPattern &&
+                  !isCmsEntryPreviewActive
                 }
                 patternSaveDisabledReason={
-                  patternSaveDisabledReason
+                  isCmsEntryPreviewActive
+                    ? "CMS entry preview is read-only. Clear preview to edit the template."
+                    : patternSaveDisabledReason
                 }
                 onOpenPatternLibrary={() =>
-                  setPatternLibraryOpen(true)
+                  runUnlessCmsPreviewActive(
+                    cmsTemplatePreview,
+                    () => setPatternLibraryOpen(true)
+                  )
                 }
                 canOpenPatternLibrary={
-                  numericSiteId > 0
+                  numericSiteId > 0 &&
+                  !isCmsEntryPreviewActive
                 }
               />
             }
             leftSidebar={!isPreview && renderLeftSidebar()}
-            rightSidebar={!isPreview && renderRightSidebar()}
+            rightSidebar={!isPreview && !isCmsEntryPreviewActive && renderRightSidebar()}
             content={renderContent()}
           />
 
           {renderImportModal()}
           {renderFigmaModal()}
-          {numericSiteId > 0 && (
+          {numericSiteId > 0 && !isCmsEntryPreviewActive && (
             <>
               <SavePatternDialog
                 open={savePatternDialogOpen}

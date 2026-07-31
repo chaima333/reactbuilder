@@ -32,7 +32,7 @@ export type CmsEntry = {
   collectionId: number;
   status: CmsEntryStatus;
   data: Record<string, any>;
-  slug?: string;
+  slug: string;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -63,7 +63,13 @@ type ApiResponse<T> = {
   success: boolean;
   data: T;
   message?: string;
+  code?: string;
 };
+
+export type CmsApiErrorCode =
+  | "CMS_ENTRY_SLUG_CONFLICT"
+  | "CMS_ENTRY_SLUG_INVALID"
+  | "CMS_ENTRY_SLUG_TOO_LONG";
 
 const unwrap =
   <T,>(response: ApiResponse<T>) =>
@@ -302,6 +308,7 @@ deleteCmsField: builder.mutation<
           collectionId: number | string;
           body: {
             status?: CmsEntryStatus;
+            slug?: string;
             data: Record<string, any>;
           };
         }
@@ -333,6 +340,7 @@ deleteCmsField: builder.mutation<
           entryId: number | string;
           body: {
             status?: CmsEntryStatus;
+            slug?: string;
             data?: Record<string, any>;
           };
         }

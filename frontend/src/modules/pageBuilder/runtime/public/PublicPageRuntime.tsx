@@ -133,6 +133,8 @@ const footerBlocks: any[] =
           publicSiteId || null,
         pageId:
           page?.id || null,
+        cms:
+          page?.cms,
         tokens:
           runtimeTokens
       }}
