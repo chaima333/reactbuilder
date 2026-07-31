@@ -15,6 +15,11 @@ import cors from "cors";
 import {
   corsOptionsDelegate
 } from "./core/middleware/corsPolicy";
+
+import {
+  handleJsonPayloadError,
+  jsonPayloadPolicy
+} from "./core/middleware/jsonPayloadPolicy";
 import path from "path";
 
 // DB
@@ -98,8 +103,8 @@ app.use(
   platformAssistantRoutes
 );
 
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+app.use(jsonPayloadPolicy);
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 /* ========================
@@ -173,6 +178,11 @@ app.use("/api/export", exportRoutes);
 registerCommands();
 app.use("/api/sites/:siteId/commands", tenantStack, commandRoutes);
 app.use("/api/sites/:siteId/plugins", tenantStack, pluginMarketplaceRoutes);
+
+/* ========================
+   JSON BODY ERROR HANDLER
+======================== */
+app.use(handleJsonPayloadError);
 
 /* ========================
    404 HANDLER
