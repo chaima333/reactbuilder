@@ -9,6 +9,10 @@ import {
 } from "./import.controller";
 
 import {
+  createZipUploadTempDir
+} from "./zipImportSecurity";
+
+import {
   createSingleFileUploadHandler,
   HTML_ZIP_UPLOAD_MAX_BYTES
 } from "../../core/middleware/uploadSizeLimit";
@@ -28,7 +32,8 @@ const router =
 
 const upload =
   multer({
-    dest: "temp/",
+    dest:
+      createZipUploadTempDir(),
 
     limits: {
       fileSize:
