@@ -1,11 +1,16 @@
 import fs from "fs";
 import path from "path";
-import unzipper from "unzipper";
 import { MediaService } from "../media/media.service";
 import {
   makeSafeImportedPageSlug,
   normalizeImportedPageSlug
 } from "./importedPageIdentity";
+import {
+  cleanupImportPath,
+  extractValidatedZip,
+  isZipImportValidationError,
+  validateZipUploadFile
+} from "./zipImportSecurity";
 
 const extractTemplateConst = (
   js: string,
@@ -442,44 +447,23 @@ export const importHtmlZip = async (
     if (!req.file) {
       return res.status(400).json({
         success: false,
+        code: "HTML_ZIP_UPLOAD_INVALID",
         message: "No file uploaded"
       });
     }
 
     zipPath = req.file.path;
 
-    extractDir = path.join(
-      "temp",
-      `${req.file.filename}_extract`
-    );
+    validateZipUploadFile(req.file);
 
-    fs.mkdirSync(extractDir, { recursive: true });
+    const extractedZip =
+      await extractValidatedZip(zipPath);
 
-    await fs
-      .createReadStream(zipPath)
-      .pipe(
-        unzipper.Extract({
-          path: extractDir
-        })
-      )
-      .promise();
+    extractDir =
+      extractedZip.extractDir;
 
-    const files: string[] = [];
-
-    const walk = (dir: string) => {
-      for (const entry of fs.readdirSync(dir)) {
-        const fullPath = path.join(dir, entry);
-        const stat = fs.statSync(fullPath);
-
-        if (stat.isDirectory()) {
-          walk(fullPath);
-        } else {
-          files.push(fullPath);
-        }
-      }
-    };
-
-    walk(extractDir);
+    const files =
+      extractedZip.files;
 
     const fileByRelativePath =
       new Map<string, string>();
@@ -743,18 +727,21 @@ export const importHtmlZip = async (
   } catch (error: any) {
     console.error("IMPORT_ZIP_ERROR", error);
 
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-      stack: error.stack
-    });
-  } finally {
-    if (zipPath) {
-      fs.rmSync(zipPath, { force: true });
+    if (isZipImportValidationError(error)) {
+      return res.status(error.statusCode).json({
+        success: false,
+        code: error.code,
+        message: error.message
+      });
     }
 
-    if (extractDir) {
-      fs.rmSync(extractDir, { recursive: true, force: true });
-    }
+    return res.status(500).json({
+      success: false,
+      code: "ZIP_IMPORT_FAILED",
+      message: "ZIP import failed."
+    });
+  } finally {
+    cleanupImportPath(zipPath);
+    cleanupImportPath(extractDir);
   }
 };
