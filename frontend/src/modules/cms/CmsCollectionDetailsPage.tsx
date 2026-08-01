@@ -50,6 +50,41 @@ const fieldTypes: CmsFieldType[] = [
   "select"
 ];
 
+export const getCmsErrorCode = (
+  error: unknown
+) => {
+  const data =
+    (error as any)?.data ||
+    error;
+
+  return String(
+    data?.code ||
+      data?.message ||
+      ""
+  );
+};
+
+export const getSlugErrorMessage = (
+  error: unknown
+) => {
+  const code =
+    getCmsErrorCode(error);
+
+  if (code === "CMS_ENTRY_SLUG_CONFLICT") {
+    return "This slug is already used in this collection.";
+  }
+
+  if (code === "CMS_ENTRY_SLUG_INVALID") {
+    return "Enter a valid slug using letters, numbers, and hyphens.";
+  }
+
+  if (code === "CMS_ENTRY_SLUG_TOO_LONG") {
+    return "Slug must be 160 characters or fewer.";
+  }
+
+  return "";
+};
+
 export const CmsCollectionDetailsPage = () => {
   const { siteId, collectionSlug } = useParams();
 
@@ -117,6 +152,18 @@ const [
 
   const [entryData, setEntryData] =
     useState<Record<string, any>>({});
+
+  const [entrySlug, setEntrySlug] =
+    useState("");
+
+  const [entrySlugError, setEntrySlugError] =
+    useState("");
+
+  const [editEntrySlug, setEditEntrySlug] =
+    useState("");
+
+  const [editEntrySlugError, setEditEntrySlugError] =
+    useState("");
 
   const [editingField, setEditingField] =
     useState<CmsField | null>(null);
@@ -188,16 +235,34 @@ const [
       return;
     }
 
-    await createEntry({
-      siteId,
-      collectionId: collection.id,
-      body: {
-        status: "published",
-        data: entryData
-      }
-    }).unwrap();
+    setEntrySlugError("");
 
-    setEntryData({});
+    try {
+      await createEntry({
+        siteId,
+        collectionId: collection.id,
+        body: {
+          status: "published",
+          slug:
+            entrySlug.trim() ||
+            undefined,
+          data: entryData
+        }
+      }).unwrap();
+
+      setEntryData({});
+      setEntrySlug("");
+    } catch (error) {
+      const slugError =
+        getSlugErrorMessage(error);
+
+      if (slugError) {
+        setEntrySlugError(slugError);
+        return;
+      }
+
+      throw error;
+    }
   };
 
   const handleStartEditEntry = (
@@ -205,11 +270,15 @@ const [
   ) => {
     setEditingEntryId(entry.id);
     setEditEntryData(entry.data || {});
+    setEditEntrySlug(entry.slug || "");
+    setEditEntrySlugError("");
   };
 
   const handleCancelEditEntry = () => {
     setEditingEntryId(null);
     setEditEntryData({});
+    setEditEntrySlug("");
+    setEditEntrySlugError("");
   };
 
   const handleUpdateEntry = async (
@@ -217,16 +286,32 @@ const [
   ) => {
     if (!siteId) return;
 
-    await updateEntry({
-      siteId,
-      entryId: entry.id,
-      body: {
-        status: entry.status,
-        data: editEntryData
-      }
-    }).unwrap();
+    setEditEntrySlugError("");
 
-    handleCancelEditEntry();
+    try {
+      await updateEntry({
+        siteId,
+        entryId: entry.id,
+        body: {
+          status: entry.status,
+          slug:
+            editEntrySlug.trim(),
+          data: editEntryData
+        }
+      }).unwrap();
+
+      handleCancelEditEntry();
+    } catch (error) {
+      const slugError =
+        getSlugErrorMessage(error);
+
+      if (slugError) {
+        setEditEntrySlugError(slugError);
+        return;
+      }
+
+      throw error;
+    }
   };
 
   const handleToggleEntryStatus = async (
@@ -621,6 +706,26 @@ const [
               </Alert>
             ) : (
               <Stack spacing={2}>
+                <TextField
+                  label="Slug"
+                  value={entrySlug}
+                  onChange={(event) => {
+                    setEntrySlug(
+                      event.target.value
+                    );
+                    setEntrySlugError("");
+                  }}
+                  helperText={
+                    entrySlugError ||
+                    "Optional. Used in the public URL for this entry."
+                  }
+                  error={Boolean(entrySlugError)}
+                  fullWidth
+                  inputProps={{
+                    maxLength: 160
+                  }}
+                />
+
                 {fields.map((field) => {
                   if (field.type === "boolean") {
                     return (
@@ -793,6 +898,13 @@ const [
                         >
                           status: {entry.status}
                         </Typography>
+
+                        <Typography
+                          fontSize={13}
+                          color="text.secondary"
+                        >
+                          slug: {entry.slug}
+                        </Typography>
                       </Box>
 
                       <Stack
@@ -840,6 +952,28 @@ const [
 
                     {isEditing ? (
                       <Stack spacing={2}>
+                        <TextField
+                          label="Slug"
+                          value={editEntrySlug}
+                          onChange={(event) => {
+                            setEditEntrySlug(
+                              event.target.value
+                            );
+                            setEditEntrySlugError("");
+                          }}
+                          helperText={
+                            editEntrySlugError ||
+                            "Used in the public URL for this entry."
+                          }
+                          error={Boolean(
+                            editEntrySlugError
+                          )}
+                          fullWidth
+                          inputProps={{
+                            maxLength: 160
+                          }}
+                        />
+
                         {fields.map((field) => {
                           if (field.type === "boolean") {
                             return (

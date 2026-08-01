@@ -41,6 +41,8 @@ interface EditorCanvasProps {
 
   preview?: boolean;
 
+  readOnly?: boolean;
+
   onUpdate: (
     id: string,
     data: any
@@ -77,10 +79,59 @@ interface EditorCanvasProps {
   
   siteId?: number | null;
   pageId?: number | null;
+  cms?: {
+    collectionId: number;
+    collectionSlug: string;
+    entryId: number;
+    entrySlug: string;
+    data: Record<string, unknown>;
+    fields: Array<{
+      id: number;
+      key: string;
+      name: string;
+      type: string;
+    }>;
+  };
 }
 
 export const VIRTUAL_ROOT_ID =
   "pb-runtime-root";
+
+export const getEditorCanvasRuntimeMode = (
+  readOnly?: boolean
+) =>
+  readOnly
+    ? "preview"
+    : "editor";
+
+export const getEditorCanvasMutationHandlers = (
+  readOnly: boolean | undefined,
+  handlers: {
+    onUpdate?: (
+      id: string,
+      data: any
+    ) => void;
+    onDelete?: (
+      id: string
+    ) => void;
+    onDuplicate?: (
+      id: string
+    ) => void;
+  }
+) => ({
+  onUpdate:
+    readOnly
+      ? undefined
+      : handlers.onUpdate,
+  onDelete:
+    readOnly
+      ? undefined
+      : handlers.onDelete,
+  onDuplicate:
+    readOnly
+      ? undefined
+      : handlers.onDuplicate
+});
 
 // =====================================
 // INNER CONTENT
@@ -89,6 +140,8 @@ const EditorCanvasContent = ({
   blocks = [],
   validationBlocks,
   registry,
+  preview = false,
+  readOnly = false,
   onUpdate,
   onDelete,
   onSelect,
@@ -99,7 +152,7 @@ const EditorCanvasContent = ({
   onDuplicate,
   hoveredId,
   errors = [],
-  tokens: themeTokensInput
+  tokens: themeTokensInput,
 }: EditorCanvasProps) => {
   
   const viewportRef =
@@ -322,7 +375,7 @@ const invariantReport =
         "root",
 
       droppable:
-        true
+        !readOnly
     });
 
   const {
@@ -335,6 +388,17 @@ const invariantReport =
   // =====================================
 const themeTokens =
   themeTokensInput as any;
+
+  const mutationHandlers =
+    getEditorCanvasMutationHandlers(
+      readOnly,
+      {
+        onUpdate,
+        onDelete,
+        onDuplicate
+      }
+    );
+
   return (
 <Box
   {...rootProps}
@@ -690,6 +754,7 @@ const themeTokens =
                       color="error"
                       variant="outlined"
                       onClick={() =>
+                      !readOnly &&
                         onDelete(
                           block.id
                         )
@@ -743,16 +808,21 @@ const themeTokens =
 
                   errors={errors}
 
+                  preview={
+                    preview ||
+                    readOnly
+                  }
+
                   onUpdate={
-                    onUpdate
+                    mutationHandlers.onUpdate
                   }
 
                   onDelete={
-                    onDelete
+                    mutationHandlers.onDelete
                   }
 
                   onDuplicate={
-                    onDuplicate
+                    mutationHandlers.onDuplicate
                   }
 
                   onSelect={
@@ -760,7 +830,9 @@ const themeTokens =
                   }
 
                   onTransform={(id) => {
-                    onSelect(id);
+                    if (!readOnly) {
+                      onSelect(id);
+                    }
                   }}
                 />
               );
@@ -812,7 +884,10 @@ export const EditorCanvas = (
 
     <RuntimeProvider
       value={{
-        mode: "editor",
+        mode:
+          getEditorCanvasRuntimeMode(
+            props.readOnly
+          ),
         device:
           props.device,
         tokens:
@@ -822,7 +897,9 @@ export const EditorCanvas = (
           null,
         pageId:
           props.pageId ??
-          null
+          null,
+        cms:
+          props.cms
       }}
     >
 

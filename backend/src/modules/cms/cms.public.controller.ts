@@ -1,101 +1,10 @@
 // cms.public.controller.ts
 import { Request, Response } from "express";
 import { CmsService } from "./cms.service";
+import { CmsDetailService } from "./cmsDetail.service";
 import { renderBlocks, renderFullPage } from "../pages/engine/blockRenderer";
 import { SEOBuilder } from "../pages/engine/seoBuilder";
 import { Site } from "../../models/site";
-
-const resolveBindingValue = (
-  value: unknown,
-  entryData: Record<string, any>
-): unknown => {
-  if (typeof value !== "string") {
-    return value;
-  }
-
-  const exactMatch =
-    value.match(
-      /^\{\{\s*([^}]+?)\s*\}\}$/
-    );
-
-  if (exactMatch) {
-    const key =
-      exactMatch[1].trim();
-
-    return key
-      .split(".")
-      .reduce(
-        (
-          current: any,
-          part: string
-        ) =>
-          current?.[part],
-        entryData
-      ) ?? "";
-  }
-
-  return value.replace(
-    /\{\{\s*([^}]+?)\s*\}\}/g,
-    (
-      _match,
-      rawKey: string
-    ) => {
-      const resolved =
-        rawKey
-          .trim()
-          .split(".")
-          .reduce(
-            (
-              current: any,
-              part: string
-            ) =>
-              current?.[part],
-            entryData
-          );
-
-      return resolved == null
-        ? ""
-        : String(resolved);
-    }
-  );
-};
-
-const resolveCmsBindings = (
-  value: any,
-  entryData: Record<string, any>
-): any => {
-  if (Array.isArray(value)) {
-    return value.map(
-      (item) =>
-        resolveCmsBindings(
-          item,
-          entryData
-        )
-    );
-  }
-
-  if (
-    value &&
-    typeof value === "object"
-  ) {
-    return Object.fromEntries(
-      Object.entries(value).map(
-        ([key, nestedValue]) => [
-          key,
-          resolveCmsBindings(
-            nestedValue,
-            entryData
-          )
-        ]
-      )
-    );
-  }
-
-  return resolveBindingValue(
-    value,
-    entryData
-  );
-};
 
 const isNavbarBlock = (
   block: any
@@ -203,7 +112,7 @@ export class CmsPublicController {
     ).trim();
 
     const data =
-      await CmsService.getPublishedEntryBySlug(
+      await CmsDetailService.resolvePublicDetail(
         siteId,
         collectionSlug,
         entrySlug
@@ -218,12 +127,14 @@ export class CmsPublicController {
     if (
       error instanceof Error &&
       (
-        error.message === "COLLECTION_NOT_FOUND" ||
-        error.message === "ENTRY_NOT_FOUND"
+        error.message === "CMS_PUBLIC_ENTRY_NOT_FOUND" ||
+        error.message === "CMS_TEMPLATE_NOT_CONFIGURED" ||
+        error.message === "CMS_TEMPLATE_NOT_PUBLIC"
       )
     ) {
       return res.status(404).json({
-        success: false
+        success: false,
+        code: "CMS_PUBLIC_ENTRY_NOT_FOUND"
       });
     }
 
@@ -265,8 +176,8 @@ static getPublishedEntryHtml = async (
     }
 
     const entry =
-      await CmsService
-        .getPublishedEntryBySlug(
+      await CmsDetailService
+        .resolvePublicDetail(
           siteId,
           collectionSlug,
           entrySlug
@@ -357,10 +268,7 @@ static getPublishedEntryHtml = async (
         : [];
 
     const resolvedBlocks =
-      resolveCmsBindings(
-        templateBlocks,
-        entryData
-      );
+      templateBlocks;
 
     const globalLayout =
       siteData.globalLayout || {};
@@ -492,9 +400,11 @@ static getPublishedEntryHtml = async (
       error instanceof Error &&
       (
         error.message ===
-          "COLLECTION_NOT_FOUND" ||
+          "CMS_PUBLIC_ENTRY_NOT_FOUND" ||
         error.message ===
-          "ENTRY_NOT_FOUND"
+          "CMS_TEMPLATE_NOT_CONFIGURED" ||
+        error.message ===
+          "CMS_TEMPLATE_NOT_PUBLIC"
       )
     ) {
       return res

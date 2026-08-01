@@ -79,6 +79,12 @@ export class CmsController {
           message: "Collection slug already exists"
         });
       }
+      if (error.message === "TEMPLATE_PAGE_NOT_FOUND") {
+        return res.status(404).json({
+          success: false,
+          message: "Template page not found"
+        });
+      }
       return res.status(500).json({
         success: false,
         message: error.message || "Failed to create CMS collection"
@@ -106,10 +112,19 @@ export class CmsController {
       });
       return res.json({ success: true, data });
     } catch (error: any) {
-      if (error.message === "COLLECTION_NOT_FOUND") {
+      if (
+        error.message === "COLLECTION_NOT_FOUND" ||
+        error.message === "CMS_COLLECTION_NOT_FOUND"
+      ) {
         return res.status(404).json({
           success: false,
           message: "Collection not found"
+        });
+      }
+      if (error.message === "TEMPLATE_PAGE_NOT_FOUND") {
+        return res.status(404).json({
+          success: false,
+          message: "Template page not found"
         });
       }
       if (error.message === "COLLECTION_SLUG_EXISTS") {
@@ -140,7 +155,10 @@ export class CmsController {
       await CmsService.deleteCollection(siteId, collectionId);
       return res.json({ success: true, data: true });
     } catch (error: any) {
-      if (error.message === "COLLECTION_NOT_FOUND") {
+      if (
+        error.message === "COLLECTION_NOT_FOUND" ||
+        error.message === "CMS_COLLECTION_NOT_FOUND"
+      ) {
         return res.status(404).json({
           success: false,
           message: "Collection not found"
@@ -172,7 +190,10 @@ export class CmsController {
       const data = await CmsService.getFields(siteId, collectionId);
       return res.json({ success: true, data });
     } catch (error: any) {
-      if (error.message === "COLLECTION_NOT_FOUND") {
+      if (
+        error.message === "COLLECTION_NOT_FOUND" ||
+        error.message === "CMS_COLLECTION_NOT_FOUND"
+      ) {
         return res.status(404).json({
           success: false,
           message: "Collection not found"
@@ -200,7 +221,10 @@ export class CmsController {
       const data = await CmsService.createField(siteId, collectionId, req.body || {});
       return res.status(201).json({ success: true, data });
     } catch (error: any) {
-      if (error.message === "COLLECTION_NOT_FOUND") {
+      if (
+        error.message === "COLLECTION_NOT_FOUND" ||
+        error.message === "CMS_COLLECTION_NOT_FOUND"
+      ) {
         return res.status(404).json({
           success: false,
           message: "Collection not found"
@@ -285,7 +309,10 @@ export class CmsController {
       const data = await CmsService.getEntries(siteId, collectionId);
       return res.json({ success: true, data });
     } catch (error: any) {
-      if (error.message === "COLLECTION_NOT_FOUND") {
+      if (
+        error.message === "COLLECTION_NOT_FOUND" ||
+        error.message === "CMS_COLLECTION_NOT_FOUND"
+      ) {
         return res.status(404).json({
           success: false,
           message: "Collection not found"
@@ -314,7 +341,10 @@ export class CmsController {
 
       return res.json({ success: true, data });
     } catch (error: any) {
-      if (error.message === "ENTRY_NOT_FOUND") {
+      if (
+        error.message === "ENTRY_NOT_FOUND" ||
+        error.message === "CMS_ENTRY_NOT_FOUND"
+      ) {
         return res.status(404).json({
           success: false,
           message: "Entry not found"
@@ -344,10 +374,32 @@ export class CmsController {
     } catch (error: any) {
       const message = String(error.message);
 
-      if (error.message === "COLLECTION_NOT_FOUND") {
+      if (
+        error.message === "COLLECTION_NOT_FOUND" ||
+        error.message === "CMS_COLLECTION_NOT_FOUND"
+      ) {
         return res.status(404).json({
           success: false,
           message: "Collection not found"
+        });
+      }
+
+      if (
+        error.message === "CMS_ENTRY_SLUG_INVALID" ||
+        error.message === "CMS_ENTRY_SLUG_TOO_LONG"
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: error.message,
+          code: error.message
+        });
+      }
+
+      if (error.message === "CMS_ENTRY_SLUG_CONFLICT") {
+        return res.status(409).json({
+          success: false,
+          message: "CMS entry slug already exists",
+          code: error.message
         });
       }
 
@@ -386,10 +438,32 @@ export class CmsController {
     } catch (error: any) {
       const message = String(error.message);
 
-      if (error.message === "ENTRY_NOT_FOUND") {
+      if (
+        error.message === "ENTRY_NOT_FOUND" ||
+        error.message === "CMS_ENTRY_NOT_FOUND"
+      ) {
         return res.status(404).json({
           success: false,
           message: "Entry not found"
+        });
+      }
+
+      if (
+        error.message === "CMS_ENTRY_SLUG_INVALID" ||
+        error.message === "CMS_ENTRY_SLUG_TOO_LONG"
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: error.message,
+          code: error.message
+        });
+      }
+
+      if (error.message === "CMS_ENTRY_SLUG_CONFLICT") {
+        return res.status(409).json({
+          success: false,
+          message: "CMS entry slug already exists",
+          code: error.message
         });
       }
 
@@ -427,7 +501,10 @@ export class CmsController {
       await CmsService.deleteEntry(siteId, entryId);
       return res.json({ success: true, data: true });
     } catch (error: any) {
-      if (error.message === "ENTRY_NOT_FOUND") {
+      if (
+        error.message === "ENTRY_NOT_FOUND" ||
+        error.message === "CMS_ENTRY_NOT_FOUND"
+      ) {
         return res.status(404).json({
           success: false,
           message: "Entry not found"

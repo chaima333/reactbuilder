@@ -9,6 +9,7 @@ import {
   Tooltip,
   Typography
 } from "@mui/material";
+import type React from "react";
 
 import {
   Edit,
@@ -27,6 +28,9 @@ import {
 
 interface PageHeaderProps {
   title: string;
+  cmsPreviewControl?: React.ReactNode;
+  readOnly?: boolean;
+  readOnlyReason?: string;
 
   device:
     | "desktop"
@@ -82,6 +86,9 @@ interface PageHeaderProps {
 
 export const PageHeader = ({
   title,
+  cmsPreviewControl,
+  readOnly = false,
+  readOnlyReason = "Read-only preview is active.",
   device,
   onDeviceChange,
   onPreview,
@@ -161,6 +168,8 @@ export const PageHeader = ({
             }}
           />
         )}
+
+        {cmsPreviewControl}
       </Stack>
 
       {/* =========================
@@ -267,40 +276,45 @@ export const PageHeader = ({
         {/* IMPORT PAGE JSON */}
 
         <Tooltip title="Import Page JSON">
-          <IconButton
-            component="label"
-            size="small"
-            color="primary"
-          >
-            <Edit
-              sx={{
-                fontSize: 20,
-                transform:
-                  "rotate(180deg)"
-              }}
-            />
+          <span>
+            <IconButton
+              component="label"
+              size="small"
+              color="primary"
+              disabled={readOnly}
+            >
+              <Edit
+                sx={{
+                  fontSize: 20,
+                  transform:
+                    "rotate(180deg)"
+                }}
+              />
 
-            <input
-              type="file"
-              hidden
-              accept=".json"
-              onChange={(event) => {
-                const file =
-                  event.target
-                    .files?.[0];
+              {!readOnly && (
+                <input
+                  type="file"
+                  hidden
+                  accept=".json"
+                  onChange={(event) => {
+                    const file =
+                      event.target
+                        .files?.[0];
 
-                if (
-                  file &&
-                  onImport
-                ) {
-                  onImport(file);
-                }
+                    if (
+                      file &&
+                      onImport
+                    ) {
+                      onImport(file);
+                    }
 
-                event.target.value =
-                  "";
-              }}
-            />
-          </IconButton>
+                    event.target.value =
+                      "";
+                  }}
+                />
+              )}
+            </IconButton>
+          </span>
         </Tooltip>
 
         {/* EXPORT PAGE JSON */}
@@ -339,7 +353,9 @@ export const PageHeader = ({
           title={
             canSaveAsPattern
               ? "Save selected section as a pattern"
-              : patternSaveDisabledReason
+              : readOnly
+                ? readOnlyReason
+                : patternSaveDisabledReason
           }
         >
           <span>
@@ -349,7 +365,8 @@ export const PageHeader = ({
               color="primary"
               disabled={
                 !canSaveAsPattern ||
-                !onSaveAsPattern
+                !onSaveAsPattern ||
+                readOnly
               }
               onClick={onSaveAsPattern}
               startIcon={
@@ -372,7 +389,8 @@ export const PageHeader = ({
           color="primary"
           disabled={
             !canOpenPatternLibrary ||
-            !onOpenPatternLibrary
+            !onOpenPatternLibrary ||
+            readOnly
           }
           onClick={onOpenPatternLibrary}
           startIcon={
@@ -550,6 +568,8 @@ export const PageHeader = ({
           title={
             errors.length > 0
               ? `Fix ${errors.length} errors`
+              : readOnly
+                ? readOnlyReason
               : !hasPageId
                 ? "Save the page before publishing"
                 : "Publish"
@@ -568,7 +588,8 @@ export const PageHeader = ({
               disabled={
                 !hasPageId ||
                 errors.length > 0 ||
-                isBusy
+                isBusy ||
+                readOnly
               }
               startIcon={
                 <Publish fontSize="small" />

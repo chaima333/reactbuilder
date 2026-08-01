@@ -1,13 +1,43 @@
+import { Op } from "sequelize";
 import { CmsCollection, CmsField, CmsEntry, Page } from "../../models";
+import { CmsDetailService } from "./cmsDetail.service";
+
+export const CMS_ENTRY_SLUG_MAX_LENGTH = 160;
 
 const slugify = (value: string) =>
-  value
+  String(value || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+
+export const normalizeCmsEntrySlug = (
+  value: unknown
+) => slugify(String(value || ""));
+
+const truncateSlug = (
+  value: string,
+  maxLength = CMS_ENTRY_SLUG_MAX_LENGTH
+) =>
+  value
+    .slice(0, maxLength)
+    .replace(/-+$/g, "");
+
+const slugWithSuffix = (
+  baseSlug: string,
+  suffix: number
+) => {
+  const suffixText =
+    `-${suffix}`;
+
+  return `${truncateSlug(
+    baseSlug,
+    CMS_ENTRY_SLUG_MAX_LENGTH -
+      suffixText.length
+  )}${suffixText}`;
+};
 
 const isEmptyValue = (value: unknown) =>
   value === undefined ||
@@ -265,7 +295,7 @@ export class CmsService {
       where: { id: collectionId, siteId }
     });
 
-    if (!collection) throw new Error("COLLECTION_NOT_FOUND");
+    if (!collection) throw new Error("CMS_COLLECTION_NOT_FOUND");
 
     const nextName = payload.name !== undefined ? String(payload.name).trim() : collection.name;
     const nextSlug = payload.slug !== undefined ? slugify(payload.slug) : collection.slug;
@@ -348,60 +378,106 @@ export class CmsService {
     collectionSlug: string,
     entrySlug: string
   ) {
-    const collection = await CmsCollection.findOne({
-      where: {
-        siteId,
-        slug: collectionSlug
-      },
-      include: [
-        {
-          model: Page,
-          as: "templatePage",
-          required: false
-        }
-      ]
-    });
+    return CmsDetailService.resolvePublicDetail(
+      siteId,
+      collectionSlug,
+      entrySlug
+    );
+  }
 
-    if (!collection) {
-      throw new Error("COLLECTION_NOT_FOUND");
-    }
-
-    const entry = await CmsEntry.findOne({
-      where: {
-        siteId,
-        collectionId: collection.id,
-        slug: entrySlug,
-        status: "published"
-      }
-    });
-
-    if (!entry) {
-      throw new Error("ENTRY_NOT_FOUND");
-    }
-
-    return {
-      id: entry.id,
-      siteId: entry.siteId,
-      slug: entry.slug,
-      status: entry.status,
-      data: entry.data,
-      createdAt: entry.createdAt,
-      updatedAt: entry.updatedAt,
-      template: collection.templatePage
-        ? {
-            pageId: collection.templatePage.id,
-            title: collection.templatePage.title,
-            slug: collection.templatePage.slug,
-            blocks: collection.templatePage.blocks || []
-          }
-        : null,
-      collection: {
-        id: collection.id,
-        name: collection.name,
-        slug: collection.slug,
-        templatePageId: collection.templatePageId
-      }
+  static async ensureEntrySlugAvailable(
+    siteId: number,
+    collectionId: number,
+    slug: string,
+    entryId?: number
+  ) {
+    const where: any = {
+      siteId,
+      collectionId,
+      slug
     };
+
+    if (entryId) {
+      where.id = {
+        [Op.ne]: entryId
+      };
+    }
+
+    const existing =
+      await CmsEntry.findOne({
+        where
+      });
+
+    if (existing) {
+      throw new Error(
+        "CMS_ENTRY_SLUG_CONFLICT"
+      );
+    }
+  }
+
+  static async generateUniqueEntrySlug(
+    siteId: number,
+    collectionId: number,
+    rawBaseSlug: unknown
+  ) {
+    const baseSlug =
+      truncateSlug(
+        normalizeCmsEntrySlug(rawBaseSlug) ||
+          "entry"
+      ) || "entry";
+
+    let candidate =
+      baseSlug;
+
+    let suffix =
+      2;
+
+    while (true) {
+      const existing =
+        await CmsEntry.findOne({
+          where: {
+            siteId,
+            collectionId,
+            slug: candidate
+          }
+        });
+
+      if (!existing) {
+        return candidate;
+      }
+
+      candidate =
+        slugWithSuffix(
+          baseSlug,
+          suffix
+        );
+
+      suffix += 1;
+    }
+  }
+
+  static normalizeExplicitEntrySlug(
+    rawSlug: unknown
+  ) {
+    const slug =
+      normalizeCmsEntrySlug(rawSlug);
+
+    if (!slug) {
+      throw new Error(
+        "CMS_ENTRY_SLUG_INVALID"
+      );
+    }
+
+    if (
+      slug.length >
+      CMS_ENTRY_SLUG_MAX_LENGTH
+    ) {
+      throw new Error(
+        "CMS_ENTRY_SLUG_TOO_LONG"
+      );
+    }
+
+    return slug;
   }
 
   // =====================================
@@ -413,7 +489,7 @@ export class CmsService {
       where: { id: collectionId, siteId }
     });
 
-    if (!collection) throw new Error("COLLECTION_NOT_FOUND");
+    if (!collection) throw new Error("CMS_COLLECTION_NOT_FOUND");
 
     return CmsField.findAll({
       where: { collectionId },
@@ -554,7 +630,7 @@ export class CmsService {
       where: { id: entryId, siteId }
     });
 
-    if (!entry) throw new Error("ENTRY_NOT_FOUND");
+    if (!entry) throw new Error("CMS_ENTRY_NOT_FOUND");
 
     return entry;
   }
@@ -562,7 +638,11 @@ export class CmsService {
   static async createEntry(
     siteId: number,
     collectionId: number,
-    payload: { status?: string; data?: Record<string, any> }
+    payload: {
+      status?: string;
+      data?: Record<string, any>;
+      slug?: string;
+    }
   ) {
     const collection = await CmsCollection.findOne({
       where: { id: collectionId, siteId },
@@ -578,21 +658,31 @@ export class CmsService {
 
     const status = payload.status === "published" ? "published" : "draft";
 
-    const baseSlug = slugify(
-      String(
-        validatedData.title ||
-        validatedData.name ||
-        `entry-${Date.now()}`
-      )
-    );
+    let slug: string;
 
-    let slug = baseSlug;
-    const existing = await CmsEntry.findOne({
-      where: { siteId, collectionId, slug }
-    });
+    if (payload.slug !== undefined) {
+      slug =
+        CmsService
+          .normalizeExplicitEntrySlug(
+            payload.slug
+          );
 
-    if (existing) {
-      slug = `${baseSlug}-${Date.now()}`;
+      await CmsService
+        .ensureEntrySlugAvailable(
+          siteId,
+          collectionId,
+          slug
+        );
+    } else {
+      slug =
+        await CmsService
+          .generateUniqueEntrySlug(
+            siteId,
+            collectionId,
+            validatedData.title ||
+              validatedData.name ||
+              "entry"
+          );
     }
 
     return CmsEntry.create({
@@ -607,7 +697,11 @@ export class CmsService {
   static async updateEntry(
     siteId: number,
     entryId: number,
-    payload: { status?: string; data?: Record<string, any> }
+    payload: {
+      status?: string;
+      data?: Record<string, any>;
+      slug?: string;
+    }
   ) {
     const entry = await CmsEntry.findOne({
       where: { id: entryId, siteId },
@@ -620,7 +714,7 @@ export class CmsService {
       ]
     });
 
-    if (!entry) throw new Error("ENTRY_NOT_FOUND");
+    if (!entry) throw new Error("CMS_ENTRY_NOT_FOUND");
 
     const nextData = payload.data !== undefined ? payload.data : entry.data;
     const collection = (entry as any).collection;
@@ -632,7 +726,27 @@ export class CmsService {
       ? payload.status
       : entry.status;
 
+    let nextSlug =
+      entry.slug;
+
+    if (payload.slug !== undefined) {
+      nextSlug =
+        CmsService
+          .normalizeExplicitEntrySlug(
+            payload.slug
+          );
+
+      await CmsService
+        .ensureEntrySlugAvailable(
+          siteId,
+          entry.collectionId,
+          nextSlug,
+          entry.id
+        );
+    }
+
     await entry.update({
+      slug: nextSlug,
       status: nextStatus,
       data: validatedData
     });

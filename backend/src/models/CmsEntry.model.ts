@@ -48,7 +48,7 @@ export class CmsEntry extends Model {
 
   @Column({
   type: DataType.STRING,
-  allowNull: true
+  allowNull: false
   })
   slug!: string;
 

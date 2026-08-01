@@ -17,6 +17,20 @@ export type Device =
   | "tablet"
   | "mobile";
 
+export type CmsRuntimeContext = {
+  collectionId: number;
+  collectionSlug: string;
+  entryId: number;
+  entrySlug: string;
+  data: Record<string, unknown>;
+  fields: Array<{
+    id: number;
+    key: string;
+    name: string;
+    type: string;
+  }>;
+};
+
 // =========================
 // CONTEXT TYPE
 // =========================
@@ -32,6 +46,8 @@ interface RuntimeContextValue {
   siteId?: number | string | null;
 
   pageId?: number | string | null;
+
+  cms?: CmsRuntimeContext;
 }
 
 // =========================
