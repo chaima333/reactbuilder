@@ -1,7 +1,3 @@
-// frontend/src/modules/pageBuilder/runtime/importers/html/semanticMatchers.ts
-// LEGACY - OLD PIPELINE - NOT SOURCE OF TRUTH
-
-import { extractStyleProps } from "../css/extractStyleProps";
 
 import { createDeterministicId }
 from "./createDeterministicId";
@@ -15,17 +11,20 @@ export const BLOCK_TYPES = {
 } as const;
 
 export interface SerializedBlock {
-
   id?: string;
 
   type: string;
 
+  meta?: {
+    importSource?: string;
+    semanticType?: string;
+    visualProfile?: unknown;
+    [key: string]: unknown;
+  };
+
   data: {
-
     props?: Record<string, any>;
-
     style?: Record<string, any>;
-
     [key: string]: any;
   };
 
