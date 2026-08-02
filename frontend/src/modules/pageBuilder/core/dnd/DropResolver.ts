@@ -53,6 +53,33 @@ export const resolveDropBehavior = ({
       ? "section"
       : draggedType;
 
+  if (calculatedPosition !== "inside") {
+    if (canAcceptChild(targetType, effectiveDraggedType)) {
+      return {
+        allowed: true,
+        position: calculatedPosition,
+        index: calculatedIndex
+      };
+    }
+
+    const wrapperRule = getWrapperRule(targetType, effectiveDraggedType);
+
+    if (
+      wrapperRule &&
+      (targetType === "flex" || targetType === "grid")
+    ) {
+      return {
+        allowed: true,
+        position: calculatedPosition,
+        index: calculatedIndex,
+        autoWrap: true,
+        wrapperType: wrapperRule.wrapper as "gridItem" | "flexItem"
+      };
+    }
+
+    return denied(calculatedPosition, calculatedIndex);
+  }
+
   if (
     (targetType === "navbar" || targetType === "footer") &&
     ["image", "text", "link", "button", "title", "flexItem"].includes(
