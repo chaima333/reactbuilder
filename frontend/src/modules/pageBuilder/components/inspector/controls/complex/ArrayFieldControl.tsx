@@ -88,8 +88,9 @@ export const ArrayFieldControl = ({
             sx={{
               mb: 3,
               p: 2,
-              border:
-                "1px solid #ddd",
+              border: 1,
+              borderColor:
+                "divider",
               borderRadius:
                 "8px"
             }}

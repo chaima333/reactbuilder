@@ -476,10 +476,10 @@ const DraggableBlockItem = ({ type, config, compact }: DraggableBlockItemProps) 
         cursor: "grab",
         mb: 1.5,
         textTransform: "none",
-        borderColor: "#e0e0e0",
+        borderColor: "divider",
         color: "text.primary",
         opacity: isDragging ? 0.5 : 1,
-        "&:hover": { borderColor: "primary.main", bgcolor: "rgba(0, 196, 73, 0.04)" },
+        "&:hover": { borderColor: "primary.main", bgcolor: "action.hover" },
       }}
     >
       {config.icon}
@@ -495,8 +495,10 @@ const DragGhost = ({ type, isAllowed }: DragGhostProps) => (
     elevation={6}
     sx={{
       p: "12px 20px",
-      bgcolor: isAllowed ? "#fff" : "#ffebee",
-      border: isAllowed ? "2px solid #4caf50" : "2px solid #f44336",
+      bgcolor: "background.paper",
+      border: 2,
+      borderStyle: "solid",
+      borderColor: isAllowed ? "divider" : "warning.main",
       borderRadius: "8px",
       display: "flex",
       alignItems: "center",
@@ -504,7 +506,7 @@ const DragGhost = ({ type, isAllowed }: DragGhostProps) => (
       pointerEvents: "none",
     }}
   >
-    <Typography variant="subtitle2" sx={{ color: isAllowed ? "#2e7d32" : "#c62828", fontWeight: "bold" }}>
+    <Typography variant="subtitle2" sx={{ color: isAllowed ? "text.primary" : "warning.main", fontWeight: "bold" }}>
       {isAllowed ? "Relâcher pour déposer" : "Action impossible"}
     </Typography>
     <Typography variant="caption" sx={{ opacity: 0.7 }}>
@@ -1439,7 +1441,8 @@ const isFooterLikeBlock = (
         width: leftSidebarOpen ? 260 : 70,
         height: "100%",
         transition: "width 0.3s",
-        borderRight: "1px solid #ddd",
+        borderRight: 1,
+        borderColor: "divider",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -1494,7 +1497,8 @@ const isFooterLikeBlock = (
         minWidth: rightPanelOpen ? 360 : 110,
         maxWidth: rightPanelOpen ? 360 : 110,
         height: "100%",
-        borderLeft: "1px solid #ddd",
+        borderLeft: 1,
+        borderColor: "divider",
         overflow: "hidden",
         transition: "width 0.25s ease",
       }}
@@ -2348,7 +2352,7 @@ const handleCanvasDuplicate =
           flexGrow: 1,
           overflowY: "auto",
           overflowX: "hidden",
-          bgcolor: "#f5f5f5",
+          bgcolor: "background.default",
           display: "flex",
           justifyContent: "center",
           p: 3,
@@ -2499,7 +2503,7 @@ const handleCanvasDuplicate =
         )}
 
         {zipImporting && (
-          <Box sx={{ mt: 1, p: 2, border: "1px solid #e0e0e0", borderRadius: 2, display: "flex", alignItems: "center", gap: 2, backgroundColor: "#fafafa" }}>
+          <Box sx={{ mt: 1, p: 2, border: 1, borderColor: "divider", borderRadius: 2, display: "flex", alignItems: "center", gap: 2, bgcolor: "background.default" }}>
             <CircularProgress size={24} />
             <Box>
               <Typography fontWeight={700}>Importing website...</Typography>

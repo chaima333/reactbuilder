@@ -249,7 +249,9 @@ export const BlockLibrary = () => {
         <Box
           sx={{
             my: 1,
-            borderBottom: "1px dashed #ccc"
+            borderBottom: 1,
+            borderColor: "divider",
+            borderStyle: "dashed"
           }}
         />
 
@@ -284,7 +286,9 @@ export const BlockLibrary = () => {
         <Box
           sx={{
             my: 1,
-            borderBottom: "1px dashed #ccc"
+            borderBottom: 1,
+            borderColor: "divider",
+            borderStyle: "dashed"
           }}
         />
 

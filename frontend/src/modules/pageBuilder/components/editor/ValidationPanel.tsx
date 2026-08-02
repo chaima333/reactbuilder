@@ -18,16 +18,17 @@ export const ValidationPanel = ({ errors, onSelectBlock }: ValidationPanelProps)
         p: 1.5,
         m: 2,
         borderRadius: 2,
-        bgcolor: "#fff5f5", // خلفية حمراء خفيفة
-        border: "1px solid #ffcdd2",
+        bgcolor: "background.paper",
+        border: 1,
+        borderColor: "divider",
         display: "flex",
         flexDirection: "column",
         gap: 1,
       }}
     >
       <Stack direction="row" alignItems="center" gap={1} sx={{ mb: 0.5 }}>
-        <ErrorOutlineIcon sx={{ color: "#f44336", fontSize: 20 }} />
-        <Typography variant="subtitle2" sx={{ color: "#d32f2f", fontWeight: "bold" }}>
+        <ErrorOutlineIcon sx={{ color: "error.main", fontSize: 20 }} />
+        <Typography variant="subtitle2" sx={{ color: "text.primary", fontWeight: "bold" }}>
           Validation Errors ({errors.length})
         </Typography>
       </Stack>
@@ -40,21 +41,21 @@ export const ValidationPanel = ({ errors, onSelectBlock }: ValidationPanelProps)
             size="small"
             onClick={() => onSelectBlock(error.blockId)}
             sx={{
-              bgcolor: "white",
-              border: "1px solid #f44336",
-              color: "#f44336",
+              bgcolor: "background.default",
+              border: 1,
+              borderColor: "divider",
+              color: "text.primary",
               fontSize: "0.75rem",
               cursor: "pointer",
               "&:hover": {
-                bgcolor: "#f44336",
-                color: "white",
+                bgcolor: "action.hover",
               },
             }}
           />
         ))}
       </Box>
       
-      <Typography variant="caption" sx={{ color: "#ef5350", mt: 0.5, fontStyle: "italic" }}>
+      <Typography variant="caption" sx={{ color: "text.secondary", mt: 0.5, fontStyle: "italic" }}>
         * Click on an error to locate the block.
       </Typography>
     </Paper>

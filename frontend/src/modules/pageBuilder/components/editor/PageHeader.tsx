@@ -129,9 +129,9 @@ export const PageHeader = ({
         py: 1,
         gap: 1,
         minHeight: "56px",
-        borderBottom:
-          "1px solid #e0e0e0",
-        bgcolor: "#fff",
+        borderBottom: 1,
+        borderColor: "divider",
+        bgcolor: "background.paper",
         overflowX: "auto"
       }}
     >
@@ -154,7 +154,7 @@ export const PageHeader = ({
           sx={{
             maxWidth: 220,
             fontWeight: 600,
-            color: "#333"
+            color: "text.primary"
           }}
         >
           {title || "Untitled Page"}
@@ -164,7 +164,7 @@ export const PageHeader = ({
           <CircularProgress
             size={16}
             sx={{
-              color: "#666"
+              color: "text.secondary"
             }}
           />
         )}
@@ -547,12 +547,12 @@ export const PageHeader = ({
             textTransform: "none",
             borderRadius: "6px",
             boxShadow: "none",
-            bgcolor: "#f5f5f5",
-            color: "#333",
+            bgcolor: "action.selected",
+            color: "text.primary",
             whiteSpace: "nowrap",
 
             "&:hover": {
-              bgcolor: "#eeeeee",
+              bgcolor: "action.hover",
               boxShadow: "none"
             }
           }}

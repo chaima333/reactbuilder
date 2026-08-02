@@ -66,7 +66,7 @@ export const EditorLayout: React.FC<Props> = ({
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
-            bgcolor: "#f8f9fa",
+            bgcolor: "background.default",
             position: "relative",
           }}
         >
@@ -75,8 +75,9 @@ export const EditorLayout: React.FC<Props> = ({
               sx={{
                 flexShrink: 0,
                 p: "6px 16px",
-                bgcolor: "#fff",
-                borderBottom: "1px solid #ffcdd2",
+                bgcolor: "background.paper",
+                borderBottom: 1,
+                borderColor: "divider",
               }}
             >
               <Alert
@@ -88,7 +89,7 @@ export const EditorLayout: React.FC<Props> = ({
                   bgcolor: "transparent",
                   border: "none",
                   "& .MuiAlert-message": {
-                    color: "#d32f2f",
+                    color: "error.main",
                     fontWeight: 500,
                   },
                 }}

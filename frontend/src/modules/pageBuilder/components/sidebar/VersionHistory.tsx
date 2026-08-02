@@ -233,7 +233,7 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({
                         border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
                         '&:hover': {
                           bgcolor: theme.palette.primary.main,
-                          color: 'white',
+                          color: theme.palette.primary.contrastText,
                         },
                       }}
                     >
