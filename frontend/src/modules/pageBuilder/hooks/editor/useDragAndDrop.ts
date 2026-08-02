@@ -13,7 +13,10 @@ import {
   isSemanticDroppableElement
 } from "../../core/dnd/isSemanticDroppableElement";
 import { blockRegistry } from "../../core/blockRegistry";
-import { findBlockInTree } from "../../core/tree/utils";
+import {
+  findBlockInTree,
+  findParentInTree
+} from "../../core/tree/utils";
 import { Block, BlockType } from "../../types/page.types";
 import { VIRTUAL_ROOT_ID } from "../../components/editor/EditorCanvas";
 import React from "react";
@@ -21,8 +24,20 @@ import { presetRegistry } from "../../presets/presetRegistry";
 import {
   canAcceptChild
 } from "../../core/schema/canonicalSchema";
+import {
+  canMoveWithinDndSlots,
+  DndSlot
+} from "../../core/dnd/dndSlots";
 
 interface InsertionResult {
+  position: "before" | "after" | "inside";
+  index: number;
+}
+
+interface DestinationContext {
+  targetId: string;
+  parentId: string;
+  parentType: BlockType;
   position: "before" | "after" | "inside";
   index: number;
 }
@@ -38,6 +53,9 @@ interface DropState {
 interface UseDragAndDropProps {
   blocks: Block[];
   rootInsertIndex?: number;
+  resolveDndSlot?: (
+    blockId?: string
+  ) => DndSlot;
   actions: {
     addBlock: (
       type: string,
@@ -108,12 +126,67 @@ export const customCollisionStrategy: CollisionDetection = (args) => {
 
 const calculateInsertionIndex = (
   event: DragOverEvent,
-  targetBlock: Block
+  targetBlock: Block,
+  blocks: Block[],
+  activeId: string,
+  pointerY?: number
 ): InsertionResult => {
-  const { over, activatorEvent } = event;
+  const { over } = event;
 
-  if (!over || !(activatorEvent instanceof MouseEvent)) {
+  if (!over || typeof pointerY !== "number") {
     return { position: "inside", index: targetBlock.children?.length || 0 };
+  }
+
+  const overId = over.id.toString();
+  const targetElement = document.getElementById(`pb-runtime-${overId}`);
+
+  if (overId === targetBlock.id && targetElement) {
+    const rect = targetElement.getBoundingClientRect();
+    const relativeY = (pointerY - rect.top) / rect.height;
+    const targetParent =
+      findParentInTree(
+        blocks,
+        targetBlock.id
+      );
+    const siblings =
+      targetParent?.children ||
+      blocks;
+    const targetIndex =
+      siblings.findIndex(
+        (child) =>
+          child.id === targetBlock.id
+      );
+    const rawIndex =
+      relativeY < 0.5
+        ? targetIndex
+        : targetIndex + 1;
+    const sourceParent =
+      findParentInTree(
+        blocks,
+        activeId
+      );
+    const sourceSiblings =
+      sourceParent?.children ||
+      blocks;
+    const sourceIndex =
+      sourceSiblings.findIndex(
+        (child) =>
+          child.id === activeId
+      );
+    const sameParent =
+      (sourceParent?.id || VIRTUAL_ROOT_ID) ===
+      (targetParent?.id || VIRTUAL_ROOT_ID);
+    const adjustedIndex =
+      sameParent &&
+      sourceIndex > -1 &&
+      sourceIndex < rawIndex
+        ? rawIndex - 1
+        : rawIndex;
+
+    return {
+      position: relativeY < 0.5 ? "before" : "after",
+      index: Math.max(0, adjustedIndex)
+    };
   }
 
   const children = targetBlock.children || [];
@@ -122,27 +195,125 @@ const calculateInsertionIndex = (
     return { position: "inside", index: 0 };
   }
 
-  const overId = over.id.toString();
   const childIndex = children.findIndex((child) => child.id === overId);
 
   if (childIndex === -1) {
     return { position: "inside", index: children.length };
   }
 
-  const targetElement = document.getElementById(`pb-runtime-${overId}`);
-
   if (!targetElement) {
     return { position: "inside", index: children.length };
   }
 
   const rect = targetElement.getBoundingClientRect();
-  const relativeY = (activatorEvent.clientY - rect.top) / rect.height;
+  const relativeY = (pointerY - rect.top) / rect.height;
 
   if (relativeY < 0.5) {
     return { position: "before", index: childIndex };
   }
 
   return { position: "after", index: childIndex + 1 };
+};
+
+const isDescendantOf = (
+  block: Block,
+  possibleDescendantId: string
+): boolean =>
+  (block.children || []).some(
+    (child) =>
+      child.id === possibleDescendantId ||
+      isDescendantOf(
+        child,
+        possibleDescendantId
+      )
+  );
+
+const isLocked = (
+  block: Block
+): boolean =>
+  Boolean(
+    block.meta?.isLocked ||
+    (block.data as any)?.meta?.isLocked
+  );
+
+const getDestinationContext = (
+  blocks: Block[],
+  targetBlock: Block,
+  insertionInfo: InsertionResult
+): DestinationContext => {
+  if (
+    insertionInfo.position ===
+    "inside"
+  ) {
+    return {
+      targetId: targetBlock.id,
+      parentId: targetBlock.id,
+      parentType: targetBlock.type,
+      position: "inside",
+      index: insertionInfo.index
+    };
+  }
+
+  const parent =
+    findParentInTree(
+      blocks,
+      targetBlock.id
+    );
+
+  return {
+    targetId: targetBlock.id,
+    parentId:
+      parent?.id ||
+      VIRTUAL_ROOT_ID,
+    parentType:
+      parent?.type ||
+      "root",
+    position:
+      insertionInfo.position,
+    index:
+      insertionInfo.index
+  };
+};
+
+const canMoveToDestination = (
+  movingBlock: Block,
+  destination: DestinationContext,
+  destinationContainer?: Block | null
+): boolean => {
+  if (isLocked(movingBlock)) {
+    return false;
+  }
+
+  if (
+    destinationContainer &&
+    isLocked(destinationContainer)
+  ) {
+    return false;
+  }
+
+  if (
+    movingBlock.id ===
+      destination.targetId ||
+    movingBlock.id ===
+      destination.parentId
+  ) {
+    return false;
+  }
+
+  if (
+    isDescendantOf(
+      movingBlock,
+      destination.parentId
+    ) ||
+    isDescendantOf(
+      movingBlock,
+      destination.targetId
+    )
+  ) {
+    return false;
+  }
+
+  return true;
 };
 
 const getDraggedType = (
@@ -200,7 +371,8 @@ const normalizeTree = (
 export const useDragAndDrop = ({
   blocks,
   actions,
-  rootInsertIndex
+  rootInsertIndex,
+  resolveDndSlot
 }: UseDragAndDropProps) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeData, setActiveData] = useState<any>(null);
@@ -212,7 +384,6 @@ export const useDragAndDrop = ({
   const [ghost, setGhost] = useState<{ x: number; y: number } | null>(null);
 
   const currentResolutionRef = useRef<DropState | null>(null);
-  const lastValidResolutionRef = useRef<DropState | null>(null);
   const pointerPositionRef =
   useRef({
     x: 0,
@@ -263,14 +434,11 @@ useEffect(() => {
     setGhost(null);
 
     currentResolutionRef.current = null;
-    lastValidResolutionRef.current = null;
-
     resetHoverState();
   };
 
   const handleDragStart = (event: any) => {
     currentResolutionRef.current = null;
-    lastValidResolutionRef.current = null;
 
     setOverId(null);
     setDropPosition(null);
@@ -438,31 +606,6 @@ if (
     );
 
     if (!semanticElement) {
-      const lastResolution =
-        lastValidResolutionRef.current;
-
-      if (lastResolution) {
-        currentResolutionRef.current =
-          lastResolution;
-
-        setOverId(
-          lastResolution.targetId ===
-            VIRTUAL_ROOT_ID
-            ? "ROOT"
-            : lastResolution.targetId
-        );
-
-        setDropPosition(
-          lastResolution.position
-        );
-
-        setIsAllowed(
-          lastResolution.allowed
-        );
-
-        return;
-      }
-
       resetHoverState();
       return;
     }
@@ -488,7 +631,36 @@ if (
     if (
       targetId === VIRTUAL_ROOT_ID
     ) {
+      const movingBlock =
+        findBlockInTree(
+          blocks,
+          active.id.toString()
+        );
+      const canAttemptMove =
+        !movingBlock ||
+        canMoveToDestination(
+          movingBlock,
+          {
+            targetId: VIRTUAL_ROOT_ID,
+            parentId: VIRTUAL_ROOT_ID,
+            parentType: "root",
+            position: "inside",
+            index: rootInsertIndex ?? blocks.length
+          },
+          null
+        );
       const allowed =
+        canAttemptMove &&
+        (
+          !resolveDndSlot ||
+          canMoveWithinDndSlots(
+            resolveDndSlot(
+              active.id.toString()
+            ),
+            "page",
+            VIRTUAL_ROOT_ID
+          )
+        ) &&
         canAcceptChild(
           "root",
           effectiveDraggedType
@@ -513,11 +685,6 @@ if (
 
       currentResolutionRef.current =
         rootResolution;
-
-      if (allowed) {
-        lastValidResolutionRef.current =
-          rootResolution;
-      }
 
       return;
     }
@@ -546,26 +713,80 @@ if (
     const insertionInfo =
       calculateInsertionIndex(
         event,
-        targetBlock
+        targetBlock,
+        blocks,
+        active.id.toString(),
+        pointerY
       );
 
     // =========================
     // RESOLVER
     // =========================
 
-    const resolution =
+    const destination =
+      getDestinationContext(
+        blocks,
+        targetBlock,
+        insertionInfo
+      );
+    const destinationParent =
+      destination.parentId === VIRTUAL_ROOT_ID
+        ? null
+        : findBlockInTree(
+            blocks,
+            destination.parentId
+          );
+    const destinationChildrenCount =
+      destination.position === "inside"
+        ? targetBlock.children?.length || 0
+        : destinationParent?.children?.length ||
+          blocks.length;
+    const movingBlock =
+      findBlockInTree(
+        blocks,
+        active.id.toString()
+      );
+    const canAttemptMove =
+      !movingBlock ||
+      canMoveToDestination(
+        movingBlock,
+        destination,
+        destination.position === "inside"
+          ? targetBlock
+          : destinationParent
+      );
+    const slotAllowed =
+      resolveDndSlot
+        ? canMoveWithinDndSlots(
+            resolveDndSlot(
+              active.id.toString()
+            ),
+            resolveDndSlot(
+              destination.targetId
+            ),
+            destination.targetId
+          )
+        : true;
+
+    const resolvedDrop =
       resolveDropBehavior({
         draggedType,
         targetType:
-          targetBlock.type,
+          destination.parentType,
         calculatedPosition:
-          insertionInfo.position,
+          destination.position,
         calculatedIndex:
-          insertionInfo.index,
+          destination.index,
         targetChildrenCount:
-          targetBlock.children
-            ?.length || 0
+          destinationChildrenCount
       });
+    const resolution = {
+      ...resolvedDrop,
+      allowed:
+        canAttemptMove &&
+        slotAllowed &&
+        resolvedDrop.allowed
+    };
 
     console.log(
       "RESOLUTION",
@@ -577,7 +798,7 @@ if (
       targetId:
         targetBlock.id,
       targetType:
-        targetBlock.type,
+        destination.parentType,
       allowed:
         resolution.allowed
     });
@@ -605,33 +826,27 @@ if (
     const finalResolution = {
       ...resolution,
       targetId:
-        targetBlock.id
+        destination.targetId
     };
 
     currentResolutionRef.current =
   finalResolution;
 
-if (finalResolution.allowed) {
-  lastValidResolutionRef.current =
-    finalResolution;
-}
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     console.log("DRAG END");
     const { active } = event;
     console.log(
-      "LAST VALID",
-      lastValidResolutionRef.current
+      "CURRENT RESOLUTION",
+      currentResolutionRef.current
     );
    
     const currentResolution =
   currentResolutionRef.current;
 
 const resolution =
-  currentResolution?.allowed
-    ? currentResolution
-    : lastValidResolutionRef.current;
+  currentResolution;
 
     console.log("RESOLUTION", resolution);
 
@@ -967,6 +1182,10 @@ const resolution =
     resetDragState();
   };
 
+  const handleDragCancel = () => {
+    resetDragState();
+  };
+
   return {
     activeId,
     activeData,
@@ -977,6 +1196,7 @@ const resolution =
     handleDragStart,
     handleDragOver,
     handleDragEnd,
+    handleDragCancel,
     debugElements,
     pointerDebug,
     semanticDebug,

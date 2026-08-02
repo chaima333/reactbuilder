@@ -34,6 +34,10 @@ import { StructurePanel } from "../components/sidebar/StructurePanel";
 import { SettingsPanel } from "../components/inspector/SettingsPanel";
 import { useParams, useSearchParams } from "react-router-dom";
 import { customCollisionStrategy, useDragAndDrop } from "../hooks/editor/useDragAndDrop";
+import {
+  canMoveWithinDndSlots,
+  DndSlot
+} from "../core/dnd/dndSlots";
 import { RuntimeProvider } from "../runtime/context/RuntimeProvider";
 import { downloadJsonFile, readJsonFile } from "../services/importExport";
 import { findBlockById } from "../core/tree/findBlockById";
@@ -264,11 +268,6 @@ type DndInsertPosition =
   | "before"
   | "after"
   | "inside";
-
-type DndSlot =
-  | "page"
-  | "navbar"
-  | "footer";
 
 const collectBlockIds = (
   block: any,
@@ -1876,8 +1875,12 @@ const isFooterLikeBlock = (
             );
 
           if (
-            sourceSlot === "page" &&
-            targetSlot === "page"
+            canMoveWithinDndSlots(
+              sourceSlot,
+              targetSlot,
+              location.targetId
+            ) &&
+            sourceSlot === "page"
           ) {
             actions.moveBlock(
               blockId,
@@ -1888,9 +1891,11 @@ const isFooterLikeBlock = (
           }
 
           if (
-            sourceSlot !== targetSlot ||
-            sourceSlot === "page" ||
-            !location.targetId
+            !canMoveWithinDndSlots(
+              sourceSlot,
+              targetSlot,
+              location.targetId
+            )
           ) {
             return;
           }
@@ -1992,7 +1997,8 @@ const isFooterLikeBlock = (
     ghost,
     handleDragStart,
     handleDragOver,
-    handleDragEnd
+    handleDragEnd,
+    handleDragCancel
   } = useDragAndDrop({
     blocks:
       canvasBlocks,
@@ -2001,7 +2007,9 @@ const isFooterLikeBlock = (
       blocks.length,
 
     actions:
-      dndActions
+      dndActions,
+
+    resolveDndSlot
   });
 
   const guardedHandleDragStart =
@@ -2045,6 +2053,21 @@ const isFooterLikeBlock = (
       },
       [
         handleDragEnd,
+        isCmsEntryPreviewActive
+      ]
+    );
+
+  const guardedHandleDragCancel =
+    useCallback(
+      () => {
+        if (isCmsEntryPreviewActive) {
+          return;
+        }
+
+        handleDragCancel();
+      },
+      [
+        handleDragCancel,
         isCmsEntryPreviewActive
       ]
     );
@@ -2575,6 +2598,7 @@ const handleCanvasDuplicate =
           onDragStart={guardedHandleDragStart}
           onDragOver={guardedHandleDragOver}
           onDragEnd={guardedHandleDragEnd}
+          onDragCancel={guardedHandleDragCancel}
         >
           <EditorLayout
             header={

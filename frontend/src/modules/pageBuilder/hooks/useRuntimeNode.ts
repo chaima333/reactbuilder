@@ -67,7 +67,23 @@ export const useRuntimeNode = ({
   const rootProps = {
 
     ref:
-      dnd.setNodeRef as any,
+      (node: HTMLElement | null) => {
+        if (
+          typeof dnd.setNodeRef ===
+          "function"
+        ) {
+          dnd.setNodeRef(
+            node
+          );
+        }
+
+        if (nodeId) {
+          context.registerRuntimeNode?.(
+            String(nodeId),
+            node
+          );
+        }
+      },
 
     id:
       context.mode ===

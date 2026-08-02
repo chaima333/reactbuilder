@@ -15,6 +15,10 @@ import {
 } from "../../types/page.types";
 
 import { RuntimeRenderer } from "./RuntimeRenderer";
+import {
+  RuntimeProvider,
+  useRuntime
+} from "../context/RuntimeProvider";
 
 export interface BlockComponentProps<
   T = Record<string, any>
@@ -111,7 +115,8 @@ export const EditorBlockRenderer = ({
   const {
     attributes,
     listeners,
-    setNodeRef: setDragRef
+    setNodeRef,
+    setActivatorNodeRef
   } = useDraggable({
 
     id: block.id,
@@ -121,6 +126,39 @@ export const EditorBlockRenderer = ({
       isNew: false
     }
   });
+
+  const runtimeContext =
+    useRuntime();
+
+  const runtimeContextWithNodeRegistration =
+    React.useMemo(
+      () => ({
+        ...runtimeContext,
+
+        registerRuntimeNode: (
+          blockId: string,
+          node: HTMLElement | null
+        ) => {
+          runtimeContext.registerRuntimeNode?.(
+            blockId,
+            node
+          );
+
+          if (blockId !== block.id) {
+            return;
+          }
+
+          setNodeRef(
+            node
+          );
+        }
+      }),
+    [
+      block.id,
+      runtimeContext,
+      setNodeRef
+    ]
+    );
 
   // =========================
   // STATES
@@ -194,7 +232,6 @@ export const EditorBlockRenderer = ({
 return (
 
   <div
-
     onClick={(e) => {
 
       if (
@@ -241,6 +278,7 @@ return (
       dropPos === "before" && (
 
       <Box
+        data-testid="drop-indicator-before"
         sx={{
           position: "absolute",
           top: -2,
@@ -250,6 +288,21 @@ return (
           bgcolor: indicatorColor,
           pointerEvents: "none",
           zIndex: 9999
+        }}
+      />
+    )}
+
+    {isOver &&
+      dropPos === "inside" && (
+
+      <Box
+        data-testid="drop-indicator-inside"
+        sx={{
+          position: "absolute",
+          inset: 0,
+          border: `2px dashed ${indicatorColor}`,
+          pointerEvents: "none",
+          zIndex: 9998
         }}
       />
     )}
@@ -277,9 +330,11 @@ return (
       >
 
         <Box
+          ref={setActivatorNodeRef}
           {...listeners}
           {...attributes}
-
+          data-dnd-handle="true"
+          data-testid="block-drag-handle"
           sx={{
             width: 32,
             height: 32,
@@ -289,13 +344,16 @@ return (
             bgcolor: "#111",
             color: "#fff",
             borderRadius: "6px",
-            cursor: "grab"
+            cursor: "grab",
+            userSelect: "none",
+            touchAction: "none"
           }}
         >
           ⋮⋮
         </Box>
 
         <Box
+          data-testid="block-duplicate-button"
           onClick={() =>
             onDuplicate?.(
               block.id
@@ -318,6 +376,7 @@ return (
         </Box>
 
         <Box
+          data-testid="block-delete-button"
           onClick={() =>
             onDelete?.(
               block.id
@@ -348,6 +407,7 @@ return (
       dropPos === "after" && (
 
       <Box
+        data-testid="drop-indicator-after"
         sx={{
           position: "absolute",
           bottom: -2,
@@ -363,12 +423,16 @@ return (
 
     {/* RUNTIME */}
 
-    <RuntimeRenderer
-      block={block}
-      device={device}
+    <RuntimeProvider
+      value={runtimeContextWithNodeRegistration}
     >
-      {recursiveChildren}
-    </RuntimeRenderer>
+      <RuntimeRenderer
+        block={block}
+        device={device}
+      >
+        {recursiveChildren}
+      </RuntimeRenderer>
+    </RuntimeProvider>
 
   </div>
 );

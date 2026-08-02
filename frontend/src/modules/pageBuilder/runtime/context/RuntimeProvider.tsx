@@ -48,6 +48,11 @@ interface RuntimeContextValue {
   pageId?: number | string | null;
 
   cms?: CmsRuntimeContext;
+
+  registerRuntimeNode?: (
+    blockId: string,
+    node: HTMLElement | null
+  ) => void;
 }
 
 // =========================
