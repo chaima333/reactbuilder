@@ -147,7 +147,6 @@ const workspaceItems: SidebarItem[] = [
       text: "Paramètres",
       icon: <SettingsIcon />,
       path: "/settings",
-      siteAdminOnly: true,
     },
   ];
 
