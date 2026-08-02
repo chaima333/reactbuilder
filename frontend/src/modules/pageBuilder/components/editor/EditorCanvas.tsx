@@ -434,12 +434,8 @@ const themeTokens =
 
      backgroundColor:
   isOver
-    ? "rgba(25,118,210,0.03)"
-    : (
-        themeTokens?.colors?.background?.default ||
-        themeTokens?.colors?.muted ||
-        "#f9f9f9"
-      ),
+    ? "action.hover"
+    : "background.default",
 
         transition:
           "all 0.2s ease",
@@ -465,14 +461,16 @@ const themeTokens =
 
             p: 2,
 
-            border:
-              "1px solid #ef4444",
+            border: 1,
+
+            borderColor:
+              "divider",
 
             bgcolor:
-              "#fef2f2",
+              "background.paper",
 
             color:
-              "#991b1b"
+              "text.primary"
           }}
         >
 
@@ -593,8 +591,10 @@ const themeTokens =
                 height:
                   "400px",
 
-                border:
-                  "2px dashed #ccc",
+                border: 2,
+
+                borderStyle:
+                  "dashed",
 
                 borderRadius:
                   4,
@@ -617,19 +617,19 @@ const themeTokens =
                 opacity:
                   0.6,
 
-                backgroundColor:
+                bgcolor:
                   isOver
 
-                    ? "rgba(25, 118, 210, 0.05)"
+                    ? "action.hover"
 
-                    : "white",
+                    : "background.paper",
 
                 borderColor:
                   isOver
 
                     ? "primary.main"
 
-                    : "#ccc",
+                    : "divider",
 
                 transition:
                   "all 0.3s ease",
@@ -640,7 +640,7 @@ const themeTokens =
                     "primary.main",
 
                   bgcolor:
-                    "rgba(0,0,0,0.01)"
+                    "action.hover"
                 }
               }}
             >

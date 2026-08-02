@@ -188,27 +188,17 @@ export const SettingsPanel = ({
         {onImportHtml && (
           <Button
             variant="contained"
+            color="primary"
             fullWidth
             onClick={
               onImportHtml
             }
             sx={{
-              bgcolor:
-                "#1976d2",
-
-              color:
-                "#fff",
-
               fontWeight:
                 "bold",
 
               textTransform:
-                "none",
-
-              "&:hover": {
-                bgcolor:
-                  "#115293"
-              }
+                "none"
             }}
           >
             IMPORT FROM HTML
@@ -217,6 +207,7 @@ export const SettingsPanel = ({
 
         <Button
           variant="contained"
+          color="secondary"
           fullWidth
           disabled={
             figmaPluginLoading ||
@@ -226,22 +217,11 @@ export const SettingsPanel = ({
             onImportFigma
           }
           sx={{
-            bgcolor:
-              "#7c3aed",
-
-            color:
-              "#fff",
-
             fontWeight:
               "bold",
 
             textTransform:
-              "none",
-
-            "&:hover": {
-              bgcolor:
-                "#5b21b6"
-            }
+              "none"
           }}
         >
           CONNECT FIGMA PLUGIN

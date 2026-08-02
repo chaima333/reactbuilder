@@ -184,8 +184,8 @@ export const EditorBlockRenderer = ({
 
   const indicatorColor =
     isAllowed
-      ? "#1976d2"
-      : "#f59e0b";
+      ? "primary.main"
+      : "warning.main";
 
   // =========================
   // RECURSION
@@ -300,7 +300,9 @@ return (
         sx={{
           position: "absolute",
           inset: 0,
-          border: `2px dashed ${indicatorColor}`,
+          border: 2,
+          borderStyle: "dashed",
+          borderColor: indicatorColor,
           pointerEvents: "none",
           zIndex: 9998
         }}
@@ -320,11 +322,12 @@ return (
           zIndex: 99999,
           display: "flex",
           gap: 1,
-          bgcolor: "#fff",
+          bgcolor: "background.paper",
           padding: "4px",
           borderRadius: "6px",
-          boxShadow:
-            "0 2px 10px rgba(0,0,0,0.12)",
+          border: 1,
+          borderColor: "divider",
+          boxShadow: 3,
           pointerEvents: "auto"
         }}
       >
@@ -341,12 +344,15 @@ return (
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            bgcolor: "#111",
-            color: "#fff",
+            bgcolor: "action.selected",
+            color: "text.primary",
             borderRadius: "6px",
             cursor: "grab",
             userSelect: "none",
-            touchAction: "none"
+            touchAction: "none",
+            "&:hover": {
+              bgcolor: "action.hover"
+            }
           }}
         >
           ⋮⋮
@@ -366,8 +372,8 @@ return (
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            bgcolor: "#1976d2",
-            color: "#fff",
+            bgcolor: "primary.main",
+            color: "primary.contrastText",
             borderRadius: "6px",
             cursor: "pointer"
           }}
@@ -389,8 +395,8 @@ return (
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            bgcolor: "#f44336",
-            color: "#fff",
+            bgcolor: "error.main",
+            color: "error.contrastText",
             borderRadius: "6px",
             cursor: "pointer"
           }}

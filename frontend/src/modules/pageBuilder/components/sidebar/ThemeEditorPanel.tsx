@@ -254,10 +254,11 @@ export const ThemeEditorPanel = ({
                 borderRadius: "8px",
                 bgcolor: p.primary,
                 cursor: "pointer",
-                border:
+                border: 2,
+                borderColor:
                   safeTokens.colors.brand.primary === p.primary
-                    ? "2px solid black"
-                    : "2px solid #ddd",
+                    ? "text.primary"
+                    : "divider",
                 display: "flex",
                 alignItems: "flex-end",
                 justifyContent: "flex-end",

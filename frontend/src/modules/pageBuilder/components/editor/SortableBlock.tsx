@@ -163,7 +163,7 @@ const style = {
 
             height: "3px",
 
-            bgcolor: "#1976d2",
+            bgcolor: "primary.main",
 
             zIndex: 50,
 
@@ -203,7 +203,9 @@ const style = {
 
             right: 0,
 
-            bgcolor: "#1976d2",
+            bgcolor: "background.paper",
+            border: 1,
+            borderColor: "divider",
 
             borderRadius: "6px",
 
@@ -213,8 +215,7 @@ const style = {
 
             opacity: 1,
 
-            boxShadow:
-              "0 4px 12px rgba(0,0,0,0.15)"
+            boxShadow: 3
           }}
         >
 
@@ -230,7 +231,7 @@ const style = {
 
               sx={{
 
-                color: "white",
+                color: "text.primary",
 
                 p: 0.5
               }}
@@ -254,7 +255,7 @@ const style = {
 
               sx={{
 
-                color: "white",
+                color: "text.primary",
 
                 p: 0.5
               }}
@@ -280,7 +281,7 @@ const style = {
 
               sx={{
 
-                color: "white",
+                color: "text.primary",
 
                 p: 0.5
               }}
@@ -306,7 +307,7 @@ const style = {
 
               sx={{
 
-                color: "white",
+                color: "text.primary",
 
                 p: 0.5
               }}
@@ -332,13 +333,13 @@ const style = {
 
               sx={{
 
-                color: "white",
+                color: "error.main",
 
                 p: 0.5,
 
                 "&:hover": {
 
-                  color: "#ffcdd2"
+                  color: "error.dark"
                 }
               }}
             >
