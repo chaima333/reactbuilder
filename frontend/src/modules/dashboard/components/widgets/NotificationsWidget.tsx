@@ -1,25 +1,33 @@
 import React from "react";
 import {
+  Article,
+  DoneAll,
+  FiberManualRecord,
+  Image,
   Notifications as NotificationsIcon,
   NotificationsActive,
-  FiberManualRecord,
-  DoneAll,
+  Person,
+  PushPin,
+  Settings,
 } from "@mui/icons-material";
 import {
+  alpha,
+  Avatar,
+  Badge,
   Box,
-  Typography,
+  Chip,
+  Divider,
   IconButton,
   Paper,
   Stack,
-  Badge,
-  Chip,
-  Divider,
-  Avatar,
-  Button,
-  alpha,
+  Typography,
+  useTheme,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import { useDeleteNotificationMutation } from "../../../../redux/services/notification.api";
+import {
+  useDeleteNotificationMutation,
+  useMarkAllNotificationsAsReadMutation,
+} from "../../../../redux/services/notification.api";
 
 type NotificationItem = {
   id: number;
@@ -38,18 +46,30 @@ type NotificationsWidgetProps = {
   } | null;
 };
 
-// ===== ICÔNES PAR TYPE =====
 const getTypeIcon = (title?: string) => {
-  if (!title) return "📌";
+  if (!title) return <PushPin fontSize="small" />;
+
   const lower = title.toLowerCase();
-  if (lower.includes("media") || lower.includes("image")) return "🖼️";
-  if (lower.includes("page") || lower.includes("publish")) return "📄";
-  if (lower.includes("user") || lower.includes("register")) return "👤";
-  if (lower.includes("plugin") || lower.includes("system")) return "⚙️";
-  return "📌";
+
+  if (lower.includes("media") || lower.includes("image")) {
+    return <Image fontSize="small" />;
+  }
+
+  if (lower.includes("page") || lower.includes("publish")) {
+    return <Article fontSize="small" />;
+  }
+
+  if (lower.includes("user") || lower.includes("register")) {
+    return <Person fontSize="small" />;
+  }
+
+  if (lower.includes("plugin") || lower.includes("system")) {
+    return <Settings fontSize="small" />;
+  }
+
+  return <PushPin fontSize="small" />;
 };
 
-// ===== FORMAT TIME =====
 const formatTime = (time: string) => {
   const now = new Date();
   const notifTime = new Date(time);
@@ -63,44 +83,44 @@ const formatTime = (time: string) => {
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
+
   return notifTime.toLocaleDateString();
 };
 
 export const NotificationsWidget: React.FC<NotificationsWidgetProps> = ({
   data,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const notifications = data?.latestNotifications || [];
   const unreadCount = data?.unreadCount ?? 0;
   const totalNotifications = data?.totalNotifications ?? 0;
+  const visibleNotifications = notifications.slice(0, 5);
   const [deleteNotification] = useDeleteNotificationMutation();
+  const [markAllNotificationsAsRead] = useMarkAllNotificationsAsReadMutation();
 
   return (
     <Paper
       sx={{
         p: 0,
-        borderRadius: 4,
-        boxShadow: "0 10px 30px rgba(0,0,0,0.07)",
-        border: "1px solid rgba(0,0,0,0.06)",
+        borderRadius: 3,
+        boxShadow: "none",
+        border: `1px solid ${theme.palette.divider}`,
         height: "100%",
         minHeight: 320,
         overflow: "hidden",
-        transition: "transform 0.2s, box-shadow 0.2s",
-        "&:hover": {
-          transform: "translateY(-4px)",
-          boxShadow: "0 20px 40px rgba(0,0,0,0.12)",
-        },
+        bgcolor: "background.paper",
       }}
     >
-      {/* ===== HEADER ===== */}
       <Box
         sx={{
-          p: 3,
-          pb: 2,
-          borderBottom: "1px solid rgba(0,0,0,0.06)",
+          p: 2.25,
+          pb: 1.5,
+          borderBottom: `1px solid ${theme.palette.divider}`,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          background: "linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)",
+          bgcolor: alpha(theme.palette.primary.main, isDark ? 0.1 : 0.05),
         }}
       >
         <Stack direction="row" alignItems="center" spacing={1.5}>
@@ -108,8 +128,8 @@ export const NotificationsWidget: React.FC<NotificationsWidgetProps> = ({
             sx={{
               width: 40,
               height: 40,
-              borderRadius: 3,
-              bgcolor: "rgba(0,196,154,0.12)",
+              borderRadius: 2.5,
+              bgcolor: alpha(theme.palette.primary.main, isDark ? 0.16 : 0.1),
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -130,38 +150,51 @@ export const NotificationsWidget: React.FC<NotificationsWidgetProps> = ({
                 },
               }}
             >
-              <NotificationsActive sx={{ color: "#00C49A", fontSize: 22 }} />
+              <NotificationsActive
+                sx={{ color: theme.palette.primary.main, fontSize: 22 }}
+              />
             </Badge>
           </Box>
+
           <Box>
-            <Typography variant="h6" fontWeight={800} color="#1B2559" lineHeight={1.2}>
+            <Typography
+              variant="h6"
+              fontWeight={800}
+              color="text.primary"
+              lineHeight={1.2}
+            >
               Notifications
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {unreadCount > 0
-                ? `${unreadCount} unread messages`
-                : "All caught up! 🎉"}
+              {unreadCount > 0 ? `${unreadCount} unread messages` : "All caught up"}
             </Typography>
           </Box>
         </Stack>
 
         <Box display="flex" gap={0.5}>
-          <IconButton
-            size="small"
-            sx={{
-              bgcolor: "rgba(0,0,0,0.04)",
-              borderRadius: 2,
-              "&:hover": { bgcolor: "rgba(0,0,0,0.08)" },
-            }}
-          >
-            <DoneAll sx={{ fontSize: 18, color: "#8884d8" }} />
-          </IconButton>
+          {unreadCount > 0 && (
+            <IconButton
+              size="small"
+              aria-label="Mark all notifications as read"
+              onClick={() => markAllNotificationsAsRead()}
+              sx={{
+                bgcolor: alpha(theme.palette.action.hover, 0.6),
+                borderRadius: 2,
+                "&:hover": { bgcolor: theme.palette.action.hover },
+              }}
+            >
+              <DoneAll
+                sx={{ fontSize: 18, color: theme.palette.text.secondary }}
+              />
+            </IconButton>
+          )}
+
           <Chip
             label={`${totalNotifications} total`}
             size="small"
             sx={{
-              bgcolor: "rgba(136,132,216,0.12)",
-              color: "#8884d8",
+              bgcolor: alpha(theme.palette.secondary.main, isDark ? 0.16 : 0.1),
+              color: theme.palette.secondary.main,
               fontWeight: 600,
               height: 32,
               borderRadius: 2,
@@ -171,8 +204,7 @@ export const NotificationsWidget: React.FC<NotificationsWidgetProps> = ({
         </Box>
       </Box>
 
-      {/* ===== LIST ===== */}
-      <Box sx={{ p: 1.5 }}>
+      <Box sx={{ p: 1.25 }}>
         {notifications.length === 0 ? (
           <Box
             sx={{
@@ -183,17 +215,19 @@ export const NotificationsWidget: React.FC<NotificationsWidgetProps> = ({
               gap: 1,
             }}
           >
-            <NotificationsIcon sx={{ fontSize: 48, color: "#e0e0e0" }} />
+            <NotificationsIcon
+              sx={{ fontSize: 48, color: theme.palette.text.disabled }}
+            />
             <Typography color="text.secondary" fontWeight={500}>
               No notifications yet
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              We'll notify you when something happens
+              New updates will appear here
             </Typography>
           </Box>
         ) : (
           <Stack spacing={0.5}>
-            {notifications.slice(0, 5).map((notification, index) => {
+            {visibleNotifications.map((notification, index) => {
               const isUnread = !notification.isRead;
               const typeIcon = getTypeIcon(notification.title);
 
@@ -201,41 +235,37 @@ export const NotificationsWidget: React.FC<NotificationsWidgetProps> = ({
                 <Box
                   key={notification.id}
                   sx={{
-                    p: 2,
-                    borderRadius: 3,
-                    backgroundColor: isUnread
-                      ? "rgba(0,196,154,0.04)"
+                    p: 1.5,
+                    borderRadius: 2,
+                    bgcolor: isUnread
+                      ? alpha(theme.palette.primary.main, isDark ? 0.12 : 0.06)
                       : "transparent",
                     borderLeft: isUnread
-                      ? "3px solid #00C49A"
+                      ? `3px solid ${theme.palette.primary.main}`
                       : "3px solid transparent",
                     transition: "all 0.2s",
                     "&:hover": {
-                      backgroundColor: isUnread
-                        ? "rgba(0,196,154,0.08)"
-                        : "rgba(0,0,0,0.02)",
+                      bgcolor: alpha(theme.palette.action.hover, 0.6),
                     },
                     position: "relative",
                   }}
                 >
-                  <Stack direction="row" spacing={2} alignItems="flex-start">
-                    {/* Avatar/Icon */}
+                  <Stack direction="row" spacing={1.5} alignItems="flex-start">
                     <Avatar
                       sx={{
                         width: 40,
                         height: 40,
-                        fontSize: 18,
-                        bgcolor: isUnread
-                          ? "rgba(0,196,154,0.15)"
-                          : "rgba(0,0,0,0.05)",
-                        color: isUnread ? "#00C49A" : "#9e9e9e",
+                        bgcolor: alpha(
+                          theme.palette.primary.main,
+                          isDark ? 0.16 : 0.08
+                        ),
+                        color: theme.palette.primary.main,
                         flexShrink: 0,
                       }}
                     >
                       {typeIcon}
                     </Avatar>
 
-                    {/* Content */}
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Stack
                         direction="row"
@@ -246,7 +276,7 @@ export const NotificationsWidget: React.FC<NotificationsWidgetProps> = ({
                         <Typography
                           variant="body2"
                           fontWeight={isUnread ? 700 : 400}
-                          color={isUnread ? "#1B2559" : "text.secondary"}
+                          color={isUnread ? "text.primary" : "text.secondary"}
                           sx={{
                             display: "flex",
                             alignItems: "center",
@@ -260,14 +290,14 @@ export const NotificationsWidget: React.FC<NotificationsWidgetProps> = ({
                             <FiberManualRecord
                               sx={{
                                 fontSize: 8,
-                                color: "#00C49A",
+                                color: theme.palette.primary.main,
                                 mr: 0.5,
-                                animation: "pulse 2s infinite",
                               }}
                             />
                           )}
                           {notification.title}
                         </Typography>
+
                         <Stack direction="row" alignItems="center" spacing={1}>
                           <Typography
                             variant="caption"
@@ -282,18 +312,22 @@ export const NotificationsWidget: React.FC<NotificationsWidgetProps> = ({
                           </Typography>
                           <IconButton
                             size="small"
+                            aria-label="Delete notification"
                             onClick={() => deleteNotification(notification.id)}
                             sx={{
                               mt: -0.5,
                               p: 0.5,
                               "&:hover": {
-                                bgcolor: "rgba(255,0,0,0.08)",
+                                bgcolor: alpha(theme.palette.error.main, 0.12),
                               },
                             }}
                           >
                             <CloseIcon
                               fontSize="small"
-                              sx={{ fontSize: 14, color: "#9e9e9e" }}
+                              sx={{
+                                fontSize: 14,
+                                color: theme.palette.text.secondary,
+                              }}
                             />
                           </IconButton>
                         </Stack>
@@ -319,8 +353,8 @@ export const NotificationsWidget: React.FC<NotificationsWidgetProps> = ({
                     </Box>
                   </Stack>
 
-                  {index < notifications.slice(0, 5).length - 1 && (
-                    <Divider sx={{ mt: 1.5 }} />
+                  {index < visibleNotifications.length - 1 && (
+                    <Divider sx={{ mt: 1.25 }} />
                   )}
                 </Box>
               );
@@ -329,42 +363,20 @@ export const NotificationsWidget: React.FC<NotificationsWidgetProps> = ({
         )}
       </Box>
 
-      {/* ===== FOOTER ===== */}
-      {notifications.length > 5 && (
+      {notifications.length > visibleNotifications.length && (
         <Box
           sx={{
-            p: 2,
-            pt: 1.5,
-            borderTop: "1px solid rgba(0,0,0,0.06)",
+            p: 1.5,
+            pt: 0.5,
+            borderTop: `1px solid ${theme.palette.divider}`,
             textAlign: "center",
           }}
         >
-          <Button
-            size="small"
-            sx={{
-              color: "#8884d8",
-              fontWeight: 600,
-              textTransform: "none",
-              "&:hover": {
-                bgcolor: "rgba(136,132,216,0.08)",
-              },
-            }}
-          >
-            View all notifications →
-          </Button>
+          <Typography variant="caption" color="text.secondary" fontWeight={600}>
+            Showing latest {visibleNotifications.length} of {totalNotifications} notifications
+          </Typography>
         </Box>
       )}
-
-      {/* ===== CSS ANIMATION ===== */}
-      <style>
-        {`
-          @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.3; }
-            100% { opacity: 1; }
-          }
-        `}
-      </style>
     </Paper>
   );
 };

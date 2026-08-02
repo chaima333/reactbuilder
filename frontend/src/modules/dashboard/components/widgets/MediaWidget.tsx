@@ -1,8 +1,9 @@
 import React from "react";
+import { alpha, Box, Stack, Typography, useTheme } from "@mui/material";
 import { DashboardCard } from "../layout/DashboardCard";
 
 type MediaWidgetProps = {
-  data: { // بدلنا payload بـ data
+  data: {
     totalFiles: number;
     storageUsed: string;
     items: any[];
@@ -10,58 +11,75 @@ type MediaWidgetProps = {
 };
 
 export const MediaWidget: React.FC<MediaWidgetProps> = ({ data }) => {
-  // التثبت توّة يصير على data
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+
   if (!data) {
     return (
-      <DashboardCard title="Media Assets">
-        <div style={{ color: "#A3AED0", padding: "20px" }}>No media assets found.</div>
+      <DashboardCard title="Media Assets" subtitle="Storage overview">
+        <Box sx={{ py: 3, textAlign: "center", color: "text.secondary" }}>
+          <Typography variant="body2">No media assets found.</Typography>
+        </Box>
       </DashboardCard>
     );
   }
 
   return (
-    <DashboardCard title="Media Assets">
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
-        <div>
-          <p style={{ margin: 0, fontSize: "12px", color: "#64748b", fontWeight: 600 }}>FILES</p>
-          <p style={{ margin: 0, fontSize: "18px", fontWeight: "bold" }}>{data.totalFiles}</p>
-        </div>
-        <div style={{ textAlign: "right" }}>
-          <p style={{ margin: 0, fontSize: "12px", color: "#64748b", fontWeight: 600 }}>STORAGE</p>
-          <p style={{ margin: 0, fontSize: "18px", fontWeight: "bold", color: "#3b82f6" }}>{data.storageUsed}</p>
-        </div>
-      </div>
+    <DashboardCard title="Media Assets" subtitle="Latest uploaded files">
+      <Stack spacing={2}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
+          <Box>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: "uppercase" }}>
+              Files
+            </Typography>
+            <Typography variant="h5" sx={{ mt: 0.25, fontWeight: 700, color: "text.primary" }}>
+              {data.totalFiles}
+            </Typography>
+          </Box>
+          <Box sx={{ textAlign: "right" }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: "uppercase" }}>
+              Storage
+            </Typography>
+            <Typography variant="h6" sx={{ mt: 0.25, fontWeight: 700, color: theme.palette.primary.main }}>
+              {data.storageUsed}
+            </Typography>
+          </Box>
+        </Box>
 
-      <div style={{ marginTop: 10 }}>
-        <p style={{ fontSize: "11px", fontWeight: 700, color: "#94a3b8", marginBottom: "10px", textTransform: "uppercase" }}>
-          Recent Uploads
-        </p>
-        {data.items?.length > 0 ? (
-          data.items.map((m: any) => (
-            <div
-              key={m.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                padding: "10px",
-                backgroundColor: "#f8fafc",
-                borderRadius: "8px",
-                marginBottom: "8px",
-                fontSize: "13px",
-                color: "#1e293b",
-                border: "1px solid #f1f5f9"
-              }}
-            >
-              <span style={{ marginRight: "10px" }}>🖼️</span>
-              <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {m.originalName}
-              </span>
-            </div>
-          ))
-        ) : (
-          <p style={{ fontSize: "12px", color: "#cbd5e1", textAlign: "center" }}>Library is empty</p>
-        )}
-      </div>
+        <Box>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: "uppercase" }}>
+            Recent uploads
+          </Typography>
+          <Stack spacing={0.75} sx={{ mt: 1 }}>
+            {data.items?.length > 0 ? (
+              data.items.map((m: any) => (
+                <Box
+                  key={m.id}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    p: 1.15,
+                    bgcolor: alpha(theme.palette.primary.main, isDark ? 0.12 : 0.06),
+                    borderRadius: 2,
+                    border: `1px solid ${alpha(theme.palette.primary.main, isDark ? 0.24 : 0.12)}`,
+                    color: "text.primary",
+                  }}
+                >
+                  <span>🖼️</span>
+                  <Typography variant="body2" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {m.originalName}
+                  </Typography>
+                </Box>
+              ))
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", py: 1 }}>
+                Library is empty
+              </Typography>
+            )}
+          </Stack>
+        </Box>
+      </Stack>
     </DashboardCard>
   );
 };

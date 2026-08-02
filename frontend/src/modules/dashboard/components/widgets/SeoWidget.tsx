@@ -1,4 +1,5 @@
 import React from "react";
+import { alpha, Box, LinearProgress, Stack, Typography, useTheme } from "@mui/material";
 import { DashboardCard } from "../layout/DashboardCard";
 
 type SeoWidgetProps = {
@@ -9,52 +10,76 @@ type SeoWidgetProps = {
 };
 
 export const SeoWidget: React.FC<SeoWidgetProps> = ({ data }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+
   if (!data) {
     return (
-      <DashboardCard title="SEO Analysis">
-        <div style={{ color: "#A3AED0", padding: "20px" }}>No SEO Data Available</div>
+      <DashboardCard title="SEO Analysis" subtitle="Search visibility snapshot">
+        <Box sx={{ py: 3, textAlign: "center", color: "text.secondary" }}>
+          <Typography variant="body2">No SEO data available.</Typography>
+        </Box>
       </DashboardCard>
     );
   }
 
-  // تحديد اللون بناءً على الـ Score
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "#10b981"; // أخضر
-    if (score >= 50) return "#f59e0b"; // برتقالي
-    return "#ef4444"; // أحمر
+    if (score >= 80) return theme.palette.success.main;
+    if (score >= 50) return theme.palette.warning.main;
+    return theme.palette.error.main;
   };
 
-  return (
-    <DashboardCard title="SEO Performance">
-      <div style={{ padding: "10px 0" }}>
-        {/* Score Circle/Bar Section */}
-        <div style={{ marginBottom: "20px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-            <span style={{ fontSize: "14px", fontWeight: 600, color: "#64748b" }}>Overall Score</span>
-            <span style={{ fontSize: "14px", fontWeight: "bold", color: getScoreColor(data.seoScore) }}>
-              {data.seoScore}%
-            </span>
-          </div>
-          {/* Progress Bar Container */}
-          <div style={{ width: "100%", height: "8px", backgroundColor: "#f1f5f9", borderRadius: "10px", overflow: "hidden" }}>
-            <div style={{ 
-              width: `${data.seoScore}%`, 
-              height: "100%", 
-              backgroundColor: getScoreColor(data.seoScore),
-              transition: "width 1s ease-in-out" 
-            }} />
-          </div>
-        </div>
+  const scoreColor = getScoreColor(data.seoScore);
 
-        {/* Info Section */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", backgroundColor: "#f8fafc", padding: "12px", borderRadius: "12px" }}>
-          <div style={{ fontSize: "20px" }}></div>
-          <div>
-            <p style={{ margin: 0, fontSize: "12px", color: "#94a3b8", fontWeight: 600 }}>OPTIMIZED PAGES</p>
-            <p style={{ margin: 0, fontSize: "16px", fontWeight: "bold", color: "#1e293b" }}>{data.optimizedPages} Pages</p>
-          </div>
-        </div>
-      </div>
+  return (
+    <DashboardCard title="SEO Performance" subtitle="Healthy page quality at a glance">
+      <Stack spacing={2}>
+        <Box>
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              Overall score
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: scoreColor }}>
+              {data.seoScore}%
+            </Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={data.seoScore}
+            sx={{
+              height: 8,
+              borderRadius: 999,
+              bgcolor: alpha(theme.palette.primary.main, isDark ? 0.14 : 0.12),
+              "& .MuiLinearProgress-bar": {
+                bgcolor: scoreColor,
+                borderRadius: 999,
+              },
+            }}
+          />
+        </Box>
+
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.25,
+            p: 1.5,
+            borderRadius: 2,
+            bgcolor: alpha(theme.palette.background.default, 0.6),
+            border: `1px solid ${theme.palette.divider}`,
+          }}
+        >
+          <Box sx={{ fontSize: 20 }}>🔍</Box>
+          <Box>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: "uppercase" }}>
+              Optimized pages
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 700, color: "text.primary" }}>
+              {data.optimizedPages} pages
+            </Typography>
+          </Box>
+        </Box>
+      </Stack>
     </DashboardCard>
   );
 };
