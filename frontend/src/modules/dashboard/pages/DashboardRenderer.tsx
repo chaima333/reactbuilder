@@ -113,7 +113,6 @@ export default function DashboardRenderer({
   context
 }: Props) {
   const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
 
   if (!layout?.blocks || !Array.isArray(layout.blocks)) {
     return (
@@ -125,14 +124,10 @@ export default function DashboardRenderer({
           p: 5,
           textAlign: "center",
           minHeight: 420,
-          borderRadius: 5,
-          bgcolor: isDark ? alpha("#ffffff", 0.04) : "#ffffff",
-          border: `1px solid ${
-            isDark ? alpha("#ffffff", 0.08) : alpha("#0D0D0D", 0.06)
-          }`,
-          boxShadow: isDark
-            ? "0 10px 30px rgba(0,0,0,0.30)"
-            : "0 10px 30px rgba(13,13,13,0.06)",
+          borderRadius: 4,
+          bgcolor: "background.paper",
+          border: `1px solid ${theme.palette.divider}`,
+          boxShadow: "none",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -155,35 +150,27 @@ export default function DashboardRenderer({
           No dashboard layout found.
         </Typography>
 
-        <Typography
-          variant="body2"
-          sx={{
-            mt: 1,
-            color: "text.secondary"
-          }}
-        >
+        <Typography variant="body2" sx={{ mt: 1, color: "text.secondary" }}>
           Configure dashboard widgets to start tracking this site.
         </Typography>
       </MotionBox>
     );
   }
 
-  const widgetBlocks: DashboardBlock[] = (context.widgets || [])
-    .filter((widget) => widget.enabled !== false)
-    .filter(
-      (widget) =>
-        !layout.blocks.some((block) => block.id === widget.id)
-    )
-    .map((widget, index) => ({
-      id: widget.id,
-      type: widget.type,
-      col: widget.col || 6,
-      order: widget.order ?? 100 + index
-    }));
+  const sortedBlocks = [...layout.blocks].sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  const sortedBlocks = [...layout.blocks, ...widgetBlocks].sort(
-    (a, b) => (a.order || 0) - (b.order || 0)
-  );
+  const getSpan = (block: DashboardBlock) => {
+    const col =
+      typeof block.col === "number"
+        ? Math.min(12, Math.max(1, block.col))
+        : 12;
+
+    return {
+      xs: "1 / -1",
+      sm: col === 12 ? "1 / -1" : "span 1",
+      md: `span ${col}`,
+    };
+  };
 
   return (
     <Box
@@ -191,25 +178,17 @@ export default function DashboardRenderer({
         display: "grid",
         gridTemplateColumns: {
           xs: "1fr",
-          md: "repeat(12, 1fr)"
+          sm: "repeat(2, minmax(0, 1fr))",
+          md: "repeat(12, minmax(0, 1fr))",
         },
-        gap: {
-          xs: 2,
-          md: 3
-        },
-        alignItems: "stretch"
+        gap: { xs: 2, md: 2.5 },
+        alignItems: "stretch",
       }}
     >
       {sortedBlocks.map((block, index) => {
         const Component = pluginRegistry[block.type];
-        const widgetInstance = context.widgets?.find(
-          (widget: any) => widget.id === block.id
-        );
-
-        const col = Math.min(
-          12,
-          Math.max(1, block.col || 12)
-        );
+        const widgetInstance = context.widgets?.find((widget: any) => widget.id === block.id);
+        const span = getSpan(block);
 
         if (!Component) {
           return (
@@ -217,16 +196,8 @@ export default function DashboardRenderer({
               key={block.id}
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.35,
-                delay: Math.min(index * 0.04, 0.28)
-              }}
-              sx={{
-                gridColumn: {
-                  xs: "1 / -1",
-                  md: `span ${col}`
-                }
-              }}
+              transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.28) }}
+              sx={{ gridColumn: span }}
             >
               <WidgetError type={block.type} />
             </MotionBox>
@@ -238,26 +209,15 @@ export default function DashboardRenderer({
             key={block.id}
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{
-              duration: 0.35,
-              delay: Math.min(index * 0.04, 0.28)
-            }}
+            transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.28) }}
             sx={{
-              gridColumn: {
-                xs: "1 / -1",
-                md: `span ${col}`
-              },
+              gridColumn: span,
               minHeight: 150,
-              height: "100%"
+              height: "100%",
             }}
           >
             <React.Suspense fallback={<WidgetSkeleton />}>
-              <Component
-                stats={context.stats}
-                signals={context.signals}
-                data={widgetInstance?.payload}
-                context={context}
-              />
+              <Component stats={context.stats} signals={context.signals} data={widgetInstance?.payload} context={context} />
             </React.Suspense>
           </MotionBox>
         );

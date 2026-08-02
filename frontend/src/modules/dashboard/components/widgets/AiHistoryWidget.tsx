@@ -22,9 +22,7 @@ export const AiHistoryWidget: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
 
-  const siteId = useSelector(
-    (state: RootState) => state.site.currentSite?.id
-  );
+  const siteId = useSelector((state: RootState) => state.site.currentSite?.id);
 
   const { data, isLoading } = useGetAiHistoryQuery(Number(siteId), {
     skip: !siteId,
@@ -35,16 +33,12 @@ export const AiHistoryWidget: React.FC = () => {
   return (
     <Paper
       sx={{
-        p: 3,
-        borderRadius: 4,
+        p: 2.5,
+        borderRadius: 3,
         height: "100%",
-        bgcolor: isDark ? alpha("#ffffff", 0.04) : "#ffffff",
-        border: `1px solid ${
-          isDark ? alpha("#ffffff", 0.08) : alpha("#0D0D0D", 0.06)
-        }`,
-        boxShadow: isDark
-          ? "0 10px 30px rgba(0,0,0,0.28)"
-          : "0 10px 30px rgba(13,13,13,0.06)",
+        bgcolor: "background.paper",
+        border: `1px solid ${theme.palette.divider}`,
+        boxShadow: "none",
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.2, mb: 2 }}>
@@ -52,18 +46,18 @@ export const AiHistoryWidget: React.FC = () => {
           sx={{
             width: 36,
             height: 36,
-            borderRadius: "12px",
+            borderRadius: 2,
             display: "grid",
             placeItems: "center",
-            bgcolor: alpha("#00C49A", 0.12),
-            color: "#00C49A",
+            bgcolor: alpha(theme.palette.primary.main, isDark ? 0.16 : 0.1),
+            color: theme.palette.primary.main,
           }}
         >
           <AutoAwesome fontSize="small" />
         </Box>
 
         <Box>
-          <Typography variant="h6" fontWeight={900}>
+          <Typography variant="h6" fontWeight={800}>
             AI Generation History
           </Typography>
           <Typography variant="caption" color="text.secondary">
@@ -74,18 +68,16 @@ export const AiHistoryWidget: React.FC = () => {
 
       {isLoading ? (
         <Box sx={{ py: 4, display: "flex", justifyContent: "center" }}>
-          <CircularProgress size={28} sx={{ color: "#00C49A" }} />
+          <CircularProgress size={28} sx={{ color: theme.palette.primary.main }} />
         </Box>
       ) : history.length === 0 ? (
         <Box
           sx={{
             py: 4,
-            borderRadius: 3,
+            borderRadius: 2,
             textAlign: "center",
-            bgcolor: isDark ? alpha("#ffffff", 0.03) : "#F8FAFC",
-            border: `1px dashed ${
-              isDark ? alpha("#ffffff", 0.12) : alpha("#0D0D0D", 0.12)
-            }`,
+            bgcolor: alpha(theme.palette.background.default, 0.5),
+            border: `1px dashed ${theme.palette.divider}`,
           }}
         >
           <Typography variant="body2" color="text.secondary">
@@ -97,42 +89,24 @@ export const AiHistoryWidget: React.FC = () => {
           <Table size="small">
             <TableHead>
               <TableRow>
-                {["Prompt", "Category", "Pages", "Status", "Date"].map(
-                  (head) => (
-                    <TableCell
-                      key={head}
-                      sx={{
-                        fontWeight: 800,
-                        color: "text.secondary",
-                        borderBottom: `1px solid ${
-                          isDark
-                            ? alpha("#ffffff", 0.08)
-                            : alpha("#0D0D0D", 0.08)
-                        }`,
-                      }}
-                    >
-                      {head}
-                    </TableCell>
-                  )
-                )}
+                {["Prompt", "Category", "Pages", "Status", "Date"].map((head) => (
+                  <TableCell
+                    key={head}
+                    sx={{
+                      fontWeight: 800,
+                      color: "text.secondary",
+                      borderBottom: `1px solid ${theme.palette.divider}`,
+                    }}
+                  >
+                    {head}
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
 
             <TableBody>
               {history.slice(0, 5).map((item: any) => (
-                <TableRow
-                  key={item.id}
-                  hover
-                  sx={{
-                    "& td": {
-                      borderBottom: `1px solid ${
-                        isDark
-                          ? alpha("#ffffff", 0.06)
-                          : alpha("#0D0D0D", 0.05)
-                      }`,
-                    },
-                  }}
-                >
+                <TableRow key={item.id} hover sx={{ "& td": { borderBottom: `1px solid ${theme.palette.divider}` } }}>
                   <TableCell sx={{ maxWidth: 360 }}>
                     <Typography variant="body2" fontWeight={600} noWrap>
                       {item.prompt}
@@ -140,15 +114,7 @@ export const AiHistoryWidget: React.FC = () => {
                   </TableCell>
 
                   <TableCell>
-                    <Chip
-                      label={item.category}
-                      size="small"
-                      sx={{
-                        fontWeight: 800,
-                        bgcolor: alpha("#00C49A", 0.12),
-                        color: "#00A37A",
-                      }}
-                    />
+                    <Chip label={item.category} size="small" sx={{ fontWeight: 800, bgcolor: alpha(theme.palette.primary.main, isDark ? 0.16 : 0.1), color: theme.palette.primary.main }} />
                   </TableCell>
 
                   <TableCell>
@@ -159,26 +125,20 @@ export const AiHistoryWidget: React.FC = () => {
 
                   <TableCell>
                     <Chip
-                      label={
-                        item.status === "success" ? "Success" : item.status
-                      }
+                      label={item.status === "success" ? "Success" : item.status}
                       size="small"
                       variant="outlined"
                       sx={{
                         fontWeight: 800,
-                        borderColor:
-                          item.status === "success" ? "#00C49A" : "#F22F22",
-                        color:
-                          item.status === "success" ? "#00A37A" : "#F22F22",
+                        borderColor: item.status === "success" ? theme.palette.success.main : theme.palette.error.main,
+                        color: item.status === "success" ? theme.palette.success.main : theme.palette.error.main,
                       }}
                     />
                   </TableCell>
 
                   <TableCell>
                     <Typography variant="caption" color="text.secondary">
-                      {item.createdAt
-                        ? new Date(item.createdAt).toLocaleDateString()
-                        : "-"}
+                      {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "-"}
                     </Typography>
                   </TableCell>
                 </TableRow>

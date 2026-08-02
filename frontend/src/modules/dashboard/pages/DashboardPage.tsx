@@ -37,6 +37,10 @@ import {
 import DashboardRenderer from "./DashboardRenderer";
 
 import {
+  getDefaultDashboardLayout,
+} from "../core/defaultDashboardLayout";
+
+import {
   SiteSelector,
 } from "../components/SiteSelector";
 
@@ -120,9 +124,8 @@ export const DashboardPage:
 
     const pageBackground =
       isDarkMode
-        ? theme.palette.background
-            .default
-        : "#F5F7FB";
+        ? theme.palette.background.default
+        : alpha(theme.palette.primary.main, 0.03);
 
     const surfaceBackground =
       isDarkMode
@@ -632,7 +635,10 @@ export const DashboardPage:
             }}
           >
             <DashboardRenderer
-              layout={data.layout}
+              layout={getDefaultDashboardLayout(
+                data.layout,
+                data.widgets
+              )}
               context={data}
             />
           </Box>

@@ -1,4 +1,7 @@
 import React from "react";
+import { Stack, Typography, useTheme } from "@mui/material";
+import { Article, Public, Visibility } from "@mui/icons-material";
+import { DashboardCard } from "../layout/DashboardCard";
 import { DashboardStats } from "../../types/dashboard.types";
 
 type StatsCardsProps = {
@@ -6,73 +9,74 @@ type StatsCardsProps = {
 };
 
 export const StatsCards: React.FC<StatsCardsProps> = ({ stats }) => {
+  const theme = useTheme();
+
   const items: Array<{
     label: string;
     value: string | number;
     detail?: string;
-    color: string;
-    icon: string;
+    accent: string;
+    icon: React.ReactNode;
   }> = [
     {
       label: "Current Site",
       value: stats?.siteName || "Unknown",
-      detail: `Site ID: ${stats?.siteId ?? "—"}`,
-      color: "#3b82f6",
-      icon: "🌐"
+      detail: `Site ID: ${stats?.siteId ?? "-"}`,
+      accent: theme.palette.primary.main,
+      icon: <Public fontSize="small" />,
     },
-    { label: "Total Pages", value: stats?.totalPages ?? 0, color: "#10b981", icon: "📄" },
-    { label: "Total Views", value: stats?.totalViews ?? 0, color: "#8b5cf6", icon: "👁️" },
+    {
+      label: "Total Pages",
+      value: stats?.totalPages ?? 0,
+      accent: theme.palette.success.main,
+      icon: <Article fontSize="small" />,
+    },
+    {
+      label: "Total Views",
+      value: stats?.totalViews ?? 0,
+      accent: theme.palette.secondary.main,
+      icon: <Visibility fontSize="small" />,
+    },
   ];
 
   return (
-    <div style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-      gap: "20px",
-      marginBottom: "30px",
-      fontFamily: "sans-serif"
-    }}>
-      {items.map((item, index) => (
-        <div key={index} style={{
-          backgroundColor: "#ffffff",
-          padding: "20px",
-          borderRadius: "16px",
-          border: "1px solid #eef2f6",
-          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
-          display: "flex",
-          alignItems: "center"
-        }}>
-          {/* Icon Circle */}
-          <div style={{
-            width: "50px",
-            height: "50px",
-            borderRadius: "12px",
-            backgroundColor: `${item.color}15`, // Transparency
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "24px",
-            marginRight: "15px"
-          }}>
-            {item.icon}
-          </div>
+    <Stack
+      sx={{
+        display: "grid",
+        gridTemplateColumns: {
+          xs: "1fr",
+          md: "repeat(3, minmax(0, 1fr))",
+        },
+        gap: { xs: 2, md: 2.5 },
+      }}
+    >
+      {items.map((item) => {
+        const displayValue =
+          typeof item.value === "number"
+            ? item.value.toLocaleString()
+            : String(item.value);
 
-          {/* Data */}
-          <div>
-            <p style={{ margin: 0, fontSize: "14px", color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>
-              {item.label}
-            </p>
-            <h3 style={{ margin: "5px 0 0 0", fontSize: "24px", fontWeight: "bold", color: "#1e293b" }}>
-              {item.value.toLocaleString()}
-            </h3>
-            {item.detail && (
-              <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#94a3b8" }}>
-                {item.detail}
-              </p>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
+        return (
+          <DashboardCard
+            key={item.label}
+            title={item.label}
+            subtitle={item.detail}
+            icon={item.icon}
+            sx={{ minHeight: 168 }}
+          >
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 800,
+                letterSpacing: "-0.03em",
+                color: item.accent,
+              }}
+            >
+              {displayValue}
+            </Typography>
+          </DashboardCard>
+        );
+      })}
+    </Stack>
   );
 };

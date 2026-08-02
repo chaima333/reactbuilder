@@ -1,96 +1,105 @@
 import React from "react";
+import { alpha, Box, Stack, Typography, useTheme } from "@mui/material";
+import { CheckCircleOutline, Inventory2Outlined } from "@mui/icons-material";
 import { DashboardCard } from "../layout/DashboardCard";
 
 type VersionWidgetProps = {
-  data: {
+  data?: {
     totalVersions: number;
-    lastBackup: string;
+    lastBackup?: string | null;
   };
 };
 
 export const VersionWidget: React.FC<VersionWidgetProps> = ({ data }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+
   if (!data) {
     return (
-      <DashboardCard title="Versions & Backups">
-        <div style={{ color: "#A3AED0", padding: "20px" }}>No backup history found.</div>
+      <DashboardCard title="Snapshot History" subtitle="Recent version history">
+        <Box sx={{ py: 3, textAlign: "center", color: "text.secondary" }}>
+          <Typography variant="body2">No backup history found.</Typography>
+        </Box>
       </DashboardCard>
     );
   }
 
-  // دالة بسيطة لتنسيق التاريخ
-  const formatDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return new Intl.DateTimeFormat('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit'
-      }).format(date);
-    } catch (e) {
+  const formatDate = (dateStr?: string | null) => {
+    if (!dateStr) {
+      return "No backup yet";
+    }
+
+    const date = new Date(dateStr);
+
+    if (Number.isNaN(date.getTime())) {
       return dateStr;
     }
+
+    return new Intl.DateTimeFormat("en-GB", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
   };
 
   return (
-    <DashboardCard title="Snapshot History">
-      <div style={{ padding: "10px 0" }}>
-        {/* Versions Count Section */}
-        <div style={{ 
-          display: "flex", 
-          justifyContent: "space-between", 
-          alignItems: "center",
-          marginBottom: "20px",
-          padding: "15px",
-          backgroundColor: "#EEF2FF",
-          borderRadius: "14px",
-          border: "1px solid #E0E7FF"
-        }}>
-          <div>
-            <p style={{ margin: 0, fontSize: "12px", color: "#6366F1", fontWeight: 700, textTransform: "uppercase" }}>
+    <DashboardCard title="Snapshot History" subtitle="Keep a reliable restore trail">
+      <Stack spacing={2}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            p: 1.75,
+            borderRadius: 2,
+            bgcolor: alpha(theme.palette.primary.main, isDark ? 0.16 : 0.08),
+            border: `1px solid ${alpha(
+              theme.palette.primary.main,
+              isDark ? 0.28 : 0.16
+            )}`,
+          }}
+        >
+          <Box>
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: 700,
+                color: theme.palette.primary.main,
+                textTransform: "uppercase",
+              }}
+            >
               Stored Snapshots
-            </p>
-            <h3 style={{ margin: "4px 0 0 0", fontSize: "28px", fontWeight: 800, color: "#4338CA" }}>
+            </Typography>
+            <Typography
+              variant="h4"
+              sx={{ mt: 0.5, fontWeight: 800, color: "text.primary" }}
+            >
               {data.totalVersions}
-            </h3>
-          </div>
-          <div style={{ fontSize: "32px" }}></div>
-        </div>
+            </Typography>
+          </Box>
+          <Inventory2Outlined
+            sx={{ fontSize: 24, color: theme.palette.primary.main }}
+          />
+        </Box>
 
-        {/* Last Backup Section */}
-        <div style={{ display: "flex", alignItems: "start", gap: "12px", padding: "0 5px" }}>
-          <div style={{ color: "#10B981", marginTop: "2px" }}>
-            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div>
-            <p style={{ margin: 0, fontSize: "13px", fontWeight: 600, color: "#1e293b" }}>
-              Last Backup Successful
-            </p>
-            <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
+        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.25 }}>
+          <CheckCircleOutline
+            sx={{ color: theme.palette.success.main, mt: 0.25, fontSize: 20 }}
+          />
+          <Box>
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 600, color: "text.primary" }}
+            >
+              Last backup
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
               {formatDate(data.lastBackup)}
-            </p>
-          </div>
-        </div>
-
-        {/* Action Button (Optional Visual) */}
-        <button style={{
-          marginTop: "20px",
-          width: "100%",
-          padding: "10px",
-          borderRadius: "10px",
-          border: "none",
-          backgroundColor: "#F8FAFC",
-          color: "#475569",
-          fontSize: "12px",
-          fontWeight: 600,
-          cursor: "pointer",
-          transition: "all 0.2s"
-        }}>
-          View Full History
-        </button>
-      </div>
+            </Typography>
+          </Box>
+        </Box>
+      </Stack>
     </DashboardCard>
   );
 };
