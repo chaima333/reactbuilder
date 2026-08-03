@@ -135,6 +135,7 @@ export const FlexItemBlock = ({
     });
 
   const {
+    context,
     rootProps
   } = runtime;
 
@@ -215,6 +216,14 @@ const hasDropdownChild =
       )
   );
 
+const hasChildren =
+  React.Children.count(children) > 0 ||
+  (block?.children?.length || 0) > 0;
+
+const isEditorEmpty =
+  context.mode === "editor" &&
+  !hasChildren;
+
  if (
   String(block?.id || "").includes("navbar-link-item")
 ) {
@@ -248,18 +257,46 @@ const itemStyle: React.CSSProperties = {
       ? "calc(50% - 12px)"
     : resolved.maxWidth,
   minWidth: resolved.minWidth || 0,
+  minHeight:
+    isEditorEmpty
+      ? resolved.minHeight || "96px"
+      : resolved.minHeight,
 
-  display: resolved.display,
+  display:
+    isEditorEmpty
+      ? resolved.display || "flex"
+      : resolved.display,
   flexDirection: resolved.flexDirection,
-  justifyContent: resolved.justifyContent,
-  alignItems: resolved.alignItems,
+  justifyContent:
+    isEditorEmpty
+      ? resolved.justifyContent || "center"
+      : resolved.justifyContent,
+  alignItems:
+    isEditorEmpty
+      ? resolved.alignItems || "center"
+      : resolved.alignItems,
   gap: resolved.gap,
 
-  padding: resolved.padding,
-  paddingTop: resolved.paddingTop,
-  paddingBottom: resolved.paddingBottom,
-  paddingLeft: resolved.paddingLeft,
-  paddingRight: resolved.paddingRight,
+  padding:
+    isEditorEmpty
+      ? resolved.padding || "16px"
+      : resolved.padding,
+  paddingTop:
+    isEditorEmpty
+      ? resolved.paddingTop || resolved.padding || "16px"
+      : resolved.paddingTop,
+  paddingBottom:
+    isEditorEmpty
+      ? resolved.paddingBottom || resolved.padding || "16px"
+      : resolved.paddingBottom,
+  paddingLeft:
+    isEditorEmpty
+      ? resolved.paddingLeft || resolved.padding || "16px"
+      : resolved.paddingLeft,
+  paddingRight:
+    isEditorEmpty
+      ? resolved.paddingRight || resolved.padding || "16px"
+      : resolved.paddingRight,
 
   margin: resolved.margin,
   marginTop: resolved.marginTop,
@@ -270,10 +307,22 @@ const itemStyle: React.CSSProperties = {
   background: resolved.background,
   backgroundColor: resolved.background
     ? undefined
-    : resolved.backgroundColor,
-  border: resolved.border,
+    : isEditorEmpty
+      ? resolved.backgroundColor ||
+        "var(--mui-palette-action-hover, rgba(25, 118, 210, 0.06))"
+      : resolved.backgroundColor,
+  border:
+    isEditorEmpty
+      ? resolved.border ||
+        "1px dashed var(--mui-palette-divider, rgba(25, 118, 210, 0.4))"
+      : resolved.border,
   borderRadius: resolved.borderRadius,
 boxSizing: "border-box",
+color:
+  isEditorEmpty
+    ? resolved.color ||
+      "var(--mui-palette-text-secondary, rgba(0, 0, 0, 0.6))"
+    : resolved.color,
 
 position:
   resolved.position ||
@@ -337,7 +386,9 @@ if (
   ].filter(Boolean).join(" ")}
   style={itemStyle}
 >
-  {children}
+  {isEditorEmpty
+    ? "Drop blocks here (Flex Item)"
+    : children}
 </div>
 );
 };

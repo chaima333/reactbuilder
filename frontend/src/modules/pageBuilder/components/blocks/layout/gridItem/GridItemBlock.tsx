@@ -59,8 +59,12 @@ export const GridItemBlock = ({
 
   const hasChildren =
 
-    (block?.children?.length || 0)
-    > 0;
+    React.Children.count(children) > 0 ||
+    (block?.children?.length || 0) > 0;
+
+  const isEditorEmpty =
+    context.mode === "editor" &&
+    !hasChildren;
 
   // =====================================
   // OUTER STYLE
@@ -71,7 +75,10 @@ export const GridItemBlock = ({
   minWidth: 0,
   maxWidth: resolved.maxWidth || "100%",
   height: resolved.height,
-  minHeight: resolved.minHeight || 0,
+  minHeight:
+    isEditorEmpty
+      ? resolved.minHeight || "96px"
+      : resolved.minHeight || 0,
 
   alignSelf: resolved.alignSelf || "stretch",
   justifySelf: resolved.justifySelf || "stretch",
@@ -80,13 +87,21 @@ export const GridItemBlock = ({
   boxSizing: "border-box",
 
   display:
-    resolved.display === "grid" || resolved.display === "flex"
-      ? resolved.display
-      : "block",
+    isEditorEmpty
+      ? resolved.display || "flex"
+      : resolved.display === "grid" || resolved.display === "flex"
+        ? resolved.display
+        : "block",
 
   flexDirection: resolved.flexDirection,
-  alignItems: resolved.alignItems,
-  justifyContent: resolved.justifyContent,
+  alignItems:
+    isEditorEmpty
+      ? resolved.alignItems || "center"
+      : resolved.alignItems,
+  justifyContent:
+    isEditorEmpty
+      ? resolved.justifyContent || "center"
+      : resolved.justifyContent,
   gap: resolved.gap,
 
   gridColumn:
@@ -95,17 +110,45 @@ export const GridItemBlock = ({
       : resolved.gridColumn || "auto",
   gridRow: resolved.gridRow || "auto",
 
-  padding: resolved.padding,
-  paddingTop: resolved.paddingTop,
-  paddingRight: resolved.paddingRight,
-  paddingBottom: resolved.paddingBottom,
-  paddingLeft: resolved.paddingLeft,
+  padding:
+    isEditorEmpty
+      ? resolved.padding || "16px"
+      : resolved.padding,
+  paddingTop:
+    isEditorEmpty
+      ? resolved.paddingTop || resolved.padding || "16px"
+      : resolved.paddingTop,
+  paddingRight:
+    isEditorEmpty
+      ? resolved.paddingRight || resolved.padding || "16px"
+      : resolved.paddingRight,
+  paddingBottom:
+    isEditorEmpty
+      ? resolved.paddingBottom || resolved.padding || "16px"
+      : resolved.paddingBottom,
+  paddingLeft:
+    isEditorEmpty
+      ? resolved.paddingLeft || resolved.padding || "16px"
+      : resolved.paddingLeft,
 
-  background: resolved.background || resolved.backgroundColor,
-  border: resolved.border,
+  background:
+    isEditorEmpty
+      ? resolved.background ||
+        resolved.backgroundColor ||
+        "var(--mui-palette-action-hover, rgba(25, 118, 210, 0.06))"
+      : resolved.background || resolved.backgroundColor,
+  border:
+    isEditorEmpty
+      ? resolved.border ||
+        "1px dashed var(--mui-palette-divider, rgba(25, 118, 210, 0.4))"
+      : resolved.border,
   borderRadius: resolved.borderRadius,
   boxShadow: resolved.boxShadow,
-  color: resolved.color,
+  color:
+    isEditorEmpty
+      ? resolved.color ||
+        "var(--mui-palette-text-secondary, rgba(0, 0, 0, 0.6))"
+      : resolved.color,
   textAlign: resolved.textAlign,
 
   position: "relative",
@@ -149,61 +192,59 @@ const innerStyle: React.CSSProperties = {
       style={outerStyle}
     >
 
-      <div
-        className={
-          shouldFlowEditorCardContent
-            ? "pb-grid-item-flow"
-            : undefined
-        }
-        style={innerStyle}
-      >
+      {isEditorEmpty ? (
 
-        {shouldFlowEditorCardContent && (
+        "Drop blocks here (Grid Item)"
 
-          <style>
-            {`
-              .pb-gridItem > .pb-grid-item-flow .editor-wrapper {
-                min-width: 0 !important;
-              }
+      ) : (
 
-              .pb-gridItem > .pb-grid-item-flow .editor-wrapper[data-editor-block-type="title"],
-              .pb-gridItem > .pb-grid-item-flow .editor-wrapper[data-editor-block-type="text"] {
-                display: block !important;
-                width: 100% !important;
-                max-width: 100% !important;
-                min-width: 0 !important;
-                flex: 0 0 auto !important;
-              }
+        <div
+          className={
+            shouldFlowEditorCardContent
+              ? "pb-grid-item-flow"
+              : undefined
+          }
+          style={innerStyle}
+        >
 
-              .pb-gridItem > .pb-grid-item-flow .editor-wrapper[data-editor-block-type="title"] > *,
-              .pb-gridItem > .pb-grid-item-flow .editor-wrapper[data-editor-block-type="text"] > * {
-                position: static !important;
-                top: auto !important;
-                right: auto !important;
-                bottom: auto !important;
-                left: auto !important;
-                height: auto !important;
-                min-height: 0 !important;
-                max-height: none !important;
-                transform: none !important;
-              }
-            `}
-          </style>
-        )}
+          {shouldFlowEditorCardContent && (
 
-        {children}
+            <style>
+              {`
+                .pb-gridItem > .pb-grid-item-flow .editor-wrapper {
+                  min-width: 0 !important;
+                }
 
-        {!hasChildren && (
+                .pb-gridItem > .pb-grid-item-flow .editor-wrapper[data-editor-block-type="title"],
+                .pb-gridItem > .pb-grid-item-flow .editor-wrapper[data-editor-block-type="text"] {
+                  display: block !important;
+                  width: 100% !important;
+                  max-width: 100% !important;
+                  min-width: 0 !important;
+                  flex: 0 0 auto !important;
+                }
 
-          <div>
+                .pb-gridItem > .pb-grid-item-flow .editor-wrapper[data-editor-block-type="title"] > *,
+                .pb-gridItem > .pb-grid-item-flow .editor-wrapper[data-editor-block-type="text"] > * {
+                  position: static !important;
+                  top: auto !important;
+                  right: auto !important;
+                  bottom: auto !important;
+                  left: auto !important;
+                  height: auto !important;
+                  min-height: 0 !important;
+                  max-height: none !important;
+                  transform: none !important;
+                }
+              `}
+            </style>
+          )}
 
-            Drop blocks here
-            (Grid Item)
+          {children}
 
-          </div>
-        )}
+        </div>
 
-      </div>
+      )}
 
     </div>
   );
