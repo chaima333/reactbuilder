@@ -108,6 +108,13 @@ export const resolveDropBehavior = ({
 
   const wrapperRule = getWrapperRule(targetType, effectiveDraggedType);
 
+  if (
+    wrapperRule &&
+    (targetType === "flex" || targetType === "grid")
+  ) {
+    return denied(calculatedPosition, calculatedIndex);
+  }
+
   if (wrapperRule) {
     return inside(defaultIndex, {
       autoWrap: true,

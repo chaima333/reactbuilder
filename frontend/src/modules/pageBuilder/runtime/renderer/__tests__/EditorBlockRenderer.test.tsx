@@ -20,6 +20,8 @@ import { resolveDropBehavior } from "../../../core/dnd/DropResolver";
 import { canMoveWithinDndSlots } from "../../../core/dnd/dndSlots";
 import { RuntimeProvider } from "../../context/RuntimeProvider";
 import { EditorBlockRenderer } from "../EditorBlockRenderer";
+import { FlexItemBlock } from "../../../components/blocks/layout/flexItem/FlexItemBlock";
+import { GridItemBlock } from "../../../components/blocks/layout/gridItem/GridItemBlock";
 
 vi.mock("@dnd-kit/core", async () => {
   const actual = await vi.importActual<typeof import("@dnd-kit/core")>(
@@ -70,7 +72,7 @@ vi.mock("../../../core/blockRegistry", () => ({
       fields: [],
       rules: {
         allowedParents: ["flex", "navbar", "footer"],
-        allowedChildren: ["text", "button", "section"],
+        allowedChildren: ["text", "title", "button", "image", "link", "section"],
       },
       component: ({ children }: { children?: React.ReactNode }) => (
         <div>{children}</div>
@@ -98,7 +100,7 @@ vi.mock("../../../core/blockRegistry", () => ({
       fields: [],
       rules: {
         allowedParents: ["grid", "footer"],
-        allowedChildren: ["text", "button", "section"],
+        allowedChildren: ["text", "title", "button", "image", "link", "section"],
       },
       component: ({ children }: { children?: React.ReactNode }) => (
         <div>{children}</div>
@@ -165,6 +167,22 @@ vi.mock("../../../core/blockRegistry", () => ({
         allowedChildren: [],
       },
       component: () => <button>Button</button>,
+    },
+    title: {
+      type: "title",
+      label: "Title",
+      category: "content",
+      isContainer: false,
+      fields: [],
+      defaultData: {
+        props: {},
+        style: { desktop: {} },
+      },
+      rules: {
+        allowedParents: ["section", "flexItem", "gridItem"],
+        allowedChildren: [],
+      },
+      component: () => <h2>Title</h2>,
     },
   },
 }));
@@ -289,6 +307,21 @@ const renderEditorBlock = (
     <RuntimeProvider
       value={{
         mode: "editor",
+        device: "desktop",
+      }}
+    >
+      {element}
+    </RuntimeProvider>
+  );
+
+const renderRuntimeElement = (
+  element: React.ReactElement,
+  mode: "editor" | "preview" | "public" = "editor"
+) =>
+  renderIntoDom(
+    <RuntimeProvider
+      value={{
+        mode,
         device: "desktop",
       }}
     >
@@ -557,6 +590,34 @@ describe("EditorBlockRenderer drag behavior", () => {
     expect(
       resolveDropBehavior({
         draggedType: "text",
+        targetType: "flex",
+        calculatedPosition: "inside",
+        calculatedIndex: 0,
+        targetChildrenCount: 0,
+      })
+    ).toMatchObject({
+      allowed: false,
+      position: "inside",
+      index: 0,
+    });
+
+    expect(
+      resolveDropBehavior({
+        draggedType: "button",
+        targetType: "grid",
+        calculatedPosition: "inside",
+        calculatedIndex: 0,
+        targetChildrenCount: 0,
+      })
+    ).toMatchObject({
+      allowed: false,
+      position: "inside",
+      index: 0,
+    });
+
+    expect(
+      resolveDropBehavior({
+        draggedType: "text",
         targetType: "navbar",
         calculatedPosition: "before",
         calculatedIndex: 0,
@@ -609,6 +670,83 @@ describe("EditorBlockRenderer drag behavior", () => {
       position: "after",
       index: 1,
     });
+  });
+
+  it("renders empty flexItem as a visible semantic editor drop zone", () => {
+    const rendered = renderRuntimeElement(
+      <FlexItemBlock
+        block={flexItemBlock("empty-flex-item")}
+        device="desktop"
+      />
+    );
+    roots.push(rendered);
+
+    const root = rendered.container.querySelector(
+      "#pb-runtime-empty-flex-item"
+    ) as HTMLElement | null;
+
+    expect(root).toBeInstanceOf(HTMLElement);
+    expect(root?.dataset.blockType).toBe("flexItem");
+    expect(root?.dataset.droppableContainer).toBe("true");
+    expect(root?.textContent).toContain("Drop blocks here (Flex Item)");
+    expect(root?.style.minHeight).toBe("96px");
+    expect(root?.style.paddingTop).toBe("16px");
+    expect(root?.style.border).toContain("dashed");
+  });
+
+  it("renders empty gridItem as a visible semantic editor drop zone", () => {
+    const rendered = renderRuntimeElement(
+      <GridItemBlock
+        block={gridItemBlock("empty-grid-item")}
+        device="desktop"
+      />
+    );
+    roots.push(rendered);
+
+    const root = rendered.container.querySelector(
+      "#pb-runtime-empty-grid-item"
+    ) as HTMLElement | null;
+
+    expect(root).toBeInstanceOf(HTMLElement);
+    expect(root?.dataset.blockType).toBe("gridItem");
+    expect(root?.dataset.droppableContainer).toBe("true");
+    expect(root?.textContent).toContain("Drop blocks here (Grid Item)");
+    expect(root?.style.minHeight).toBe("96px");
+    expect(root?.style.paddingTop).toBe("16px");
+    expect(root?.style.border).toContain("dashed");
+  });
+
+  it("does not render editor empty item placeholders outside editor mode", () => {
+    const flexPreview = renderRuntimeElement(
+      <FlexItemBlock
+        block={flexItemBlock("preview-flex-item")}
+        device="desktop"
+      />,
+      "preview"
+    );
+    roots.push(flexPreview);
+
+    const gridPublic = renderRuntimeElement(
+      <GridItemBlock
+        block={gridItemBlock("public-grid-item")}
+        device="desktop"
+      />,
+      "public"
+    );
+    roots.push(gridPublic);
+
+    expect(flexPreview.container.textContent).not.toContain(
+      "Drop blocks here"
+    );
+    expect(gridPublic.container.textContent).not.toContain(
+      "Drop blocks here"
+    );
+    expect(
+      flexPreview.container.querySelector("[data-droppable-container]")
+    ).toBeNull();
+    expect(
+      gridPublic.container.querySelector("[data-droppable-container]")
+    ).toBeNull();
   });
 
   it("measures the concrete runtime root and uses the toolbar handle as the activator", () => {
@@ -1266,6 +1404,132 @@ describe("EditorBlockRenderer drag behavior", () => {
 
     beginDrag(getHandlers(), active, 75);
     hoverDrag(getHandlers(), active, "flex-item-1");
+
+    expect(getHandlers()?.isAllowed).toBe(false);
+
+    endDrag(getHandlers(), active);
+
+    expect(addBlock).not.toHaveBeenCalled();
+    expect(moveBlock).not.toHaveBeenCalled();
+  });
+
+  it("accepts a Button palette drag into an empty flexItem", () => {
+    installSemanticTarget("flex-item-1", "flexItem");
+    const addBlock = vi.fn();
+    const moveBlock = vi.fn();
+    const { rendered, getHandlers } = renderDragHarness(
+      [
+        flexWithChildren("flex-1", [
+          flexItemBlock("flex-item-1"),
+        ]),
+      ],
+      moveBlock,
+      () => "page",
+      { addBlock }
+    );
+    roots.push(rendered);
+
+    const active = dragActive("new-button", "button", true);
+
+    beginDrag(getHandlers(), active, 75);
+    hoverDrag(getHandlers(), active, "flex-item-1");
+
+    expect(getHandlers()?.isAllowed).toBe(true);
+
+    endDrag(getHandlers(), active);
+
+    expect(moveBlock).not.toHaveBeenCalled();
+    expect(addBlock).toHaveBeenCalledWith(
+      "button",
+      "flex-item-1",
+      "inside",
+      null,
+      0
+    );
+  });
+
+  it("accepts a Title palette drag into an empty flexItem", () => {
+    installSemanticTarget("flex-item-1", "flexItem");
+    const addBlock = vi.fn();
+    const { rendered, getHandlers } = renderDragHarness(
+      [
+        flexWithChildren("flex-1", [
+          flexItemBlock("flex-item-1"),
+        ]),
+      ],
+      vi.fn(),
+      () => "page",
+      { addBlock }
+    );
+    roots.push(rendered);
+
+    const active = dragActive("new-title", "title", true);
+
+    beginDrag(getHandlers(), active, 75);
+    hoverDrag(getHandlers(), active, "flex-item-1");
+
+    expect(getHandlers()?.isAllowed).toBe(true);
+
+    endDrag(getHandlers(), active);
+
+    expect(addBlock).toHaveBeenCalledWith(
+      "title",
+      "flex-item-1",
+      "inside",
+      null,
+      0
+    );
+  });
+
+  it("accepts a Button palette drag into an empty gridItem", () => {
+    installSemanticTarget("grid-item-1", "gridItem");
+    const addBlock = vi.fn();
+    const { rendered, getHandlers } = renderDragHarness(
+      [
+        gridWithChildren("grid-1", [
+          gridItemBlock("grid-item-1"),
+        ]),
+      ],
+      vi.fn(),
+      () => "page",
+      { addBlock }
+    );
+    roots.push(rendered);
+
+    const active = dragActive("new-button", "button", true);
+
+    beginDrag(getHandlers(), active, 75);
+    hoverDrag(getHandlers(), active, "grid-item-1");
+
+    expect(getHandlers()?.isAllowed).toBe(true);
+
+    endDrag(getHandlers(), active);
+
+    expect(addBlock).toHaveBeenCalledWith(
+      "button",
+      "grid-item-1",
+      "inside",
+      null,
+      0
+    );
+  });
+
+  it("rejects a Button palette drag directly into Flex", () => {
+    installSemanticTarget("flex-1", "flex");
+    const addBlock = vi.fn();
+    const moveBlock = vi.fn();
+    const { rendered, getHandlers } = renderDragHarness(
+      [flexWithChildren("flex-1", [])],
+      moveBlock,
+      () => "page",
+      { addBlock }
+    );
+    roots.push(rendered);
+
+    const active = dragActive("new-button", "button", true);
+
+    beginDrag(getHandlers(), active, 75);
+    hoverDrag(getHandlers(), active, "flex-1");
 
     expect(getHandlers()?.isAllowed).toBe(false);
 
