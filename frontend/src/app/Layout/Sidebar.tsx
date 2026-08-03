@@ -97,11 +97,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: <SitesIcon />,
       path: "/sites",
     },
-    {
-  text: "Help Center",
-  icon: <HelpIcon />,
-  path: "/help",
-},
+
   ];
 
 const workspaceItems: SidebarItem[] = [
@@ -143,6 +139,11 @@ const workspaceItems: SidebarItem[] = [
 ];
 
   const bottomItems: SidebarItem[] = [
+     {
+    text: "Centre d’aide",
+    icon: <HelpIcon />,
+    path: "/help",
+  },
     {
       text: "Paramètres",
       icon: <SettingsIcon />,
