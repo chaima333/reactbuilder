@@ -83,26 +83,50 @@ const matchesTarget = (
   block: PageBlock,
   target?: string
 ): boolean => {
+  const normalizedTarget =
+    String(target || "")
+      .trim()
+      .toLowerCase();
+
   if (
-    !target ||
-    target === "page"
+    !normalizedTarget ||
+    normalizedTarget === "page"
   ) {
     return true;
   }
 
-  return blockText(block).includes(
-    target.toLowerCase()
+  const searchableText =
+    `${ownBlockText(block)} ${directChildrenText(block)}`;
+
+  return searchableText.includes(
+    normalizedTarget
   );
 };
+
+const CARD_CONTAINER_TYPES =
+  new Set([
+    "card",
+    "flex",
+    "flexItem",
+    "gridItem"
+  ]);
 
 const looksLikeCard = (
   block: PageBlock
 ): boolean => {
-  const text =
-    blockText(block);
+  const type =
+    String(block.type || "");
+
+  if (!CARD_CONTAINER_TYPES.has(type)) {
+    return false;
+  }
 
   const id =
-    String(block.id || "").toLowerCase();
+    String(block.id || "")
+      .toLowerCase();
+
+  const text =
+    `${ownBlockText(block)} ${directChildrenText(block)}`;
 
   return (
     id.includes("card") ||
@@ -279,12 +303,15 @@ const applyActionToBlock = (
       block.type === "footer"
     ) {
       desktop.padding =
+        desktop.padding ||
         "96px 40px";
 
       tablet.padding =
+        tablet.padding ||
         "72px 28px";
 
       mobile.padding =
+        mobile.padding ||
         "56px 18px";
 
       desktop.boxSizing =
@@ -308,6 +335,7 @@ const applyActionToBlock = (
 
   if (
     isImprove("IMPROVE_CARDS") &&
+    targetMatches &&
     looksLikeCard(block)
   ) {
     if (
@@ -347,6 +375,7 @@ const applyActionToBlock = (
 
   if (
     isImprove("IMPROVE_BUTTONS") &&
+    targetMatches &&
     block.type === "button"
   ) {
     desktop.borderRadius =
@@ -367,6 +396,7 @@ const applyActionToBlock = (
 
   if (
     isImprove("IMPROVE_IMAGES") &&
+    targetMatches &&
     block.type === "image"
   ) {
     desktop.borderRadius =
@@ -384,6 +414,7 @@ const applyActionToBlock = (
 
   if (
     isImprove("IMPROVE_FORMS") &&
+    targetMatches &&
     (
       block.type === "input" ||
       block.type === "textarea"
@@ -573,57 +604,74 @@ const applyActionToBlock = (
   ) {
     if (navbarScopeStarts) {
       desktop.display =
+        desktop.display ||
         "flex";
 
       desktop.flexDirection =
+        desktop.flexDirection ||
         "row";
 
       desktop.alignItems =
+        desktop.alignItems ||
         "center";
 
       desktop.justifyContent =
+        desktop.justifyContent ||
         "space-between";
 
       desktop.gap =
+        desktop.gap ||
         "28px";
 
       desktop.width =
+        desktop.width ||
         "100%";
 
       desktop.minHeight =
+        desktop.minHeight ||
         "82px";
 
       desktop.padding =
+        desktop.padding ||
         "18px 56px";
 
       desktop.backgroundColor =
+        desktop.backgroundColor ||
         "#ffffff";
 
       desktop.boxShadow =
+        desktop.boxShadow ||
         "0 12px 35px rgba(15,23,42,0.08)";
 
       desktop.borderBottom =
+        desktop.borderBottom ||
         "1px solid #e5e7eb";
 
       desktop.boxSizing =
         "border-box";
 
       tablet.padding =
+        tablet.padding ||
         "16px 32px";
 
       mobile.flexDirection =
+        mobile.flexDirection ||
         "column";
 
       mobile.alignItems =
+        mobile.alignItems ||
         "center";
 
       mobile.justifyContent =
+        mobile.justifyContent ||
         "center";
 
       mobile.gap =
+        mobile.gap ||
         "16px";
 
       mobile.padding =
+        mobile.padding ||
         "18px";
     }
 
@@ -780,27 +828,34 @@ desktop.padding =
 ) {
   if (footerScopeStarts) {
     desktop.backgroundColor =
+      desktop.backgroundColor ||
       "#020617";
 
     desktop.color =
+      desktop.color ||
       "#e5e7eb";
 
     desktop.padding =
+      desktop.padding ||
       "48px 56px 24px";
 
     desktop.width =
+      desktop.width ||
       "100%";
 
     desktop.boxSizing =
       "border-box";
 
     desktop.display =
+      desktop.display ||
       "block";
 
     tablet.padding =
+      tablet.padding ||
       "40px 32px 22px";
 
     mobile.padding =
+      mobile.padding ||
       "36px 20px 20px";
   }
 
@@ -841,9 +896,12 @@ desktop.padding =
     block.type === "link"
   ) {
     desktop.color =
-      block.type === "title"
-        ? "#ffffff"
-        : "#cbd5e1";
+      desktop.color ||
+      (
+        block.type === "title"
+          ? "#ffffff"
+          : "#cbd5e1"
+      );
 
     desktop.margin =
       desktop.margin || "0";
