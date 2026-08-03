@@ -332,15 +332,53 @@ const getDraggedType = (
 const isPrimitiveBlock = (type: BlockType) =>
   ["button", "image", "text", "title", "link", "input", "select", "textarea","collectionList","form"].includes(type);
 
+const isNewPaletteDrag = (
+  active: DragOverEvent["active"] | DragEndEvent["active"]
+): boolean =>
+  active.data.current?.isNew === true;
+
+const canUseCrossSlotGuard = (
+  active: DragOverEvent["active"] | DragEndEvent["active"],
+  blocks: Block[]
+): boolean =>
+  !isNewPaletteDrag(active) &&
+  Boolean(
+    findBlockInTree(
+      blocks,
+      active.id.toString()
+    )
+  );
+
+const resolveSlotAllowed = (
+  active: DragOverEvent["active"] | DragEndEvent["active"],
+  blocks: Block[],
+  resolveDndSlot: UseDragAndDropProps["resolveDndSlot"],
+  targetSlot: DndSlot,
+  targetId?: string
+): boolean => {
+  if (
+    !resolveDndSlot ||
+    !canUseCrossSlotGuard(
+      active,
+      blocks
+    )
+  ) {
+    return true;
+  }
+
+  return canMoveWithinDndSlots(
+    resolveDndSlot(
+      active.id.toString()
+    ),
+    targetSlot,
+    targetId
+  );
+};
+
 const getTopSemanticTarget = ( elements: Element[]): HTMLElement | null => {
 const semanticElements = elements.filter((el) =>
       isSemanticDroppableElement(el)
     ) as HTMLElement[];
-
-  console.log(
-    "SEMANTIC ELEMENTS",
-    semanticElements
-  );
 
   if (!semanticElements.length) { return null; }
 
@@ -494,8 +532,6 @@ if (
   const handleDragOver = (
     event: DragOverEvent
   ) => {
-    console.log("ðŸ”¥ HANDLE DRAG OVER CALLED", event.over?.id);
-
     const { active } = event;
 
     const draggedType =
@@ -503,11 +539,6 @@ if (
         active,
         blocks
       );
-
-    console.log(
-      "DRAGGED TYPE",
-      draggedType
-    );
 
     if (!draggedType) {
       resetDragState();
@@ -562,7 +593,6 @@ if (
         pointerY
       );
 
-    // ðŸ‘‘ debug raw DOM stack
     setDebugElements(
       elements.map((el) => ({
         tag: el.tagName,
@@ -572,11 +602,6 @@ if (
           (el as HTMLElement)
             .className
       }))
-    );
-
-    console.log(
-      "RAW ELEMENTS",
-      elements
     );
 
     // =========================
@@ -600,11 +625,6 @@ if (
       allowed: null
     });
 
-    console.log(
-      "SEMANTIC ELEMENT",
-      semanticElement
-    );
-
     if (!semanticElement) {
       resetHoverState();
       return;
@@ -618,11 +638,6 @@ if (
       getSemanticDroppableId(
         semanticElement
       );
-
-    console.log({
-      semanticElement,
-      targetId
-    });
 
     // =========================
     // ROOT DROP
@@ -652,11 +667,10 @@ if (
       const allowed =
         canAttemptMove &&
         (
-          !resolveDndSlot ||
-          canMoveWithinDndSlots(
-            resolveDndSlot(
-              active.id.toString()
-            ),
+          resolveSlotAllowed(
+            active,
+            blocks,
+            resolveDndSlot,
             "page",
             VIRTUAL_ROOT_ID
           )
@@ -710,7 +724,7 @@ if (
     // INSERTION INFO
     // =========================
 
-    const insertionInfo =
+    const rawInsertionInfo =
       calculateInsertionIndex(
         event,
         targetBlock,
@@ -718,6 +732,14 @@ if (
         active.id.toString(),
         pointerY
       );
+    const insertionInfo =
+      isNewPaletteDrag(active) &&
+      !(targetBlock.children || []).length
+        ? {
+            position: "inside" as const,
+            index: 0
+          }
+        : rawInsertionInfo;
 
     // =========================
     // RESOLVER
@@ -755,18 +777,20 @@ if (
           ? targetBlock
           : destinationParent
       );
-    const slotAllowed =
+    const targetSlot =
       resolveDndSlot
-        ? canMoveWithinDndSlots(
-            resolveDndSlot(
-              active.id.toString()
-            ),
-            resolveDndSlot(
-              destination.targetId
-            ),
+        ? resolveDndSlot(
             destination.targetId
           )
-        : true;
+        : "page";
+    const slotAllowed =
+      resolveSlotAllowed(
+        active,
+        blocks,
+        resolveDndSlot,
+        targetSlot,
+        destination.targetId
+      );
 
     const resolvedDrop =
       resolveDropBehavior({
@@ -788,12 +812,6 @@ if (
         resolvedDrop.allowed
     };
 
-    console.log(
-      "RESOLUTION",
-      resolution
-    );
-
-    // ðŸ‘‘ semantic debug
     setSemanticDebug({
       targetId:
         targetBlock.id,
@@ -835,20 +853,13 @@ if (
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    console.log("DRAG END");
     const { active } = event;
-    console.log(
-      "CURRENT RESOLUTION",
-      currentResolutionRef.current
-    );
    
     const currentResolution =
   currentResolutionRef.current;
 
 const resolution =
   currentResolution;
-
-    console.log("RESOLUTION", resolution);
 
     if (!resolution || !resolution.allowed) {
       resetDragState();
@@ -857,8 +868,6 @@ const resolution =
 
     const draggedType = getDraggedType(active, blocks);
 
-    console.log("DRAGGED TYPE", draggedType);
-
     if (!draggedType) {
       resetDragState();
       return;
@@ -866,8 +875,6 @@ const resolution =
 
     const isRootDrop =
       resolution.targetId === VIRTUAL_ROOT_ID;
-
-    console.log("IS ROOT DROP", isRootDrop);
 
     const targetBlock =
       isRootDrop
@@ -1120,12 +1127,6 @@ const resolution =
 
     if (wrapperType) {
       const childConfig = blockRegistry[draggedType];
-      console.log({
-        draggedType,
-        finalTargetId,
-        finalPosition,
-        finalIndex
-      });
 
       actions.addBlock(
         wrapperType,
@@ -1160,16 +1161,6 @@ const resolution =
         finalIndex
       );
     } else {
-      console.log(
-        "ADDING BLOCK",
-        {
-          draggedType,
-          finalTargetId,
-          finalPosition,
-          finalIndex
-        }
-      );
-
       actions.addBlock(
         draggedType,
         finalTargetId,

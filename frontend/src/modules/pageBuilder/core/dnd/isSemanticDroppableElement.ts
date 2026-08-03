@@ -28,16 +28,6 @@ export const isSemanticDroppableElement = (
   const blockId =
     element.dataset.blockId;
 
-  console.log(
-    "SEMANTIC DATA",
-    {
-      id: element.id,
-      droppable,
-      blockType,
-      blockId
-    }
-  );
-
   return (
     droppable === "true" &&
     !!blockType &&

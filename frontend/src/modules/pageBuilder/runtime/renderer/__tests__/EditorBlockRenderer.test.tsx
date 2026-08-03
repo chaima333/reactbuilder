@@ -42,7 +42,7 @@ vi.mock("../../../core/blockRegistry", () => ({
       fields: [],
       rules: {
         allowedParents: ["root"],
-        allowedChildren: ["text"],
+        allowedChildren: ["text", "flex", "grid"],
       },
       component: ({ children }: { children?: React.ReactNode }) => (
         <section>{children}</section>
@@ -364,17 +364,21 @@ const installSemanticTarget = (
 const renderDragHarness = (
   blocks: any[],
   moveBlock = vi.fn(),
-  resolveDndSlot?: Parameters<typeof useDragAndDrop>[0]["resolveDndSlot"]
+  resolveDndSlot?: Parameters<typeof useDragAndDrop>[0]["resolveDndSlot"],
+  actionOverrides: Partial<Parameters<typeof useDragAndDrop>[0]["actions"]> = {}
 ) => {
   let handlers: DragHandlers | null = null;
+  const addBlock = actionOverrides.addBlock || vi.fn();
+  const addBlockTree = actionOverrides.addBlockTree || vi.fn();
+  const effectiveMoveBlock = actionOverrides.moveBlock || moveBlock;
 
   const Harness = () => {
     handlers = useDragAndDrop({
       blocks,
       actions: {
-        addBlock: vi.fn(),
-        addBlockTree: vi.fn(),
-        moveBlock,
+        addBlock,
+        addBlockTree,
+        moveBlock: effectiveMoveBlock,
       },
       resolveDndSlot,
     });
@@ -386,7 +390,9 @@ const renderDragHarness = (
 
   return {
     rendered,
-    moveBlock,
+    addBlock,
+    addBlockTree,
+    moveBlock: effectiveMoveBlock,
     getHandlers: () => handlers,
   };
 };
@@ -428,10 +434,11 @@ const runExistingDrag = (
 
 const dragActive = (
   id: string,
-  type: string
+  type: string,
+  isNew = false
 ) => ({
   id,
-  data: { current: { type, isNew: false } },
+  data: { current: { type, isNew } },
   rect: { current: { translated: null } },
 });
 
@@ -1177,6 +1184,95 @@ describe("EditorBlockRenderer drag behavior", () => {
       index: 1,
       wrapperType: undefined,
     });
+  });
+
+  it("allows a palette Flex Layout to be inserted inside an empty Section", () => {
+    installSemanticTarget("section-1", "section");
+    const addBlock = vi.fn();
+    const moveBlock = vi.fn();
+    const resolveDndSlot = (blockId?: string) =>
+      blockId === "section-1" ? "page" as const : "footer" as const;
+    const { rendered, getHandlers } = renderDragHarness(
+      [sectionBlock("section-1")],
+      moveBlock,
+      resolveDndSlot,
+      { addBlock }
+    );
+    roots.push(rendered);
+
+    const active = dragActive("new-flex", "flex", true);
+
+    beginDrag(getHandlers(), active, 75);
+    hoverDrag(getHandlers(), active, "section-1");
+
+    expect(getHandlers()?.isAllowed).toBe(true);
+
+    endDrag(getHandlers(), active);
+
+    expect(moveBlock).not.toHaveBeenCalled();
+    expect(addBlock).toHaveBeenCalledWith(
+      "flex",
+      "section-1",
+      "inside",
+      null,
+      0
+    );
+  });
+
+  it("allows a palette Grid Layout to be inserted inside an empty Section", () => {
+    installSemanticTarget("section-1", "section");
+    const addBlock = vi.fn();
+    const resolveDndSlot = (blockId?: string) =>
+      blockId === "section-1" ? "page" as const : "navbar" as const;
+    const { rendered, getHandlers } = renderDragHarness(
+      [sectionBlock("section-1")],
+      vi.fn(),
+      resolveDndSlot,
+      { addBlock }
+    );
+    roots.push(rendered);
+
+    const active = dragActive("new-grid", "grid", true);
+
+    beginDrag(getHandlers(), active, 75);
+    hoverDrag(getHandlers(), active, "section-1");
+
+    expect(getHandlers()?.isAllowed).toBe(true);
+
+    endDrag(getHandlers(), active);
+
+    expect(addBlock).toHaveBeenCalledWith(
+      "grid",
+      "section-1",
+      "inside",
+      null,
+      0
+    );
+  });
+
+  it("still rejects invalid palette nesting through canonical drop resolution", () => {
+    installSemanticTarget("flex-item-1", "flexItem");
+    const addBlock = vi.fn();
+    const moveBlock = vi.fn();
+    const { rendered, getHandlers } = renderDragHarness(
+      [flexItemBlock("flex-item-1")],
+      moveBlock,
+      () => "page",
+      { addBlock }
+    );
+    roots.push(rendered);
+
+    const active = dragActive("new-flex", "flex", true);
+
+    beginDrag(getHandlers(), active, 75);
+    hoverDrag(getHandlers(), active, "flex-item-1");
+
+    expect(getHandlers()?.isAllowed).toBe(false);
+
+    endDrag(getHandlers(), active);
+
+    expect(addBlock).not.toHaveBeenCalled();
+    expect(moveBlock).not.toHaveBeenCalled();
   });
 
   it("clears pending drag state on cancel", () => {
