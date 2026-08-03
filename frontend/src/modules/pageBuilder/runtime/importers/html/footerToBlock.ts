@@ -1387,12 +1387,9 @@ const normalizeRootFooterBlock = (
   const containerStyle =
     (current.children?.[0] as any)?.data?.style?.desktop || {};
 
-  if (
-    typeof process !== "undefined" &&
-    process.env.NODE_ENV !== "production"
-  ) {
-    console.info(
-      "FOOTER_STYLE_DEBUG",
+if (import.meta.env.DEV) {
+  console.info(
+    "FOOTER_STYLE_DEBUG",
       {
         semanticType: "FOOTER",
         sectionStyle,
