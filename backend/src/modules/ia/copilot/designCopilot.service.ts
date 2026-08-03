@@ -122,6 +122,181 @@ const makeSuggestion = (
   actions
 });
 
+type CopilotBlock = {
+  id?: string;
+  type?: string;
+  data?: {
+    props?: Record<string, any>;
+  };
+  children?: CopilotBlock[];
+};
+
+const findFirstBlock = (
+  blocks: CopilotBlock[],
+  predicate: (
+    block: CopilotBlock
+  ) => boolean
+): CopilotBlock | null => {
+  for (const block of blocks || []) {
+    if (predicate(block)) {
+      return block;
+    }
+
+    const nested =
+      findFirstBlock(
+        Array.isArray(block.children)
+          ? block.children
+          : [],
+        predicate
+      );
+
+    if (nested) {
+      return nested;
+    }
+  }
+
+  return null;
+};
+
+const ownBlockSignal = (
+  block: CopilotBlock
+): string =>
+  JSON.stringify({
+    id:
+      block.id,
+    type:
+      block.type,
+    props:
+      block.data?.props || {}
+  }).toLowerCase();
+
+const isExactHeroButtonRequest = (
+  message: string
+): boolean => {
+  const normalized =
+    String(message || "")
+      .toLowerCase()
+      .replace(/[-_]/g, " ");
+
+  const mentionsHero =
+    /\bhero\b/.test(normalized) ||
+    normalized.includes("banner");
+
+  const mentionsButton =
+    /\bbutton\b/.test(normalized) ||
+    normalized.includes("bouton") ||
+    normalized.includes("cta") ||
+    normalized.includes(
+      "call to action"
+    );
+
+  return (
+    mentionsHero &&
+    mentionsButton
+  );
+};
+
+const findHeroBlockForTargeting = (
+  blocks: CopilotBlock[]
+): CopilotBlock | null => {
+  const explicitHero =
+    findFirstBlock(
+      blocks,
+      (block) => {
+        const type =
+          String(block.type || "")
+            .toLowerCase();
+
+        return (
+          type === "hero" ||
+          ownBlockSignal(block)
+            .includes("hero")
+        );
+      }
+    );
+
+  if (explicitHero) {
+    return explicitHero;
+  }
+
+  return (
+    (blocks || []).find(
+      (block) =>
+        block.type === "section"
+    ) || null
+  );
+};
+
+const createExactHeroButtonResponse = (
+  request: DesignCopilotRequest,
+  profile: string
+): DesignCopilotResponse | null => {
+  if (
+    !isExactHeroButtonRequest(
+      request.message
+    )
+  ) {
+    return null;
+  }
+
+  const heroBlock =
+    findHeroBlockForTargeting(
+      request.blocks as CopilotBlock[]
+    );
+
+  const heroButton =
+    heroBlock
+      ? findFirstBlock(
+          [heroBlock],
+          (block) =>
+            block.type === "button" &&
+            !!String(block.id || "")
+              .trim()
+        )
+      : null;
+
+  const heroButtonId =
+    String(heroButton?.id || "")
+      .trim();
+
+  if (!heroButtonId) {
+    return {
+      reply:
+        "I could not find a button inside the hero section. No page-wide changes were suggested.",
+      designProfile:
+        profile,
+      suggestions:
+        []
+    };
+  }
+
+  return {
+    reply:
+      "I found the hero button and limited the improvement to that exact block.",
+    designProfile:
+      profile,
+    suggestions: [
+      makeSuggestion(
+        "improve-hero-button",
+        "Improve hero button",
+        "Improve only the hero call-to-action button without changing other buttons or page sections.",
+        [
+          {
+            type:
+              "IMPROVE_DESIGN",
+            improvement:
+              "IMPROVE_BUTTONS",
+            target:
+              heroButtonId,
+            payload:
+              {}
+          }
+        ]
+      )
+    ]
+  };
+};
+
 
 const summarizeBlocksForAi = (
   blocks: any[]
@@ -234,6 +409,16 @@ export const createFallbackDesignCopilotResponse = (
 
   const profile =
     resolveDesignProfile(category);
+
+  const exactHeroButtonResponse =
+    createExactHeroButtonResponse(
+      request,
+      profile
+    );
+
+  if (exactHeroButtonResponse) {
+    return exactHeroButtonResponse;
+  }
 
   const suggestions: DesignSuggestion[] = [];
 
@@ -512,6 +697,14 @@ export const createDesignCopilotResponse = async (
     createFallbackDesignCopilotResponse(
       request
     );
+
+  if (
+    isExactHeroButtonRequest(
+      request.message
+    )
+  ) {
+    return fallback;
+  }
 
   try {
 const prompt =
