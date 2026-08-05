@@ -27,6 +27,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { PublicTopbar } from './PublicTopbar';
 import { PublicFooter } from './PublicFooter';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../modules/auth/hooks/useAuth';
 
 // ✅ Animation variants corrects
 const fadeInUp = {
@@ -53,14 +55,78 @@ const staggerContainer = {
 };
 
 export const Home: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [companyNameError, setCompanyNameError] = useState('');
   const [isVisible, setIsVisible] = useState(false);
+
+  const navigate = useNavigate();
+
+  const {
+    user,
+    isAuthenticated,
+  } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  const handleStart = (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+
+    const normalizedCompanyName =
+      companyName.trim();
+
+    if (!normalizedCompanyName) {
+      setCompanyNameError(
+        "Veuillez saisir le nom de votre entreprise."
+      );
+
+      return;
+    }
+
+    setCompanyNameError('');
+
+    sessionStorage.setItem(
+      'reactbuilder.pendingCompanyName',
+      normalizedCompanyName
+    );
+
+    const encodedCompanyName =
+      encodeURIComponent(
+        normalizedCompanyName
+      );
+
+    if (!isAuthenticated) {
+      const nextRoute =
+        encodeURIComponent(
+          '/sites?create=1'
+        );
+
+      navigate(
+        `/register?next=${nextRoute}&companyName=${encodedCompanyName}`
+      );
+
+      return;
+    }
+
+    const canCreateSite =
+      user?.role === 'ADMIN' ||
+      user?.role === 'EDITOR';
+
+    if (canCreateSite) {
+      navigate(
+        `/sites?create=1&name=${encodedCompanyName}`
+      );
+
+      return;
+    }
+
+    navigate('/dashboard');
+  };
 
   const features = [
     {
@@ -241,9 +307,33 @@ export const Home: React.FC = () => {
                 </motion.div>
 
                 <motion.div variants={fadeInUp}>
-                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <Box
+                    component="form"
+                    onSubmit={handleStart}
+                    noValidate
+                    sx={{
+                      display: 'flex',
+                      gap: 2,
+                      flexWrap: 'wrap',
+                    }}
+                  >
                     <TextField
                       placeholder="Saisir le nom de votre entreprise"
+                      value={companyName}
+                      onChange={(event) => {
+                        setCompanyName(
+                          event.target.value
+                        );
+
+                        if (companyNameError) {
+                          setCompanyNameError('');
+                        }
+                      }}
+                      error={Boolean(companyNameError)}
+                      helperText={companyNameError}
+                      inputProps={{
+                        maxLength: 80,
+                      }}
                       variant="outlined"
                       size="medium"
                       sx={{
@@ -263,6 +353,7 @@ export const Home: React.FC = () => {
                       style={{ display: 'inline-block' }}
                     >
                       <Button
+                        type="submit"
                         variant="contained"
                         size="large"
                         endIcon={<ArrowIcon />}

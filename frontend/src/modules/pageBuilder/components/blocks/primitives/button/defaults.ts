@@ -5,6 +5,7 @@ import {
 export const buttonDefaults = {
   props: {
     label: "Click Me",
+    actionType: "custom",
     url: "#",
     variant: "contained",
     useTheme: true,
