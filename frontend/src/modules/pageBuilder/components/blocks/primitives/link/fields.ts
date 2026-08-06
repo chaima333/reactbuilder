@@ -1,39 +1,110 @@
-import { FieldDefinition } from "../../../../types/page.types";
+import {
+  FieldDefinition
+} from "../../../../types/page.types";
 
-export const linkFields: FieldDefinition[] = [
+export const linkFields:
+  FieldDefinition[] = [
   {
-    key: "label",
-    label: "Link Text",
-    type: "text",
-    target: "props",
+    key:
+      "label",
+
+    label:
+      "Texte du lien",
+
+    type:
+      "text",
+
+    target:
+      "props",
+
     validation: {
-      required: true
+      required:
+        true
     }
   },
+
   {
-    key: "href",
-    label: "URL",
-    type: "text",
-    target: "props",
+    key:
+      "actionType",
+
+    label:
+      "Action",
+
+    type:
+      "select",
+
+    target:
+      "props",
+
+    options: [
+      {
+        label:
+          "Lien personnalisé",
+
+        value:
+          "custom"
+      },
+
+      {
+        label:
+          "Devenir partenaire",
+
+        value:
+          "partnerApplication"
+      }
+    ]
+  },
+
+  {
+    key:
+      "href",
+
+    label:
+      "Lien personnalisé",
+
+    type:
+      "text",
+
+    target:
+      "props"
+  },
+
+  {
+    key:
+      "fontSize",
+
+    label:
+      "Font Size",
+
+    type:
+      "text",
+
+    target:
+      "style",
+
+    responsive:
+      true,
+
     validation: {
-      required: true
+      cssUnit:
+        true
     }
   },
+
   {
-    key: "fontSize",
-    label: "Font Size",
-    type: "text",
-    target: "style",
-    responsive: true,
-    validation: {
-      cssUnit: true
-    }
-  },
-  {
-    key: "color",
-    label: "Color",
-    type: "color",
-    target: "style",
-    responsive: true
+    key:
+      "color",
+
+    label:
+      "Color",
+
+    type:
+      "color",
+
+    target:
+      "style",
+
+    responsive:
+      true
   }
 ];

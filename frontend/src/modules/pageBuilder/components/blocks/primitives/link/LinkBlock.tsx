@@ -44,11 +44,38 @@ export const LinkBlock = ({
       device as Device
     );
 
+  // =====================================
+  // ACTION
+  // =====================================
+
+  const actionType =
+    props.actionType ||
+    "custom";
+
+  const hasSiteId =
+    context.siteId !== null &&
+    context.siteId !== undefined &&
+    String(context.siteId).trim() !== "";
+
+  const partnerApplicationHref =
+    actionType ===
+      "partnerApplication" &&
+    hasSiteId
+      ? `/partner-apply/${encodeURIComponent(
+          String(context.siteId)
+        )}`
+      : "";
+
   const targetHref =
-    props.href ||
-    props.url ||
-    props.link ||
-    "#";
+    actionType ===
+    "partnerApplication"
+      ? partnerApplicationHref || "#"
+      : (
+          props.href ||
+          props.url ||
+          props.link ||
+          "#"
+        );
 
   const label =
     props.label ||
@@ -58,20 +85,22 @@ export const LinkBlock = ({
   // =====================================
   // RENDER
   // =====================================
+
   return (
-  <LinkPrimitive
-    label={label}
-    href={targetHref}
-    disabledNavigation={
-      context.mode === "editor"
-    }
-    style={{
-      ...resolvedStyle,
-      cursor:
+    <LinkPrimitive
+      label={label}
+      href={targetHref}
+      disabledNavigation={
         context.mode === "editor"
-          ? "pointer"
-          : resolvedStyle.cursor
-    }}
-  />
-);
+      }
+      style={{
+        ...resolvedStyle,
+
+        cursor:
+          context.mode === "editor"
+            ? "pointer"
+            : resolvedStyle.cursor
+      }}
+    />
+  );
 };

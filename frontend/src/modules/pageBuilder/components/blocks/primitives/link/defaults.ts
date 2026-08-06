@@ -5,6 +5,9 @@ export const linkDefaults = {
     label:
       "Link",
 
+    actionType:
+      "custom",
+
     href:
       "#"
   },
