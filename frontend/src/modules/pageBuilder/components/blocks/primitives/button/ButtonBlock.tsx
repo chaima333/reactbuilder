@@ -14,6 +14,10 @@ import {
   tokens
 } from "../../../../core/theme/tokens";
 
+import {
+  useRuntime
+} from "../../../../runtime/context/RuntimeProvider";
+
 type Device =
   | "desktop"
   | "tablet"
@@ -57,6 +61,11 @@ export const ButtonBlock = ({
   const props =
     data?.props || {};
 
+  const {
+    mode,
+    siteId
+  } = useRuntime();
+
   const rawStyle =
     useResolvedStyle(
       data?.style || {},
@@ -83,11 +92,34 @@ export const ButtonBlock = ({
         ) as string | undefined
     };
 
+  const actionType =
+    props.actionType ||
+    "custom";
+
+  const hasSiteId =
+    siteId !== null &&
+    siteId !== undefined &&
+    String(siteId).trim() !== "";
+
+  const partnerApplicationHref =
+    actionType ===
+      "partnerApplication" &&
+    hasSiteId
+      ? `/partner-apply/${encodeURIComponent(
+          String(siteId)
+        )}`
+      : "";
+
   const targetHref =
-    props.href ||
-    props.url ||
-    props.link ||
-    "";
+    actionType ===
+    "partnerApplication"
+      ? partnerApplicationHref
+      : (
+          props.href ||
+          props.url ||
+          props.link ||
+          ""
+        );
 
   const label =
     props.label ||
@@ -143,40 +175,41 @@ export const ButtonBlock = ({
               tokens.shadows.primary
           };
 
-const renderStyle: CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: tokens.spacing.sm,
+  const renderStyle:
+    CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: tokens.spacing.sm,
 
-  minHeight: "44px",
+    minHeight: "44px",
 
-  paddingTop: "12px",
-  paddingBottom: "12px",
-  paddingLeft: "24px",
-  paddingRight: "24px",
+    paddingTop: "12px",
+    paddingBottom: "12px",
+    paddingLeft: "24px",
+    paddingRight: "24px",
 
-  borderRadius: tokens.radius.full,
-  border: "1px solid transparent",
+    borderRadius: tokens.radius.full,
+    border: "1px solid transparent",
 
-  fontFamily: tokens.fonts.sans,
-  fontSize: "15px",
-  fontWeight: 700,
-  lineHeight: 1.2,
+    fontFamily: tokens.fonts.sans,
+    fontSize: "15px",
+    fontWeight: 700,
+    lineHeight: 1.2,
 
-  textAlign: "center",
-  textDecoration: "none",
-  whiteSpace: "nowrap",
-  cursor: "pointer",
-  boxSizing: "border-box",
-  transition: tokens.transitions.normal,
+    textAlign: "center",
+    textDecoration: "none",
+    whiteSpace: "nowrap",
+    cursor: "pointer",
+    boxSizing: "border-box",
+    transition: tokens.transitions.normal,
 
-  ...resolvedStyle,
+    ...resolvedStyle,
 
-  ...(shouldUseTheme
-    ? variantStyle
-    : {})
-};
+    ...(shouldUseTheme
+      ? variantStyle
+      : {})
+  };
 
   const interactionSx: any = {
     ...renderStyle,
@@ -223,6 +256,11 @@ const renderStyle: CSSProperties = {
       <Box
         component="a"
         href={targetHref}
+        onClick={(event) => {
+          if (mode === "editor") {
+            event.preventDefault();
+          }
+        }}
         sx={interactionSx}
       >
         {label}

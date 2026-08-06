@@ -20,10 +20,42 @@ export const buttonFields:
 
   {
     key:
+      "actionType",
+
+    label:
+      "Action",
+
+    type:
+      "select",
+
+    target:
+      "props",
+
+    options: [
+      {
+        label:
+          "Lien personnalisé",
+
+        value:
+          "custom"
+      },
+
+      {
+        label:
+          "Devenir partenaire",
+
+        value:
+          "partnerApplication"
+      }
+    ]
+  },
+
+  {
+    key:
       "url",
 
     label:
-      "Link",
+      "Lien personnalisé",
 
     type:
       "text",
