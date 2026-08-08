@@ -25,6 +25,26 @@ export const usersApi = api.injectEndpoints({
       }),
       invalidatesTags: [{ type: 'User', id: 'PROFILE' }],
     }),
+    uploadProfileAvatar:
+  builder.mutation<any, FormData>({
+    query: (formData) => ({
+      url:
+        "/auth/profile/avatar",
+
+      method:
+        "POST",
+
+      body:
+        formData
+    }),
+
+    invalidatesTags: [
+      {
+        type: "User",
+        id: "PROFILE"
+      }
+    ]
+  }),
 
   getUsers: builder.query<User[], void>({
   query: () => '/users',
@@ -90,4 +110,5 @@ export const {
   useUpdateUserMutation,
   useChangeUserRoleMutation,
   useDeleteUserMutation,
+  useUploadProfileAvatarMutation,
 } = usersApi;

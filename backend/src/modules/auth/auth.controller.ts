@@ -2,6 +2,8 @@
 import { Response } from "express";
 import * as AuthService from "./auth.service";
 import * as AuthValidator from "./auth.validation";
+import { uploadStream } from "../../core/config/cloudinary";
+import { User } from "../../models/User";
 
 export const registerController = async (req: any, res: Response) => {
   try {
@@ -153,3 +155,168 @@ export const disableTwoFactorController = async (
     return res.status(400).json({ success: false, message: error.message });
   }
 };
+
+export const updateProfileController = async (
+  req: any,
+  res: Response
+) => {
+  try {
+    const userId =
+      Number(req.user?.id);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Utilisateur non authentifié"
+      });
+    }
+
+    const name =
+      String(req.body?.name || "").trim();
+
+    const email =
+      String(req.body?.email || "")
+        .trim()
+        .toLowerCase();
+
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: "Le nom est obligatoire"
+      });
+    }
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "L'email est obligatoire"
+      });
+    }
+
+    const user =
+      await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Utilisateur introuvable"
+      });
+    }
+
+    const existingUser =
+      await User.findOne({
+        where: {
+          email
+        }
+      });
+
+    if (
+      existingUser &&
+      Number(existingUser.id) !== userId
+    ) {
+      return res.status(409).json({
+        success: false,
+        message: "Cet email est déjà utilisé"
+      });
+    }
+
+    await user.update({
+      name,
+      email
+    });
+
+    return res.json({
+      success: true,
+      user: user.toJSON()
+    });
+  } catch (error: any) {
+    console.error(
+      "Update profile error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error?.message ||
+        "Erreur lors de la mise à jour du profil"
+    });
+  }
+};
+
+export const uploadProfileAvatarController =
+  async (
+    req: any,
+    res: Response
+  ) => {
+    try {
+      const userId =
+        Number(req.user?.id);
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message:
+            "Utilisateur non authentifié"
+        });
+      }
+
+      if (!req.file?.buffer) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Aucune image sélectionnée"
+        });
+      }
+
+      const user =
+        await User.findByPk(userId);
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "Utilisateur introuvable"
+        });
+      }
+
+      const uploaded: any =
+        await uploadStream(
+          req.file.buffer,
+          `reactbuilder/profile-avatars/${userId}`
+        );
+
+      const avatarUrl =
+        uploaded?.secure_url ||
+        uploaded?.url;
+
+      if (!avatarUrl) {
+        return res.status(500).json({
+          success: false,
+          message:
+            "Cloudinary n'a pas retourné d'URL"
+        });
+      }
+
+      await user.update({
+        avatar: avatarUrl
+      });
+
+      return res.json({
+        success: true,
+        user: user.toJSON()
+      });
+    } catch (error: any) {
+      console.error(
+        "Upload profile avatar error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          error?.message ||
+          "Erreur lors de l'upload de l'image"
+      });
+    }
+  };

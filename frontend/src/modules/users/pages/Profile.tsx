@@ -42,7 +42,8 @@ import {
 
 import {
   useGetProfileQuery,
-  useUpdateProfileMutation
+  useUpdateProfileMutation,
+  useUploadProfileAvatarMutation
 } from "../../../redux/services/users.api";
 
 import {
@@ -124,6 +125,14 @@ export const Profile:
     }
   ] =
     useUpdateProfileMutation();
+    const [
+  uploadProfileAvatar,
+  {
+    isLoading:
+      isUploadingAvatar
+  }
+] =
+  useUploadProfileAvatarMutation();
 
   const profileUser =
     extractProfileUser(
@@ -200,6 +209,130 @@ export const Profile:
     }
 
     setIsEditing(false);
+  };
+
+  const handleAvatarChange =
+  async (
+    event:
+      React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file =
+      event.target.files?.[0];
+
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp"
+    ];
+
+    if (
+      !allowedTypes.includes(
+        file.type
+      )
+    ) {
+      enqueueSnackbar(
+        "Format accepté : JPG, PNG ou WEBP.",
+        {
+          variant: "warning"
+        }
+      );
+
+      return;
+    }
+
+    if (
+      file.size >
+      5 * 1024 * 1024
+    ) {
+      enqueueSnackbar(
+        "L'image ne doit pas dépasser 5 Mo.",
+        {
+          variant: "warning"
+        }
+      );
+
+      return;
+    }
+
+    try {
+      const payload =
+        new FormData();
+
+      payload.append(
+        "file",
+        file
+      );
+
+      const response =
+        await uploadProfileAvatar(
+          payload
+        ).unwrap();
+
+      const updatedUser =
+        extractProfileUser(
+          response
+        );
+
+      if (!updatedUser) {
+        throw new Error(
+          "PROFILE_AVATAR_RESPONSE_INVALID"
+        );
+      }
+
+      setFormData(
+        previous => ({
+          ...previous,
+          avatar:
+            updatedUser.avatar || ""
+        })
+      );
+
+      dispatch(
+        setCredentials({
+          user:
+            updatedUser as any,
+
+          accessToken:
+            localStorage.getItem(
+              "accessToken"
+            ) || "",
+
+          refreshToken:
+            localStorage.getItem(
+              "refreshToken"
+            ) || ""
+        })
+      );
+
+      enqueueSnackbar(
+        "Photo de profil mise à jour.",
+        {
+          variant:
+            "success"
+        }
+      );
+
+      await refetch();
+    } catch (error) {
+      console.error(
+        "Upload avatar error:",
+        error
+      );
+
+      enqueueSnackbar(
+        "Impossible de modifier la photo.",
+        {
+          variant:
+            "error"
+        }
+      );
+    }
   };
 
   const handleSave =
@@ -442,18 +575,41 @@ export const Profile:
           </Avatar>
 
           {isEditing && (
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={
-                <PhotoCameraIcon />
-              }
-              sx={{
-                mt: 1
-              }}
-            >
-              {t.uploadImage}
-            </Button>
+          <Button
+  component="label"
+  variant="outlined"
+  size="small"
+  startIcon={
+    isUploadingAvatar
+      ? (
+          <CircularProgress
+            size={16}
+          />
+        )
+      : (
+          <PhotoCameraIcon />
+        )
+  }
+  disabled={
+    isUploadingAvatar
+  }
+  sx={{
+    mt: 1
+  }}
+>
+  {isUploadingAvatar
+    ? "Upload..."
+    : t.uploadImage}
+
+  <input
+    hidden
+    type="file"
+    accept="image/jpeg,image/png,image/webp"
+    onChange={
+      handleAvatarChange
+    }
+  />
+</Button>
           )}
         </Box>
 
