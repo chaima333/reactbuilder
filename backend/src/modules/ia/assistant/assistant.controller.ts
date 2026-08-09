@@ -2,10 +2,18 @@ import { Request, Response } from "express";
 import { askAssistant, editBlockWithAssistant } from "./assistant.service";
 import { AuthRequest } from "../../../shared/auth.util";
 import { recordAiActivity } from "../history/aiActivity.service";
+import { isObviousConversationalPrompt } from "./assistant.intent";
 
 export const assistant = async (req: Request, res: Response) => {
   try {
-    const { prompt, blocks, jsonTree, pageTitle, slug } = req.body;
+    const {
+      prompt,
+      blocks,
+      jsonTree,
+      pageTitle,
+      slug,
+      selectedBlockId
+    } = req.body;
 
     if (!prompt || typeof prompt !== "string") {
       return res.status(400).json({
@@ -27,6 +35,7 @@ export const assistant = async (req: Request, res: Response) => {
       blocks: pageBlocks,
       pageTitle,
       slug,
+      selectedBlockId,
     });
 
     res.json({
@@ -68,6 +77,14 @@ export const editSelectedBlock = async (
       return res.status(400).json({
         success: false,
         message: "Selected block is required"
+      });
+    }
+
+    if (isObviousConversationalPrompt(prompt)) {
+      return res.status(400).json({
+        success: false,
+        message: "This looks like a conversation, not a block edit.",
+        code: "CONVERSATIONAL_PROMPT_NOT_EDITABLE"
       });
     }
 

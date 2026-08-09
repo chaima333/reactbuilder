@@ -7,6 +7,7 @@ import { applyDesignActions } from "./copilot/designActions.transformer";
 import { ApplyDesignCopilotSchema } from "./copilot/designCopilot.schema";
 import { getAiActivityHistory, recordAiActivity, recordAiFeedback } from "./history/aiActivity.service";
 import { getAiAnalyticsSummary } from "./analytics/aiAnalytics.service";
+import { isObviousConversationalPrompt } from "./assistant/assistant.intent";
 
 const previewText = (value: unknown) =>
   typeof value === "string" ? value.trim().slice(0, 200) : "";
@@ -60,6 +61,26 @@ export const generatePage = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({
         success: false,
         message: "Prompt must be at least 3 characters long"
+      });
+    }
+
+    if (isObviousConversationalPrompt(prompt)) {
+      await recordAiActivity({
+        siteId,
+        userId,
+        eventType: "AI_PAGE_GENERATION_FAILED",
+        details: {
+          errorCode: "CONVERSATIONAL_PROMPT_NOT_GENERATABLE",
+          message: "Prompt looks conversational, not a page generation request",
+          promptPreview: previewText(prompt),
+          source: "ai-page-generator"
+        }
+      });
+
+      return res.status(400).json({
+        success: false,
+        message: "This looks like a conversation, not a page generation request.",
+        code: "CONVERSATIONAL_PROMPT_NOT_GENERATABLE"
       });
     }
 

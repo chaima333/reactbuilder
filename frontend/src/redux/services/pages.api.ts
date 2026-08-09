@@ -450,7 +450,7 @@ export const pagesApi = api.injectEndpoints({
       providesTags: (result, error, { pageId }) => [{ type: 'Pages', id: `PUBLIC-${pageId}` }],
     }),
 
-    askAssistant: builder.mutation<any, { prompt: string; blocks?: Block[]; pageTitle?: string; slug?: string; }>({
+    askAssistant: builder.mutation<any, { prompt: string; blocks?: Block[]; pageTitle?: string; slug?: string; selectedBlockId?: string | null; }>({
       query: (body) => ({
         url: "/ai/assistant",
         method: "POST",

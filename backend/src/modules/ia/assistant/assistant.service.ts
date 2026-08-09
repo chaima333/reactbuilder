@@ -1,6 +1,12 @@
 // assistant.service.ts
 
 import { analyzePage } from "../analyzers/pageAnalyzer";
+import {
+  AssistantIntent,
+  buildAssistantMessage,
+  classifyAssistantIntent,
+  isObviousConversationalPrompt
+} from "./assistant.intent";
 
 export type AssistantSuggestion = {
   id: string;
@@ -17,6 +23,9 @@ export type AssistantSuggestion = {
 };
 
 export type AssistantResponse = {
+  kind?: "message" | "clarification" | "suggestions" | "action";
+  intent?: AssistantIntent;
+  message?: string;
   reply: string;
   category: string;
   analysis?: any;
@@ -28,6 +37,7 @@ export type AssistantInput = {
   blocks?: any[];
   pageTitle?: string;
   slug?: string;
+  selectedBlockId?: string | null;
 };
 
 const extractCategory = (prompt: string): string => {
@@ -189,10 +199,136 @@ const getBlockText = (block: any): string => {
     .toLowerCase();
 };
 
+const countBlocksByType = (
+  blocks: any[],
+  type: string
+): number =>
+  flattenBlocks(blocks).filter(
+    (block) => block?.type === type
+  ).length;
+
+const findBlockById = (
+  blocks: any[],
+  id?: string | null
+): any | null => {
+  if (!id) return null;
+
+  for (const block of blocks || []) {
+    if (block?.id === id) return block;
+
+    const found = findBlockById(
+      block?.children || [],
+      id
+    );
+
+    if (found) return found;
+  }
+
+  return null;
+};
+
+const answerPageQuestion = (
+  prompt: string,
+  blocks: any[],
+  selectedBlockId?: string | null
+): string => {
+  const text = prompt
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  if (
+    text.includes("block is selected") ||
+    text.includes("bloc est selectionne")
+  ) {
+    const selectedBlock = findBlockById(
+      blocks,
+      selectedBlockId
+    );
+
+    return selectedBlock
+      ? `Le bloc selectionne est "${selectedBlock.type}" (id: ${selectedBlock.id}).`
+      : "Aucun bloc n'est selectionne actuellement.";
+  }
+
+  if (
+    text.includes("contains a form") ||
+    text.includes("contient un formulaire")
+  ) {
+    const hasForm =
+      countBlocksByType(blocks, "form") > 0 ||
+      countBlocksByType(blocks, "input") > 0 ||
+      countBlocksByType(blocks, "textarea") > 0;
+
+    return hasForm
+      ? "Oui, cette page contient au moins un formulaire ou des champs de formulaire."
+      : "Non, je ne vois pas de formulaire dans la structure actuelle.";
+  }
+
+  const sectionCount = countBlocksByType(
+    blocks,
+    "section"
+  );
+  const topLevel = (blocks || [])
+    .map((block) => block?.type)
+    .filter(Boolean)
+    .join(", ");
+
+  return `Cette page contient ${sectionCount} section(s). Structure principale: ${topLevel || "aucun bloc"}.`;
+};
+
 export const askAssistant = async (
   input: AssistantInput
 ): Promise<AssistantResponse> => {
-  const { prompt, blocks = [], pageTitle } = input;
+  const {
+    prompt,
+    blocks = [],
+    pageTitle,
+    selectedBlockId
+  } = input;
+
+  const intent = classifyAssistantIntent({
+    prompt,
+    selectedBlockId
+  });
+
+  if (intent === "PAGE_QUESTION") {
+    const reply = answerPageQuestion(
+      prompt,
+      blocks,
+      selectedBlockId
+    );
+
+    return {
+      kind: "message",
+      intent,
+      message: reply,
+      reply,
+      category: "conversation",
+      suggestions: []
+    };
+  }
+
+  const assistantMessage = buildAssistantMessage(
+    intent,
+    prompt
+  );
+
+  if (assistantMessage) {
+    const kind =
+      intent === "CLARIFICATION_REQUIRED"
+        ? "clarification"
+        : "message";
+
+    return {
+      kind,
+      intent,
+      message: assistantMessage,
+      reply: assistantMessage,
+      category: "conversation",
+      suggestions: []
+    };
+  }
 
   const text = prompt.toLowerCase();
 
@@ -299,6 +435,8 @@ export const askAssistant = async (
     `I found ${uniqueSuggestions.length} improvements you can apply immediately.`;
 
   return {
+    kind: "suggestions",
+    intent,
     reply,
     category,
     analysis,
@@ -640,6 +778,9 @@ export const editBlockWithAssistant = async ({
   pageTitle?: string;
   slug?: string;
 }) => {
+  if (isObviousConversationalPrompt(prompt)) {
+    throw new Error("CONVERSATIONAL_PROMPT_NOT_EDITABLE");
+  }
  
   const currentText =
   getEditableBlockText(block);

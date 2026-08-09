@@ -23,6 +23,10 @@ import {
 } from "@mui/icons-material";
 
 import { findHeroBlock, findBlock } from "./blockFinders";
+import {
+  getConversationalAssistantMessage,
+  isObviousConversationalPrompt
+} from "./assistantIntent";
 import { generateCTAPreset } from "../../presets/generateCTAPreset";
 import AiActivityHistoryPanel from "../../components/AiActivityHistoryPanel";
 import { normalizeCanonicalContainers } from "../../runtime/normalize/normalizeCanonicalContainers";
@@ -46,9 +50,12 @@ export type AssistantSuggestion = {
 };
 
 export type AssistantResponse = {
+  kind?: "message" | "clarification" | "suggestions" | "action";
+  intent?: string;
+  message?: string;
   reply: string;
   category: string;
-  suggestions: AssistantSuggestion[];
+  suggestions?: AssistantSuggestion[];
 };
 
 // ============================================
@@ -750,6 +757,20 @@ const commitBlocks = (
     }
     if (!aiPrompt.trim()) {
       showSnackbar("⚠️ Write what you want to change.", "warning");
+      return;
+    }
+
+    if (isObviousConversationalPrompt(aiPrompt)) {
+      const message = getConversationalAssistantMessage(aiPrompt);
+      setAssistantReply({
+        kind: "message",
+        intent: "GENERAL_CONVERSATION",
+        message,
+        reply: message,
+        category: "conversation",
+        suggestions: [],
+      });
+      showSnackbar("This looks like a conversation, not a block edit.", "info");
       return;
     }
 
@@ -1534,6 +1555,20 @@ const applyGeneratedHeroLayout = (
       showSnackbar("Please describe what you want to generate.", "warning");
       return;
     }
+    if (isObviousConversationalPrompt(aiPrompt)) {
+      const message = getConversationalAssistantMessage(aiPrompt);
+      setAssistantReply({
+        kind: "message",
+        intent: "GENERAL_CONVERSATION",
+        message,
+        reply: message,
+        category: "conversation",
+        suggestions: [],
+      });
+      showSnackbar("This looks like a conversation, not a page generation request.", "info");
+      return;
+    }
+
     if (!siteId) {
       showSnackbar("⚠️ Missing site id.", "warning");
       return;
@@ -1577,7 +1612,13 @@ const applyGeneratedHeroLayout = (
 
     try {
       setAiLoading(true);
-      const result = await askAssistant({ prompt, blocks, pageTitle, slug }).unwrap();
+      const result = await askAssistant({
+        prompt,
+        blocks,
+        pageTitle,
+        slug,
+        selectedBlockId,
+      }).unwrap();
       const assistantData = result?.data || result;
 
       const normalizedSlug = String(slug || "").toLowerCase();
@@ -1890,54 +1931,60 @@ const handleDesignApplyAll = async () => {
       {/* ===== ASSISTANT MODE ===== */}
       {activeTab === "assistant" && assistantReply && (
         <Box sx={{ mt: 3 }}>
-          <Stack direction="row" alignItems="center" spacing={1} mb={1.5}>
-            <Typography fontWeight={700}>Suggestions</Typography>
-            <Chip size="small" label={assistantReply.suggestions?.length || 0} sx={{ fontWeight: 700, height: 20, fontSize: 11 }} />
-          </Stack>
+          {assistantReply.kind !== "message" &&
+            assistantReply.kind !== "clarification" &&
+            (assistantReply.suggestions?.length || 0) > 0 && (
+              <>
+                <Stack direction="row" alignItems="center" spacing={1} mb={1.5}>
+                  <Typography fontWeight={700}>Suggestions</Typography>
+                  <Chip size="small" label={assistantReply.suggestions?.length || 0} sx={{ fontWeight: 700, height: 20, fontSize: 11 }} />
+                </Stack>
 
-          <Stack spacing={1}>
-            {assistantReply.suggestions?.map((item: AssistantSuggestion, index: number) => {
-              const isApplying = appliedSuggestionId === item.id;
+                <Stack spacing={1}>
+                  {assistantReply.suggestions?.map((item: AssistantSuggestion, index: number) => {
+                    const isApplying = appliedSuggestionId === item.id;
 
-              return (
-                <Paper
-                  key={`${item.id}-${index}`}
-                  elevation={0}
-                  sx={{
-                    p: 1.5,
-                    borderRadius: 2,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1.5,
-                  }}
-                >
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography fontSize={14} fontWeight={700}>
-                      {item.title}
-                    </Typography>
-                    <Typography fontSize={13} color="text.secondary">
-                      {item.description}
-                    </Typography>
-                  </Box>
+                    return (
+                      <Paper
+                        key={`${item.id}-${index}`}
+                        elevation={0}
+                        sx={{
+                          p: 1.5,
+                          borderRadius: 2,
+                          border: "1px solid",
+                          borderColor: "divider",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5,
+                        }}
+                      >
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography fontSize={14} fontWeight={700}>
+                            {item.title}
+                          </Typography>
+                          <Typography fontSize={13} color="text.secondary">
+                            {item.description}
+                          </Typography>
+                        </Box>
 
-                  <Button
-                    size="small"
-                    variant="text"
-                    disabled={isApplying}
-                    onClick={() => applySuggestion(item)}
-                    sx={{ fontWeight: 700, textTransform: "none", flexShrink: 0 }}
-                  >
-                    {isApplying ? <CircularProgress size={18} /> : "Apply"}
-                  </Button>
-                </Paper>
-              );
-            })}
-          </Stack>
+                        <Button
+                          size="small"
+                          variant="text"
+                          disabled={isApplying}
+                          onClick={() => applySuggestion(item)}
+                          sx={{ fontWeight: 700, textTransform: "none", flexShrink: 0 }}
+                        >
+                          {isApplying ? <CircularProgress size={18} /> : "Apply"}
+                        </Button>
+                      </Paper>
+                    );
+                  })}
+                </Stack>
+              </>
+            )}
 
           <Typography fontWeight={700} mt={3} mb={1}>
-            Reply
+            {assistantReply.kind === "clarification" ? "Question" : "Reply"}
           </Typography>
 
           <Paper
@@ -1950,7 +1997,7 @@ const handleDesignApplyAll = async () => {
               borderColor: "divider",
             }}
           >
-            <Typography fontSize={14}>🤖 {assistantReply.reply}</Typography>
+            <Typography fontSize={14}>🤖 {assistantReply.message || assistantReply.reply}</Typography>
           </Paper>
         </Box>
       )}

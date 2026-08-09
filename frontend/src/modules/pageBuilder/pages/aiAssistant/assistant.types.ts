@@ -13,3 +13,18 @@ export type AssistantSuggestion = {
   action: AssistantAction;
   payload?: any;
 };
+
+export type AssistantResponseKind =
+  | "message"
+  | "clarification"
+  | "suggestions"
+  | "action";
+
+export type AssistantResponse = {
+  kind?: AssistantResponseKind;
+  intent?: string;
+  message?: string;
+  reply: string;
+  category: string;
+  suggestions?: AssistantSuggestion[];
+};
