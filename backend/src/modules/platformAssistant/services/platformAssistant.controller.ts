@@ -5,7 +5,7 @@ import {
 
 import {
   answerPlatformQuestion,
-  getPlatformAssistantDocs
+  getPlatformAssistantDocumentation as getPlatformAssistantDocumentationData
 } from "./platformAssistant.service";
 
 export const sendPlatformAssistantMessage =
@@ -126,7 +126,14 @@ export const sendPlatformAssistantMessage =
       }
 
       const data =
-        getPlatformAssistantDocs();
+        getPlatformAssistantDocumentationData({
+          locale:
+            String(req.query.locale || "")
+              .slice(0, 20),
+          query:
+            String(req.query.q || "")
+              .slice(0, 200)
+        });
 
       return res.json({
         success: true,

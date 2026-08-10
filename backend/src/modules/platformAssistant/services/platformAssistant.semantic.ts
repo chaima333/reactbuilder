@@ -7,6 +7,9 @@ import type {
   PlatformAssistantInput
 } from "./platformAssistant.service";
 import {
+  retrieveRelevantHelpArticles
+} from "./platformAssistant.docs";
+import {
   PlatformAssistantIntent,
   normalizePlatformAssistantText
 } from "./platformAssistant.intent";
@@ -301,6 +304,21 @@ const buildAnswerPrompt = ({
     semantic.capabilityKeys
       .map(key => knowledgeByCapability[key])
       .filter(Boolean);
+  const relevantHelpArticles =
+    retrieveRelevantHelpArticles(
+      input.message,
+      input.context?.locale,
+      4
+    );
+  const helpKnowledge =
+    relevantHelpArticles.map(article =>
+      [
+        `Help article: ${article.title}`,
+        `Category: ${article.category}`,
+        `Summary: ${article.summary}`,
+        article.content
+      ].join("\n")
+    );
 
   return [
     "You are the read-only ReactBuilder product assistant.",
@@ -316,6 +334,10 @@ const buildAnswerPrompt = ({
     relevantKnowledge.length
       ? relevantKnowledge.join("\n")
       : fallbackAnswer,
+    "Relevant Help Center articles:",
+    helpKnowledge.length
+      ? helpKnowledge.join("\n\n")
+      : "No relevant Help Center article found.",
     "Verified deterministic answer draft:",
     fallbackAnswer,
     "Recent bounded conversation history:",

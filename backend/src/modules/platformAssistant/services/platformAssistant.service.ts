@@ -3,7 +3,9 @@ import {
   PlatformCapability
 } from "./platformAssistant.capabilities";
 import {
-  PLATFORM_ASSISTANT_DOCS,
+  getHelpArticles,
+  retrieveRelevantHelpArticles,
+  searchHelpArticles,
   PlatformAssistantDoc
 } from "./platformAssistant.docs";
 import {
@@ -89,6 +91,8 @@ const STOP_WORDS =
     "comment",
     "quoi",
     "pourquoi",
+    "configure",
+    "configurer",
     "dans",
     "avec",
     "pour",
@@ -145,11 +149,6 @@ const chunkDocument = (
   );
 };
 
-const getAllChunks = () =>
-  PLATFORM_ASSISTANT_DOCS.flatMap(
-    chunkDocument
-  );
-
 const scoreChunk = (
   questionTokens: string[],
   chunk: KnowledgeChunk
@@ -198,7 +197,8 @@ const scoreChunk = (
 };
 
 const searchDocumentation = (
-  message: string
+  message: string,
+  locale?: string | null
 ) => {
   const questionTokens =
     tokenize(message);
@@ -207,7 +207,8 @@ const searchDocumentation = (
     return [];
   }
 
-  return getAllChunks()
+  return getHelpArticles(locale)
+    .flatMap(chunkDocument)
     .map(chunk => ({
       chunk,
       score:
@@ -840,6 +841,14 @@ const answerHowToOrFeature = (
     );
   }
 
+  if (
+    text.includes("saml") ||
+    text.includes("sso") ||
+    text.includes("single sign on")
+  ) {
+    return null;
+  }
+
   if (capabilities.length) {
     return makeAnswer(
       intent,
@@ -898,10 +907,14 @@ const answerTroubleshooting = (
 
 const answerFromDocs = (
   message: string,
-  intent: PlatformAssistantIntent
+  intent: PlatformAssistantIntent,
+  input?: PlatformAssistantInput
 ) => {
   const ranked =
-    searchDocumentation(message);
+    searchDocumentation(
+      message,
+      input?.context?.locale
+    );
 
   if (!ranked.length) {
     return makeAnswer(
@@ -1030,7 +1043,8 @@ const buildPlatformAnswerForIntent = (
 
   return answerFromDocs(
     cleanMessage,
-    intent
+    intent,
+    input
   );
 };
 
@@ -1131,13 +1145,69 @@ export const answerPlatformQuestion = async (
 };
 
 export const getPlatformAssistantDocs = () =>
-  PLATFORM_ASSISTANT_DOCS.map(
+  getHelpArticles()
+    .map(
+      doc => ({
+        id: doc.id,
+        slug: doc.slug,
+        title: doc.title,
+        category: doc.category,
+        summary: doc.summary,
+        content: doc.content
+          .replace(/\s+/g, " ")
+          .trim(),
+        keywords: doc.keywords,
+        order: doc.order
+      })
+    );
+
+export const getPlatformAssistantDocumentation = ({
+  locale,
+  query
+}: {
+  locale?: string | null;
+  query?: string | null;
+} = {}) => {
+  const docs =
+    query?.trim()
+      ? searchHelpArticles(
+          query,
+          locale,
+          30
+        )
+      : getHelpArticles(locale);
+
+  return docs.map(
     doc => ({
       id: doc.id,
+      slug: doc.slug,
       title: doc.title,
       category: doc.category,
+      summary: doc.summary,
       content: doc.content
         .replace(/\s+/g, " ")
-        .trim()
+        .trim(),
+      keywords: doc.keywords,
+      order: doc.order,
+      score:
+        "score" in doc
+          ? doc.score
+          : undefined
     })
+  );
+};
+
+export const searchPlatformAssistantDocumentation = ({
+  query,
+  locale,
+  limit
+}: {
+  query: string;
+  locale?: string | null;
+  limit?: number;
+}) =>
+  retrieveRelevantHelpArticles(
+    query,
+    locale,
+    limit
   );

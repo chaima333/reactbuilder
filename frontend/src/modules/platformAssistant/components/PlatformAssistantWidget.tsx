@@ -91,6 +91,20 @@ const findTokenInStorage = () => {
 const MAX_VISIBLE_MESSAGES = 20;
 const MAX_HISTORY_MESSAGES = 6;
 
+export const getPlatformAssistantWelcomeMessage = (
+  locale?: string | null
+) => {
+  const normalizedLocale =
+    String(locale || "")
+      .toLowerCase();
+
+  if (normalizedLocale.startsWith("fr")) {
+    return "Bonjour ! Je peux vous aider à utiliser ReactBuilder. Posez-moi vos questions sur les sites, les pages, le Page Builder, le CMS, les formulaires, les plugins, l’IA, les rôles ou le dépannage.";
+  }
+
+  return "Hi! I can help you use ReactBuilder. Ask me about sites, pages, the Page Builder, CMS, forms, plugins, AI, roles, or troubleshooting.";
+};
+
 const limitMessages = (
   items: ChatMessage[]
 ) => items.slice(-MAX_VISIBLE_MESSAGES);
@@ -143,7 +157,9 @@ export const PlatformAssistantWidget = () => {
       {
         role: "assistant",
         content:
-          "Hi! I can help you use ReactBuilder. Ask me about pages, publishing, plugins, AI, roles, or troubleshooting."
+          getPlatformAssistantWelcomeMessage(
+            navigator.language || null
+          )
       }
     ]);
 

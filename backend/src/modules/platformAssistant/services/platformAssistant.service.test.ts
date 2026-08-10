@@ -46,7 +46,7 @@ describe("global platform assistant", () => {
 
     expect(result.intent).toBe("PRODUCT_DESCRIPTION");
     expect(result.answer).toContain("plateforme SaaS");
-    expect(result.answer).toContain("editeur visuel");
+    expect(result.answer).toContain("éditeur visuel");
     expect(result.answer).not.toContain("Je peux vous aider");
     expect(result.answer).not.toContain("lecture seule");
   });
@@ -75,9 +75,9 @@ describe("global platform assistant", () => {
     });
 
     expect(result.intent).toBe("MODULE_LIST");
-    expect(result.answer).toContain("Sites : creation et gestion des sites.");
+    expect(result.answer).toContain("Sites : création et gestion des sites.");
     expect(result.answer).toContain("CMS : collections");
-    expect(result.answer).toContain("Forms : creation de formulaires");
+    expect(result.answer).toContain("Forms : création de formulaires");
   });
 
   it("keeps French capability responses in French", async () => {
@@ -137,7 +137,7 @@ describe("global platform assistant", () => {
 
     expect(result.intent).toBe("VISITOR_AUTHENTICATION");
     expect(result.sources).toEqual([]);
-    expect(result.answer).toContain("authentification dediee aux visiteurs");
+    expect(result.answer).toContain("authentification dédiée aux visiteurs");
     expect(result.answer).toContain("Visitor Login");
     expect(result.answer).toContain("distincts des comptes utilisateurs ReactBuilder");
     expect(result.answer).not.toContain("Voici ce que je peux confirmer");
@@ -153,8 +153,8 @@ describe("global platform assistant", () => {
 
     expect(result.intent).toBe("VISITOR_AUTHENTICATION");
     expect(result.answer).toContain("Visitor Register");
-    expect(result.answer).toContain("creer un compte");
-    expect(result.answer).toContain("routes publiques");
+    expect(result.answer).toContain("créer un compte");
+    expect(result.answer).toContain("site public");
   });
 
   it("distinguishes ReactBuilder platform users from site visitors", async () => {
@@ -166,9 +166,9 @@ describe("global platform assistant", () => {
     });
 
     expect(result.intent).toBe("VISITOR_AUTHENTICATION");
-    expect(result.answer).toContain("deux comptes differents");
+    expect(result.answer).toContain("deux types de comptes sont indépendants");
     expect(result.answer).toContain("plateforme");
-    expect(result.answer).toContain("site public genere");
+    expect(result.answer).toContain("site public créé");
   });
 
   it("explains how to create a form from the Forms implementation", async () => {
@@ -194,7 +194,7 @@ describe("global platform assistant", () => {
     });
 
     expect(result.intent).toBe("FORMS");
-    expect(result.answer).toContain("detail du formulaire");
+    expect(result.answer).toContain("détail du formulaire");
     expect(result.answer).toContain("soumissions");
   });
 
@@ -207,8 +207,8 @@ describe("global platform assistant", () => {
     });
 
     expect(result.intent).toBe("FORMS");
-    expect(result.answer).toContain("endpoint public");
-    expect(result.answer).toContain("/api/public/sites/:siteId/forms/:formId/submit");
+    expect(result.answer).toContain("site public");
+    expect(result.answer).toContain("module Forms");
   });
 
   it("explains the dynamic partner button action", async () => {
@@ -222,7 +222,8 @@ describe("global platform assistant", () => {
     expect(result.intent).toBe("PARTNER_APPLICATIONS");
     expect(result.answer).toContain("bloc Button");
     expect(result.answer).toContain("action Devenir partenaire");
-    expect(result.answer).toContain("/partner-apply/:siteId");
+    expect(result.answer).toContain("lien correspondant au site courant");
+    expect(result.answer).not.toContain("/partner-apply/:siteId");
   });
 
   it("explains that Link supports the partner application action", async () => {
@@ -235,7 +236,8 @@ describe("global platform assistant", () => {
 
     expect(result.intent).toBe("PARTNER_APPLICATIONS");
     expect(result.answer).toContain("bloc Link");
-    expect(result.answer).toContain("genere dynamiquement");
+    expect(result.answer).toContain("génère automatiquement");
+    expect(result.answer).not.toContain("/partner-apply/:siteId");
   });
 
   it("explains automatic siteId resolution for partner applications", async () => {
@@ -252,9 +254,22 @@ describe("global platform assistant", () => {
     expect(result.answer).toContain("Il ne faut pas hardcoder");
   });
 
+  it("keeps route mechanics for explicit technical partner siteId questions", async () => {
+    const result = await answerPlatformQuestion({
+      message: "Comment fonctionne le lien partenaire techniquement ?",
+      context: {
+        locale: "fr-FR"
+      }
+    });
+
+    expect(result.intent).toBe("PARTNER_APPLICATIONS");
+    expect(result.answer).toContain("/partner-apply/403");
+    expect(result.answer).toContain("/partner-apply/524");
+  });
+
   it("explains implemented dynamic-site capabilities", async () => {
     const result = await answerPlatformQuestion({
-      message: "Les sites generes sont-ils limites a des pages statiques ?",
+      message: "Les sites générés sont-ils limités à des pages statiques ?",
       context: {
         locale: "fr-FR"
       }
@@ -265,6 +280,34 @@ describe("global platform assistant", () => {
     expect(result.answer).toContain("soumissions publiques");
     expect(result.answer).toContain("Login/Register");
     expect(result.answer).toContain("candidatures partenaires");
+  });
+
+  it("uses proper accented French wording in dynamic answers", async () => {
+    const result = await answerPlatformQuestion({
+      message: "Les visiteurs de mon site peuvent-ils créer un compte ?",
+      context: {
+        locale: "fr-FR"
+      }
+    });
+
+    expect(result.answer).toContain("dédiée");
+    expect(result.answer).toContain("générés");
+    expect(result.answer).toContain("déconnecter");
+    expect(result.answer).not.toContain("dediee");
+    expect(result.answer).not.toContain("generes");
+    expect(result.answer).not.toContain("deconnecter");
+  });
+
+  it("keeps normal visitor-auth answers free of internal model names", async () => {
+    const result = await answerPlatformQuestion({
+      message: "Quelle différence entre un utilisateur ReactBuilder et un visiteur du site ?",
+      context: {
+        locale: "fr-FR"
+      }
+    });
+
+    expect(result.answer).not.toContain("SiteVisitor");
+    expect(result.answer).not.toContain("SiteVisitorSession");
   });
 
   it("keeps French dynamic feature answers in French", async () => {
@@ -283,7 +326,7 @@ describe("global platform assistant", () => {
   it("does not expose internal capability metadata in dynamic feature responses", async () => {
     const questions = [
       "Est-ce que je peux ajouter une page Login a un site cree avec ReactBuilder ?",
-      "Comment creer un formulaire ?",
+      "Comment créer un formulaire ?",
       "Comment ajouter un bouton Devenir partenaire ?"
     ];
 
@@ -324,7 +367,7 @@ describe("global platform assistant", () => {
 
     expect(result.intent).toBe("HOW_TO");
     expect(result.answer).toContain("HTML/ZIP");
-    expect(result.answer).toContain("blocs editables");
+    expect(result.answer).toContain("blocs éditables");
   });
 
   it("keeps platform ADMIN and site OWNER distinct", async () => {
@@ -337,9 +380,9 @@ describe("global platform assistant", () => {
     });
 
     expect(result.intent).toBe("ROLE_PERMISSION_QUESTION");
-    expect(result.answer).toContain("Role plateforme");
-    expect(result.answer).toContain("Role dans un site");
-    expect(result.answer).toContain("OWNER est un role de site");
+    expect(result.answer).toContain("Rôle plateforme");
+    expect(result.answer).toContain("Rôle dans un site");
+    expect(result.answer).toContain("OWNER est un rôle de site");
   });
 
   it("uses current route context for /sites", async () => {
@@ -366,6 +409,23 @@ describe("global platform assistant", () => {
     expect(result.answer).toContain("aide ReactBuilder");
   });
 
+  it("retrieves static export from the shared Help Center docs", async () => {
+    const result =
+      await answerPlatformQuestion({
+        message:
+          "static export documentation",
+        context: {
+          locale: "en-US"
+        }
+      });
+
+    expect(result.intent).toBe("DOCUMENTATION_SEARCH");
+    expect(result.sources[0]?.docId).toBe("static-export");
+    expect(result.sources.map(source => source.docId)).not.toContain(
+      "getting-started"
+    );
+  });
+
   it("has a graceful fallback for unknown help questions", async () => {
     const result = await answerPlatformQuestion(
       "how do I configure SAML SSO?"
@@ -373,7 +433,7 @@ describe("global platform assistant", () => {
 
     expect(result.intent).toBe("HOW_TO");
     expect(result.confidence).toBe("none");
-    expect(result.answer).toContain("pas trouve");
+    expect(result.answer).toContain("pas trouvé");
   });
 
   it("never returns mutation actions", async () => {

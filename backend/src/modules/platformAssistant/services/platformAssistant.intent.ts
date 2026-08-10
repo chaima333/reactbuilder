@@ -303,6 +303,19 @@ export const classifyPlatformAssistantIntent = (
   }
 
   if (
+    text.includes("native mobile") ||
+    text.includes("application mobile native") ||
+    text.includes("application android native") ||
+    text.includes("app android native") ||
+    text.includes("monter des videos") ||
+    text.includes("montage video") ||
+    text.includes("checkout ecommerce") ||
+    text.includes("payment processor")
+  ) {
+    return "UNSUPPORTED_REQUEST";
+  }
+
+  if (
     text.startsWith("comment ") ||
     text.startsWith("how ") ||
     text.includes("comment creer") ||
@@ -323,19 +336,6 @@ export const classifyPlatformAssistantIntent = (
     text.includes("fonctionne")
   ) {
     return "FEATURE_EXPLANATION";
-  }
-
-  if (
-    text.includes("native mobile") ||
-    text.includes("application mobile native") ||
-    text.includes("application android native") ||
-    text.includes("app android native") ||
-    text.includes("monter des videos") ||
-    text.includes("montage video") ||
-    text.includes("checkout ecommerce") ||
-    text.includes("payment processor")
-  ) {
-    return "UNSUPPORTED_REQUEST";
   }
 
   return "DOCUMENTATION_SEARCH";

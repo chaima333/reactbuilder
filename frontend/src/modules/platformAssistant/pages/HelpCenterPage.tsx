@@ -1,5 +1,6 @@
 import {
   Box,
+  Button,
   Card,
   CardContent,
   Chip,
@@ -14,12 +15,18 @@ import {
   useMemo,
   useState
 } from "react";
+import { useLanguage } from "../../../app/providers/LanguageProvider";
 
 type HelpDoc = {
   id: string;
   title: string;
   category: string;
+  summary?: string;
   content: string;
+  slug?: string;
+  keywords?: string[];
+  order?: number;
+  score?: number;
 };
 
 const API_BASE_URL =
@@ -77,7 +84,57 @@ const findTokenInStorage = () => {
   return "";
 };
 
+export const getHelpCenterLabels = (
+  language: "fr" | "en"
+) =>
+  language === "fr"
+    ? {
+        title: "Centre d'aide",
+        description:
+          "Trouvez rapidement de l'aide sur les sites, les pages, le Page Builder, le CMS, les formulaires, les plugins, l'IA, les rôles et le dépannage.",
+        searchPlaceholder:
+          "Rechercher dans la documentation...",
+        loading:
+          "Chargement de la documentation...",
+        loadError:
+          "Impossible de charger la documentation ReactBuilder.",
+        noResultsTitle:
+          "Aucun article trouvé",
+        noResultsBody:
+          "Essayez avec un autre mot-clé comme formulaire, connexion, CMS, partenaire, import ZIP ou SEO.",
+        clear:
+          "Effacer",
+        results:
+          "résultat",
+        resultsPlural:
+          "résultats"
+      }
+    : {
+        title: "Help Center",
+        description:
+          "Find help for sites, pages, the Page Builder, CMS, forms, plugins, AI, roles and troubleshooting.",
+        searchPlaceholder:
+          "Search documentation...",
+        loading:
+          "Loading documentation...",
+        loadError:
+          "Unable to load ReactBuilder documentation.",
+        noResultsTitle:
+          "No articles found",
+        noResultsBody:
+          "Try another keyword such as form, login, CMS, partner, ZIP import or SEO.",
+        clear:
+          "Clear",
+        results:
+          "result",
+        resultsPlural:
+          "results"
+      };
+
 export const HelpCenterPage = () => {
+  const { language } =
+    useLanguage();
+
   const [docs, setDocs] =
     useState<HelpDoc[]>([]);
 
@@ -92,13 +149,27 @@ export const HelpCenterPage = () => {
 
   useEffect(() => {
     const loadDocs = async () => {
+      setLoading(true);
+      setError("");
+
       try {
         const token =
           findTokenInStorage();
+        const params =
+          new URLSearchParams({
+            locale: language
+          });
+
+        if (search.trim()) {
+          params.set(
+            "q",
+            search.trim()
+          );
+        }
 
         const response =
           await fetch(
-            `${API_BASE_URL}/platform-assistant/docs`,
+            `${API_BASE_URL}/platform-assistant/docs?${params.toString()}`,
             {
               headers: {
                 ...(token
@@ -119,42 +190,32 @@ export const HelpCenterPage = () => {
         ) {
           throw new Error(
             json?.message ||
-              "Failed to load documentation"
+              labels.loadError
           );
         }
 
         setDocs(json.data || []);
       } catch {
-        setError(
-          "Unable to load ReactBuilder documentation."
-        );
+        setError(labels.loadError);
       } finally {
         setLoading(false);
       }
     };
 
     loadDocs();
-  }, []);
+  }, [language, search]);
+
+  const labels =
+    useMemo(
+      () =>
+        getHelpCenterLabels(language),
+      [language]
+    );
 
   const filteredDocs =
     useMemo(() => {
-      const query =
-        search
-          .trim()
-          .toLowerCase();
-
-      if (!query) {
-        return docs;
-      }
-
-      return docs.filter(doc => {
-        const text =
-          `${doc.title} ${doc.category} ${doc.content}`
-            .toLowerCase();
-
-        return text.includes(query);
-      });
-    }, [docs, search]);
+      return docs;
+    }, [docs]);
 
   const categories =
     useMemo(
@@ -181,7 +242,7 @@ export const HelpCenterPage = () => {
             mb: 1
           }}
         >
-          Help Center
+          {labels.title}
         </Typography>
 
         <Typography
@@ -190,24 +251,50 @@ export const HelpCenterPage = () => {
             maxWidth: 760
           }}
         >
-          Learn how to use ReactBuilder: sites, pages,
-          builder, publishing, plugins, AI assistant,
-          chatbot and troubleshooting.
+          {labels.description}
         </Typography>
       </Box>
 
-      <TextField
-        fullWidth
-        placeholder="Search documentation..."
-        value={search}
-        onChange={event =>
-          setSearch(event.target.value)
-        }
+      <Box
         sx={{
-          mb: 3,
-          maxWidth: 620
+          display: "flex",
+          gap: 1,
+          alignItems: "center",
+          mb: 2,
+          maxWidth: 760
         }}
-      />
+      >
+        <TextField
+          fullWidth
+          placeholder={labels.searchPlaceholder}
+          value={search}
+          onChange={event =>
+            setSearch(event.target.value)
+          }
+        />
+        {!!search && (
+          <Button
+            variant="outlined"
+            onClick={() => setSearch("")}
+          >
+            {labels.clear}
+          </Button>
+        )}
+      </Box>
+
+      {!loading && !error && !!search.trim() && (
+        <Typography
+          color="text.secondary"
+          sx={{
+            mb: 3
+          }}
+        >
+          {filteredDocs.length}{" "}
+          {filteredDocs.length === 1
+            ? labels.results
+            : labels.resultsPlural}
+        </Typography>
+      )}
 
       {loading && (
         <Box
@@ -219,7 +306,7 @@ export const HelpCenterPage = () => {
         >
           <CircularProgress size={20} />
           <Typography>
-            Loading documentation...
+            {labels.loading}
           </Typography>
         </Box>
       )}
@@ -229,6 +316,30 @@ export const HelpCenterPage = () => {
           {error}
         </Typography>
       )}
+
+      {!loading &&
+        !error &&
+        !filteredDocs.length && (
+          <Box
+            sx={{
+              py: 4,
+              maxWidth: 680
+            }}
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 800,
+                mb: 1
+              }}
+            >
+              {labels.noResultsTitle}
+            </Typography>
+            <Typography color="text.secondary">
+              {labels.noResultsBody}
+            </Typography>
+          </Box>
+        )}
 
       {!loading &&
         !error &&
@@ -286,6 +397,16 @@ export const HelpCenterPage = () => {
                           }}
                         >
                           {doc.title}
+                        </Typography>
+
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: 700,
+                            mb: 1
+                          }}
+                        >
+                          {doc.summary}
                         </Typography>
 
                         <Typography
