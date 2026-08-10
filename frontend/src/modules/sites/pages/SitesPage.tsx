@@ -42,7 +42,8 @@ import {
 } from "notistack";
 
 import {
-  useNavigate
+  useNavigate,
+  useSearchParams
 } from "react-router-dom";
 
 import {
@@ -70,8 +71,8 @@ export const Sites: React.FC = () => {
   const { t } =
     useLanguage();
 
-  const navigate =
-    useNavigate();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
  const userRole = useSelector(
   (state: RootState) =>
     state.auth.user?.role
@@ -90,9 +91,8 @@ const canCreateSite =
   const { enqueueSnackbar } =
     useSnackbar();
 
-  const [modalOpen, setModalOpen] =
-    useState(false);
-
+  const [modalOpen, setModalOpen] = useState(false);
+const [ prefilledSiteName, setPrefilledSiteName] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] =
     useState(false);
 
@@ -259,6 +259,63 @@ const canDeletePage = (
   // =========================
   // EMPTY STATE MODAL
   // =========================
+useEffect(() => {
+  const shouldOpenCreateModal =
+    searchParams.get("create") === "1";
+
+  if (
+    !shouldOpenCreateModal ||
+    !canCreateSite
+  ) {
+    return;
+  }
+
+  const storedCompanyName =
+    typeof window !== "undefined"
+      ? window.sessionStorage.getItem(
+          "reactbuilder.pendingCompanyName"
+        )
+      : null;
+
+  const requestedName = (
+    searchParams.get("name") ||
+    storedCompanyName ||
+    ""
+  ).trim();
+
+  setPrefilledSiteName(
+    requestedName
+  );
+
+  setModalOpen(true);
+
+  if (
+    typeof window !== "undefined"
+  ) {
+    window.sessionStorage.removeItem(
+      "reactbuilder.pendingCompanyName"
+    );
+  }
+
+  const cleanedParams =
+    new URLSearchParams(
+      searchParams
+    );
+
+  cleanedParams.delete("create");
+  cleanedParams.delete("name");
+
+  setSearchParams(
+    cleanedParams,
+    {
+      replace: true
+    }
+  );
+}, [
+  canCreateSite,
+  searchParams,
+  setSearchParams
+]);
 
  useEffect(() => {
   if (
@@ -912,15 +969,18 @@ const getPublicSitePath = (
           )}
         </Grid>
       )}
-
-      <CreateSiteModal
-        open={modalOpen}
-        onClose={() =>
-          setModalOpen(false)
-        }
-        onCreate={handleCreateSite}
-        isLoading={isCreating}
-      />
+<CreateSiteModal
+  open={modalOpen}
+  initialName={
+    prefilledSiteName
+  }
+  onClose={() => {
+    setModalOpen(false);
+    setPrefilledSiteName("");
+  }}
+  onCreate={handleCreateSite}
+  isLoading={isCreating}
+/>
 
       <Dialog
         open={deleteDialogOpen}
