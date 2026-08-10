@@ -7,6 +7,8 @@ export type PublicPlatformSettings = {
   versionPlugin: boolean;
   figmaPlugin: boolean;
   aiEnabled: boolean;
+  globalAssistantEnabled: boolean;
+  builderAiEnabled: boolean;
   maintenanceMode: boolean;
 };
 
@@ -17,6 +19,8 @@ const defaultPublicSettings: PublicPlatformSettings = {
   versionPlugin: true,
   figmaPlugin: true,
   aiEnabled: true,
+  globalAssistantEnabled: true,
+  builderAiEnabled: true,
   maintenanceMode: false,
 };
 
@@ -27,6 +31,10 @@ export class PlatformSettingsService {
     });
 
     const value = setting?.value || {};
+    const aiSetting = await PlatformSetting.findOne({
+      where: { key: "platform_ai" },
+    });
+    const aiValue = aiSetting?.value || {};
 
     return {
       platformName: value.platformName ?? defaultPublicSettings.platformName,
@@ -34,7 +42,9 @@ export class PlatformSettingsService {
       seoPlugin: value.seoPlugin ?? defaultPublicSettings.seoPlugin,
       versionPlugin: value.versionPlugin ?? defaultPublicSettings.versionPlugin,
       figmaPlugin: value.figmaPlugin ?? defaultPublicSettings.figmaPlugin,
-      aiEnabled: value.aiEnabled ?? defaultPublicSettings.aiEnabled,
+      aiEnabled: aiValue.enabled ?? value.aiEnabled ?? defaultPublicSettings.aiEnabled,
+      globalAssistantEnabled: aiValue.globalAssistantEnabled ?? defaultPublicSettings.globalAssistantEnabled,
+      builderAiEnabled: aiValue.builderAiEnabled ?? defaultPublicSettings.builderAiEnabled,
       maintenanceMode: value.maintenanceMode ?? defaultPublicSettings.maintenanceMode,
     };
   }

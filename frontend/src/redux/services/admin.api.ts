@@ -1,14 +1,44 @@
 import { api } from "../api/api";
 
+export type PlatformAiProvider =
+  | "claude"
+  | "openai"
+  | "gemini";
+
+export type PlatformAiProviderStatus = Record<
+  PlatformAiProvider,
+  {
+    configured: boolean;
+    model: string;
+  }
+>;
+
+export type PlatformAiSettings = {
+  enabled: boolean;
+  provider: PlatformAiProvider;
+  model: string;
+  globalAssistantEnabled: boolean;
+  builderAiEnabled: boolean;
+  updatedBy: number | null;
+  providerStatus: PlatformAiProviderStatus;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
 export const adminApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getPendingUsers: builder.query<any, void>({
       query: () => "/admin/pending-users",
-      transformResponse: (res: any) => res.data,
+      transformResponse: (res: any) =>
+        Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res)
+            ? res
+            : [],
       providesTags: ["PendingUsers"],
     }),
 
-    approveUser: builder.mutation<void, number>({
+    approveUser: builder.mutation<any, number>({
       query: (id) => ({
         url: `/admin/approve-user/${id}`,
         method: "POST",
@@ -16,7 +46,7 @@ export const adminApi = api.injectEndpoints({
       invalidatesTags: ["PendingUsers", "Users", "User"],
     }),
 
-    rejectUser: builder.mutation<void, number>({
+    rejectUser: builder.mutation<any, number>({
       query: (id) => ({
         url: `/admin/reject-user/${id}`,
         method: "DELETE",
@@ -67,6 +97,22 @@ updateAdminSettings: builder.mutation<any, any>({
   }),
   invalidatesTags: ["AdminSettings", "PlatformSettings"],
 }),
+getAdminAiSettings: builder.query<PlatformAiSettings, void>({
+  query: () => "/admin/settings/ai",
+  transformResponse: (res: any) => res.data,
+  providesTags: ["AdminSettings"],
+}),
+updateAdminAiSettings: builder.mutation<
+  PlatformAiSettings,
+  Partial<PlatformAiSettings>
+>({
+  query: (body) => ({
+    url: "/admin/settings/ai",
+    method: "PUT",
+    body,
+  }),
+  invalidatesTags: ["AdminSettings", "PlatformSettings"],
+}),
 getAIStats: builder.query<any, number>({
   query: (days) => `/admin/ai-stats?days=${days}`,
   transformResponse: (res: any) => res.data,
@@ -100,7 +146,9 @@ export const {
   useGetAdminPluginsQuery,
   useGetAdminActivityLogsQuery,
   useGetAdminSettingsQuery,
+  useGetAdminAiSettingsQuery,
 useUpdateAdminSettingsMutation,
+useUpdateAdminAiSettingsMutation,
 useGetAIStatsQuery,
 useGenerateAdminApiKeyMutation,
 useTestWebhookMutation,

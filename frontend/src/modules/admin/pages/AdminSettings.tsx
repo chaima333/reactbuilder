@@ -50,8 +50,11 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
 import {
+  type PlatformAiSettings,
   useGetAdminSettingsQuery,
+  useGetAdminAiSettingsQuery,
   useUpdateAdminSettingsMutation,
+  useUpdateAdminAiSettingsMutation,
   useGenerateAdminApiKeyMutation,
   useTestWebhookMutation,
 } from "../../../redux/services/admin.api";
@@ -84,7 +87,7 @@ const defaultSettings = {
   maxSitesPerUser: 5,
   maintenanceMode: false,
   aiEnabled: true,
-  aiProvider: "Claude",
+  aiProvider: "claude",
   seoPlugin: true,
   mediaPlugin: true,
   versionPlugin: true,
@@ -103,6 +106,29 @@ const defaultSettings = {
   autoBackup: true,
   backupFrequency: "weekly",
   exportFormat: "json",
+};
+
+const defaultAiSettings: PlatformAiSettings = {
+  enabled: false,
+  provider: "gemini",
+  model: "gemini-2.0-flash",
+  globalAssistantEnabled: true,
+  builderAiEnabled: true,
+  updatedBy: null,
+  providerStatus: {
+    claude: {
+      configured: false,
+      model: "claude-sonnet-5",
+    },
+    openai: {
+      configured: false,
+      model: "gpt-4.1-mini",
+    },
+    gemini: {
+      configured: false,
+      model: "gemini-2.0-flash",
+    },
+  },
 };
 
 // Section configuration with 360 brand colors
@@ -249,16 +275,28 @@ export default function AdminSettings() {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const { data, isLoading } = useGetAdminSettingsQuery();
+  const {
+    data: aiSettingsData,
+    isLoading: aiSettingsLoading,
+    error: aiSettingsLoadError,
+  } = useGetAdminAiSettingsQuery();
   const [updateAdminSettings] = useUpdateAdminSettingsMutation();
+  const [updateAdminAiSettings] = useUpdateAdminAiSettingsMutation();
   const [generateApiKey] = useGenerateAdminApiKeyMutation();
   const [testWebhook] = useTestWebhookMutation();
 
   const [settings, setSettings] = useState(defaultSettings);
+  const [aiSettings, setAiSettings] = useState(defaultAiSettings);
   const [showApiKey, setShowApiKey] = useState(false);
   const [webhookStatus, setWebhookStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [webhookMessage, setWebhookMessage] = useState("");
   const [webhookSnackbar, setWebhookSnackbar] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [aiSaveLoading, setAiSaveLoading] = useState(false);
+  const [aiMessage, setAiMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
     if (data) {
@@ -269,6 +307,19 @@ export default function AdminSettings() {
     }
   }, [data]);
 
+  useEffect(() => {
+    if (aiSettingsData) {
+      setAiSettings({
+        ...defaultAiSettings,
+        ...aiSettingsData,
+        providerStatus: {
+          ...defaultAiSettings.providerStatus,
+          ...aiSettingsData.providerStatus,
+        },
+      });
+    }
+  }, [aiSettingsData]);
+
   const update = (key: string, value: any) => {
     setSettings((prev: any) => ({
       ...prev,
@@ -276,13 +327,81 @@ export default function AdminSettings() {
     }));
   };
 
+  const updateAi = (
+    key: keyof PlatformAiSettings,
+    value: any
+  ) => {
+    setAiSettings((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const saveAiSettings = async () => {
+    setAiSaveLoading(true);
+    setAiMessage(null);
+
+    try {
+      const saved =
+        await updateAdminAiSettings({
+          enabled: aiSettings.enabled,
+          provider: aiSettings.provider,
+          model: aiSettings.model,
+          globalAssistantEnabled:
+            aiSettings.globalAssistantEnabled,
+          builderAiEnabled:
+            aiSettings.builderAiEnabled,
+        }).unwrap();
+
+      setAiSettings({
+        ...defaultAiSettings,
+        ...saved,
+        providerStatus: {
+          ...defaultAiSettings.providerStatus,
+          ...saved.providerStatus,
+        },
+      });
+
+      update("aiEnabled", saved.enabled);
+      update("aiProvider", saved.provider);
+      setAiMessage({
+        type: "success",
+        text: "AI settings saved successfully.",
+      });
+    } catch (error: any) {
+      setAiMessage({
+        type: "error",
+        text:
+          error?.data?.message ||
+          "Failed to save AI settings.",
+      });
+    } finally {
+      setAiSaveLoading(false);
+    }
+  };
+
   const save = async () => {
     setSaveLoading(true);
     try {
-      await updateAdminSettings(settings).unwrap();
-      alert("✅ Admin settings saved successfully!");
+      const savedAi =
+        await updateAdminAiSettings({
+          enabled: aiSettings.enabled,
+          provider: aiSettings.provider,
+          model: aiSettings.model,
+          globalAssistantEnabled:
+            aiSettings.globalAssistantEnabled,
+          builderAiEnabled:
+            aiSettings.builderAiEnabled,
+        }).unwrap();
+
+      await updateAdminSettings({
+        ...settings,
+        aiEnabled: savedAi.enabled,
+        aiProvider: savedAi.provider,
+      }).unwrap();
+      alert("Admin settings saved successfully!");
     } catch (error) {
-      alert("❌ Failed to save settings");
+      alert("Failed to save settings");
     } finally {
       setSaveLoading(false);
     }
@@ -783,8 +902,8 @@ export default function AdminSettings() {
             <FormControlLabel
               control={
                 <Switch
-                  checked={settings.aiEnabled}
-                  onChange={(e) => update("aiEnabled", e.target.checked)}
+                  checked={aiSettings.enabled}
+                  onChange={(e) => updateAi("enabled", e.target.checked)}
                   sx={{
                     "& .MuiSwitch-switchBase.Mui-checked": {
                       color: colors.emerald,
@@ -810,8 +929,17 @@ export default function AdminSettings() {
               fullWidth
               select
               label="AI Provider"
-              value={settings.aiProvider}
-              onChange={(e) => update("aiProvider", e.target.value)}
+              value={aiSettings.provider}
+              onChange={(e) => {
+                const provider =
+                  e.target.value as PlatformAiSettings["provider"];
+
+                updateAi("provider", provider);
+                updateAi(
+                  "model",
+                  aiSettings.providerStatus[provider]?.model || ""
+                );
+              }}
               variant="outlined"
               InputProps={{
                 sx: { 
@@ -827,10 +955,85 @@ export default function AdminSettings() {
                 },
               }}
             >
-              <MenuItem value="Claude" sx={{ fontFamily: "'Montserrat', sans-serif" }}>🧠 Claude</MenuItem>
-              <MenuItem value="OpenAI" sx={{ fontFamily: "'Montserrat', sans-serif" }}>🤖 OpenAI</MenuItem>
-              <MenuItem value="Gemini" sx={{ fontFamily: "'Montserrat', sans-serif" }}>✨ Gemini</MenuItem>
+              <MenuItem value="claude" sx={{ fontFamily: "'Montserrat', sans-serif" }}>Claude - {aiSettings.providerStatus.claude.configured ? "configured" : "not configured"}</MenuItem>
+              <MenuItem value="openai" sx={{ fontFamily: "'Montserrat', sans-serif" }}>OpenAI - {aiSettings.providerStatus.openai.configured ? "configured" : "not configured"}</MenuItem>
+              <MenuItem value="gemini" sx={{ fontFamily: "'Montserrat', sans-serif" }}>Gemini - {aiSettings.providerStatus.gemini.configured ? "configured" : "not configured"}</MenuItem>
             </TextField>
+            <Stack spacing={2} sx={{ mt: 2 }}>
+              <TextField
+                fullWidth
+                label="Model"
+                value={aiSettings.model}
+                onChange={(e) => updateAi("model", e.target.value)}
+                helperText="API keys stay in server environment variables."
+              />
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={aiSettings.globalAssistantEnabled}
+                    onChange={(e) => updateAi("globalAssistantEnabled", e.target.checked)}
+                    disabled={!aiSettings.enabled}
+                  />
+                }
+                label="Global Assistant enabled"
+              />
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={aiSettings.builderAiEnabled}
+                    onChange={(e) => updateAi("builderAiEnabled", e.target.checked)}
+                    disabled={!aiSettings.enabled}
+                  />
+                }
+                label="Page Builder AI enabled"
+              />
+
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                {(["claude", "openai", "gemini"] as const).map((provider) => (
+                  <StatusChip
+                    key={provider}
+                    status={!!aiSettings.providerStatus[provider]?.configured}
+                    label={`${provider === "openai" ? "OpenAI" : provider[0].toUpperCase() + provider.slice(1)}: ${
+                      aiSettings.providerStatus[provider]?.configured
+                        ? "configured"
+                        : "not configured"
+                    }`}
+                  />
+                ))}
+              </Stack>
+
+              {aiSettingsLoadError && (
+                <Alert severity="error">
+                  Failed to load AI settings.
+                </Alert>
+              )}
+
+              {aiMessage && (
+                <Alert severity={aiMessage.type}>
+                  {aiMessage.text}
+                </Alert>
+              )}
+
+              <Button
+                variant="contained"
+                onClick={saveAiSettings}
+                disabled={aiSaveLoading || aiSettingsLoading}
+                startIcon={aiSaveLoading ? <CircularProgress size={18} color="inherit" /> : null}
+                sx={{
+                  alignSelf: "flex-start",
+                  bgcolor: colors.emerald,
+                  textTransform: "none",
+                  fontWeight: 700,
+                  "&:hover": {
+                    bgcolor: colors.emeraldDark,
+                  },
+                }}
+              >
+                {aiSaveLoading ? "Saving AI Settings..." : "Save AI Settings"}
+              </Button>
+            </Stack>
           </SectionCard>
         </Grid>
 

@@ -7,6 +7,8 @@ export type PlatformSettings = {
   versionPlugin: boolean;
   figmaPlugin: boolean;
   aiEnabled: boolean;
+  globalAssistantEnabled: boolean;
+  builderAiEnabled: boolean;
   maintenanceMode: boolean;
 };
 
