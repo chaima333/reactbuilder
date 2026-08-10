@@ -324,38 +324,347 @@ const findCapabilitiesForText = (
 };
 
 const formatCapabilities = (
-  capabilities: PlatformCapability[]
-) =>
-  capabilities
-    .map(capability =>
-      `- ${capability.name}: ${capability.summary} (${capability.status}, ${capability.scope}).`
-    )
+  capabilities: PlatformCapability[],
+  french = false
+) => {
+  const userFacingDescriptions: Record<
+    string,
+    {
+      fr: string;
+      en: string;
+    }
+  > = {
+    authentication: {
+      fr: "Authentification : connexion, inscription, reinitialisation de mot de passe et sessions JWT.",
+      en: "Authentication: login, registration, password reset and JWT sessions."
+    },
+    sites: {
+      fr: "Sites : creation et gestion des sites.",
+      en: "Sites: create and manage sites."
+    },
+    pages: {
+      fr: "Pages : creation, edition, sauvegarde, publication, suppression et restauration de versions.",
+      en: "Pages: create, edit, save, publish, delete and restore versions."
+    },
+    "page-builder": {
+      fr: "Page Builder : edition visuelle, blocs, glisser-deposer, arborescence et apercus responsive.",
+      en: "Page Builder: visual editing, blocks, drag and drop, structure editing and responsive previews."
+    },
+    "page-ai": {
+      fr: "IA de page et Design Copilot : generation de pages, suggestions, edition de bloc selectionne et ameliorations de design.",
+      en: "Page AI and Design Copilot: page generation, suggestions, selected-block editing and design improvements."
+    },
+    cms: {
+      fr: "CMS : collections, champs, entrees, rendu public et bindings dynamiques.",
+      en: "CMS: collections, fields, entries, public rendering and dynamic bindings."
+    },
+    forms: {
+      fr: "Forms : creation de formulaires, gestion des champs et consultation des soumissions.",
+      en: "Forms: create forms, manage fields and review submissions."
+    },
+    media: {
+      fr: "Media Library : televersement, organisation, mise a jour et suppression des images et fichiers.",
+      en: "Media Library: upload, organize, update and delete images and files."
+    },
+    seo: {
+      fr: "SEO : metadonnees de pages, widgets SEO et support via plugins.",
+      en: "SEO: page metadata, SEO widgets and plugin support."
+    },
+    imports: {
+      fr: "Imports : import HTML/ZIP de sites existants.",
+      en: "Imports: HTML/ZIP import for existing site structures."
+    },
+    figma: {
+      fr: "Figma : generation de token plugin et passerelle d'import.",
+      en: "Figma: plugin token generation and import bridge."
+    },
+    plugins: {
+      fr: "Plugins/Marketplace : installation, activation, desactivation et suppression de plugins.",
+      en: "Plugins/Marketplace: install, enable, disable and uninstall plugins."
+    },
+    "static-export": {
+      fr: "Export statique : export de sites et analyse de compatibilite des blocs.",
+      en: "Static export: site export and block compatibility analysis."
+    },
+    "visitor-auth": {
+      fr: "Authentification visiteurs : connexion, inscription, sessions et blocs associes.",
+      en: "Visitor authentication: login, registration, sessions and related blocks."
+    },
+    "partner-applications": {
+      fr: "Candidatures partenaires : soumission publique et revue cote site.",
+      en: "Partner applications: public submission and site-side review."
+    },
+    dashboard: {
+      fr: "Dashboard : widgets, activite, analytics et vues de synthese.",
+      en: "Dashboard: widgets, activity, analytics and overview data."
+    },
+    "users-admin": {
+      fr: "Roles et utilisateurs : administration globale des utilisateurs et parametres admin.",
+      en: "Roles and users: global user administration and admin settings."
+    }
+  };
+
+  return capabilities
+    .map(capability => {
+      const display =
+        userFacingDescriptions[capability.id];
+
+      if (display) {
+        return `- ${french ? display.fr : display.en}`;
+      }
+
+      return `- ${capability.name}: ${capability.summary}`;
+    })
     .join("\n");
+};
+
+const getCoreCapabilities = () =>
+  PLATFORM_CAPABILITIES.filter(capability =>
+    [
+      "sites",
+      "pages",
+      "page-builder",
+      "cms",
+      "forms",
+      "media",
+      "seo",
+      "imports",
+      "plugins",
+      "dashboard",
+      "users-admin"
+    ].includes(capability.id)
+  );
+
+const answerProductDescription = (
+  input: PlatformAssistantInput
+) =>
+  makeAnswer(
+    "PRODUCT_DESCRIPTION",
+    prefersFrench(input)
+      ? "ReactBuilder est une plateforme SaaS de creation et de gestion de sites web. Elle permet de creer des pages avec un editeur visuel, gerer du contenu avec le CMS, creer des formulaires, gerer les medias, le SEO, les plugins, puis publier ou exporter des sites."
+      : "ReactBuilder is a SaaS platform for creating and managing websites. It lets users build pages with a visual editor, manage content with the CMS, create forms, manage media, SEO and plugins, then publish or export sites."
+  );
+
+const answerAssistantCapabilities = (
+  input: PlatformAssistantInput
+) =>
+  makeAnswer(
+    "ASSISTANT_CAPABILITIES",
+    prefersFrench(input)
+      ? "Je peux vous aider a comprendre ReactBuilder, expliquer ses fonctionnalites, vous guider dans les workflows, expliquer le CMS, Forms, SEO, les imports, plugins et roles, diagnostiquer des problemes courants, et expliquer la zone actuelle de l'application quand le contexte est disponible. Je suis en lecture seule : je ne peux pas modifier directement vos sites, pages, blocs, utilisateurs, formulaires, donnees CMS, plugins ou parametres."
+      : "I can help you understand ReactBuilder, explain features, guide workflows, explain CMS, Forms, SEO, imports, plugins and roles, troubleshoot common issues, and explain the current area of the application when context is available. I am read-only: I cannot directly modify sites, pages, blocks, users, forms, CMS data, plugins or settings."
+  );
+
+const answerModuleList = (
+  input: PlatformAssistantInput
+) => {
+  const french =
+    prefersFrench(input);
+
+  return makeAnswer(
+    "MODULE_LIST",
+    [
+      french
+        ? "Voici les principaux modules de ReactBuilder :"
+        : "Here are the main ReactBuilder modules:",
+      "",
+      formatCapabilities(
+        getCoreCapabilities(),
+        french
+      )
+    ].join("\n")
+  );
+};
+
+const answerVisitorAuthentication = (
+  input: PlatformAssistantInput
+) => {
+  const text =
+    normalizePlatformAssistantText(input.message);
+
+  if (prefersFrench(input)) {
+    if (
+      text.includes("difference") ||
+      (
+        text.includes("reactbuilder") &&
+        text.includes("visiteur")
+      )
+    ) {
+      return makeAnswer(
+        "VISITOR_AUTHENTICATION",
+        "Un utilisateur ReactBuilder et un visiteur de site sont deux comptes differents. Le compte ReactBuilder sert a se connecter a la plateforme pour creer et gerer des sites. Le compte visiteur appartient a un site public genere : il est enregistre dans SiteVisitor, utilise des sessions SiteVisitorSession, et sert aux parcours Login/Register du site public."
+      );
+    }
+
+    if (
+      text.includes("site public") ||
+      text.includes("fonctionne")
+    ) {
+      return makeAnswer(
+        "VISITOR_AUTHENTICATION",
+        "Oui. Visitor Authentication fonctionne cote site public : les routes publiques exposent register, login, refresh, logout et me sous /api/public/sites/:siteId/visitor-auth. Les blocs Visitor Login et Visitor Register soumettent leurs formulaires uniquement en mode public."
+      );
+    }
+
+    if (
+      text.includes("comment") ||
+      text.includes("ajouter")
+    ) {
+      return makeAnswer(
+        "VISITOR_AUTHENTICATION",
+        "Oui. Pour ajouter Login et Register dans un site ReactBuilder, creez ou ouvrez les pages voulues dans le Page Builder, puis ajoutez les blocs Visitor Login et Visitor Register. Ils appellent l'authentification dediee aux visiteurs du site public. Ces comptes visiteurs restent distincts des comptes utilisateurs ReactBuilder."
+      );
+    }
+
+    return makeAnswer(
+      "VISITOR_AUTHENTICATION",
+      "Oui. ReactBuilder dispose d'une authentification dediee aux visiteurs des sites generes. Dans le Page Builder, des blocs Visitor Login et Visitor Register permettent d'ajouter des interfaces de connexion et d'inscription. Les visiteurs peuvent creer un compte, se connecter, rafraichir leur session, se deconnecter et consulter leur profil via les routes publiques du site. Ces comptes visiteurs sont distincts des comptes utilisateurs ReactBuilder."
+    );
+  }
+
+  return makeAnswer(
+    "VISITOR_AUTHENTICATION",
+    "Yes. ReactBuilder has visitor authentication for generated public sites. The Page Builder includes Visitor Login and Visitor Register blocks, backed by public register, login, refresh, logout and me routes. Visitor accounts are separate from ReactBuilder platform user accounts."
+  );
+};
+
+const answerFormsCapability = (
+  input: PlatformAssistantInput
+) => {
+  const text =
+    normalizePlatformAssistantText(input.message);
+
+  if (prefersFrench(input)) {
+    if (
+      text.includes("soumission") ||
+      text.includes("soumissions") ||
+      text.includes("voir")
+    ) {
+      return makeAnswer(
+        "FORMS",
+        "Les soumissions se consultent dans le module Forms du site, sur le detail du formulaire. Le backend expose les soumissions par formulaire et permet aussi de changer leur statut ou de les supprimer selon les droits du site."
+      );
+    }
+
+    if (
+      text.includes("afficher") ||
+      text.includes("page")
+    ) {
+      return makeAnswer(
+        "FORMS",
+        "Pour afficher un formulaire dans une page, creez d'abord le formulaire dans le module Forms du site, puis ajoutez un bloc Form dans le Page Builder et selectionnez ce formulaire. Le bloc charge le schema public du formulaire et l'envoie via l'endpoint public de soumission."
+      );
+    }
+
+    if (
+      text.includes("visiteur") ||
+      text.includes("envoyer")
+    ) {
+      return makeAnswer(
+        "FORMS",
+        "Oui. Un visiteur peut envoyer un formulaire depuis le site public. Le bloc Form utilise l'endpoint public /api/public/sites/:siteId/forms/:formId/submit, avec une limitation de debit, puis la soumission est stockee dans les soumissions du formulaire."
+      );
+    }
+
+    return makeAnswer(
+      "FORMS",
+      "Pour creer un formulaire, ouvrez le module Forms du site, creez un formulaire, configurez ses champs et ses parametres, puis ajoutez un bloc Form dans une page pour le lier au formulaire. Les visiteurs soumettent le formulaire sur le site public et les reponses se consultent dans le detail du formulaire."
+    );
+  }
+
+  return makeAnswer(
+    "FORMS",
+    "To create a form, open the site's Forms module, create the form, configure its fields and settings, then add a Form block in the Page Builder and select that form. Public visitors can submit it through the public submit endpoint, and submissions are reviewed from the form detail page."
+  );
+};
+
+const answerPartnerApplications = (
+  input: PlatformAssistantInput
+) => {
+  const text =
+    normalizePlatformAssistantText(input.message);
+
+  if (prefersFrench(input)) {
+    if (
+      text.includes("siteid") ||
+      text.includes("automatique") ||
+      text.includes("automatiquement")
+    ) {
+      return makeAnswer(
+        "PARTNER_APPLICATIONS",
+        "Oui. Pour l'action Devenir partenaire, le siteId est resolu automatiquement depuis le contexte runtime du site. Un site 403 pointe vers /partner-apply/403, un site 524 vers /partner-apply/524. Il ne faut pas hardcoder l'identifiant du site dans le contenu."
+      );
+    }
+
+    if (
+      text.includes("link") ||
+      text.includes("lien")
+    ) {
+      return makeAnswer(
+        "PARTNER_APPLICATIONS",
+        "Oui. Le bloc Link supporte l'action Devenir partenaire. Quand cette action est selectionnee, le lien cible est genere dynamiquement avec le siteId courant vers /partner-apply/:siteId."
+      );
+    }
+
+    if (
+      text.includes("voir") ||
+      text.includes("demandes") ||
+      text.includes("recues")
+    ) {
+      return makeAnswer(
+        "PARTNER_APPLICATIONS",
+        "Les demandes partenaires recues se consultent dans le module Partner Applications du site. Les statuts actuellement geres sont PENDING, APPROVED et REJECTED, avec des actions d'approbation ou de rejet selon les permissions."
+      );
+    }
+
+    if (
+      text.includes("formulaire")
+    ) {
+      return makeAnswer(
+        "PARTNER_APPLICATIONS",
+        "Le formulaire partenaire est une page publique /partner-apply/:siteId. Elle envoie la candidature vers l'endpoint public du site, puis la demande est stockee dans Partner Applications avec le statut PENDING et un niveau suggere calcule depuis l'experience."
+      );
+    }
+
+    return makeAnswer(
+      "PARTNER_APPLICATIONS",
+      "Pour ajouter un bouton Devenir partenaire, utilisez un bloc Button et choisissez l'action Devenir partenaire. Le Button genere automatiquement l'URL /partner-apply/:siteId depuis le site courant, par exemple /partner-apply/403 pour le site 403. Le meme mecanisme existe aussi sur le bloc Link."
+    );
+  }
+
+  return makeAnswer(
+    "PARTNER_APPLICATIONS",
+    "Use a Button or Link block and choose the Become partner action. ReactBuilder resolves the current siteId dynamically and sends visitors to /partner-apply/:siteId, so you should not hardcode a site id. Received applications are managed in the site's Partner Applications module with PENDING, APPROVED and REJECTED statuses."
+  );
+};
+
+const answerDynamicSiteCapabilities = (
+  input: PlatformAssistantInput
+) =>
+  makeAnswer(
+    "DYNAMIC_SITE_CAPABILITIES",
+    prefersFrench(input)
+      ? "Non, les sites generes avec ReactBuilder ne sont pas limites a des pages statiques. Le code actuel supporte des contenus dynamiques via le CMS, des formulaires avec soumissions publiques, l'authentification visiteur avec Login/Register et sessions, ainsi qu'un workflow de candidatures partenaires via une page publique et une gestion cote site."
+      : "No. ReactBuilder-generated sites are not limited to static pages. The current code supports CMS-driven content, forms with public submissions, visitor Login/Register with sessions, and a partner application workflow with a public page and site-side management."
+  );
 
 const answerPlatformOverview = (
   input: PlatformAssistantInput
 ) => {
-  const topCapabilities =
-    PLATFORM_CAPABILITIES.filter(capability =>
-      [
-        "sites",
-        "pages",
-        "page-builder",
-        "cms",
-        "forms",
-        "media",
-        "plugins",
-        "dashboard"
-      ].includes(capability.id)
-    );
+  const french =
+    prefersFrench(input);
 
-  const intro = prefersFrench(input)
+  const intro = french
     ? "ReactBuilder est une plateforme pour creer, gerer et publier des sites web avec un builder visuel."
     : "ReactBuilder is a platform for creating, managing and publishing websites with a visual builder.";
 
   return makeAnswer(
     "PLATFORM_HELP",
-    `${intro}\n\n${formatCapabilities(topCapabilities)}\n\nJe suis en lecture seule: je peux guider et expliquer, mais je ne modifie pas vos sites, pages, blocs, CMS, formulaires, plugins ou utilisateurs.`
+    `${intro}\n\n${formatCapabilities(getCoreCapabilities(), french)}\n\n${
+      french
+        ? "Je suis en lecture seule : je peux guider et expliquer, mais je ne modifie pas vos sites, pages, blocs, CMS, formulaires, plugins ou utilisateurs."
+        : "I am read-only: I can guide and explain, but I do not modify sites, pages, blocks, CMS, forms, plugins or users."
+    }`
   );
 };
 
@@ -495,7 +804,10 @@ const answerHowToOrFeature = (
   if (capabilities.length) {
     return makeAnswer(
       intent,
-      formatCapabilities(capabilities)
+      formatCapabilities(
+        capabilities,
+        prefersFrench(input)
+      )
     );
   }
 
@@ -631,6 +943,34 @@ export const answerPlatformQuestion = async (
         ? "Avec plaisir. Posez-moi une question sur ReactBuilder, ses modules, les roles, ou un workflow."
         : "You are welcome. Ask me about ReactBuilder modules, roles, workflows, or troubleshooting."
     );
+  }
+
+  if (intent === "PRODUCT_DESCRIPTION") {
+    return answerProductDescription(input);
+  }
+
+  if (intent === "ASSISTANT_CAPABILITIES") {
+    return answerAssistantCapabilities(input);
+  }
+
+  if (intent === "MODULE_LIST") {
+    return answerModuleList(input);
+  }
+
+  if (intent === "VISITOR_AUTHENTICATION") {
+    return answerVisitorAuthentication(input);
+  }
+
+  if (intent === "FORMS") {
+    return answerFormsCapability(input);
+  }
+
+  if (intent === "PARTNER_APPLICATIONS") {
+    return answerPartnerApplications(input);
+  }
+
+  if (intent === "DYNAMIC_SITE_CAPABILITIES") {
+    return answerDynamicSiteCapabilities(input);
   }
 
   if (intent === "PLATFORM_HELP") {
