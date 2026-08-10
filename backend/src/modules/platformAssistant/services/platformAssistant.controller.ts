@@ -29,10 +29,61 @@ export const sendPlatformAssistantMessage =
         });
       }
 
+      const safeHistory =
+        Array.isArray(req.body?.history)
+          ? req.body.history
+              .slice(-6)
+              .map((item: any) => ({
+                role:
+                  item?.role === "assistant"
+                    ? "assistant"
+                    : "user",
+                content:
+                  String(item?.content || "")
+                    .slice(0, 800)
+              }))
+              .filter((item: any) =>
+                item.content.trim()
+              )
+          : [];
+
+      const context =
+        req.body?.context &&
+        typeof req.body.context === "object"
+          ? {
+              pathname:
+                String(req.body.context.pathname || "")
+                  .slice(0, 300),
+              module:
+                String(req.body.context.module || "")
+                  .slice(0, 80),
+              siteId:
+                req.body.context.siteId ?? null,
+              pageId:
+                req.body.context.pageId ?? null,
+              globalRole:
+                String(
+                  req.body.context.globalRole ||
+                    (req as any).user?.role ||
+                    ""
+                ).slice(0, 40),
+              locale:
+                String(req.body.context.locale || "")
+                  .slice(0, 40)
+            }
+          : {
+              globalRole:
+                String((req as any).user?.role || "")
+            };
+
       const data =
-        await answerPlatformQuestion(
-          message
-        );
+        await answerPlatformQuestion({
+          message,
+          context,
+          history: safeHistory,
+          userRole:
+            (req as any).user?.role || null
+        });
 
       return res.json({
         success: true,

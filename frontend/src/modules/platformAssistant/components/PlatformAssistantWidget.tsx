@@ -14,8 +14,11 @@ import CloseIcon from "@mui/icons-material/Close";
 import SendIcon from "@mui/icons-material/Send";
 
 import {
+  useMemo,
   useState
 } from "react";
+import { useLocation } from "react-router-dom";
+import { useAuth } from "../../auth/hooks/useAuth";
 
 type PlatformAssistantSource = {
   docId: string;
@@ -29,6 +32,7 @@ type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   sources?: PlatformAssistantSource[];
+  intent?: string;
 };
 
 const API_BASE_URL =
@@ -84,7 +88,47 @@ const findTokenInStorage = () => {
   return "";
 };
 
+const MAX_VISIBLE_MESSAGES = 20;
+const MAX_HISTORY_MESSAGES = 6;
+
+const limitMessages = (
+  items: ChatMessage[]
+) => items.slice(-MAX_VISIBLE_MESSAGES);
+
+const getRouteModule = (
+  pathname: string
+) => {
+  if (pathname === "/sites") return "sites";
+  if (pathname.includes("/cms")) return "cms";
+  if (pathname.includes("/forms")) return "forms";
+  if (pathname.includes("/media")) return "media";
+  if (pathname.includes("/plugins")) return "plugins";
+  if (pathname.includes("/partner-applications")) return "partner-applications";
+  if (pathname.includes("/members")) return "members";
+  if (pathname.includes("/pages")) return "pages";
+  if (pathname === "/dashboard") return "dashboard";
+  if (pathname.startsWith("/admin")) return "admin";
+  if (pathname === "/help") return "help";
+
+  return "general";
+};
+
+const extractRouteId = (
+  pathname: string,
+  segment: string
+) => {
+  const match =
+    pathname.match(
+      new RegExp(`/${segment}/([^/]+)`)
+    );
+
+  return match?.[1] || null;
+};
+
 export const PlatformAssistantWidget = () => {
+  const location = useLocation();
+  const { user } = useAuth();
+
   const [open, setOpen] =
     useState(false);
 
@@ -103,6 +147,19 @@ export const PlatformAssistantWidget = () => {
       }
     ]);
 
+  const assistantContext =
+    useMemo(
+      () => ({
+        pathname: location.pathname,
+        module: getRouteModule(location.pathname),
+        siteId: extractRouteId(location.pathname, "sites"),
+        pageId: extractRouteId(location.pathname, "pages"),
+        globalRole: user?.role || null,
+        locale: navigator.language || null
+      }),
+      [location.pathname, user?.role]
+    );
+
   const sendMessage = async () => {
     const cleanMessage =
       message.trim();
@@ -115,13 +172,18 @@ export const PlatformAssistantWidget = () => {
       return;
     }
 
-    setMessages(previous => [
-      ...previous,
-      {
-        role: "user",
-        content: cleanMessage
-      }
-    ]);
+    const history =
+      messages.slice(-MAX_HISTORY_MESSAGES);
+
+    setMessages(previous =>
+      limitMessages([
+        ...previous,
+        {
+          role: "user",
+          content: cleanMessage
+        }
+      ])
+    );
 
     setMessage("");
     setLoading(true);
@@ -144,7 +206,9 @@ export const PlatformAssistantWidget = () => {
                 : {})
             },
             body: JSON.stringify({
-              message: cleanMessage
+              message: cleanMessage,
+              context: assistantContext,
+              history
             })
           }
         );
@@ -162,26 +226,32 @@ export const PlatformAssistantWidget = () => {
         );
       }
 
-      setMessages(previous => [
-        ...previous,
-        {
-          role: "assistant",
-          content:
-            json.data?.answer ||
-            "I could not find an answer in the ReactBuilder documentation.",
-          sources:
-            json.data?.sources || []
-        }
-      ]);
+      setMessages(previous =>
+        limitMessages([
+          ...previous,
+          {
+            role: "assistant",
+            content:
+              json.data?.answer ||
+              "I could not find a reliable answer for that ReactBuilder question.",
+            sources:
+              json.data?.sources || [],
+            intent:
+              json.data?.intent
+          }
+        ])
+      );
     } catch {
-      setMessages(previous => [
-        ...previous,
-        {
-          role: "assistant",
-          content:
-            "Sorry, I could not answer right now. Please check that you are logged in and that the backend is running."
-        }
-      ]);
+      setMessages(previous =>
+        limitMessages([
+          ...previous,
+          {
+            role: "assistant",
+            content:
+              "Sorry, I could not answer right now. Please check that you are logged in and that the backend is running."
+          }
+        ])
+      );
     } finally {
       setLoading(false);
     }
@@ -324,7 +394,7 @@ export const PlatformAssistantWidget = () => {
                   variant="body2"
                   color="text.secondary"
                 >
-                  Searching ReactBuilder documentation...
+                  Thinking about ReactBuilder...
                 </Typography>
               </Box>
             )}
