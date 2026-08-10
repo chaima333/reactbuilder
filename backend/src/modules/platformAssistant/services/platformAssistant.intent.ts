@@ -1,6 +1,13 @@
 export type PlatformAssistantIntent =
   | "GREETING"
   | "GENERAL_CONVERSATION"
+  | "PRODUCT_DESCRIPTION"
+  | "ASSISTANT_CAPABILITIES"
+  | "MODULE_LIST"
+  | "VISITOR_AUTHENTICATION"
+  | "FORMS"
+  | "PARTNER_APPLICATIONS"
+  | "DYNAMIC_SITE_CAPABILITIES"
   | "PLATFORM_HELP"
   | "FEATURE_EXPLANATION"
   | "HOW_TO"
@@ -42,6 +49,14 @@ const conversation = new Set([
   "d accord",
   "ca marche"
 ]);
+
+const hasAny = (
+  text: string,
+  terms: string[]
+) =>
+  terms.some(term =>
+    text.includes(term)
+  );
 
 export const isGreeting = (
   message: string
@@ -107,15 +122,141 @@ export const classifyPlatformAssistantIntent = (
     return "TROUBLESHOOTING";
   }
 
+  const mentionsVisitorAuth =
+    hasAny(text, [
+      "visiteur",
+      "visitor",
+      "compte visiteur",
+      "site public",
+      "generated site",
+      "site genere"
+    ]) &&
+    hasAny(text, [
+      "login",
+      "register",
+      "connexion",
+      "inscription",
+      "authentification",
+      "authentication",
+      "compte",
+      "session"
+    ]);
+
+  const mentionsSiteLogin =
+    hasAny(text, [
+      "page login",
+      "page de login",
+      "page connexion",
+      "page de connexion"
+    ]) &&
+    hasAny(text, [
+      "site",
+      "reactbuilder"
+    ]);
+
+  const asksAccountDistinction =
+    hasAny(text, [
+      "difference",
+      "different"
+    ]) &&
+    hasAny(text, [
+      "reactbuilder",
+      "plateforme"
+    ]) &&
+    hasAny(text, [
+      "visiteur",
+      "visitor"
+    ]);
+
+  if (
+    mentionsVisitorAuth ||
+    mentionsSiteLogin ||
+    asksAccountDistinction
+  ) {
+    return "VISITOR_AUTHENTICATION";
+  }
+
+  if (
+    hasAny(text, [
+      "formulaire",
+      "formulaires",
+      "form ",
+      "forms",
+      "soumission",
+      "soumissions"
+    ])
+  ) {
+    return "FORMS";
+  }
+
+  if (
+    hasAny(text, [
+      "devenir partenaire",
+      "partner application",
+      "partner applications",
+      "partner apply",
+      "partner apply",
+      "demande partenaire",
+      "demandes partenaires",
+      "formulaire partenaire",
+      "siteid"
+    ]) ||
+    (
+      hasAny(text, [
+        "partenaire",
+        "partner"
+      ]) &&
+      hasAny(text, [
+        "bouton",
+        "button",
+        "link",
+        "lien",
+        "siteid",
+        "demande",
+        "formulaire"
+      ])
+    )
+  ) {
+    return "PARTNER_APPLICATIONS";
+  }
+
+  if (
+    hasAny(text, [
+      "site dynamique",
+      "sites dynamiques",
+      "dynamic site",
+      "dynamic sites",
+      "site statique",
+      "static pages",
+      "pages statiques",
+      "limite a des pages statiques",
+      "limited to static pages"
+    ])
+  ) {
+    return "DYNAMIC_SITE_CAPABILITIES";
+  }
+
   if (
     text.includes("que peux tu faire") ||
-    text.includes("what can you do") ||
+    text.includes("what can you do")
+  ) {
+    return "ASSISTANT_CAPABILITIES";
+  }
+
+  if (
     text.includes("qu est ce que reactbuilder") ||
-    text.includes("what is reactbuilder") ||
+    text.includes("what is reactbuilder")
+  ) {
+    return "PRODUCT_DESCRIPTION";
+  }
+
+  if (
+    text.includes("quels sont les modules") ||
+    text.includes("modules de reactbuilder") ||
     text.includes("modules existent") ||
     text.includes("modules exist")
   ) {
-    return "PLATFORM_HELP";
+    return "MODULE_LIST";
   }
 
   if (
