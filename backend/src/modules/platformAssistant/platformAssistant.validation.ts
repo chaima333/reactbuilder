@@ -3,6 +3,9 @@ import {
   Response,
   NextFunction
 } from "express";
+import {
+  isGreeting
+} from "./services/platformAssistant.intent";
 
 const MAX_MESSAGE_LENGTH = 1000;
 
@@ -15,7 +18,10 @@ export const validatePlatformAssistantMessage = (
     String(req.body?.message || "")
       .trim();
 
-  if (message.length < 3) {
+  if (
+    message.length < 3 &&
+    !isGreeting(message)
+  ) {
     return res.status(400).json({
       success: false,
       message: "Message must be at least 3 characters",
