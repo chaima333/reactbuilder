@@ -72,16 +72,15 @@ export const getActiveAiModel = () => {
   }
 };
 
-export const generateText = async (
-  prompt: string
-): Promise<string> => {
-  if (!isLlmEnabled()) {
-    throw new Error("LLM_DISABLED");
-  }
-
-  const provider =
-    getActiveAiProvider();
-
+export const generateTextForProvider = async ({
+  prompt,
+  provider,
+  model
+}: {
+  prompt: string;
+  provider: AiProvider;
+  model: string;
+}): Promise<string> => {
   switch (provider) {
     case "gemini": {
       if (!process.env.GEMINI_API_KEY) {
@@ -93,16 +92,14 @@ export const generateText = async (
           process.env.GEMINI_API_KEY
         );
 
-      const model =
+      const geminiModel =
         gemini.getGenerativeModel({
-          model:
-            process.env.GEMINI_MODEL ||
-            "gemini-2.0-flash"
+          model
         });
 
       const result =
         await withTimeout(
-          model.generateContent(prompt)
+          geminiModel.generateContent(prompt)
         );
 
       return result.response.text();
@@ -122,9 +119,7 @@ export const generateText = async (
       const response =
         await withTimeout(
           openai.responses.create({
-            model:
-              process.env.OPENAI_MODEL ||
-              "gpt-4.1-mini",
+            model,
             input: prompt
           })
         );
@@ -146,9 +141,7 @@ export const generateText = async (
       const response =
         await withTimeout(
           anthropic.messages.create({
-            model:
-              process.env.ANTHROPIC_MODEL ||
-              "claude-sonnet-5",
+            model,
             max_tokens: 1200,
             messages: [
               {
@@ -174,6 +167,30 @@ export const generateText = async (
         `Unsupported AI provider: ${provider}`
       );
   }
+};
+
+export const generateText = async (
+  prompt: string
+): Promise<string> => {
+  if (!isLlmEnabled()) {
+    throw new Error("LLM_DISABLED");
+  }
+
+  const provider =
+    getActiveAiProvider();
+
+  const model =
+    getActiveAiModel();
+
+  if (!model) {
+    throw new Error("LLM_MODEL_MISSING");
+  }
+
+  return generateTextForProvider({
+    prompt,
+    provider,
+    model
+  });
 };
 
 export const generateTextWithTelemetry = async ({

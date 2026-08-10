@@ -126,6 +126,8 @@ export const classifyPlatformAssistantIntent = (
     hasAny(text, [
       "visiteur",
       "visitor",
+      "client",
+      "clients",
       "compte visiteur",
       "site public",
       "generated site",
@@ -139,6 +141,9 @@ export const classifyPlatformAssistantIntent = (
       "authentification",
       "authentication",
       "compte",
+      "espace membre",
+      "membre",
+      "membres",
       "session"
     ]);
 
@@ -152,6 +157,16 @@ export const classifyPlatformAssistantIntent = (
     hasAny(text, [
       "site",
       "reactbuilder"
+    ]);
+
+  const mentionsMemberArea =
+    hasAny(text, [
+      "espace membre",
+      "espace client",
+      "connexion sur mon site",
+      "login register",
+      "s inscrire",
+      "sinscrire"
     ]);
 
   const asksAccountDistinction =
@@ -171,6 +186,7 @@ export const classifyPlatformAssistantIntent = (
   if (
     mentionsVisitorAuth ||
     mentionsSiteLogin ||
+    mentionsMemberArea ||
     asksAccountDistinction
   ) {
     return "VISITOR_AUTHENTICATION";
@@ -183,7 +199,12 @@ export const classifyPlatformAssistantIntent = (
       "form ",
       "forms",
       "soumission",
-      "soumissions"
+      "soumissions",
+      "message envoye",
+      "messages envoyes",
+      "reponse des visiteurs",
+      "reponses des visiteurs",
+      "formulaire de contact"
     ])
   ) {
     return "FORMS";
@@ -211,9 +232,10 @@ export const classifyPlatformAssistantIntent = (
         "button",
         "link",
         "lien",
-        "siteid",
-        "demande",
-        "formulaire"
+      "siteid",
+      "demande",
+      "demander",
+      "formulaire"
       ])
     )
   ) {
@@ -234,6 +256,27 @@ export const classifyPlatformAssistantIntent = (
     ])
   ) {
     return "DYNAMIC_SITE_CAPABILITIES";
+  }
+
+  if (
+    hasAny(text, [
+      "contenu sans modifier",
+      "articles dynamiquement",
+      "afficher mes articles",
+      "contenu dynamique"
+    ])
+  ) {
+    return "FEATURE_EXPLANATION";
+  }
+
+  if (
+    hasAny(text, [
+      "utilisateur ne peut pas modifier",
+      "ne peut pas modifier la page",
+      "cannot edit the page"
+    ])
+  ) {
+    return "ROLE_PERMISSION_QUESTION";
   }
 
   if (
@@ -285,6 +328,10 @@ export const classifyPlatformAssistantIntent = (
   if (
     text.includes("native mobile") ||
     text.includes("application mobile native") ||
+    text.includes("application android native") ||
+    text.includes("app android native") ||
+    text.includes("monter des videos") ||
+    text.includes("montage video") ||
     text.includes("checkout ecommerce") ||
     text.includes("payment processor")
   ) {
