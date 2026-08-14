@@ -5,6 +5,7 @@ import {
 
 import {
   answerPlatformQuestion,
+  getPlatformAssistantArticleBySlug,
   getPlatformAssistantDocumentation as getPlatformAssistantDocumentationData
 } from "./platformAssistant.service";
 
@@ -126,7 +127,7 @@ export const sendPlatformAssistantMessage =
       }
 
       const data =
-        getPlatformAssistantDocumentationData({
+        await getPlatformAssistantDocumentationData({
           locale:
             String(req.query.locale || "")
               .slice(0, 20),
@@ -154,6 +155,64 @@ export const sendPlatformAssistantMessage =
         success: false,
         message: "Platform assistant documentation failed to load",
         code: "PLATFORM_ASSISTANT_DOCS_FAILED"
+      });
+    }
+  };
+
+export const getPlatformAssistantArticle =
+  async (
+    req: Request,
+    res: Response
+  ) => {
+    try {
+      const userId =
+        Number((req as any).user?.id || 0);
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Authentication required",
+          code: "AUTH_REQUIRED"
+        });
+      }
+
+      const data =
+        await getPlatformAssistantArticleBySlug({
+          slug:
+            String(req.params.slug || "")
+              .slice(0, 180),
+          locale:
+            String(req.query.locale || "")
+              .slice(0, 20)
+        });
+
+      if (!data) {
+        return res.status(404).json({
+          success: false,
+          message: "Help article not found",
+          code: "HELP_ARTICLE_NOT_FOUND"
+        });
+      }
+
+      return res.json({
+        success: true,
+        data
+      });
+    } catch (error) {
+      console.error(
+        "PLATFORM_ASSISTANT_ARTICLE_ERROR",
+        {
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error)
+        }
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Platform assistant article failed to load",
+        code: "PLATFORM_ASSISTANT_ARTICLE_FAILED"
       });
     }
   };

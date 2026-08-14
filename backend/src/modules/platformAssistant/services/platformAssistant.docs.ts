@@ -705,16 +705,16 @@ const scoreArticle = (
   return score;
 };
 
-export const searchHelpArticles = (
+export const rankHelpDocuments = (
+  docs: PlatformAssistantDoc[],
   query: string,
-  locale?: string | null,
   limit = 12
 ): HelpSearchResult[] => {
   const tokens =
     tokenizeHelpSearch(query);
 
   if (!tokens.length) {
-    return getHelpArticles(locale)
+    return docs
       .slice(0, limit)
       .map(article => ({
         ...article,
@@ -722,7 +722,7 @@ export const searchHelpArticles = (
       }));
   }
 
-  return getHelpArticles(locale)
+  return docs
     .map(article => ({
       ...article,
       score:
@@ -737,6 +737,18 @@ export const searchHelpArticles = (
       a.order - b.order
     )
     .slice(0, limit);
+};
+
+export const searchHelpArticles = (
+  query: string,
+  locale?: string | null,
+  limit = 12
+): HelpSearchResult[] => {
+  return rankHelpDocuments(
+    getHelpArticles(locale),
+    query,
+    limit
+  );
 };
 
 export const findHelpArticleBySlug = (

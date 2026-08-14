@@ -15,6 +15,10 @@ import {
   useMemo,
   useState
 } from "react";
+import {
+  useNavigate,
+  useParams
+} from "react-router-dom";
 import { useLanguage } from "../../../app/providers/LanguageProvider";
 
 type HelpDoc = {
@@ -102,6 +106,10 @@ export const getHelpCenterLabels = (
           "Aucun article trouvé",
         noResultsBody:
           "Essayez avec un autre mot-clé comme formulaire, connexion, CMS, partenaire, import ZIP ou SEO.",
+        notFound:
+          "Article introuvable.",
+        back:
+          "Retour au centre d'aide",
         clear:
           "Effacer",
         results:
@@ -123,6 +131,10 @@ export const getHelpCenterLabels = (
           "No articles found",
         noResultsBody:
           "Try another keyword such as form, login, CMS, partner, ZIP import or SEO.",
+        notFound:
+          "Article not found.",
+        back:
+          "Back to Help Center",
         clear:
           "Clear",
         results:
@@ -134,9 +146,15 @@ export const getHelpCenterLabels = (
 export const HelpCenterPage = () => {
   const { language } =
     useLanguage();
+  const navigate =
+    useNavigate();
+  const { slug } =
+    useParams();
 
   const [docs, setDocs] =
     useState<HelpDoc[]>([]);
+  const [article, setArticle] =
+    useState<HelpDoc | null>(null);
 
   const [loading, setLoading] =
     useState(true);
@@ -160,7 +178,7 @@ export const HelpCenterPage = () => {
             locale: language
           });
 
-        if (search.trim()) {
+        if (search.trim() && !slug) {
           params.set(
             "q",
             search.trim()
@@ -169,7 +187,7 @@ export const HelpCenterPage = () => {
 
         const response =
           await fetch(
-            `${API_BASE_URL}/platform-assistant/docs?${params.toString()}`,
+            `${API_BASE_URL}/platform-assistant/docs${slug ? `/${slug}` : ""}?${params.toString()}`,
             {
               headers: {
                 ...(token
@@ -194,7 +212,13 @@ export const HelpCenterPage = () => {
           );
         }
 
-        setDocs(json.data || []);
+        if (slug) {
+          setArticle(json.data || null);
+          setDocs([]);
+        } else {
+          setArticle(null);
+          setDocs(json.data || []);
+        }
       } catch {
         setError(labels.loadError);
       } finally {
@@ -203,7 +227,7 @@ export const HelpCenterPage = () => {
     };
 
     loadDocs();
-  }, [language, search]);
+  }, [language, search, slug]);
 
   const labels =
     useMemo(

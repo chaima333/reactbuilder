@@ -29,6 +29,8 @@ import { Form } from "./Form.model";
 import { SiteVisitor } from "./SiteVisitor";
 import { SiteVisitorSession } from "./SiteVisitorSession";
 import { BlockPattern } from "./BlockPattern.model";
+import { HelpCategory } from "./HelpCategory.model";
+import { HelpArticle } from "./HelpArticle.model";
 
 export const models = [
   User,
@@ -59,7 +61,9 @@ export const models = [
   Form,
   SiteVisitor,
   SiteVisitorSession,
-  BlockPattern
+  BlockPattern,
+  HelpCategory,
+  HelpArticle
 ];
 
 export {
@@ -91,5 +95,7 @@ export {
   Form,
   SiteVisitor,
   SiteVisitorSession,
-  BlockPattern
+  BlockPattern,
+  HelpCategory,
+  HelpArticle
 };

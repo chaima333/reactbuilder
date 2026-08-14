@@ -7,8 +7,8 @@ import type {
   PlatformAssistantInput
 } from "./platformAssistant.service";
 import {
-  retrieveRelevantHelpArticles
-} from "./platformAssistant.docs";
+  HelpCenterService
+} from "./helpCenter.service";
 import {
   PlatformAssistantIntent,
   normalizePlatformAssistantText
@@ -291,7 +291,7 @@ const knowledgeByCapability: Record<string, string> = {
     "ReactBuilder uses platform roles and site roles. Platform roles govern global access; site roles govern what a member can do inside a specific site."
 };
 
-const buildAnswerPrompt = ({
+const buildAnswerPrompt = async ({
   input,
   semantic,
   fallbackAnswer
@@ -305,7 +305,7 @@ const buildAnswerPrompt = ({
       .map(key => knowledgeByCapability[key])
       .filter(Boolean);
   const relevantHelpArticles =
-    retrieveRelevantHelpArticles(
+    await HelpCenterService.retrieveRelevantArticles(
       input.message,
       input.context?.locale,
       4
@@ -383,7 +383,7 @@ export const generateGroundedPlatformAssistantAnswer =
       const text =
         await generateTextForProvider({
           prompt:
-            buildAnswerPrompt({
+          await buildAnswerPrompt({
               input,
               semantic,
               fallbackAnswer

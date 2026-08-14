@@ -3,6 +3,7 @@ import {
 } from "express";
 
 import {
+  getPlatformAssistantArticle,
   getPlatformAssistantDocumentation,
   sendPlatformAssistantMessage
 } from "./platformAssistant.controller";
@@ -28,6 +29,11 @@ router.get(
   "/docs",
   platformAssistantRateLimit,
   getPlatformAssistantDocumentation
+);
+router.get(
+  "/docs/:slug",
+  platformAssistantRateLimit,
+  getPlatformAssistantArticle
 );
 
 export default router;

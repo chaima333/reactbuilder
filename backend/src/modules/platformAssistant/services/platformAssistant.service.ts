@@ -3,11 +3,11 @@ import {
   PlatformCapability
 } from "./platformAssistant.capabilities";
 import {
-  getHelpArticles,
-  retrieveRelevantHelpArticles,
-  searchHelpArticles,
   PlatformAssistantDoc
 } from "./platformAssistant.docs";
+import {
+  HelpCenterService
+} from "./helpCenter.service";
 import {
   PlatformAssistantIntent,
   classifyPlatformAssistantIntent,
@@ -196,7 +196,7 @@ const scoreChunk = (
   return score;
 };
 
-const searchDocumentation = (
+const searchDocumentation = async (
   message: string,
   locale?: string | null
 ) => {
@@ -207,7 +207,13 @@ const searchDocumentation = (
     return [];
   }
 
-  return getHelpArticles(locale)
+  const docs =
+    await HelpCenterService.listArticles({
+      locale,
+      fallbackOnFailure: true
+    });
+
+  return docs
     .flatMap(chunkDocument)
     .map(chunk => ({
       chunk,
@@ -226,7 +232,10 @@ const searchDocumentation = (
 };
 
 const toSources = (
-  ranked: ReturnType<typeof searchDocumentation>
+  ranked: Array<{
+    chunk: KnowledgeChunk;
+    score: number;
+  }>
 ): PlatformAssistantSource[] =>
   Array.from(
     new Map(
@@ -905,13 +914,13 @@ const answerTroubleshooting = (
   );
 };
 
-const answerFromDocs = (
+const answerFromDocs = async (
   message: string,
   intent: PlatformAssistantIntent,
   input?: PlatformAssistantInput
-) => {
+): Promise<PlatformAssistantAnswer> => {
   const ranked =
-    searchDocumentation(
+    await searchDocumentation(
       message,
       input?.context?.locale
     );
@@ -948,11 +957,11 @@ const answerFromDocs = (
   );
 };
 
-const buildPlatformAnswerForIntent = (
+const buildPlatformAnswerForIntent = async (
   input: PlatformAssistantInput,
   cleanMessage: string,
   intent: PlatformAssistantIntent
-): PlatformAssistantAnswer => {
+): Promise<PlatformAssistantAnswer> => {
   if (intent === "GREETING") {
     return makeAnswer(
       intent,
@@ -1109,7 +1118,7 @@ export const answerPlatformQuestion = async (
       : semantic?.intent || contextualIntent;
 
   const answer =
-    buildPlatformAnswerForIntent(
+    await buildPlatformAnswerForIntent(
       input,
       cleanMessage,
       intent
@@ -1145,8 +1154,23 @@ export const answerPlatformQuestion = async (
 };
 
 export const getPlatformAssistantDocs = () =>
-  getHelpArticles()
-    .map(
+  HelpCenterService.listArticles({
+    fallbackOnFailure: true
+  });
+
+export const getPlatformAssistantDocumentation = ({
+  locale,
+  query
+}: {
+  locale?: string | null;
+  query?: string | null;
+} = {}) =>
+  HelpCenterService.listArticles({
+    locale,
+    query,
+    limit: 30
+  }).then(docs =>
+    docs.map(
       doc => ({
         id: doc.id,
         slug: doc.slug,
@@ -1157,45 +1181,28 @@ export const getPlatformAssistantDocs = () =>
           .replace(/\s+/g, " ")
           .trim(),
         keywords: doc.keywords,
-        order: doc.order
+        order: doc.order,
+        score:
+          "score" in doc
+            ? doc.score
+            : undefined
       })
-    );
-
-export const getPlatformAssistantDocumentation = ({
-  locale,
-  query
-}: {
-  locale?: string | null;
-  query?: string | null;
-} = {}) => {
-  const docs =
-    query?.trim()
-      ? searchHelpArticles(
-          query,
-          locale,
-          30
-        )
-      : getHelpArticles(locale);
-
-  return docs.map(
-    doc => ({
-      id: doc.id,
-      slug: doc.slug,
-      title: doc.title,
-      category: doc.category,
-      summary: doc.summary,
-      content: doc.content
-        .replace(/\s+/g, " ")
-        .trim(),
-      keywords: doc.keywords,
-      order: doc.order,
-      score:
-        "score" in doc
-          ? doc.score
-          : undefined
-    })
+    )
   );
-};
+
+export const getPlatformAssistantArticleBySlug = ({
+  slug,
+  locale
+}: {
+  slug: string;
+  locale?: string | null;
+}) =>
+  HelpCenterService.getArticleBySlug(
+    slug,
+    {
+      locale
+    }
+  );
 
 export const searchPlatformAssistantDocumentation = ({
   query,
@@ -1206,7 +1213,7 @@ export const searchPlatformAssistantDocumentation = ({
   locale?: string | null;
   limit?: number;
 }) =>
-  retrieveRelevantHelpArticles(
+  HelpCenterService.retrieveRelevantArticles(
     query,
     locale,
     limit
