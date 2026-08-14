@@ -190,7 +190,7 @@ export class AiService {
       return "Consulting";
     }
 
-    return "Corporate";
+    return "Technology";
   }
   
   private static async predictCategory(
