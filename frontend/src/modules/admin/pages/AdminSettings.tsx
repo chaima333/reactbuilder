@@ -20,9 +20,6 @@ import {
   FormControl,
   InputLabel,
   Select,
-  Card,
-  CardContent,
-  Avatar,
   LinearProgress,
   alpha,
   useTheme,
@@ -47,7 +44,6 @@ import {
 } from "@mui/icons-material";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 
 import {
   type PlatformAiSettings,
@@ -58,26 +54,30 @@ import {
   useGenerateAdminApiKeyMutation,
   useTestWebhookMutation,
 } from "../../../redux/services/admin.api";
+
 import { apiUrl } from "../../../config/api";
 
-// 360 Brand Colors
+/* =========================================================
+   360 DIGITAL GROW - ADMIN SETTINGS
+   Simple / Compact Admin UI
+   ========================================================= */
+
 const colors = {
   emerald: "#00C49A",
   emeraldDark: "#009E7C",
-  emeraldLight: "rgba(0, 196, 154, 0.12)",
-  emeraldGradient: "linear-gradient(135deg, #00C49A 0%, #00A37A 100%)",
   black: "#0D0D0D",
-  blackLight: "rgba(13, 13, 13, 0.08)",
+  card: "#202020",
+  cardHeader: "#242424",
+  border: "rgba(255,255,255,0.08)",
   grayLight: "#F2F2F2",
-  grayMedium: "#E0E0E0",
-  textPrimary: "#0D0D0D",
-  textSecondary: "rgba(13, 13, 13, 0.6)",
+  textSecondary: "rgba(255,255,255,0.55)",
   white: "#FFFFFF",
   error: "#F22F22",
 };
 
-const MotionPaper = motion(Paper);
-const MotionBox = motion(Box);
+/* =========================================================
+   DEFAULT SETTINGS
+   ========================================================= */
 
 const defaultSettings = {
   platformName: "360 Digital Grow",
@@ -88,21 +88,27 @@ const defaultSettings = {
   maintenanceMode: false,
   aiEnabled: true,
   aiProvider: "claude",
+
   seoPlugin: true,
   mediaPlugin: true,
   versionPlugin: true,
+  notificationPlugin: true,
+  figmaPlugin: true,
+
   allowGoogleLogin: true,
   allowEmailLogin: true,
   forceStrongPasswords: true,
   sessionTimeoutHours: 24,
+
   maxPagesPerSite: 50,
   maxMediaStorageMb: 500,
   maxTeamMembersPerSite: 10,
-  notificationPlugin: true,
-  figmaPlugin: true,
+
   apiKeyPreview: "",
   apiKeyGeneratedAt: "",
+
   webhookUrl: "",
+
   autoBackup: true,
   backupFrequency: "weekly",
   exportFormat: "json",
@@ -115,6 +121,7 @@ const defaultAiSettings: PlatformAiSettings = {
   globalAssistantEnabled: true,
   builderAiEnabled: true,
   updatedBy: null,
+
   providerStatus: {
     claude: {
       configured: false,
@@ -131,172 +138,247 @@ const defaultAiSettings: PlatformAiSettings = {
   },
 };
 
-// Section configuration with 360 brand colors
+/* =========================================================
+   SECTION CONFIG
+   ========================================================= */
+
 const sectionConfig = {
-  platform: { icon: SettingsIcon, gradient: colors.emeraldGradient },
-  users: { icon: PeopleIcon, gradient: "linear-gradient(135deg, #00C49A 0%, #0D0D0D 100%)" },
-  plugins: { icon: PluginIcon, gradient: "linear-gradient(135deg, #0D0D0D 0%, #00C49A 100%)" },
-  ai: { icon: AIIcon, gradient: colors.emeraldGradient },
-  security: { icon: SecurityIcon, gradient: "linear-gradient(135deg, #0D0D0D 0%, #F22F22 100%)" },
-  limits: { icon: SpeedIcon, gradient: colors.emeraldGradient },
-  api: { icon: ApiIcon, gradient: "linear-gradient(135deg, #00C49A 0%, #0D0D0D 100%)" },
-  backup: { icon: CloudIcon, gradient: "linear-gradient(135deg, #0D0D0D 0%, #00C49A 100%)" },
+  platform: {
+    icon: SettingsIcon,
+  },
+  users: {
+    icon: PeopleIcon,
+  },
+  plugins: {
+    icon: PluginIcon,
+  },
+  ai: {
+    icon: AIIcon,
+  },
+  security: {
+    icon: SecurityIcon,
+  },
+  limits: {
+    icon: SpeedIcon,
+  },
+  api: {
+    icon: ApiIcon,
+  },
+  backup: {
+    icon: CloudIcon,
+  },
 };
 
+/* =========================================================
+   COMMON FIELD STYLE
+   ========================================================= */
+
+const fieldSx = {
+  "& .MuiOutlinedInput-root": {
+    borderRadius: 1.5,
+    fontSize: "0.75rem",
+  },
+
+  "& .MuiInputLabel-root": {
+    fontSize: "0.75rem",
+  },
+
+  "& .MuiInputBase-input": {
+    py: 1,
+    fontSize: "0.75rem",
+  },
+
+  "& .MuiFormHelperText-root": {
+    fontSize: "0.65rem",
+    marginLeft: 0,
+  },
+};
+
+/* =========================================================
+   SECTION CARD
+   ========================================================= */
+
 interface SectionCardProps {
-  icon: any;
+  icon?: any;
   title: string;
-  gradient: string;
   children: React.ReactNode;
-  delay?: number;
 }
 
-const SectionCard: React.FC<SectionCardProps> = ({ 
-  icon: Icon, 
-  title, 
-  gradient, 
-  children, 
-  delay = 0 
+const SectionCard: React.FC<SectionCardProps> = ({
+  icon: Icon,
+  title,
+  children,
 }) => {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-
   return (
-    <MotionPaper
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay }}
+    <Paper
+      elevation={0}
       sx={{
-        p: 0,
-        borderRadius: 4,
+        borderRadius: 2,
         overflow: "hidden",
-        bgcolor: isDark ? 'rgba(255,255,255,0.03)' : colors.white,
-        border: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid transparent',
-        boxShadow: isDark 
-          ? '0 4px 20px rgba(0,0,0,0.3)'
-          : '0 4px 20px rgba(0,0,0,0.06)',
-        transition: "all 0.3s ease",
-        "&:hover": {
-          boxShadow: isDark
-            ? '0 8px 40px rgba(0,0,0,0.4)'
-            : '0 8px 40px rgba(0,196,154,0.12)',
-          transform: "translateY(-4px)",
-        },
+        bgcolor: colors.card,
+        border: `1px solid ${colors.border}`,
+        boxShadow: "none",
       }}
     >
+      {/* Section Header */}
       <Box
         sx={{
-          background: gradient,
-          px: 3,
-          py: 2.5,
+          px: 2,
+          py: 1.15,
           display: "flex",
           alignItems: "center",
-          gap: 1.5,
+          gap: 1,
+          bgcolor: colors.cardHeader,
+          borderBottom: `1px solid ${colors.border}`,
         }}
       >
-        <Avatar
-          sx={{
-            width: 36,
-            height: 36,
-            bgcolor: "rgba(255,255,255,0.2)",
-            backdropFilter: "blur(10px)",
-          }}
-        >
-          <Icon sx={{ fontSize: 20, color: "white" }} />
-        </Avatar>
+        {Icon && (
+          <Icon
+            sx={{
+              fontSize: 16,
+              color: colors.emerald,
+            }}
+          />
+        )}
+
         <Typography
-          variant="h6"
           sx={{
-            fontFamily: "'Montserrat', sans-serif",
+            fontSize: "0.78rem",
             fontWeight: 700,
-            color: "white",
-            letterSpacing: "-0.01em",
+            color: colors.white,
           }}
         >
           {title}
         </Typography>
-        <Box sx={{ flex: 1 }} />
-        <Box
-          sx={{
-            px: 1.5,
-            py: 0.5,
-            borderRadius: 20,
-            bgcolor: "rgba(255,255,255,0.15)",
-            backdropFilter: "blur(10px)",
-          }}
-        >
-          <Typography 
-            variant="caption" 
-            sx={{ 
-              color: "rgba(255,255,255,0.9)",
-              fontFamily: "'Montserrat', sans-serif",
-              fontWeight: 600,
-            }}
-          >
-            Settings
-          </Typography>
-        </Box>
       </Box>
-      <CardContent sx={{ 
-        p: 3, 
-        bgcolor: isDark ? 'transparent' : colors.white 
-      }}>
+
+      {/* Section Content */}
+      <Box
+        sx={{
+          p: 2,
+        }}
+      >
         {children}
-      </CardContent>
-    </MotionPaper>
+      </Box>
+    </Paper>
   );
 };
 
-const StatusChip: React.FC<{ status: boolean; label: string }> = ({ status, label }) => {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-  
+/* =========================================================
+   STATUS CHIP
+   ========================================================= */
+
+const StatusChip: React.FC<{
+  status: boolean;
+  label: string;
+}> = ({ status, label }) => {
   return (
     <Chip
       label={label}
       size="small"
-      icon={status ? <CheckCircle sx={{ fontSize: 14 }} /> : <ErrorIcon sx={{ fontSize: 14 }} />}
+      icon={
+        status ? (
+          <CheckCircle sx={{ fontSize: 12 }} />
+        ) : (
+          <ErrorIcon sx={{ fontSize: 12 }} />
+        )
+      }
       sx={{
-        fontFamily: "'Montserrat', sans-serif",
+        height: 19,
+        fontSize: "0.58rem",
         fontWeight: 600,
-        bgcolor: status 
-          ? (isDark ? 'rgba(0,196,154,0.2)' : colors.emeraldLight)
-          : (isDark ? 'rgba(242,47,34,0.2)' : "rgba(242, 47, 34, 0.12)"),
+        borderRadius: 1,
+
+        bgcolor: status
+          ? "rgba(0,196,154,0.14)"
+          : "rgba(242,47,34,0.14)",
+
         color: status ? colors.emerald : colors.error,
+
         "& .MuiChip-icon": {
           color: status ? colors.emerald : colors.error,
+          marginLeft: "4px",
+        },
+
+        "& .MuiChip-label": {
+          px: 0.8,
         },
       }}
     />
   );
 };
 
+/* =========================================================
+   MAIN COMPONENT
+   ========================================================= */
+
 export default function AdminSettings() {
   const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
+  const isDark = theme.palette.mode === "dark";
+
+  /* =======================================================
+     API
+     ======================================================= */
+
   const { data, isLoading } = useGetAdminSettingsQuery();
+
   const {
     data: aiSettingsData,
     isLoading: aiSettingsLoading,
     error: aiSettingsLoadError,
   } = useGetAdminAiSettingsQuery();
-  const [updateAdminSettings] = useUpdateAdminSettingsMutation();
-  const [updateAdminAiSettings] = useUpdateAdminAiSettingsMutation();
-  const [generateApiKey] = useGenerateAdminApiKeyMutation();
-  const [testWebhook] = useTestWebhookMutation();
 
-  const [settings, setSettings] = useState(defaultSettings);
-  const [aiSettings, setAiSettings] = useState(defaultAiSettings);
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [webhookStatus, setWebhookStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [webhookMessage, setWebhookMessage] = useState("");
-  const [webhookSnackbar, setWebhookSnackbar] = useState(false);
-  const [saveLoading, setSaveLoading] = useState(false);
-  const [aiSaveLoading, setAiSaveLoading] = useState(false);
-  const [aiMessage, setAiMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
+  const [updateAdminSettings] =
+    useUpdateAdminSettingsMutation();
+
+  const [updateAdminAiSettings] =
+    useUpdateAdminAiSettingsMutation();
+
+  const [generateApiKey] =
+    useGenerateAdminApiKeyMutation();
+
+  const [testWebhook] =
+    useTestWebhookMutation();
+
+  /* =======================================================
+     STATE
+     ======================================================= */
+
+  const [settings, setSettings] =
+    useState(defaultSettings);
+
+  const [aiSettings, setAiSettings] =
+    useState(defaultAiSettings);
+
+  const [showApiKey, setShowApiKey] =
+    useState(false);
+
+  const [webhookStatus, setWebhookStatus] =
+    useState<
+      "idle" | "loading" | "success" | "error"
+    >("idle");
+
+  const [webhookMessage, setWebhookMessage] =
+    useState("");
+
+  const [webhookSnackbar, setWebhookSnackbar] =
+    useState(false);
+
+  const [saveLoading, setSaveLoading] =
+    useState(false);
+
+  const [aiSaveLoading, setAiSaveLoading] =
+    useState(false);
+
+  const [aiMessage, setAiMessage] =
+    useState<{
+      type: "success" | "error";
+      text: string;
+    } | null>(null);
+
+  /* =======================================================
+     LOAD ADMIN SETTINGS
+     ======================================================= */
 
   useEffect(() => {
     if (data) {
@@ -306,6 +388,10 @@ export default function AdminSettings() {
       });
     }
   }, [data]);
+
+  /* =======================================================
+     LOAD AI SETTINGS
+     ======================================================= */
 
   useEffect(() => {
     if (aiSettingsData) {
@@ -320,7 +406,14 @@ export default function AdminSettings() {
     }
   }, [aiSettingsData]);
 
-  const update = (key: string, value: any) => {
+  /* =======================================================
+     UPDATE SETTINGS
+     ======================================================= */
+
+  const update = (
+    key: string,
+    value: any
+  ) => {
     setSettings((prev: any) => ({
       ...prev,
       [key]: value,
@@ -336,6 +429,10 @@ export default function AdminSettings() {
       [key]: value,
     }));
   };
+
+  /* =======================================================
+     SAVE AI SETTINGS
+     ======================================================= */
 
   const saveAiSettings = async () => {
     setAiSaveLoading(true);
@@ -362,8 +459,16 @@ export default function AdminSettings() {
         },
       });
 
-      update("aiEnabled", saved.enabled);
-      update("aiProvider", saved.provider);
+      update(
+        "aiEnabled",
+        saved.enabled
+      );
+
+      update(
+        "aiProvider",
+        saved.provider
+      );
+
       setAiMessage({
         type: "success",
         text: "AI settings saved successfully.",
@@ -380,8 +485,13 @@ export default function AdminSettings() {
     }
   };
 
+  /* =======================================================
+     SAVE ALL SETTINGS
+     ======================================================= */
+
   const save = async () => {
     setSaveLoading(true);
+
     try {
       const savedAi =
         await updateAdminAiSettings({
@@ -399,13 +509,21 @@ export default function AdminSettings() {
         aiEnabled: savedAi.enabled,
         aiProvider: savedAi.provider,
       }).unwrap();
-      alert("Admin settings saved successfully!");
+
+      alert(
+        "Admin settings saved successfully!"
+      );
     } catch (error) {
+      console.error(error);
       alert("Failed to save settings");
     } finally {
       setSaveLoading(false);
     }
   };
+
+  /* =======================================================
+     SAVE WEBHOOK
+     ======================================================= */
 
   const saveWebhook = async () => {
     try {
@@ -413,71 +531,126 @@ export default function AdminSettings() {
         ...settings,
         webhookUrl: settings.webhookUrl,
       }).unwrap();
-      alert("✅ Webhook URL saved successfully!");
+
+      alert(
+        "✅ Webhook URL saved successfully!"
+      );
     } catch {
-      alert("❌ Failed to save webhook URL");
+      alert(
+        "❌ Failed to save webhook URL"
+      );
     }
   };
+
+  /* =======================================================
+     TEST WEBHOOK
+     ======================================================= */
 
   const handleTestWebhook = async () => {
     if (!settings.webhookUrl) {
       setWebhookStatus("error");
-      setWebhookMessage("Please enter a webhook URL first");
+
+      setWebhookMessage(
+        "Please enter a webhook URL first"
+      );
+
       setWebhookSnackbar(true);
+
       return;
     }
 
     setWebhookStatus("loading");
 
     try {
-      const result = await testWebhook({
-        webhookUrl: settings.webhookUrl,
-      }).unwrap();
+      const result =
+        await testWebhook({
+          webhookUrl: settings.webhookUrl,
+        }).unwrap();
 
       setWebhookStatus("success");
-      setWebhookMessage(result.message || "✅ Webhook connected successfully!");
+
+      setWebhookMessage(
+        result.message ||
+          "Webhook connected successfully!"
+      );
+
       setWebhookSnackbar(true);
     } catch (error: any) {
       setWebhookStatus("error");
-      setWebhookMessage(error?.data?.message || "❌ Webhook test failed");
+
+      setWebhookMessage(
+        error?.data?.message ||
+          "Webhook test failed"
+      );
+
       setWebhookSnackbar(true);
     }
   };
 
+  /* =======================================================
+     GENERATE API KEY
+     ======================================================= */
+
   const handleGenerateApiKey = async () => {
     try {
-      const result = await generateApiKey().unwrap();
+      const result =
+        await generateApiKey().unwrap();
 
       setSettings((prev: any) => ({
         ...prev,
         apiKeyPreview: result.apiKey,
-        apiKeyGeneratedAt: result.apiKeyGeneratedAt,
+        apiKeyGeneratedAt:
+          result.apiKeyGeneratedAt,
       }));
 
       setShowApiKey(true);
-      alert("🔑 API Key generated successfully!");
+
+      alert(
+        "🔑 API Key generated successfully!"
+      );
     } catch {
-      alert("❌ Failed to generate API key");
+      alert(
+        "❌ Failed to generate API key"
+      );
     }
   };
 
+  /* =======================================================
+     COPY API KEY
+     ======================================================= */
+
   const handleCopyApiKey = () => {
     if (settings.apiKeyPreview) {
-      navigator.clipboard.writeText(settings.apiKeyPreview);
-      alert("📋 API Key copied to clipboard!");
+      navigator.clipboard.writeText(
+        settings.apiKeyPreview
+      );
+
+      alert(
+        "📋 API Key copied to clipboard!"
+      );
     }
   };
+
+  /* =======================================================
+     EXPORT DATA
+     ======================================================= */
 
   const handleExportData = async () => {
     try {
       const token =
-        localStorage.getItem("accessToken") ||
+        localStorage.getItem(
+          "accessToken"
+        ) ||
         JSON.parse(
-          localStorage.getItem("auth") || "{}"
+          localStorage.getItem(
+            "auth"
+          ) || "{}"
         )?.accessToken;
 
       if (!token) {
-        alert("❌ No access token found");
+        alert(
+          "❌ No access token found"
+        );
         return;
       }
 
@@ -492,793 +665,1399 @@ export default function AdminSettings() {
       );
 
       if (!response.ok) {
-        throw new Error("Export failed");
+        throw new Error(
+          "Export failed"
+        );
       }
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       const blob = new Blob(
-        [JSON.stringify(data, null, 2)],
+        [
+          JSON.stringify(
+            data,
+            null,
+            2
+          ),
+        ],
         {
           type: "application/json",
         }
       );
 
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `reactbuilder-backup-${Date.now()}.json`;
-      a.click();
-      window.URL.revokeObjectURL(url);
+      const url =
+        window.URL.createObjectURL(
+          blob
+        );
 
-      alert("✅ Backup exported successfully");
+      const a =
+        document.createElement(
+          "a"
+        );
+
+      a.href = url;
+
+      a.download =
+        `reactbuilder-backup-${Date.now()}.json`;
+
+      a.click();
+
+      window.URL.revokeObjectURL(
+        url
+      );
+
+      alert(
+        "✅ Backup exported successfully"
+      );
     } catch (error) {
       console.error(error);
-      alert("❌ Export failed");
+
+      alert(
+        "❌ Export failed"
+      );
     }
   };
 
-  const maskApiKey = (key: string) => {
+  /* =======================================================
+     MASK API KEY
+     ======================================================= */
+
+  const maskApiKey = (
+    key: string
+  ) => {
     if (!key) return "";
-    if (key.length <= 8) return "••••••••";
-    const firstFour = key.slice(0, 4);
-    const lastFour = key.slice(-4);
+
+    if (key.length <= 8) {
+      return "••••••••";
+    }
+
+    const firstFour =
+      key.slice(0, 4);
+
+    const lastFour =
+      key.slice(-4);
+
     return `${firstFour}••••••••••••••••${lastFour}`;
   };
+
+  /* =======================================================
+     LOADING
+     ======================================================= */
 
   if (isLoading) {
     return (
       <Box
-        p={4}
-        display="flex"
-        flexDirection="column"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="400px"
-        gap={3}
         sx={{
-          bgcolor: isDark ? '#0D0D0D' : colors.grayLight,
+          bgcolor: colors.black,
+          minHeight: "100vh",
+          p: 3,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: 2,
         }}
       >
-        <CircularProgress size={48} sx={{ color: colors.emerald }} />
-        <Typography 
-          variant="body1" 
-          sx={{ 
-            color: isDark ? 'rgba(255,255,255,0.6)' : colors.textSecondary,
-            fontFamily: "'Montserrat', sans-serif",
+        <CircularProgress
+          size={36}
+          sx={{
+            color: colors.emerald,
+          }}
+        />
+
+        <Typography
+          sx={{
+            color: colors.textSecondary,
+            fontSize: "0.8rem",
           }}
         >
           Loading admin settings...
         </Typography>
-        <LinearProgress 
-          sx={{ 
-            width: 200, 
+
+        <LinearProgress
+          sx={{
+            width: 180,
+            height: 3,
             borderRadius: 2,
-            bgcolor: isDark ? 'rgba(255,255,255,0.1)' : colors.grayLight,
+            bgcolor:
+              "rgba(255,255,255,0.08)",
+
             "& .MuiLinearProgress-bar": {
               bgcolor: colors.emerald,
             },
-          }} 
+          }}
         />
       </Box>
     );
   }
 
+  /* =======================================================
+     MAIN UI
+     ======================================================= */
+
   return (
-    <Box sx={{ 
-      bgcolor: isDark ? '#0D0D0D' : colors.grayLight, 
-      minHeight: "100vh", 
-      p: 4 
-    }}>
+    <Box
+      sx={{
+        bgcolor: isDark
+          ? colors.black
+          : "#F5F5F5",
+
+        minHeight: "100vh",
+
+        p: {
+          xs: 2,
+          md: 3,
+        },
+
+        color: colors.white,
+      }}
+    >
+      {/* ===================================================
+          WEBHOOK SNACKBAR
+          =================================================== */}
+
       <Snackbar
         open={webhookSnackbar}
         autoHideDuration={6000}
-        onClose={() => setWebhookSnackbar(false)}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        onClose={() =>
+          setWebhookSnackbar(false)
+        }
+        anchorOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
       >
         <Alert
-          onClose={() => setWebhookSnackbar(false)}
-          severity={webhookStatus === "success" ? "success" : "error"}
-          sx={{ 
+          onClose={() =>
+            setWebhookSnackbar(false)
+          }
+          severity={
+            webhookStatus === "success"
+              ? "success"
+              : "error"
+          }
+          sx={{
             width: "100%",
-            borderRadius: 3,
-            fontFamily: "'Montserrat', sans-serif",
-            bgcolor: isDark ? '#1A1A1A' : colors.white,
-            color: isDark ? colors.grayLight : colors.black,
-            "& .MuiAlert-icon": {
-              color: webhookStatus === "success" ? colors.emerald : colors.error,
-            },
+            borderRadius: 2,
+            fontSize: "0.75rem",
           }}
-          icon={webhookStatus === "success" ? <CheckCircle /> : <ErrorIcon />}
+          icon={
+            webhookStatus === "success" ? (
+              <CheckCircle />
+            ) : (
+              <ErrorIcon />
+            )
+          }
         >
           {webhookMessage}
         </Alert>
       </Snackbar>
 
-      {/* Header - 360 Brand */}
-      <MotionBox
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+      {/* ===================================================
+          HEADER
+          =================================================== */}
+
+      <Box
         sx={{
-          mb: 5,
+          mb: 2.5,
+
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
+          justifyContent:
+            "space-between",
+
           gap: 2,
+
+          flexWrap: "wrap",
         }}
       >
         <Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
-            <Avatar
-              sx={{
-                width: 64,
-                height: 64,
-                bgcolor: colors.emerald,
-                color: colors.white,
-                fontWeight: 700,
-                fontSize: 20,
-                fontFamily: "'Montserrat', sans-serif",
-              }}
-            >
-              360
-            </Avatar>
-            <Box>
-              <Typography 
-                variant="h4" 
-                sx={{ 
-                  fontFamily: "'Montserrat', sans-serif",
-                  fontWeight: 700,
-                  color: isDark ? colors.grayLight : colors.black,
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                Admin Settings
-              </Typography>
-              <Typography 
-                variant="body1" 
-                sx={{ 
-                  fontFamily: "'Montserrat', sans-serif",
-                  color: isDark ? 'rgba(255,255,255,0.6)' : colors.textSecondary,
-                }}
-              >
-                360 Digital Grow — Studio Digital pour votre croissance 360°
-              </Typography>
-            </Box>
-          </Box>
+          <Typography
+            sx={{
+              fontSize: {
+                xs: "1.1rem",
+                md: "1.3rem",
+              },
+
+              fontWeight: 700,
+
+              color: isDark
+                ? colors.white
+                : colors.black,
+            }}
+          >
+            Admin Settings
+          </Typography>
+
+          <Typography
+            sx={{
+              mt: 0.3,
+              fontSize: "0.68rem",
+              color: isDark
+                ? colors.textSecondary
+                : "rgba(13,13,13,0.55)",
+            }}
+          >
+            Platform configuration
+            and administration
+          </Typography>
         </Box>
+
         <Button
           variant="contained"
-          size="large"
+          size="small"
           onClick={save}
           disabled={saveLoading}
-          startIcon={saveLoading ? <CircularProgress size={20} color="inherit" /> : null}
+          startIcon={
+            saveLoading ? (
+              <CircularProgress
+                size={14}
+                color="inherit"
+              />
+            ) : null
+          }
           sx={{
-            bgcolor: colors.emerald,
-            fontFamily: "'Montserrat', sans-serif",
+            bgcolor:
+              colors.emerald,
+
+            color:
+              colors.white,
+
+            px: 2,
+
+            py: 0.8,
+
+            borderRadius: 1.5,
+
+            textTransform:
+              "none",
+
+            fontSize:
+              "0.72rem",
+
             fontWeight: 700,
-            px: 4,
-            py: 1.5,
-            borderRadius: 3,
-            textTransform: "none",
-            fontSize: "1rem",
+
+            boxShadow:
+              "none",
+
             "&:hover": {
-              bgcolor: colors.emeraldDark,
-              transform: "scale(1.02)",
-              boxShadow: `0 8px 32px ${alpha(colors.emerald, 0.4)}`,
+              bgcolor:
+                colors.emeraldDark,
+
+              boxShadow:
+                "none",
             },
-            transition: "all 0.2s ease",
           }}
         >
-          {saveLoading ? "Saving..." : "💾 Save All Settings"}
+          {saveLoading
+            ? "Saving..."
+            : "Save All Settings"}
         </Button>
-      </MotionBox>
+      </Box>
 
-      <Grid container spacing={3}>
-        {/* Platform */}
-        <Grid item xs={12} md={6}>
+      {/* ===================================================
+          SETTINGS GRID
+          =================================================== */}
+
+      <Grid
+        container
+        spacing={2}
+      >
+        {/* =================================================
+            PLATFORM
+            ================================================= */}
+
+        <Grid
+          item
+          xs={12}
+          md={6}
+        >
           <SectionCard
-            icon={sectionConfig.platform.icon}
+            icon={
+              sectionConfig
+                .platform.icon
+            }
             title="Platform"
-            gradient={sectionConfig.platform.gradient}
-            delay={0.1}
           >
             <TextField
               fullWidth
               label="Platform Name"
-              value={settings.platformName}
-              onChange={(e) => update("platformName", e.target.value)}
-              sx={{ mb: 2.5 }}
-              variant="outlined"
-              InputProps={{
-                sx: { 
-                  borderRadius: 2,
-                  fontFamily: "'Montserrat', sans-serif",
-                  color: isDark ? colors.grayLight : colors.black,
-                },
-              }}
-              InputLabelProps={{
-                sx: {
-                  fontFamily: "'Montserrat', sans-serif",
-                  color: isDark ? 'rgba(255,255,255,0.6)' : colors.textSecondary,
-                },
+              value={
+                settings.platformName
+              }
+              onChange={(e) =>
+                update(
+                  "platformName",
+                  e.target.value
+                )
+              }
+              sx={{
+                ...fieldSx,
+                mb: 1.5,
               }}
             />
-            <Stack direction="row" spacing={2}>
+
+            <Stack
+              direction="row"
+              spacing={2}
+              flexWrap="wrap"
+            >
               <FormControlLabel
                 control={
                   <Switch
-                    checked={settings.maintenanceMode}
-                    onChange={(e) => update("maintenanceMode", e.target.checked)}
+                    size="small"
+                    checked={
+                      settings.maintenanceMode
+                    }
+                    onChange={(e) =>
+                      update(
+                        "maintenanceMode",
+                        e.target.checked
+                      )
+                    }
                     sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: colors.error,
-                        "&:hover": { bgcolor: alpha(colors.error, 0.08) },
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                        bgcolor: colors.error,
-                      },
+                      "& .MuiSwitch-switchBase.Mui-checked":
+                        {
+                          color:
+                            colors.emerald,
+                        },
+
+                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                        {
+                          bgcolor:
+                            colors.emerald,
+                        },
                     }}
                   />
                 }
-                label={
-                  <Typography sx={{ 
-                    fontFamily: "'Montserrat', sans-serif",
-                    color: isDark ? colors.grayLight : colors.black,
-                  }}>
-                    Maintenance Mode
-                  </Typography>
-                }
+                label="Maintenance Mode"
+                sx={{
+                  "& .MuiFormControlLabel-label":
+                    {
+                      fontSize:
+                        "0.68rem",
+                    },
+                }}
               />
+
               <FormControlLabel
                 control={
                   <Switch
-                    checked={settings.publicRegistration}
-                    onChange={(e) => update("publicRegistration", e.target.checked)}
+                    size="small"
+                    checked={
+                      settings.publicRegistration
+                    }
+                    onChange={(e) =>
+                      update(
+                        "publicRegistration",
+                        e.target.checked
+                      )
+                    }
                     sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: colors.emerald,
-                        "&:hover": { bgcolor: alpha(colors.emerald, 0.08) },
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                        bgcolor: colors.emerald,
-                      },
+                      "& .MuiSwitch-switchBase.Mui-checked":
+                        {
+                          color:
+                            colors.emerald,
+                        },
+
+                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                        {
+                          bgcolor:
+                            colors.emerald,
+                        },
                     }}
                   />
                 }
-                label={
-                  <Typography sx={{ 
-                    fontFamily: "'Montserrat', sans-serif",
-                    color: isDark ? colors.grayLight : colors.black,
-                  }}>
-                    Public Registration
-                  </Typography>
-                }
+                label="Public Registration"
+                sx={{
+                  "& .MuiFormControlLabel-label":
+                    {
+                      fontSize:
+                        "0.68rem",
+                    },
+                }}
               />
             </Stack>
           </SectionCard>
         </Grid>
 
-        {/* Users */}
-        <Grid item xs={12} md={6}>
+        {/* =================================================
+            USERS
+            ================================================= */}
+
+        <Grid
+          item
+          xs={12}
+          md={6}
+        >
           <SectionCard
-            icon={sectionConfig.users.icon}
+            icon={
+              sectionConfig
+                .users.icon
+            }
             title="Users"
-            gradient={sectionConfig.users.gradient}
-            delay={0.15}
           >
             <FormControlLabel
               control={
                 <Switch
-                  checked={settings.autoApproveUsers}
-                  onChange={(e) => update("autoApproveUsers", e.target.checked)}
+                  size="small"
+                  checked={
+                    settings.autoApproveUsers
+                  }
+                  onChange={(e) =>
+                    update(
+                      "autoApproveUsers",
+                      e.target.checked
+                    )
+                  }
                   sx={{
-                    "& .MuiSwitch-switchBase.Mui-checked": {
-                      color: colors.emerald,
-                      "&:hover": { bgcolor: alpha(colors.emerald, 0.08) },
-                    },
-                    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                      bgcolor: colors.emerald,
-                    },
+                    "& .MuiSwitch-switchBase.Mui-checked":
+                      {
+                        color:
+                          colors.emerald,
+                      },
+
+                    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                      {
+                        bgcolor:
+                          colors.emerald,
+                      },
                   }}
                 />
               }
-              label={
-                <Typography sx={{ 
-                  fontFamily: "'Montserrat', sans-serif",
-                  color: isDark ? colors.grayLight : colors.black,
-                }}>
-                  Auto Approve New Users
-                </Typography>
-              }
-              sx={{ mb: 2.5, display: "flex" }}
+              label="Auto Approve New Users"
+              sx={{
+                mb: 1.5,
+
+                "& .MuiFormControlLabel-label":
+                  {
+                    fontSize:
+                      "0.68rem",
+                  },
+              }}
             />
+
             <TextField
               fullWidth
               select
               label="Default User Role"
-              value={settings.defaultRole}
-              onChange={(e) => update("defaultRole", e.target.value)}
-              sx={{ mb: 2.5 }}
-              variant="outlined"
-              InputProps={{
-                sx: { 
-                  borderRadius: 2,
-                  fontFamily: "'Montserrat', sans-serif",
-                  color: isDark ? colors.grayLight : colors.black,
-                },
-              }}
-              SelectProps={{
-                sx: { 
-                  fontFamily: "'Montserrat', sans-serif",
-                  color: isDark ? colors.grayLight : colors.black,
-                },
+              value={
+                settings.defaultRole
+              }
+              onChange={(e) =>
+                update(
+                  "defaultRole",
+                  e.target.value
+                )
+              }
+              sx={{
+                ...fieldSx,
+                mb: 1.5,
               }}
             >
-              <MenuItem value="VIEWER" sx={{ fontFamily: "'Montserrat', sans-serif" }}>👁️ Viewer</MenuItem>
-              <MenuItem value="EDITOR" sx={{ fontFamily: "'Montserrat', sans-serif" }}>✏️ Editor</MenuItem>
+              <MenuItem value="VIEWER">
+                Viewer
+              </MenuItem>
+
+              <MenuItem value="EDITOR">
+                Editor
+              </MenuItem>
             </TextField>
+
             <TextField
               fullWidth
               type="number"
               label="Max Sites Per User"
-              value={settings.maxSitesPerUser}
-              onChange={(e) => update("maxSitesPerUser", Number(e.target.value))}
-              variant="outlined"
-              InputProps={{
-                sx: { 
-                  borderRadius: 2,
-                  fontFamily: "'Montserrat', sans-serif",
-                  color: isDark ? colors.grayLight : colors.black,
-                },
-              }}
+              value={
+                settings.maxSitesPerUser
+              }
+              onChange={(e) =>
+                update(
+                  "maxSitesPerUser",
+                  Number(
+                    e.target.value
+                  )
+                )
+              }
+              sx={fieldSx}
             />
           </SectionCard>
         </Grid>
 
-        {/* Plugins */}
-        <Grid item xs={12} md={6}>
+        {/* =================================================
+            PLUGINS
+            ================================================= */}
+
+        <Grid
+          item
+          xs={12}
+          md={6}
+        >
           <SectionCard
-            icon={sectionConfig.plugins.icon}
+            icon={
+              sectionConfig
+                .plugins.icon
+            }
             title="Plugins"
-            gradient={sectionConfig.plugins.gradient}
-            delay={0.2}
           >
-            <Grid container spacing={1}>
+            <Grid
+              container
+              spacing={0.5}
+            >
               {[
-                { key: "seoPlugin", label: "SEO" },
-                { key: "mediaPlugin", label: "Media" },
-                { key: "versionPlugin", label: "Version" },
-                { key: "notificationPlugin", label: "Notification" },
-                { key: "figmaPlugin", label: "Figma" },
-              ].map((plugin) => (
-                <Grid item xs={12} sm={6} key={plugin.key}>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={settings[plugin.key as keyof typeof settings] as boolean}
-                        onChange={(e) => update(plugin.key, e.target.checked)}
+                {
+                  key: "seoPlugin",
+                  label: "SEO",
+                },
+                {
+                  key: "mediaPlugin",
+                  label: "Media",
+                },
+                {
+                  key: "versionPlugin",
+                  label: "Version",
+                },
+                {
+                  key: "notificationPlugin",
+                  label: "Notification",
+                },
+                {
+                  key: "figmaPlugin",
+                  label: "Figma",
+                },
+              ].map(
+                (plugin) => {
+                  const enabled =
+                    settings[
+                      plugin.key as keyof typeof settings
+                    ] as boolean;
+
+                  return (
+                    <Grid
+                      item
+                      xs={12}
+                      sm={6}
+                      key={
+                        plugin.key
+                      }
+                    >
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            size="small"
+                            checked={
+                              enabled
+                            }
+                            onChange={(
+                              e
+                            ) =>
+                              update(
+                                plugin.key,
+                                e.target
+                                  .checked
+                              )
+                            }
+                            sx={{
+                              "& .MuiSwitch-switchBase.Mui-checked":
+                                {
+                                  color:
+                                    colors.emerald,
+                                },
+
+                              "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                                {
+                                  bgcolor:
+                                    colors.emerald,
+                                },
+                            }}
+                          />
+                        }
+                        label={
+                          <Box
+                            sx={{
+                              display:
+                                "flex",
+                              alignItems:
+                                "center",
+                              gap: 0.7,
+                            }}
+                          >
+                            <Typography
+                              sx={{
+                                fontSize:
+                                  "0.68rem",
+                              }}
+                            >
+                              {
+                                plugin.label
+                              }
+                            </Typography>
+
+                            <StatusChip
+                              status={
+                                enabled
+                              }
+                              label={
+                                enabled
+                                  ? "Active"
+                                  : "Inactive"
+                              }
+                            />
+                          </Box>
+                        }
                         sx={{
-                          "& .MuiSwitch-switchBase.Mui-checked": {
-                            color: colors.emerald,
-                            "&:hover": { bgcolor: alpha(colors.emerald, 0.08) },
-                          },
-                          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                            bgcolor: colors.emerald,
-                          },
+                          m: 0,
                         }}
                       />
-                    }
-                    label={
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Typography sx={{ 
-                          fontFamily: "'Montserrat', sans-serif",
-                          color: isDark ? colors.grayLight : colors.black,
-                        }}>
-                          {plugin.label}
-                        </Typography>
-                        <StatusChip 
-                          status={settings[plugin.key as keyof typeof settings] as boolean} 
-                          label={settings[plugin.key as keyof typeof settings] ? "Active" : "Inactive"} 
-                        />
-                      </Box>
-                    }
-                  />
-                </Grid>
-              ))}
+                    </Grid>
+                  );
+                }
+              )}
             </Grid>
           </SectionCard>
         </Grid>
 
-        {/* AI */}
-        <Grid item xs={12} md={6}>
+        {/* =================================================
+            AI
+            ================================================= */}
+
+        <Grid
+          item
+          xs={12}
+          md={6}
+        >
           <SectionCard
-            icon={sectionConfig.ai.icon}
+            icon={
+              sectionConfig.ai.icon
+            }
             title="AI"
-            gradient={sectionConfig.ai.gradient}
-            delay={0.25}
           >
             <FormControlLabel
               control={
                 <Switch
-                  checked={aiSettings.enabled}
-                  onChange={(e) => updateAi("enabled", e.target.checked)}
+                  size="small"
+                  checked={
+                    aiSettings.enabled
+                  }
+                  onChange={(e) =>
+                    updateAi(
+                      "enabled",
+                      e.target.checked
+                    )
+                  }
                   sx={{
-                    "& .MuiSwitch-switchBase.Mui-checked": {
-                      color: colors.emerald,
-                      "&:hover": { bgcolor: alpha(colors.emerald, 0.08) },
-                    },
-                    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                      bgcolor: colors.emerald,
-                    },
+                    "& .MuiSwitch-switchBase.Mui-checked":
+                      {
+                        color:
+                          colors.emerald,
+                      },
+
+                    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                      {
+                        bgcolor:
+                          colors.emerald,
+                      },
                   }}
                 />
               }
-              label={
-                <Typography sx={{ 
-                  fontFamily: "'Montserrat', sans-serif",
-                  color: isDark ? colors.grayLight : colors.black,
-                }}>
-                  Enable AI Features
-                </Typography>
-              }
-              sx={{ mb: 2.5, display: "flex" }}
+              label="Enable AI Features"
+              sx={{
+                mb: 1.5,
+
+                "& .MuiFormControlLabel-label":
+                  {
+                    fontSize:
+                      "0.68rem",
+                  },
+              }}
             />
+
             <TextField
               fullWidth
               select
               label="AI Provider"
-              value={aiSettings.provider}
+              value={
+                aiSettings.provider
+              }
               onChange={(e) => {
                 const provider =
                   e.target.value as PlatformAiSettings["provider"];
 
-                updateAi("provider", provider);
+                updateAi(
+                  "provider",
+                  provider
+                );
+
                 updateAi(
                   "model",
-                  aiSettings.providerStatus[provider]?.model || ""
+                  aiSettings
+                    .providerStatus[
+                    provider
+                  ]?.model || ""
                 );
               }}
-              variant="outlined"
-              InputProps={{
-                sx: { 
-                  borderRadius: 2,
-                  fontFamily: "'Montserrat', sans-serif",
-                  color: isDark ? colors.grayLight : colors.black,
-                },
-              }}
-              SelectProps={{
-                sx: { 
-                  fontFamily: "'Montserrat', sans-serif",
-                  color: isDark ? colors.grayLight : colors.black,
-                },
+              sx={{
+                ...fieldSx,
+                mb: 1.5,
               }}
             >
-              <MenuItem value="claude" sx={{ fontFamily: "'Montserrat', sans-serif" }}>Claude - {aiSettings.providerStatus.claude.configured ? "configured" : "not configured"}</MenuItem>
-              <MenuItem value="openai" sx={{ fontFamily: "'Montserrat', sans-serif" }}>OpenAI - {aiSettings.providerStatus.openai.configured ? "configured" : "not configured"}</MenuItem>
-              <MenuItem value="gemini" sx={{ fontFamily: "'Montserrat', sans-serif" }}>Gemini - {aiSettings.providerStatus.gemini.configured ? "configured" : "not configured"}</MenuItem>
+              <MenuItem value="claude">
+                Claude —{" "}
+                {aiSettings
+                  .providerStatus
+                  .claude
+                  .configured
+                  ? "configured"
+                  : "not configured"}
+              </MenuItem>
+
+              <MenuItem value="openai">
+                OpenAI —{" "}
+                {aiSettings
+                  .providerStatus
+                  .openai
+                  .configured
+                  ? "configured"
+                  : "not configured"}
+              </MenuItem>
+
+              <MenuItem value="gemini">
+                Gemini —{" "}
+                {aiSettings
+                  .providerStatus
+                  .gemini
+                  .configured
+                  ? "configured"
+                  : "not configured"}
+              </MenuItem>
             </TextField>
-            <Stack spacing={2} sx={{ mt: 2 }}>
+
+            <Stack spacing={1.5}>
               <TextField
                 fullWidth
                 label="Model"
-                value={aiSettings.model}
-                onChange={(e) => updateAi("model", e.target.value)}
+                value={
+                  aiSettings.model
+                }
+                onChange={(e) =>
+                  updateAi(
+                    "model",
+                    e.target.value
+                  )
+                }
                 helperText="API keys stay in server environment variables."
+                sx={fieldSx}
               />
 
               <FormControlLabel
                 control={
                   <Switch
-                    checked={aiSettings.globalAssistantEnabled}
-                    onChange={(e) => updateAi("globalAssistantEnabled", e.target.checked)}
-                    disabled={!aiSettings.enabled}
+                    size="small"
+                    checked={
+                      aiSettings.globalAssistantEnabled
+                    }
+                    onChange={(e) =>
+                      updateAi(
+                        "globalAssistantEnabled",
+                        e.target
+                          .checked
+                      )
+                    }
+                    disabled={
+                      !aiSettings.enabled
+                    }
                   />
                 }
                 label="Global Assistant enabled"
+                sx={{
+                  "& .MuiFormControlLabel-label":
+                    {
+                      fontSize:
+                        "0.68rem",
+                    },
+                }}
               />
 
               <FormControlLabel
                 control={
                   <Switch
-                    checked={aiSettings.builderAiEnabled}
-                    onChange={(e) => updateAi("builderAiEnabled", e.target.checked)}
-                    disabled={!aiSettings.enabled}
+                    size="small"
+                    checked={
+                      aiSettings.builderAiEnabled
+                    }
+                    onChange={(e) =>
+                      updateAi(
+                        "builderAiEnabled",
+                        e.target
+                          .checked
+                      )
+                    }
+                    disabled={
+                      !aiSettings.enabled
+                    }
                   />
                 }
                 label="Page Builder AI enabled"
+                sx={{
+                  "& .MuiFormControlLabel-label":
+                    {
+                      fontSize:
+                        "0.68rem",
+                    },
+                }}
               />
 
-              <Stack direction="row" spacing={1} flexWrap="wrap">
-                {(["claude", "openai", "gemini"] as const).map((provider) => (
-                  <StatusChip
-                    key={provider}
-                    status={!!aiSettings.providerStatus[provider]?.configured}
-                    label={`${provider === "openai" ? "OpenAI" : provider[0].toUpperCase() + provider.slice(1)}: ${
-                      aiSettings.providerStatus[provider]?.configured
-                        ? "configured"
-                        : "not configured"
-                    }`}
-                  />
-                ))}
+              <Stack
+                direction="row"
+                spacing={0.7}
+                flexWrap="wrap"
+                useFlexGap
+              >
+                {(
+                  [
+                    "claude",
+                    "openai",
+                    "gemini",
+                  ] as const
+                ).map(
+                  (provider) => (
+                    <StatusChip
+                      key={
+                        provider
+                      }
+                      status={
+                        !!aiSettings
+                          .providerStatus[
+                          provider
+                        ]?.configured
+                      }
+                      label={`${
+                        provider ===
+                        "openai"
+                          ? "OpenAI"
+                          : provider
+                              .charAt(
+                                0
+                              )
+                              .toUpperCase() +
+                            provider.slice(
+                              1
+                            )
+                      }: ${
+                        aiSettings
+                          .providerStatus[
+                          provider
+                        ]?.configured
+                          ? "configured"
+                          : "not configured"
+                      }`}
+                    />
+                  )
+                )}
               </Stack>
 
               {aiSettingsLoadError && (
-                <Alert severity="error">
-                  Failed to load AI settings.
+                <Alert
+                  severity="error"
+                  sx={{
+                    fontSize:
+                      "0.7rem",
+                  }}
+                >
+                  Failed to load AI
+                  settings.
                 </Alert>
               )}
 
               {aiMessage && (
-                <Alert severity={aiMessage.type}>
+                <Alert
+                  severity={
+                    aiMessage.type
+                  }
+                  sx={{
+                    fontSize:
+                      "0.7rem",
+                  }}
+                >
                   {aiMessage.text}
                 </Alert>
               )}
 
               <Button
                 variant="contained"
-                onClick={saveAiSettings}
-                disabled={aiSaveLoading || aiSettingsLoading}
-                startIcon={aiSaveLoading ? <CircularProgress size={18} color="inherit" /> : null}
+                onClick={
+                  saveAiSettings
+                }
+                disabled={
+                  aiSaveLoading ||
+                  aiSettingsLoading
+                }
+                startIcon={
+                  aiSaveLoading ? (
+                    <CircularProgress
+                      size={15}
+                      color="inherit"
+                    />
+                  ) : null
+                }
                 sx={{
-                  alignSelf: "flex-start",
-                  bgcolor: colors.emerald,
-                  textTransform: "none",
+                  alignSelf:
+                    "flex-start",
+
+                  bgcolor:
+                    colors.emerald,
+
+                  textTransform:
+                    "none",
+
+                  fontSize:
+                    "0.7rem",
+
                   fontWeight: 700,
+
+                  borderRadius:
+                    1.5,
+
+                  px: 1.8,
+
+                  py: 0.7,
+
+                  boxShadow:
+                    "none",
+
                   "&:hover": {
-                    bgcolor: colors.emeraldDark,
+                    bgcolor:
+                      colors.emeraldDark,
+
+                    boxShadow:
+                      "none",
                   },
                 }}
               >
-                {aiSaveLoading ? "Saving AI Settings..." : "Save AI Settings"}
+                {aiSaveLoading
+                  ? "Saving..."
+                  : "Save AI Settings"}
               </Button>
             </Stack>
           </SectionCard>
         </Grid>
 
-        {/* Security */}
-        <Grid item xs={12} md={6}>
+        {/* =================================================
+            SECURITY
+            ================================================= */}
+
+        <Grid
+          item
+          xs={12}
+          md={6}
+        >
           <SectionCard
-            icon={sectionConfig.security.icon}
+            icon={
+              sectionConfig
+                .security.icon
+            }
             title="Security"
-            gradient={sectionConfig.security.gradient}
-            delay={0.3}
           >
-            <Stack spacing={2}>
+            <Stack spacing={1}>
               <FormControlLabel
                 control={
                   <Switch
-                    checked={settings.allowGoogleLogin}
-                    onChange={(e) => update("allowGoogleLogin", e.target.checked)}
+                    size="small"
+                    checked={
+                      settings.allowGoogleLogin
+                    }
+                    onChange={(e) =>
+                      update(
+                        "allowGoogleLogin",
+                        e.target
+                          .checked
+                      )
+                    }
                     sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: colors.emerald,
-                        "&:hover": { bgcolor: alpha(colors.emerald, 0.08) },
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                        bgcolor: colors.emerald,
-                      },
+                      "& .MuiSwitch-switchBase.Mui-checked":
+                        {
+                          color:
+                            colors.emerald,
+                        },
+
+                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                        {
+                          bgcolor:
+                            colors.emerald,
+                        },
                     }}
                   />
                 }
-                label={
-                  <Typography sx={{ 
-                    fontFamily: "'Montserrat', sans-serif",
-                    color: isDark ? colors.grayLight : colors.black,
-                  }}>
-                    Google Login
-                  </Typography>
-                }
+                label="Google Login"
+                sx={{
+                  "& .MuiFormControlLabel-label":
+                    {
+                      fontSize:
+                        "0.68rem",
+                    },
+                }}
               />
+
               <FormControlLabel
                 control={
                   <Switch
-                    checked={settings.allowEmailLogin}
-                    onChange={(e) => update("allowEmailLogin", e.target.checked)}
+                    size="small"
+                    checked={
+                      settings.allowEmailLogin
+                    }
+                    onChange={(e) =>
+                      update(
+                        "allowEmailLogin",
+                        e.target
+                          .checked
+                      )
+                    }
                     sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: colors.emerald,
-                        "&:hover": { bgcolor: alpha(colors.emerald, 0.08) },
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                        bgcolor: colors.emerald,
-                      },
+                      "& .MuiSwitch-switchBase.Mui-checked":
+                        {
+                          color:
+                            colors.emerald,
+                        },
+
+                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                        {
+                          bgcolor:
+                            colors.emerald,
+                        },
                     }}
                   />
                 }
-                label={
-                  <Typography sx={{ 
-                    fontFamily: "'Montserrat', sans-serif",
-                    color: isDark ? colors.grayLight : colors.black,
-                  }}>
-                    Email Login
-                  </Typography>
-                }
+                label="Email Login"
+                sx={{
+                  "& .MuiFormControlLabel-label":
+                    {
+                      fontSize:
+                        "0.68rem",
+                    },
+                }}
               />
+
               <FormControlLabel
                 control={
                   <Switch
-                    checked={settings.forceStrongPasswords}
-                    onChange={(e) => update("forceStrongPasswords", e.target.checked)}
+                    size="small"
+                    checked={
+                      settings.forceStrongPasswords
+                    }
+                    onChange={(e) =>
+                      update(
+                        "forceStrongPasswords",
+                        e.target
+                          .checked
+                      )
+                    }
                     sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: colors.emerald,
-                        "&:hover": { bgcolor: alpha(colors.emerald, 0.08) },
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                        bgcolor: colors.emerald,
-                      },
+                      "& .MuiSwitch-switchBase.Mui-checked":
+                        {
+                          color:
+                            colors.emerald,
+                        },
+
+                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                        {
+                          bgcolor:
+                            colors.emerald,
+                        },
                     }}
                   />
                 }
-                label={
-                  <Typography sx={{ 
-                    fontFamily: "'Montserrat', sans-serif",
-                    color: isDark ? colors.grayLight : colors.black,
-                  }}>
-                    Force Strong Passwords
-                  </Typography>
-                }
+                label="Force Strong Passwords"
+                sx={{
+                  "& .MuiFormControlLabel-label":
+                    {
+                      fontSize:
+                        "0.68rem",
+                    },
+                }}
               />
+
               <TextField
                 fullWidth
                 type="number"
                 label="Session Timeout (Hours)"
-                value={settings.sessionTimeoutHours}
-                onChange={(e) => update("sessionTimeoutHours", Number(e.target.value))}
-                variant="outlined"
-                InputProps={{
-                  sx: { 
-                    borderRadius: 2,
-                    fontFamily: "'Montserrat', sans-serif",
-                    color: isDark ? colors.grayLight : colors.black,
-                  },
+                value={
+                  settings.sessionTimeoutHours
+                }
+                onChange={(e) =>
+                  update(
+                    "sessionTimeoutHours",
+                    Number(
+                      e.target.value
+                    )
+                  )
+                }
+                sx={{
+                  ...fieldSx,
+                  mt: 0.5,
                 }}
               />
             </Stack>
           </SectionCard>
         </Grid>
 
-        {/* Limits */}
-        <Grid item xs={12} md={6}>
+        {/* =================================================
+            LIMITS
+            ================================================= */}
+
+        <Grid
+          item
+          xs={12}
+          md={6}
+        >
           <SectionCard
-            icon={sectionConfig.limits.icon}
+            icon={
+              sectionConfig
+                .limits.icon
+            }
             title="Limits"
-            gradient={sectionConfig.limits.gradient}
-            delay={0.35}
           >
-            <Stack spacing={2.5}>
+            <Stack spacing={1.5}>
               <TextField
                 fullWidth
                 type="number"
                 label="Max Pages Per Site"
-                value={settings.maxPagesPerSite}
-                onChange={(e) => update("maxPagesPerSite", Number(e.target.value))}
-                variant="outlined"
-                InputProps={{
-                  sx: { 
-                    borderRadius: 2,
-                    fontFamily: "'Montserrat', sans-serif",
-                    color: isDark ? colors.grayLight : colors.black,
-                  },
-                }}
+                value={
+                  settings.maxPagesPerSite
+                }
+                onChange={(e) =>
+                  update(
+                    "maxPagesPerSite",
+                    Number(
+                      e.target.value
+                    )
+                  )
+                }
+                sx={fieldSx}
               />
+
               <TextField
                 fullWidth
                 type="number"
                 label="Max Media Storage (MB)"
-                value={settings.maxMediaStorageMb}
-                onChange={(e) => update("maxMediaStorageMb", Number(e.target.value))}
-                variant="outlined"
-                InputProps={{
-                  sx: { 
-                    borderRadius: 2,
-                    fontFamily: "'Montserrat', sans-serif",
-                    color: isDark ? colors.grayLight : colors.black,
-                  },
-                }}
+                value={
+                  settings.maxMediaStorageMb
+                }
+                onChange={(e) =>
+                  update(
+                    "maxMediaStorageMb",
+                    Number(
+                      e.target.value
+                    )
+                  )
+                }
+                sx={fieldSx}
               />
+
               <TextField
                 fullWidth
                 type="number"
                 label="Max Team Members Per Site"
-                value={settings.maxTeamMembersPerSite}
-                onChange={(e) => update("maxTeamMembersPerSite", Number(e.target.value))}
-                variant="outlined"
-                InputProps={{
-                  sx: { 
-                    borderRadius: 2,
-                    fontFamily: "'Montserrat', sans-serif",
-                    color: isDark ? colors.grayLight : colors.black,
-                  },
-                }}
+                value={
+                  settings.maxTeamMembersPerSite
+                }
+                onChange={(e) =>
+                  update(
+                    "maxTeamMembersPerSite",
+                    Number(
+                      e.target.value
+                    )
+                  )
+                }
+                sx={fieldSx}
               />
             </Stack>
           </SectionCard>
         </Grid>
 
-        {/* API Access */}
-        <Grid item xs={12} md={6}>
+        {/* =================================================
+            API ACCESS
+            ================================================= */}
+
+        <Grid
+          item
+          xs={12}
+          md={6}
+        >
           <SectionCard
-            icon={sectionConfig.api.icon}
+            icon={
+              sectionConfig.api.icon
+            }
             title="API Access"
-            gradient={sectionConfig.api.gradient}
-            delay={0.4}
           >
-            <Stack spacing={2}>
+            <Stack spacing={1.5}>
+              {/* API KEY */}
+
               <Box>
-                <Typography 
-                  variant="caption" 
-                  sx={{ 
-                    color: isDark ? 'rgba(255,255,255,0.6)' : colors.textSecondary,
-                    fontFamily: "'Montserrat', sans-serif",
+                <Typography
+                  sx={{
+                    mb: 0.7,
+                    fontSize:
+                      "0.65rem",
                     fontWeight: 600,
-                    mb: 1,
-                    display: "block",
+                    color:
+                      colors.textSecondary,
                   }}
                 >
                   API Key
                 </Typography>
+
                 <TextField
                   fullWidth
-                  value={!settings.apiKeyPreview ? "" : showApiKey ? settings.apiKeyPreview : maskApiKey(settings.apiKeyPreview)}
+                  value={
+                    !settings.apiKeyPreview
+                      ? ""
+                      : showApiKey
+                      ? settings.apiKeyPreview
+                      : maskApiKey(
+                          settings.apiKeyPreview
+                        )
+                  }
                   InputProps={{
                     readOnly: true,
-                    sx: { 
-                      borderRadius: 2,
-                      fontFamily: "'Montserrat', sans-serif",
-                      color: isDark ? colors.grayLight : colors.black,
+
+                    sx: {
+                      borderRadius:
+                        1.5,
+
+                      fontSize:
+                        "0.7rem",
                     },
-                    endAdornment: settings.apiKeyPreview && (
-                      <InputAdornment position="end">
-                        <Tooltip title={showApiKey ? "Hide API Key" : "Show API Key"}>
-                          <IconButton onClick={() => setShowApiKey(!showApiKey)} edge="end" size="small">
-                            {showApiKey ? <VisibilityOff /> : <Visibility />}
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Copy to clipboard">
-                          <IconButton onClick={handleCopyApiKey} edge="end" size="small">
-                            <ContentCopy />
-                          </IconButton>
-                        </Tooltip>
-                      </InputAdornment>
-                    ),
+
+                    endAdornment:
+                      settings.apiKeyPreview && (
+                        <InputAdornment position="end">
+                          <Tooltip
+                            title={
+                              showApiKey
+                                ? "Hide API Key"
+                                : "Show API Key"
+                            }
+                          >
+                            <IconButton
+                              onClick={() =>
+                                setShowApiKey(
+                                  !showApiKey
+                                )
+                              }
+                              edge="end"
+                              size="small"
+                            >
+                              {showApiKey ? (
+                                <VisibilityOff fontSize="small" />
+                              ) : (
+                                <Visibility fontSize="small" />
+                              )}
+                            </IconButton>
+                          </Tooltip>
+
+                          <Tooltip title="Copy to clipboard">
+                            <IconButton
+                              onClick={
+                                handleCopyApiKey
+                              }
+                              edge="end"
+                              size="small"
+                            >
+                              <ContentCopy fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </InputAdornment>
+                      ),
                   }}
                 />
               </Box>
 
-              <Stack direction="row" spacing={2}>
+              {/* API KEY BUTTONS */}
+
+              <Stack
+                direction="row"
+                spacing={1}
+              >
                 <Button
                   variant="contained"
-                  onClick={handleGenerateApiKey}
-                  startIcon={<ApiIcon />}
+                  onClick={
+                    handleGenerateApiKey
+                  }
+                  startIcon={
+                    <ApiIcon />
+                  }
                   sx={{
-                    bgcolor: colors.emerald,
-                    borderRadius: 2,
-                    textTransform: "none",
+                    bgcolor:
+                      colors.emerald,
+
+                    borderRadius:
+                      1.5,
+
+                    textTransform:
+                      "none",
+
+                    fontSize:
+                      "0.68rem",
+
                     fontWeight: 600,
-                    fontFamily: "'Montserrat', sans-serif",
-                    "&:hover": { bgcolor: colors.emeraldDark },
+
+                    px: 1.5,
+
+                    py: 0.7,
+
+                    boxShadow:
+                      "none",
+
+                    "&:hover": {
+                      bgcolor:
+                        colors.emeraldDark,
+
+                      boxShadow:
+                        "none",
+                    },
                   }}
                 >
                   Generate New Key
                 </Button>
+
                 {settings.apiKeyPreview && (
                   <Button
                     variant="outlined"
-                    onClick={handleCopyApiKey}
-                    startIcon={<ContentCopy />}
-                    sx={{ 
-                      borderRadius: 2, 
-                      textTransform: "none", 
+                    onClick={
+                      handleCopyApiKey
+                    }
+                    startIcon={
+                      <ContentCopy />
+                    }
+                    sx={{
+                      borderRadius:
+                        1.5,
+
+                      textTransform:
+                        "none",
+
+                      fontSize:
+                        "0.68rem",
+
                       fontWeight: 600,
-                      fontFamily: "'Montserrat', sans-serif",
-                      borderColor: colors.emerald,
-                      color: colors.emerald,
+
+                      borderColor:
+                        colors.emerald,
+
+                      color:
+                        colors.emerald,
+
+                      px: 1.5,
+
+                      py: 0.7,
+
                       "&:hover": {
-                        borderColor: colors.emeraldDark,
-                        bgcolor: alpha(colors.emerald, 0.05),
+                        borderColor:
+                          colors.emerald,
+
+                        bgcolor:
+                          "rgba(0,196,154,0.06)",
                       },
                     }}
                   >
@@ -1289,204 +2068,350 @@ export default function AdminSettings() {
 
               {settings.apiKeyGeneratedAt && (
                 <Chip
-                  label={`Generated: ${new Date(settings.apiKeyGeneratedAt).toLocaleString()}`}
+                  label={`Generated: ${new Date(
+                    settings.apiKeyGeneratedAt
+                  ).toLocaleString()}`}
                   size="small"
                   sx={{
-                    fontFamily: "'Montserrat', sans-serif",
-                    fontWeight: 500,
-                    bgcolor: isDark ? 'rgba(0,196,154,0.2)' : colors.emeraldLight,
-                    color: colors.emerald,
-                    borderRadius: 2,
+                    alignSelf:
+                      "flex-start",
+
+                    height: 20,
+
+                    fontSize:
+                      "0.58rem",
+
+                    bgcolor:
+                      "rgba(0,196,154,0.14)",
+
+                    color:
+                      colors.emerald,
                   }}
                 />
               )}
 
-              <Divider sx={{ 
-                borderColor: isDark ? 'rgba(255,255,255,0.06)' : colors.grayLight 
-              }} />
+              <Divider
+                sx={{
+                  borderColor:
+                    colors.border,
+                }}
+              />
+
+              {/* WEBHOOK */}
 
               <Box>
-                <Typography 
-                  variant="caption" 
-                  sx={{ 
-                    color: isDark ? 'rgba(255,255,255,0.6)' : colors.textSecondary,
-                    fontFamily: "'Montserrat', sans-serif",
+                <Typography
+                  sx={{
+                    mb: 0.7,
+                    fontSize:
+                      "0.65rem",
                     fontWeight: 600,
-                    mb: 1,
-                    display: "block",
+                    color:
+                      colors.textSecondary,
                   }}
                 >
                   Webhook Configuration
                 </Typography>
+
                 <TextField
                   fullWidth
                   size="small"
                   label="Webhook URL"
-                  value={settings.webhookUrl || ""}
-                  onChange={(e) => update("webhookUrl", e.target.value)}
+                  value={
+                    settings.webhookUrl ||
+                    ""
+                  }
+                  onChange={(e) =>
+                    update(
+                      "webhookUrl",
+                      e.target.value
+                    )
+                  }
                   placeholder="https://your-webhook.com/endpoint"
                   helperText="Receive API events via webhook"
-                  InputProps={{
-                    sx: { 
-                      borderRadius: 2,
-                      fontFamily: "'Montserrat', sans-serif",
-                      color: isDark ? colors.grayLight : colors.black,
-                    },
-                  }}
+                  sx={fieldSx}
                 />
               </Box>
 
-              <Stack direction="row" spacing={1}>
+              <Stack
+                direction="row"
+                spacing={1}
+              >
                 <Button
                   variant="outlined"
                   size="small"
-                  onClick={saveWebhook}
-                  sx={{ 
-                    borderRadius: 2, 
-                    textTransform: "none", 
+                  onClick={
+                    saveWebhook
+                  }
+                  sx={{
+                    borderRadius:
+                      1.5,
+
+                    textTransform:
+                      "none",
+
+                    fontSize:
+                      "0.65rem",
+
                     fontWeight: 600,
-                    fontFamily: "'Montserrat', sans-serif",
-                    borderColor: colors.emerald,
-                    color: colors.emerald,
+
+                    borderColor:
+                      colors.emerald,
+
+                    color:
+                      colors.emerald,
+
                     "&:hover": {
-                      borderColor: colors.emeraldDark,
-                      bgcolor: alpha(colors.emerald, 0.05),
+                      borderColor:
+                        colors.emerald,
+
+                      bgcolor:
+                        "rgba(0,196,154,0.06)",
                     },
                   }}
                 >
                   Save Webhook
                 </Button>
+
                 <Button
                   variant="contained"
                   size="small"
-                  onClick={handleTestWebhook}
-                  disabled={webhookStatus === "loading" || !settings.webhookUrl}
+                  onClick={
+                    handleTestWebhook
+                  }
+                  disabled={
+                    webhookStatus ===
+                      "loading" ||
+                    !settings.webhookUrl
+                  }
                   sx={{
-                    borderRadius: 2,
-                    textTransform: "none",
+                    borderRadius:
+                      1.5,
+
+                    textTransform:
+                      "none",
+
+                    fontSize:
+                      "0.65rem",
+
                     fontWeight: 600,
-                    fontFamily: "'Montserrat', sans-serif",
-                    bgcolor: webhookStatus === "success" ? colors.emerald : colors.black,
+
+                    bgcolor:
+                      webhookStatus ===
+                      "success"
+                        ? colors.emerald
+                        : "#111111",
+
+                    boxShadow:
+                      "none",
+
                     "&:hover": {
-                      bgcolor: webhookStatus === "success" ? colors.emeraldDark : colors.black,
-                      opacity: 0.8,
+                      bgcolor:
+                        webhookStatus ===
+                        "success"
+                          ? colors.emeraldDark
+                          : "#111111",
+
+                      boxShadow:
+                        "none",
                     },
                   }}
                 >
-                  {webhookStatus === "loading" ? (
-                    <CircularProgress size={20} color="inherit" />
-                  ) : webhookStatus === "success" ? (
-                    <CheckCircle sx={{ mr: 0.5 }} fontSize="small" />
-                  ) : webhookStatus === "error" ? (
-                    <ErrorIcon sx={{ mr: 0.5 }} fontSize="small" />
-                  ) : null}
-                  {webhookStatus === "success" ? "Connected" : 
-                   webhookStatus === "error" ? "Failed" : "Test Webhook"}
+                  {webhookStatus ===
+                  "loading" ? (
+                    <CircularProgress
+                      size={15}
+                      color="inherit"
+                    />
+                  ) : webhookStatus ===
+                    "success" ? (
+                    <>
+                      <CheckCircle
+                        sx={{
+                          mr: 0.5,
+                          fontSize: 15,
+                        }}
+                      />
+                      Connected
+                    </>
+                  ) : webhookStatus ===
+                    "error" ? (
+                    <>
+                      <ErrorIcon
+                        sx={{
+                          mr: 0.5,
+                          fontSize: 15,
+                        }}
+                      />
+                      Failed
+                    </>
+                  ) : (
+                    "Test Webhook"
+                  )}
                 </Button>
               </Stack>
 
-              <Divider sx={{ 
-                borderColor: isDark ? 'rgba(255,255,255,0.06)' : colors.grayLight 
-              }} />
+              <Divider
+                sx={{
+                  borderColor:
+                    colors.border,
+                }}
+              />
 
-              <Box sx={{ 
-                bgcolor: isDark ? 'rgba(0,196,154,0.08)' : alpha(colors.emerald, 0.04), 
-                p: 2, 
-                borderRadius: 3 
-              }}>
-                <Typography 
-                  variant="subtitle2" 
-                  sx={{ 
-                    fontFamily: "'Montserrat', sans-serif",
+              {/* API DOCUMENTATION */}
+
+              <Box
+                sx={{
+                  bgcolor:
+                    "rgba(0,196,154,0.06)",
+
+                  p: 1.5,
+
+                  borderRadius:
+                    1.5,
+
+                  border:
+                    "1px solid rgba(0,196,154,0.08)",
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize:
+                      "0.7rem",
+
                     fontWeight: 700,
-                    color: isDark ? colors.grayLight : colors.black,
+
+                    color:
+                      colors.white,
+
                     mb: 1,
                   }}
                 >
                   API Documentation
                 </Typography>
-                <Stack spacing={1}>
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography 
-                      variant="caption" 
-                      sx={{ 
-                        color: isDark ? 'rgba(255,255,255,0.6)' : colors.textSecondary,
-                        fontFamily: "'Montserrat', sans-serif",
+
+                <Stack spacing={0.7}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    gap={2}
+                  >
+                    <Typography
+                      sx={{
+                        fontSize:
+                          "0.6rem",
+                        color:
+                          colors.textSecondary,
                       }}
                     >
                       Base URL:
                     </Typography>
-                    <Typography 
-                      variant="caption" 
-                      sx={{ 
-                        fontFamily: "'Montserrat', sans-serif",
+
+                    <Typography
+                      sx={{
+                        fontSize:
+                          "0.6rem",
                         fontWeight: 600,
-                        color: isDark ? colors.grayLight : colors.black,
+                        color:
+                          colors.white,
                       }}
                     >
-                      https://api.reactbuilder.com/v1
+                      api.reactbuilder.com/v1
                     </Typography>
                   </Stack>
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography 
-                      variant="caption" 
-                      sx={{ 
-                        color: isDark ? 'rgba(255,255,255,0.6)' : colors.textSecondary,
-                        fontFamily: "'Montserrat', sans-serif",
+
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    gap={2}
+                  >
+                    <Typography
+                      sx={{
+                        fontSize:
+                          "0.6rem",
+                        color:
+                          colors.textSecondary,
                       }}
                     >
                       Authorization:
                     </Typography>
-                    <Typography 
-                      variant="caption" 
-                      sx={{ 
-                        fontFamily: "'Montserrat', sans-serif",
+
+                    <Typography
+                      sx={{
+                        fontSize:
+                          "0.6rem",
                         fontWeight: 600,
-                        color: isDark ? colors.grayLight : colors.black,
+                        color:
+                          colors.white,
                       }}
                     >
-                      Bearer {settings.apiKeyPreview ? "rb_****" : "Not generated"}
+                      Bearer{" "}
+                      {settings.apiKeyPreview
+                        ? "rb****"
+                        : "Not generated"}
                     </Typography>
                   </Stack>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography 
-                      variant="caption" 
-                      sx={{ 
-                        color: isDark ? 'rgba(255,255,255,0.6)' : colors.textSecondary,
-                        fontFamily: "'Montserrat', sans-serif",
+
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    <Typography
+                      sx={{
+                        fontSize:
+                          "0.6rem",
+                        color:
+                          colors.textSecondary,
                       }}
                     >
                       Status:
                     </Typography>
-                    <Chip
-                      label={settings.apiKeyPreview ? "Active" : "Inactive"}
-                      size="small"
-                      sx={{
-                        fontFamily: "'Montserrat', sans-serif",
-                        fontWeight: 600,
-                        bgcolor: settings.apiKeyPreview 
-                          ? (isDark ? 'rgba(0,196,154,0.2)' : colors.emeraldLight)
-                          : (isDark ? 'rgba(242,47,34,0.2)' : "rgba(242, 47, 34, 0.12)"),
-                        color: settings.apiKeyPreview ? colors.emerald : colors.error,
-                        borderRadius: 2,
-                      }}
+
+                    <StatusChip
+                      status={
+                        !!settings.apiKeyPreview
+                      }
+                      label={
+                        settings.apiKeyPreview
+                          ? "Active"
+                          : "Inactive"
+                      }
                     />
                   </Stack>
                 </Stack>
+
                 <Button
                   variant="text"
                   size="small"
-                  endIcon={<OpenInNew />}
+                  endIcon={
+                    <OpenInNew
+                      sx={{
+                        fontSize: 13,
+                      }}
+                    />
+                  }
                   href="/api/docs"
                   target="_blank"
-                  sx={{ 
-                    mt: 1, 
-                    color: colors.emerald, 
-                    fontWeight: 600, 
-                    textTransform: "none",
-                    fontFamily: "'Montserrat', sans-serif",
+                  sx={{
+                    mt: 0.5,
+
+                    px: 0,
+
+                    color:
+                      colors.emerald,
+
+                    fontSize:
+                      "0.62rem",
+
+                    fontWeight: 600,
+
+                    textTransform:
+                      "none",
+
                     "&:hover": {
-                      bgcolor: alpha(colors.emerald, 0.05),
+                      bgcolor:
+                        "transparent",
                     },
                   }}
                 >
@@ -1497,112 +2422,196 @@ export default function AdminSettings() {
           </SectionCard>
         </Grid>
 
-        {/* Backup & Export */}
-        <Grid item xs={12} md={6}>
+        {/* =================================================
+            BACKUP & EXPORT
+            ================================================= */}
+
+        <Grid
+          item
+          xs={12}
+          md={6}
+        >
           <SectionCard
-            icon={sectionConfig.backup.icon}
+            icon={
+              sectionConfig
+                .backup.icon
+            }
             title="Backup & Export"
-            gradient={sectionConfig.backup.gradient}
-            delay={0.45}
           >
-            <Stack spacing={2}>
+            <Stack spacing={1.5}>
               <FormControlLabel
                 control={
                   <Switch
-                    checked={settings.autoBackup}
-                    onChange={(e) => update("autoBackup", e.target.checked)}
+                    size="small"
+                    checked={
+                      settings.autoBackup
+                    }
+                    onChange={(e) =>
+                      update(
+                        "autoBackup",
+                        e.target
+                          .checked
+                      )
+                    }
                     sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: colors.emerald,
-                        "&:hover": { bgcolor: alpha(colors.emerald, 0.08) },
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                        bgcolor: colors.emerald,
-                      },
+                      "& .MuiSwitch-switchBase.Mui-checked":
+                        {
+                          color:
+                            colors.emerald,
+                        },
+
+                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                        {
+                          bgcolor:
+                            colors.emerald,
+                        },
                     }}
                   />
                 }
-                label={
-                  <Typography sx={{ 
-                    fontFamily: "'Montserrat', sans-serif",
-                    color: isDark ? colors.grayLight : colors.black,
-                  }}>
-                    Auto Backup
-                  </Typography>
-                }
-                sx={{ display: "flex" }}
+                label="Auto Backup"
+                sx={{
+                  "& .MuiFormControlLabel-label":
+                    {
+                      fontSize:
+                        "0.68rem",
+                    },
+                }}
               />
-              
+
               {settings.autoBackup && (
-                <FormControl fullWidth>
-                  <InputLabel 
-                    sx={{ 
-                      fontFamily: "'Montserrat', sans-serif",
-                      color: isDark ? 'rgba(255,255,255,0.6)' : colors.textSecondary,
+                <FormControl
+                  fullWidth
+                  size="small"
+                >
+                  <InputLabel
+                    sx={{
+                      fontSize:
+                        "0.75rem",
                     }}
                   >
                     Frequency
                   </InputLabel>
+
                   <Select
-                    value={settings.backupFrequency}
-                    onChange={(e) => update("backupFrequency", e.target.value)}
+                    value={
+                      settings.backupFrequency
+                    }
+                    onChange={(e) =>
+                      update(
+                        "backupFrequency",
+                        e.target.value
+                      )
+                    }
                     label="Frequency"
-                    sx={{ 
-                      borderRadius: 2,
-                      fontFamily: "'Montserrat', sans-serif",
-                      color: isDark ? colors.grayLight : colors.black,
+                    sx={{
+                      borderRadius:
+                        1.5,
+
+                      fontSize:
+                        "0.72rem",
                     }}
                   >
-                    <MenuItem value="daily" sx={{ fontFamily: "'Montserrat', sans-serif" }}>📅 Daily</MenuItem>
-                    <MenuItem value="weekly" sx={{ fontFamily: "'Montserrat', sans-serif" }}>📆 Weekly</MenuItem>
-                    <MenuItem value="monthly" sx={{ fontFamily: "'Montserrat', sans-serif" }}>📊 Monthly</MenuItem>
+                    <MenuItem value="daily">
+                      Daily
+                    </MenuItem>
+
+                    <MenuItem value="weekly">
+                      Weekly
+                    </MenuItem>
+
+                    <MenuItem value="monthly">
+                      Monthly
+                    </MenuItem>
                   </Select>
                 </FormControl>
               )}
 
-              <FormControl fullWidth>
-                <InputLabel 
-                  sx={{ 
-                    fontFamily: "'Montserrat', sans-serif",
-                    color: isDark ? 'rgba(255,255,255,0.6)' : colors.textSecondary,
+              <FormControl
+                fullWidth
+                size="small"
+              >
+                <InputLabel
+                  sx={{
+                    fontSize:
+                      "0.75rem",
                   }}
                 >
                   Export Format
                 </InputLabel>
+
                 <Select
-                  value={settings.exportFormat}
-                  onChange={(e) => update("exportFormat", e.target.value)}
+                  value={
+                    settings.exportFormat
+                  }
+                  onChange={(e) =>
+                    update(
+                      "exportFormat",
+                      e.target.value
+                    )
+                  }
                   label="Export Format"
-                  sx={{ 
-                    borderRadius: 2,
-                    fontFamily: "'Montserrat', sans-serif",
-                    color: isDark ? colors.grayLight : colors.black,
+                  sx={{
+                    borderRadius:
+                      1.5,
+
+                    fontSize:
+                      "0.72rem",
                   }}
                 >
-                  <MenuItem value="json" sx={{ fontFamily: "'Montserrat', sans-serif" }}>📄 JSON</MenuItem>
-                  <MenuItem value="csv" sx={{ fontFamily: "'Montserrat', sans-serif" }}>📊 CSV</MenuItem>
-                  <MenuItem value="xml" sx={{ fontFamily: "'Montserrat', sans-serif" }}>📋 XML</MenuItem>
+                  <MenuItem value="json">
+                    JSON
+                  </MenuItem>
+
+                  <MenuItem value="csv">
+                    CSV
+                  </MenuItem>
+
+                  <MenuItem value="xml">
+                    XML
+                  </MenuItem>
                 </Select>
               </FormControl>
 
               <Button
                 fullWidth
                 variant="contained"
-                onClick={handleExportData}
-                startIcon={<BackupIcon />}
+                onClick={
+                  handleExportData
+                }
+                startIcon={
+                  <BackupIcon
+                    sx={{
+                      fontSize: 16,
+                    }}
+                  />
+                }
                 sx={{
-                  bgcolor: isDark ? colors.emerald : colors.black,
-                  borderRadius: 2,
-                  textTransform: "none",
-                  fontWeight: 600,
-                  fontFamily: "'Montserrat', sans-serif",
-                  py: 1.5,
+                  bgcolor:
+                    colors.emerald,
+
+                  borderRadius:
+                    1.5,
+
+                  textTransform:
+                    "none",
+
+                  fontSize:
+                    "0.68rem",
+
+                  fontWeight: 700,
+
+                  py: 1,
+
+                  boxShadow:
+                    "none",
+
                   "&:hover": {
-                    bgcolor: isDark ? colors.emeraldDark : colors.black,
-                    opacity: 0.8,
-                    transform: "scale(1.02)",
+                    bgcolor:
+                      colors.emeraldDark,
+
+                    boxShadow:
+                      "none",
                   },
-                  transition: "all 0.2s ease",
                 }}
               >
                 Export Data

@@ -661,50 +661,130 @@ const scoreArticle = (
   article: PlatformAssistantDoc,
   queryTokens: string[]
 ) => {
-  const title =
-    normalizeSearchText(article.title);
-  const category =
-    normalizeSearchText(article.category);
-  const summary =
-    normalizeSearchText(article.summary);
-  const content =
-    normalizeSearchText(article.content);
-  const keywords =
-    normalizeSearchText(article.keywords.join(" "));
-  const haystack =
-    `${title} ${category} ${summary} ${content} ${keywords}`;
+  const title = normalizeSearchText(article.title);
+  const category = normalizeSearchText(article.category);
+  const summary = normalizeSearchText(article.summary);
+  const content = normalizeSearchText(article.content);
+  const keywords = normalizeSearchText(article.keywords.join(" "));
+
+  const haystack = `${title} ${category} ${summary} ${content} ${keywords}`;
 
   let score = 0;
 
   for (const token of queryTokens) {
-    if (title.includes(token)) {
-      score += 30;
+    const exactToken = token.trim();
+
+    if (!exactToken) continue;
+
+    // Strongest signal: article title
+    if (title.includes(exactToken)) {
+      score += 40;
     }
 
-    if (category.includes(token)) {
-      score += 18;
+    // Category is highly relevant
+    if (category.includes(exactToken)) {
+      score += 24;
     }
 
-    if (keywords.includes(token)) {
-      score += 16;
+    // Keywords are explicit search signals
+    if (keywords.includes(exactToken)) {
+      score += 22;
     }
 
-    if (summary.includes(token)) {
-      score += 10;
+    // Summary is more relevant than body content
+    if (summary.includes(exactToken)) {
+      score += 14;
     }
 
-    if (content.includes(token)) {
-      score += 5;
+    // Body content
+    if (content.includes(exactToken)) {
+      score += 4;
     }
+  }
 
-    if (haystack.includes(token)) {
-      score += 1;
+  // Reward articles matching several query concepts.
+  const matchedTokens = queryTokens.filter(token =>
+    haystack.includes(token)
+  ).length;
+
+  if (matchedTokens >= 2) {
+    score += matchedTokens * 12;
+  }
+
+  if (matchedTokens >= 3) {
+    score += 20;
+  }
+
+  // Strong semantic aliases for the most important ReactBuilder concepts.
+  const normalizedQuery = queryTokens.join(" ");
+
+  if (
+    normalizedQuery.includes("login") ||
+    normalizedQuery.includes("connexion") ||
+    normalizedQuery.includes("authentification") ||
+    normalizedQuery.includes("register") ||
+    normalizedQuery.includes("inscription")
+  ) {
+    if (
+      article.id === "visitor-authentication" ||
+      article.slug === "visitor-authentication"
+    ) {
+      score += 80;
+    }
+  }
+
+  if (
+    normalizedQuery.includes("form") ||
+    normalizedQuery.includes("formulaire") ||
+    normalizedQuery.includes("contact")
+  ) {
+    if (article.id === "forms" || article.slug === "forms") {
+      score += 70;
+    }
+  }
+
+  if (
+    normalizedQuery.includes("partner") ||
+    normalizedQuery.includes("partenaire") ||
+    normalizedQuery.includes("devenir")
+  ) {
+    if (
+      article.id === "partner-applications" ||
+      article.slug === "partner-applications"
+    ) {
+      score += 70;
+    }
+  }
+
+  if (
+    normalizedQuery.includes("cms") ||
+    normalizedQuery.includes("collection") ||
+    normalizedQuery.includes("collections") ||
+    normalizedQuery.includes("entree") ||
+    normalizedQuery.includes("entries")
+  ) {
+    if (article.id === "cms" || article.slug === "cms") {
+      score += 70;
+    }
+  }
+
+  if (
+    normalizedQuery.includes("builder") ||
+    normalizedQuery.includes("bloc") ||
+    normalizedQuery.includes("blocs") ||
+    normalizedQuery.includes("drag") ||
+    normalizedQuery.includes("structure")
+  ) {
+    if (
+      article.id === "page-builder-blocks" ||
+      article.slug === "page-builder-blocks"
+    ) {
+      score += 70;
     }
   }
 
   return score;
 };
-
 export const rankHelpDocuments = (
   docs: PlatformAssistantDoc[],
   query: string,

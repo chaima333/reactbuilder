@@ -1,7 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from "react";
 import {
+  Alert,
   Box,
-  Typography,
+  Button,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  MenuItem,
   Paper,
   Table,
   TableBody,
@@ -9,207 +18,353 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  IconButton,
-  Chip,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
-  MenuItem,
-  CircularProgress,
-} from '@mui/material';
+  Typography
+} from "@mui/material";
 import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
   Add as AddIcon,
   AdminPanelSettings as AdminIcon,
-  EditNote as EditorIcon,
-  Visibility as ViewerIcon,
   CheckCircle as CheckIcon,
+  Delete as DeleteIcon,
   DoDisturbOn as RejectIcon,
-} from '@mui/icons-material';
-import { useSnackbar } from 'notistack';
+  Edit as EditIcon,
+  EditNote as EditorIcon,
+  Visibility as ViewerIcon
+} from "@mui/icons-material";
+import { useSnackbar } from "notistack";
+
 import {
-  useGetUsersQuery,
-  useDeleteUserMutation,
-  useCreateUserMutation,
-  useUpdateUserMutation,
+  useApproveUserMutation,
+  useGetPendingUsersQuery,
+  useRejectUserMutation
+} from "../../../redux/services/admin.api";
+import {
   useChangeUserRoleMutation,
-} from '../../../redux/services/users.api';
-import { apiUrl } from '../../../config/api';
+  useCreateUserMutation,
+  useDeleteUserMutation,
+  useGetUsersQuery,
+  useUpdateUserMutation
+} from "../../../redux/services/users.api";
 
-const roleColors = {
-  Admin: 'error',
-  Editor: 'warning',
-  Viewer: 'info',
+type PlatformRole =
+  | "ADMIN"
+  | "EDITOR"
+  | "VIEWER";
+
+type UserFormData = {
+  name: string;
+  email: string;
+  password: string;
+  role: PlatformRole;
 };
 
-const roleIcons = {
-  Admin: <AdminIcon fontSize="small" />,
-  Editor: <EditorIcon fontSize="small" />,
-  Viewer: <ViewerIcon fontSize="small" />,
+type AdminUser = {
+  id: number;
+  name: string;
+  email: string;
+  role: PlatformRole;
+  createdAt?: string;
+  isApproved?: boolean;
+  siteCount?: number;
 };
+
+const roleColors: Record<PlatformRole, "error" | "warning" | "info"> = {
+  ADMIN: "error",
+  EDITOR: "warning",
+  VIEWER: "info"
+};
+
+const roleIcons: Record<PlatformRole, React.ReactElement> = {
+  ADMIN: <AdminIcon fontSize="small" />,
+  EDITOR: <EditorIcon fontSize="small" />,
+  VIEWER: <ViewerIcon fontSize="small" />
+};
+
+const roleLabels: Record<PlatformRole, string> = {
+  ADMIN: "Administrateur",
+  EDITOR: "Editeur",
+  VIEWER: "Viewer"
+};
+
+const emptyForm: UserFormData = {
+  name: "",
+  email: "",
+  password: "",
+  role: "VIEWER"
+};
+
+const getApiErrorMessage = (
+  error: any,
+  fallback: string
+) =>
+  error?.data?.message ||
+  error?.error ||
+  error?.message ||
+  fallback;
 
 export const Users: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<any>(null);
-  const [pendingUsers, setPendingUsers] = useState<any[]>([]);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: "VIEWER",
-  });
 
-  // RTK Query hooks
-  const { data, isLoading, refetch } = useGetUsersQuery(undefined);
-  console.log("RTK USERS:", data);
-  const [deleteUser] = useDeleteUserMutation();
-  const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
-  const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
-  const [changeRole] = useChangeUserRoleMutation();
+  const {
+    data: users = [],
+    isLoading: usersLoading
+  } = useGetUsersQuery();
 
-  const allUsers = data || [];
+  const {
+    data: pendingUsers = [],
+    isLoading: pendingLoading
+  } = useGetPendingUsersQuery();
 
-  
-  const fetchPendingUsers = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(apiUrl("/admin/pending-users"), {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const result = await response.json();
-      if (result.success) {
-        setPendingUsers(result.data || []);
-      }
-    } catch (err) {
-      console.error('Erreur chargement pending users:', err);
-    }
-  };
+  const [createUser, { isLoading: isCreating }] =
+    useCreateUserMutation();
+  const [updateUser, { isLoading: isUpdating }] =
+    useUpdateUserMutation();
+  const [deleteUser, { isLoading: isDeleting }] =
+    useDeleteUserMutation();
+  const [changeRole, { isLoading: isChangingRole }] =
+    useChangeUserRoleMutation();
+  const [approveUser, { isLoading: isApproving }] =
+    useApproveUserMutation();
+  const [rejectUser, { isLoading: isRejecting }] =
+    useRejectUserMutation();
 
-  useEffect(() => {
-    fetchPendingUsers();
-  }, []);
+  const [dialogOpen, setDialogOpen] =
+    useState(false);
+  const [editingUser, setEditingUser] =
+    useState<AdminUser | null>(null);
+  const [formData, setFormData] =
+    useState<UserFormData>(emptyForm);
+  const [dialogError, setDialogError] =
+    useState<string | null>(null);
 
-  const handleApprove = async (userId: number) => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(apiUrl(`/admin/approve-user/${userId}`), {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const result = await response.json();
-      if (result.success) {
-        enqueueSnackbar('Utilisateur approuvé avec succès!', { variant: 'success' });
-        fetchPendingUsers();
-        refetch();
-      } else {
-        enqueueSnackbar(result.message || 'Erreur', { variant: 'error' });
-      }
-    } catch (err) {
-      enqueueSnackbar('Erreur lors de l\'approbation', { variant: 'error' });
-    }
-  };
+  const activeUsers =
+    useMemo(
+      () =>
+        (users as AdminUser[]).filter(
+          (user) => user.isApproved !== false
+        ),
+      [users]
+    );
 
-  const handleReject = async (userId: number) => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(apiUrl(`/admin/reject-user/${userId}`), {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const result = await response.json();
-      if (result.success) {
-        enqueueSnackbar('Utilisateur refusé et supprimé', { variant: 'success' });
-        fetchPendingUsers();
-      } else {
-        enqueueSnackbar(result.message || 'Erreur', { variant: 'error' });
-      }
-    } catch (err) {
-      enqueueSnackbar('Erreur lors du refus', { variant: 'error' });
-    }
-  };
+  const isSaving =
+    isCreating || isUpdating;
 
-  // --- GESTION DES DIALOGUES ET ACTIONS CLASSIQUES ---
+  const handleOpenDialog = (
+    user?: AdminUser
+  ) => {
+    setDialogError(null);
 
-  const handleOpenDialog = (user?: any) => {
     if (user) {
       setEditingUser(user);
       setFormData({
-        name: user.name,
-        email: user.email,
-        password: '',
-        role: user.role,
+        name: user.name || "",
+        email: user.email || "",
+        password: "",
+        role: user.role || "VIEWER"
       });
     } else {
       setEditingUser(null);
-      setFormData({ name: '', email: '', password: '', role: 'Viewer' });
+      setFormData(emptyForm);
     }
+
     setDialogOpen(true);
   };
 
   const handleCloseDialog = () => {
+    if (isSaving) {
+      return;
+    }
+
     setDialogOpen(false);
     setEditingUser(null);
+    setDialogError(null);
+    setFormData(emptyForm);
   };
 
   const handleSubmit = async () => {
-    try {
-      const payload = {
-        ...formData,
-        role: formData.role.toUpperCase(), // "Admin" -> "ADMIN"
-      };
+    setDialogError(null);
 
+    const payload = {
+      name: formData.name.trim(),
+      email: formData.email.trim().toLowerCase(),
+      role: formData.role,
+      ...(formData.password
+        ? {
+            password: formData.password
+          }
+        : {})
+    };
+
+    try {
       if (editingUser) {
-        await updateUser({ 
-          id: Number(editingUser.id), 
-          data: payload as any 
+        await updateUser({
+          id: editingUser.id,
+          data: payload
         }).unwrap();
-        enqueueSnackbar('Utilisateur mis à jour', { variant: 'success' });
+
+        enqueueSnackbar(
+          "Utilisateur mis a jour",
+          {
+            variant: "success"
+          }
+        );
       } else {
-        await createUser(payload as any).unwrap();
-        enqueueSnackbar('Utilisateur créé', { variant: 'success' });
+        await createUser({
+          ...payload,
+          password: formData.password
+        }).unwrap();
+
+        enqueueSnackbar(
+          "Utilisateur cree",
+          {
+            variant: "success"
+          }
+        );
       }
+
       handleCloseDialog();
-      refetch();
     } catch (error: any) {
-      enqueueSnackbar(error?.data?.message || 'Erreur', { variant: 'error' });
+      setDialogError(
+        getApiErrorMessage(
+          error,
+          "Impossible d'enregistrer l'utilisateur"
+        )
+      );
     }
   };
 
-  const handleDelete = async (id: number, name: string) => {
-    if (window.confirm(`Supprimer définitivement l'utilisateur "${name}" ?`)) {
-      try {
-        await deleteUser(id).unwrap();
-        enqueueSnackbar('Utilisateur supprimé', { variant: 'success' });
-        refetch();
-        fetchPendingUsers();
-      } catch (error) {
-        enqueueSnackbar('Erreur lors de la suppression', { variant: 'error' });
-      }
-    }
-  };
-
-  const handleChangeRole = async (id: number, currentRole: string) => {
-    const roles = ['Admin', 'Editor', 'Viewer'];
-    const currentIndex = roles.indexOf(currentRole);
-    const nextRole = roles[(currentIndex + 1) % roles.length];
-    
+  const handleApprove = async (
+    userId: number
+  ) => {
     try {
-      await changeRole({ id, role: nextRole.toUpperCase() as any }).unwrap();
-      enqueueSnackbar(`Rôle changé en ${nextRole}`, { variant: 'success' });
-      refetch();
-    } catch (error) {
-      enqueueSnackbar('Erreur lors du changement de rôle', { variant: 'error' });
+      await approveUser(userId).unwrap();
+      enqueueSnackbar(
+        "Utilisateur approuve avec succes",
+        {
+          variant: "success"
+        }
+      );
+    } catch (error: any) {
+      enqueueSnackbar(
+        getApiErrorMessage(
+          error,
+          "Erreur lors de l'approbation"
+        ),
+        {
+          variant: "error"
+        }
+      );
     }
   };
 
-  if (isLoading) {
+  const handleReject = async (
+    userId: number
+  ) => {
+    try {
+      await rejectUser(userId).unwrap();
+      enqueueSnackbar(
+        "Utilisateur refuse et supprime",
+        {
+          variant: "success"
+        }
+      );
+    } catch (error: any) {
+      enqueueSnackbar(
+        getApiErrorMessage(
+          error,
+          "Erreur lors du refus"
+        ),
+        {
+          variant: "error"
+        }
+      );
+    }
+  };
+
+  const handleDelete = async (
+    id: number,
+    name: string
+  ) => {
+    if (
+      !window.confirm(
+        `Supprimer definitivement l'utilisateur "${name}" ?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await deleteUser(id).unwrap();
+      enqueueSnackbar(
+        "Utilisateur supprime",
+        {
+          variant: "success"
+        }
+      );
+    } catch (error: any) {
+      enqueueSnackbar(
+        getApiErrorMessage(
+          error,
+          "Erreur lors de la suppression"
+        ),
+        {
+          variant: "error"
+        }
+      );
+    }
+  };
+
+  const handleChangeRole = async (
+    id: number,
+    currentRole: PlatformRole
+  ) => {
+    const roles: PlatformRole[] = [
+      "ADMIN",
+      "EDITOR",
+      "VIEWER"
+    ];
+
+    const currentIndex =
+      roles.indexOf(currentRole);
+    const nextRole =
+      roles[
+        (currentIndex + 1) %
+          roles.length
+      ];
+
+    try {
+      await changeRole({
+        id,
+        role: nextRole
+      }).unwrap();
+
+      enqueueSnackbar(
+        `Role change en ${roleLabels[nextRole]}`,
+        {
+          variant: "success"
+        }
+      );
+    } catch (error: any) {
+      enqueueSnackbar(
+        getApiErrorMessage(
+          error,
+          "Erreur lors du changement de role"
+        ),
+        {
+          variant: "error"
+        }
+      );
+    }
+  };
+
+  if (usersLoading || pendingLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="60vh"
+      >
         <CircularProgress />
       </Box>
     );
@@ -217,163 +372,458 @@ export const Users: React.FC = () => {
 
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-        <Typography variant="h4">Gestion des Utilisateurs</Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenDialog()}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={4}
+      >
+        <Typography variant="h4">
+          Gestion des Utilisateurs
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() =>
+            handleOpenDialog()
+          }
+        >
           Ajouter un utilisateur
         </Button>
       </Box>
 
-      {/* --- SECTION EN ATTENTE --- */}
       {pendingUsers.length > 0 && (
-        <Paper sx={{ p: 2, mb: 4, bgcolor: '#fff8e1', border: '1px solid #ffcc02' }}>
-          <Typography variant="h6" sx={{ color: '#ed6c02', display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <CheckIcon /> Demandes en attente ({pendingUsers.length})
+        <Paper
+          sx={{
+            p: 2,
+            mb: 4,
+            bgcolor: "#fff8e1",
+            border:
+              "1px solid #ffcc02"
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{
+              color: "#ed6c02",
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              mb: 2
+            }}
+          >
+            <CheckIcon /> Demandes en attente (
+            {pendingUsers.length})
           </Typography>
           <TableContainer>
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell><strong>Nom</strong></TableCell>
-                  <TableCell><strong>Email</strong></TableCell>
-                  <TableCell><strong>Date</strong></TableCell>
-                  <TableCell align="right"><strong>Actions</strong></TableCell>
+                  <TableCell>
+                    <strong>Nom</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Email</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Date</strong>
+                  </TableCell>
+                  <TableCell align="right">
+                    <strong>Actions</strong>
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {pendingUsers.map((user: any) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell align="right">
-                      <Box display="flex" justifyContent="flex-end" gap={1}>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          color="success"
-                          startIcon={<CheckIcon />}
-                          onClick={() => handleApprove(user.id)}
+                {(pendingUsers as AdminUser[]).map(
+                  (user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        {user.name}
+                      </TableCell>
+                      <TableCell>
+                        {user.email}
+                      </TableCell>
+                      <TableCell>
+                        {user.createdAt
+                          ? new Date(
+                              user.createdAt
+                            ).toLocaleDateString(
+                              "fr-FR"
+                            )
+                          : "-"}
+                      </TableCell>
+                      <TableCell align="right">
+                        <Box
+                          display="flex"
+                          justifyContent="flex-end"
+                          gap={1}
                         >
-                          Approuver
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="error"
-                          startIcon={<RejectIcon />}
-                          onClick={() => {
-                            if (window.confirm(`Refuser l'accès à ${user.name} ?`)) {
-                              handleReject(user.id);
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="success"
+                            startIcon={
+                              <CheckIcon />
                             }
-                          }}
-                        >
-                          Refuser
-                        </Button>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                            disabled={
+                              isApproving ||
+                              isRejecting
+                            }
+                            onClick={() =>
+                              handleApprove(
+                                user.id
+                              )
+                            }
+                          >
+                            Approuver
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="error"
+                            startIcon={
+                              <RejectIcon />
+                            }
+                            disabled={
+                              isApproving ||
+                              isRejecting
+                            }
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `Refuser l'acces a ${user.name} ?`
+                                )
+                              ) {
+                                handleReject(
+                                  user.id
+                                );
+                              }
+                            }}
+                          >
+                            Refuser
+                          </Button>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  )
+                )}
               </TableBody>
             </Table>
           </TableContainer>
         </Paper>
       )}
 
-      {/* --- SECTION LISTE PRINCIPALE --- */}
-      <Typography variant="h5" gutterBottom sx={{ mt: 2 }}>📋 Utilisateurs actifs</Typography>
-      <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3 }}>
+      <Typography
+        variant="h5"
+        gutterBottom
+        sx={{
+          mt: 2
+        }}
+      >
+        Utilisateurs actifs
+      </Typography>
+      <TableContainer
+        component={Paper}
+        sx={{
+          borderRadius: 2,
+          boxShadow: 3
+        }}
+      >
         <Table>
           <TableHead>
-            <TableRow sx={{ bgcolor: 'primary.main' }}>
-              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Nom</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Email</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Rôle</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Sites</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Inscription</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Actions</TableCell>
+            <TableRow
+              sx={{
+                bgcolor: "primary.main"
+              }}
+            >
+              <TableCell
+                sx={{
+                  color: "white",
+                  fontWeight: "bold"
+                }}
+              >
+                Nom
+              </TableCell>
+              <TableCell
+                sx={{
+                  color: "white",
+                  fontWeight: "bold"
+                }}
+              >
+                Email
+              </TableCell>
+              <TableCell
+                sx={{
+                  color: "white",
+                  fontWeight: "bold"
+                }}
+              >
+                Role
+              </TableCell>
+              <TableCell
+                sx={{
+                  color: "white",
+                  fontWeight: "bold"
+                }}
+                align="center"
+              >
+                Sites
+              </TableCell>
+              <TableCell
+                sx={{
+                  color: "white",
+                  fontWeight: "bold"
+                }}
+              >
+                Inscription
+              </TableCell>
+              <TableCell
+                sx={{
+                  color: "white",
+                  fontWeight: "bold"
+                }}
+                align="center"
+              >
+                Actions
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {allUsers.map((user: any) => (
-              <TableRow key={user.id} hover>
-                <TableCell sx={{ fontWeight: 500 }}>{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
-                  <Chip
-                    icon={roleIcons[user.role as keyof typeof roleIcons]}
-                    label={user.role}
-                    color={roleColors[user.role as keyof typeof roleColors] as any}
-                    size="small"
-                    onClick={() => handleChangeRole(user.id, user.role)}
-                    sx={{ cursor: 'pointer', fontWeight: 'bold' }}
-                  />
-                </TableCell>
-                
-                <TableCell align="center">
-                  <Chip 
-                    label={user.siteCount || 0} 
-                    size="small" 
-                    variant="outlined" 
-                    color={user.siteCount > 0 ? "secondary" : "default"}
-                    sx={{ minWidth: 40, fontWeight: 'bold' }}
-                  />
-                </TableCell>
+            {activeUsers.map((user) => {
+              const siteCount =
+                Number(user.siteCount) || 0;
 
-                <TableCell>{new Date(user.createdAt).toLocaleDateString('fr-FR')}</TableCell>
-                <TableCell align="center">
-                  <Box display="flex" justifyContent="center">
-                    <IconButton size="small" color="primary" onClick={() => handleOpenDialog(user)}>
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton size="small" color="error" onClick={() => handleDelete(user.id, user.name)}>
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                </TableCell>
-              </TableRow>
-            ))}
+              return (
+                <TableRow
+                  key={user.id}
+                  hover
+                >
+                  <TableCell
+                    sx={{
+                      fontWeight: 500
+                    }}
+                  >
+                    {user.name}
+                  </TableCell>
+                  <TableCell>
+                    {user.email}
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      icon={
+                        roleIcons[user.role]
+                      }
+                      label={
+                        roleLabels[
+                          user.role
+                        ]
+                      }
+                      color={
+                        roleColors[
+                          user.role
+                        ]
+                      }
+                      size="small"
+                      onClick={() =>
+                        handleChangeRole(
+                          user.id,
+                          user.role
+                        )
+                      }
+                      disabled={
+                        isChangingRole
+                      }
+                      sx={{
+                        cursor:
+                          "pointer",
+                        fontWeight:
+                          "bold"
+                      }}
+                    />
+                  </TableCell>
+
+                  <TableCell align="center">
+                    <Chip
+                      label={siteCount}
+                      size="small"
+                      variant="outlined"
+                      color={
+                        siteCount > 0
+                          ? "secondary"
+                          : "default"
+                      }
+                      sx={{
+                        minWidth: 40,
+                        fontWeight: "bold"
+                      }}
+                    />
+                  </TableCell>
+
+                  <TableCell>
+                    {user.createdAt
+                      ? new Date(
+                          user.createdAt
+                        ).toLocaleDateString(
+                          "fr-FR"
+                        )
+                      : "-"}
+                  </TableCell>
+                  <TableCell align="center">
+                    <Box
+                      display="flex"
+                      justifyContent="center"
+                    >
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() =>
+                          handleOpenDialog(
+                            user
+                          )
+                        }
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        disabled={
+                          isDeleting
+                        }
+                        onClick={() =>
+                          handleDelete(
+                            user.id,
+                            user.name
+                          )
+                        }
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
 
-      {/* --- DIALOGUE AJOUT/MODIFICATION --- */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white' }}>
-          {editingUser ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}
+      <Dialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle
+          sx={{
+            bgcolor: "primary.main",
+            color: "white"
+          }}
+        >
+          {editingUser
+            ? "Modifier l'utilisateur"
+            : "Nouvel utilisateur"}
         </DialogTitle>
         <DialogContent dividers>
+          {dialogError && (
+            <Alert
+              severity="error"
+              sx={{
+                mb: 2
+              }}
+            >
+              {dialogError}
+            </Alert>
+          )}
           <TextField
-            fullWidth label="Nom" margin="normal"
+            fullWidth
+            label="Nom"
+            margin="normal"
             value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            onChange={(event) =>
+              setFormData({
+                ...formData,
+                name: event.target.value
+              })
+            }
           />
           <TextField
-            fullWidth label="Email" type="email" margin="normal"
+            fullWidth
+            label="Email"
+            type="email"
+            margin="normal"
             value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            onChange={(event) =>
+              setFormData({
+                ...formData,
+                email: event.target.value
+              })
+            }
           />
           <TextField
-            fullWidth margin="normal"
-            label={editingUser ? 'Changer mot de passe (optionnel)' : 'Mot de passe'}
+            fullWidth
+            margin="normal"
+            label={
+              editingUser
+                ? "Changer mot de passe (optionnel)"
+                : "Mot de passe"
+            }
             type="password"
             value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            onChange={(event) =>
+              setFormData({
+                ...formData,
+                password: event.target.value
+              })
+            }
           />
           <TextField
-            fullWidth select label="Rôle" margin="normal"
+            fullWidth
+            select
+            label="Role"
+            margin="normal"
             value={formData.role}
-            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+            onChange={(event) =>
+              setFormData({
+                ...formData,
+                role: event.target
+                  .value as PlatformRole
+              })
+            }
           >
-            <MenuItem value="ADMIN">Administrateur</MenuItem>
-            <MenuItem value="EDITOR">Éditeur</MenuItem>
-            <MenuItem value="VIEWER">Visiteur</MenuItem>
+            <MenuItem value="ADMIN">
+              Administrateur
+            </MenuItem>
+            <MenuItem value="EDITOR">
+              Editeur
+            </MenuItem>
+            <MenuItem value="VIEWER">
+              Viewer
+            </MenuItem>
           </TextField>
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleCloseDialog} color="inherit">Annuler</Button>
-          <Button onClick={handleSubmit} variant="contained" disabled={isCreating || isUpdating}>
-            {isCreating || isUpdating ? <CircularProgress size={24} /> : 'Enregistrer'}
+        <DialogActions
+          sx={{
+            p: 2
+          }}
+        >
+          <Button
+            onClick={handleCloseDialog}
+            color="inherit"
+            disabled={isSaving}
+          >
+            Annuler
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            disabled={isSaving}
+          >
+            {isSaving
+              ? (
+                <CircularProgress size={24} />
+                )
+              : "Enregistrer"}
           </Button>
         </DialogActions>
       </Dialog>

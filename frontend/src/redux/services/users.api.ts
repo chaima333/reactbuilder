@@ -7,6 +7,21 @@ type User = {
   email: string;
   role: 'ADMIN' | 'EDITOR' | 'VIEWER' ;
   isApproved?: boolean;
+  siteCount?: number;
+};
+
+const unwrapUser = (response: any): User =>
+  response?.data || response?.user || response;
+
+const unwrapUsers = (response: any): User[] => {
+  const users =
+    response?.data ||
+    response?.users ||
+    response;
+
+  return Array.isArray(users)
+    ? users
+    : [];
 };
 
 export const usersApi = api.injectEndpoints({
@@ -49,8 +64,7 @@ export const usersApi = api.injectEndpoints({
   getUsers: builder.query<User[], void>({
   query: () => '/users',
 
-  transformResponse: (response: any) =>
-    response.data || [],
+  transformResponse: unwrapUsers,
   providesTags: (result) =>
     result
       ? [
@@ -66,6 +80,7 @@ export const usersApi = api.injectEndpoints({
         method: 'POST',
         body: data,
       }),
+      transformResponse: unwrapUser,
       invalidatesTags: [{ type: 'Users', id: 'LIST' }],
     }),
 
@@ -75,8 +90,10 @@ export const usersApi = api.injectEndpoints({
         method: 'PUT',
         body: data,
       }),
+      transformResponse: unwrapUser,
       invalidatesTags: (result, error, { id }) => [
         { type: 'Users', id },
+        { type: 'Users', id: 'LIST' },
       ],
     }),
 
@@ -86,8 +103,10 @@ export const usersApi = api.injectEndpoints({
         method: 'PATCH',
         body: { role },
       }),
+      transformResponse: unwrapUser,
       invalidatesTags: (result, error, { id }) => [
         { type: 'Users', id },
+        { type: 'Users', id: 'LIST' },
       ],
     }),
 
