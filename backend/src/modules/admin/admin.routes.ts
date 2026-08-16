@@ -16,6 +16,7 @@ import {
   generateAdminApiKey,
   getAdminAiSettings,
   getAdminSettings,
+  testAdminAiProvider,
   testAdminWebhook,
   updateAdminAiSettings,
   updateAdminSettings
@@ -58,7 +59,10 @@ router.put(
   "/settings/ai",
   updateAdminAiSettings
 );
-
+router.post(
+  "/settings/ai/test",
+  testAdminAiProvider
+);
 router.post(
   "/settings/generate-api-key",
   generateAdminApiKey

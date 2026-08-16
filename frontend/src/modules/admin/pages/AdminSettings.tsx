@@ -62,18 +62,38 @@ import { apiUrl } from "../../../config/api";
    Simple / Compact Admin UI
    ========================================================= */
 
-const colors = {
+const accentColors = {
   emerald: "#00C49A",
   emeraldDark: "#009E7C",
-  black: "#0D0D0D",
-  card: "#202020",
-  cardHeader: "#242424",
-  border: "rgba(255,255,255,0.08)",
-  grayLight: "#F2F2F2",
-  textSecondary: "rgba(255,255,255,0.55)",
-  white: "#FFFFFF",
   error: "#F22F22",
 };
+
+const getSurfaceColors = (isDark: boolean) =>
+  isDark
+    ? {
+        background: "#0D0D0D",
+        card: "#202020",
+        cardHeader: "#242424",
+        border: "rgba(255,255,255,0.08)",
+        text: "#FFFFFF",
+        textSecondary: "rgba(255,255,255,0.58)",
+        inputBackground: "#181818",
+        subtleBackground: "rgba(0,196,154,0.06)",
+        white: "#FFFFFF",
+        black: "#0D0D0D",
+      }
+    : {
+        background: "#F5F7F8",
+        card: "#FFFFFF",
+        cardHeader: "#F8FAFA",
+        border: "rgba(13,13,13,0.10)",
+        text: "#18211F",
+        textSecondary: "rgba(24,33,31,0.62)",
+        inputBackground: "#FFFFFF",
+        subtleBackground: "rgba(0,160,125,0.06)",
+        white: "#18211F",
+        black: "#F5F7F8",
+      };
 
 /* =========================================================
    DEFAULT SETTINGS
@@ -209,6 +229,10 @@ const SectionCard: React.FC<SectionCardProps> = ({
   title,
   children,
 }) => {
+  const theme = useTheme();
+  const ui = getSurfaceColors(theme.palette.mode === "dark");
+  const colors = { ...accentColors, ...ui };
+
   return (
     <Paper
       elevation={0}
@@ -271,7 +295,11 @@ const SectionCard: React.FC<SectionCardProps> = ({
 const StatusChip: React.FC<{
   status: boolean;
   label: string;
-}> = ({ status, label }) => {
+ }> = ({ status, label }) => {
+  const theme = useTheme();
+  const ui = getSurfaceColors(theme.palette.mode === "dark");
+  const colors = { ...accentColors, ...ui };
+
   return (
     <Chip
       label={label}
@@ -315,6 +343,8 @@ const StatusChip: React.FC<{
 export default function AdminSettings() {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+  const ui = getSurfaceColors(isDark);
+  const colors = { ...accentColors, ...ui };
 
   /* =======================================================
      API
@@ -960,19 +990,25 @@ export default function AdminSettings() {
           SETTINGS GRID
           =================================================== */}
 
-      <Grid
-        container
-        spacing={2}
+      <Box
+        sx={{
+          columnCount: { xs: 1, md: 2 },
+          columnGap: { xs: 0, md: 2 },
+          "& > .settings-section": {
+            breakInside: "avoid",
+            WebkitColumnBreakInside: "avoid",
+            display: "inline-block",
+            width: "100%",
+            verticalAlign: "top",
+            mb: 2,
+          },
+        }}
       >
         {/* =================================================
             PLATFORM
             ================================================= */}
 
-        <Grid
-          item
-          xs={12}
-          md={6}
-        >
+        <Box className="settings-section">
           <SectionCard
             icon={
               sectionConfig
@@ -1080,17 +1116,13 @@ export default function AdminSettings() {
               />
             </Stack>
           </SectionCard>
-        </Grid>
+        </Box>
 
         {/* =================================================
             USERS
             ================================================= */}
 
-        <Grid
-          item
-          xs={12}
-          md={6}
-        >
+        <Box className="settings-section">
           <SectionCard
             icon={
               sectionConfig
@@ -1183,17 +1215,13 @@ export default function AdminSettings() {
               sx={fieldSx}
             />
           </SectionCard>
-        </Grid>
+        </Box>
 
         {/* =================================================
             PLUGINS
             ================================================= */}
 
-        <Grid
-          item
-          xs={12}
-          md={6}
-        >
+        <Box className="settings-section">
           <SectionCard
             icon={
               sectionConfig
@@ -1316,17 +1344,13 @@ export default function AdminSettings() {
               )}
             </Grid>
           </SectionCard>
-        </Grid>
+        </Box>
 
         {/* =================================================
             AI
             ================================================= */}
 
-        <Grid
-          item
-          xs={12}
-          md={6}
-        >
+        <Box className="settings-section">
           <SectionCard
             icon={
               sectionConfig.ai.icon
@@ -1641,17 +1665,13 @@ export default function AdminSettings() {
               </Button>
             </Stack>
           </SectionCard>
-        </Grid>
+        </Box>
 
         {/* =================================================
             SECURITY
             ================================================= */}
 
-        <Grid
-          item
-          xs={12}
-          md={6}
-        >
+        <Box className="settings-section">
           <SectionCard
             icon={
               sectionConfig
@@ -1799,17 +1819,13 @@ export default function AdminSettings() {
               />
             </Stack>
           </SectionCard>
-        </Grid>
+        </Box>
 
         {/* =================================================
             LIMITS
             ================================================= */}
 
-        <Grid
-          item
-          xs={12}
-          md={6}
-        >
+        <Box className="settings-section">
           <SectionCard
             icon={
               sectionConfig
@@ -1873,17 +1889,13 @@ export default function AdminSettings() {
               />
             </Stack>
           </SectionCard>
-        </Grid>
+        </Box>
 
         {/* =================================================
             API ACCESS
             ================================================= */}
 
-        <Grid
-          item
-          xs={12}
-          md={6}
-        >
+        <Box className="settings-section">
           <SectionCard
             icon={
               sectionConfig.api.icon
@@ -2200,7 +2212,7 @@ export default function AdminSettings() {
                       webhookStatus ===
                       "success"
                         ? colors.emerald
-                        : "#111111",
+                        : ui.cardHeader,
 
                     boxShadow:
                       "none",
@@ -2210,7 +2222,7 @@ export default function AdminSettings() {
                         webhookStatus ===
                         "success"
                           ? colors.emeraldDark
-                          : "#111111",
+                          : ui.card,
 
                       boxShadow:
                         "none",
@@ -2420,17 +2432,13 @@ export default function AdminSettings() {
               </Box>
             </Stack>
           </SectionCard>
-        </Grid>
+        </Box>
 
         {/* =================================================
             BACKUP & EXPORT
             ================================================= */}
 
-        <Grid
-          item
-          xs={12}
-          md={6}
-        >
+        <Box className="settings-section">
           <SectionCard
             icon={
               sectionConfig
@@ -2618,8 +2626,8 @@ export default function AdminSettings() {
               </Button>
             </Stack>
           </SectionCard>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
     </Box>
   );
 }

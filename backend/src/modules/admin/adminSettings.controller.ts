@@ -115,3 +115,29 @@ export const generateAdminApiKey = async (
     });
   }
 };
+export const testAdminAiProvider = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { provider, model } = req.body;
+
+    const result =
+      await AdminAiSettingsService.testProviderConnection(
+        provider,
+        model
+      );
+
+    return res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error: any) {
+    return res.status(400).json({
+      success: false,
+      message:
+        error?.message ||
+        "AI provider connection test failed",
+    });
+  }
+};

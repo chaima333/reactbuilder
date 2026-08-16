@@ -168,7 +168,29 @@ export const generateTextForProvider = async ({
       );
   }
 };
+export const testProviderConnection = async ({
+  provider,
+  model,
+}: {
+  provider: AiProvider;
+  model: string;
+}) => {
+  const startedAt = Date.now();
 
+  const text = await generateTextForProvider({
+    provider,
+    model,
+    prompt: "Say only: LLM connection successful.",
+  });
+
+  return {
+    success: true,
+    provider,
+    model,
+    response: text,
+    latencyMs: Date.now() - startedAt,
+  };
+};
 export const generateText = async (
   prompt: string
 ): Promise<string> => {

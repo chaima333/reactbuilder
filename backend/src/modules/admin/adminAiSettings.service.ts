@@ -1,4 +1,7 @@
 import { PlatformSetting } from "../../models";
+import {
+  testProviderConnection as testLlmProviderConnection,
+} from "../ia/llm/llm.client";
 
 export type PlatformAiProvider =
   | "claude"
@@ -28,6 +31,8 @@ export type PlatformAiSettingsResponse =
     createdAt: Date | null;
     updatedAt: Date | null;
   };
+
+  
 
 const PLATFORM_AI_SETTINGS_KEY =
   "platform_ai";
@@ -221,6 +226,7 @@ const toResponse = (
 });
 
 export class AdminAiSettingsService {
+  
   static async getSettings():
     Promise<PlatformAiSettingsResponse> {
     const setting =
@@ -240,7 +246,44 @@ export class AdminAiSettingsService {
       setting
     );
   }
+  static async testProviderConnection(
+    provider: PlatformAiProvider,
+    model?: string
+  ) {
+    const normalizedProvider =
+      normalizeProvider(provider);
 
+    const status =
+      getProviderStatus()[normalizedProvider];
+
+    if (!status.configured) {
+      throw new PlatformAiSettingsError(
+        `${normalizedProvider} is not configured on the server`
+      );
+    }
+
+    const selectedModel =
+      model?.trim() || status.model;
+
+    if (!selectedModel) {
+      throw new PlatformAiSettingsError(
+        `${normalizedProvider} model is not configured`
+      );
+    }
+
+    try {
+      return await testLlmProviderConnection({
+        provider: normalizedProvider,
+        model: selectedModel,
+      });
+    } catch (error: any) {
+      throw new PlatformAiSettingsError(
+        error?.message ||
+          `${normalizedProvider} connection test failed`,
+        400
+      );
+    }
+  }
   static async saveSettings(
     payload: Partial<PlatformAiSettingsValue>,
     updatedBy: number | null
