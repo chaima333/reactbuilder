@@ -202,13 +202,15 @@ const handleCreate = async () => {
                       {page.status === "published" ? "Publiée" : "Publier"}
                     </Button>
 
-                    <Button
-                      size="small"
-                      color="error"
-                      onClick={() => handleDelete(page.id)}
-                    >
-                      Supprimer
-                    </Button>
+                    {!page.systemType && (
+  <Button
+    size="small"
+    color="error"
+    onClick={() => handleDelete(page.id)}
+  >
+    Supprimer
+  </Button>
+)}
                   </Stack>
                 </Stack>
               </CardContent>
