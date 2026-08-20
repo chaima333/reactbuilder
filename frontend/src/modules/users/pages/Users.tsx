@@ -38,6 +38,7 @@ import {
   useGetPendingUsersQuery,
   useRejectUserMutation
 } from "../../../redux/services/admin.api";
+
 import {
   useChangeUserRoleMutation,
   useCreateUserMutation,
@@ -68,19 +69,28 @@ type AdminUser = {
   siteCount?: number;
 };
 
-const roleColors: Record<PlatformRole, "error" | "warning" | "info"> = {
+const roleColors: Record<
+  PlatformRole,
+  "error" | "warning" | "info"
+> = {
   ADMIN: "error",
   EDITOR: "warning",
   VIEWER: "info"
 };
 
-const roleIcons: Record<PlatformRole, React.ReactElement> = {
+const roleIcons: Record<
+  PlatformRole,
+  React.ReactElement
+> = {
   ADMIN: <AdminIcon fontSize="small" />,
   EDITOR: <EditorIcon fontSize="small" />,
   VIEWER: <ViewerIcon fontSize="small" />
 };
 
-const roleLabels: Record<PlatformRole, string> = {
+const roleLabels: Record<
+  PlatformRole,
+  string
+> = {
   ADMIN: "Administrateur",
   EDITOR: "Editeur",
   VIEWER: "Viewer"
@@ -115,36 +125,63 @@ export const Users: React.FC = () => {
     isLoading: pendingLoading
   } = useGetPendingUsersQuery();
 
-  const [createUser, { isLoading: isCreating }] =
-    useCreateUserMutation();
-  const [updateUser, { isLoading: isUpdating }] =
-    useUpdateUserMutation();
-  const [deleteUser, { isLoading: isDeleting }] =
-    useDeleteUserMutation();
-  const [changeRole, { isLoading: isChangingRole }] =
-    useChangeUserRoleMutation();
-  const [approveUser, { isLoading: isApproving }] =
-    useApproveUserMutation();
-  const [rejectUser, { isLoading: isRejecting }] =
-    useRejectUserMutation();
+  const [
+    createUser,
+    { isLoading: isCreating }
+  ] = useCreateUserMutation();
 
-  const [dialogOpen, setDialogOpen] =
-    useState(false);
-  const [editingUser, setEditingUser] =
-    useState<AdminUser | null>(null);
-  const [formData, setFormData] =
-    useState<UserFormData>(emptyForm);
-  const [dialogError, setDialogError] =
-    useState<string | null>(null);
+  const [
+    updateUser,
+    { isLoading: isUpdating }
+  ] = useUpdateUserMutation();
 
-  const activeUsers =
-    useMemo(
-      () =>
-        (users as AdminUser[]).filter(
-          (user) => user.isApproved !== false
-        ),
-      [users]
-    );
+  const [
+    deleteUser,
+    { isLoading: isDeleting }
+  ] = useDeleteUserMutation();
+
+  const [
+    changeRole,
+    { isLoading: isChangingRole }
+  ] = useChangeUserRoleMutation();
+
+  const [
+    approveUser,
+    { isLoading: isApproving }
+  ] = useApproveUserMutation();
+
+  const [
+    rejectUser,
+    { isLoading: isRejecting }
+  ] = useRejectUserMutation();
+
+  const [
+    dialogOpen,
+    setDialogOpen
+  ] = useState(false);
+
+  const [
+    editingUser,
+    setEditingUser
+  ] = useState<AdminUser | null>(null);
+
+  const [
+    formData,
+    setFormData
+  ] = useState<UserFormData>(emptyForm);
+
+  const [
+    dialogError,
+    setDialogError
+  ] = useState<string | null>(null);
+
+  const activeUsers = useMemo(
+    () =>
+      (users as AdminUser[]).filter(
+        (user) => user.isApproved !== false
+      ),
+    [users]
+  );
 
   const isSaving =
     isCreating || isUpdating;
@@ -156,6 +193,7 @@ export const Users: React.FC = () => {
 
     if (user) {
       setEditingUser(user);
+
       setFormData({
         name: user.name || "",
         email: user.email || "",
@@ -186,7 +224,9 @@ export const Users: React.FC = () => {
 
     const payload = {
       name: formData.name.trim(),
-      email: formData.email.trim().toLowerCase(),
+      email: formData.email
+        .trim()
+        .toLowerCase(),
       role: formData.role,
       ...(formData.password
         ? {
@@ -238,6 +278,7 @@ export const Users: React.FC = () => {
   ) => {
     try {
       await approveUser(userId).unwrap();
+
       enqueueSnackbar(
         "Utilisateur approuve avec succes",
         {
@@ -262,6 +303,7 @@ export const Users: React.FC = () => {
   ) => {
     try {
       await rejectUser(userId).unwrap();
+
       enqueueSnackbar(
         "Utilisateur refuse et supprime",
         {
@@ -295,6 +337,7 @@ export const Users: React.FC = () => {
 
     try {
       await deleteUser(id).unwrap();
+
       enqueueSnackbar(
         "Utilisateur supprime",
         {
@@ -326,6 +369,7 @@ export const Users: React.FC = () => {
 
     const currentIndex =
       roles.indexOf(currentRole);
+
     const nextRole =
       roles[
         (currentIndex + 1) %
@@ -357,7 +401,10 @@ export const Users: React.FC = () => {
     }
   };
 
-  if (usersLoading || pendingLoading) {
+  if (
+    usersLoading ||
+    pendingLoading
+  ) {
     return (
       <Box
         display="flex"
@@ -381,6 +428,7 @@ export const Users: React.FC = () => {
         <Typography variant="h4">
           Gestion des Utilisateurs
         </Typography>
+
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -412,9 +460,11 @@ export const Users: React.FC = () => {
               mb: 2
             }}
           >
-            <CheckIcon /> Demandes en attente (
+            <CheckIcon />
+            Demandes en attente (
             {pendingUsers.length})
           </Typography>
+
           <TableContainer>
             <Table size="small">
               <TableHead>
@@ -422,27 +472,37 @@ export const Users: React.FC = () => {
                   <TableCell>
                     <strong>Nom</strong>
                   </TableCell>
+
                   <TableCell>
                     <strong>Email</strong>
                   </TableCell>
+
                   <TableCell>
                     <strong>Date</strong>
                   </TableCell>
+
                   <TableCell align="right">
-                    <strong>Actions</strong>
+                    <strong>
+                      Actions
+                    </strong>
                   </TableCell>
                 </TableRow>
               </TableHead>
+
               <TableBody>
                 {(pendingUsers as AdminUser[]).map(
                   (user) => (
-                    <TableRow key={user.id}>
+                    <TableRow
+                      key={user.id}
+                    >
                       <TableCell>
                         {user.name}
                       </TableCell>
+
                       <TableCell>
                         {user.email}
                       </TableCell>
+
                       <TableCell>
                         {user.createdAt
                           ? new Date(
@@ -452,6 +512,7 @@ export const Users: React.FC = () => {
                             )
                           : "-"}
                       </TableCell>
+
                       <TableCell align="right">
                         <Box
                           display="flex"
@@ -477,6 +538,7 @@ export const Users: React.FC = () => {
                           >
                             Approuver
                           </Button>
+
                           <Button
                             size="small"
                             variant="outlined"
@@ -522,6 +584,7 @@ export const Users: React.FC = () => {
       >
         Utilisateurs actifs
       </Typography>
+
       <TableContainer
         component={Paper}
         sx={{
@@ -544,6 +607,7 @@ export const Users: React.FC = () => {
               >
                 Nom
               </TableCell>
+
               <TableCell
                 sx={{
                   color: "white",
@@ -552,6 +616,7 @@ export const Users: React.FC = () => {
               >
                 Email
               </TableCell>
+
               <TableCell
                 sx={{
                   color: "white",
@@ -560,6 +625,7 @@ export const Users: React.FC = () => {
               >
                 Role
               </TableCell>
+
               <TableCell
                 sx={{
                   color: "white",
@@ -569,6 +635,7 @@ export const Users: React.FC = () => {
               >
                 Sites
               </TableCell>
+
               <TableCell
                 sx={{
                   color: "white",
@@ -577,6 +644,7 @@ export const Users: React.FC = () => {
               >
                 Inscription
               </TableCell>
+
               <TableCell
                 sx={{
                   color: "white",
@@ -588,6 +656,7 @@ export const Users: React.FC = () => {
               </TableCell>
             </TableRow>
           </TableHead>
+
           <TableBody>
             {activeUsers.map((user) => {
               const siteCount =
@@ -605,9 +674,11 @@ export const Users: React.FC = () => {
                   >
                     {user.name}
                   </TableCell>
+
                   <TableCell>
                     {user.email}
                   </TableCell>
+
                   <TableCell>
                     <Chip
                       icon={
@@ -634,10 +705,8 @@ export const Users: React.FC = () => {
                         isChangingRole
                       }
                       sx={{
-                        cursor:
-                          "pointer",
-                        fontWeight:
-                          "bold"
+                        cursor: "pointer",
+                        fontWeight: "bold"
                       }}
                     />
                   </TableCell>
@@ -668,6 +737,7 @@ export const Users: React.FC = () => {
                         )
                       : "-"}
                   </TableCell>
+
                   <TableCell align="center">
                     <Box
                       display="flex"
@@ -684,6 +754,7 @@ export const Users: React.FC = () => {
                       >
                         <EditIcon fontSize="small" />
                       </IconButton>
+
                       <IconButton
                         size="small"
                         color="error"
@@ -724,6 +795,7 @@ export const Users: React.FC = () => {
             ? "Modifier l'utilisateur"
             : "Nouvel utilisateur"}
         </DialogTitle>
+
         <DialogContent dividers>
           {dialogError && (
             <Alert
@@ -735,6 +807,7 @@ export const Users: React.FC = () => {
               {dialogError}
             </Alert>
           )}
+
           <TextField
             fullWidth
             label="Nom"
@@ -747,6 +820,7 @@ export const Users: React.FC = () => {
               })
             }
           />
+
           <TextField
             fullWidth
             label="Email"
@@ -760,23 +834,24 @@ export const Users: React.FC = () => {
               })
             }
           />
-          <TextField
-            fullWidth
-            margin="normal"
-            label={
-              editingUser
-                ? "Changer mot de passe (optionnel)"
-                : "Mot de passe"
-            }
-            type="password"
-            value={formData.password}
-            onChange={(event) =>
-              setFormData({
-                ...formData,
-                password: event.target.value
-              })
-            }
-          />
+
+          {!editingUser && (
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Mot de passe"
+              type="password"
+              value={formData.password}
+              onChange={(event) =>
+                setFormData({
+                  ...formData,
+                  password:
+                    event.target.value
+                })
+              }
+            />
+          )}
+
           <TextField
             fullWidth
             select
@@ -794,14 +869,17 @@ export const Users: React.FC = () => {
             <MenuItem value="ADMIN">
               Administrateur
             </MenuItem>
+
             <MenuItem value="EDITOR">
               Editeur
             </MenuItem>
+
             <MenuItem value="VIEWER">
               Viewer
             </MenuItem>
           </TextField>
         </DialogContent>
+
         <DialogActions
           sx={{
             p: 2
@@ -814,16 +892,19 @@ export const Users: React.FC = () => {
           >
             Annuler
           </Button>
+
           <Button
             onClick={handleSubmit}
             variant="contained"
             disabled={isSaving}
           >
-            {isSaving
-              ? (
-                <CircularProgress size={24} />
-                )
-              : "Enregistrer"}
+            {isSaving ? (
+              <CircularProgress
+                size={24}
+              />
+            ) : (
+              "Enregistrer"
+            )}
           </Button>
         </DialogActions>
       </Dialog>
