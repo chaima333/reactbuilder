@@ -142,12 +142,16 @@ export const createCorsOptionsDelegate = (
             requestOrigin
           );
 
-        callback(
-          null,
-          privateOrigins.has(
-            normalizedOrigin
-          )
-        );
+       const isAllowedVercelPreview =
+  /^https:\/\/reactbuilder-[a-z0-9-]+-chaima333s-projects\.vercel\.app$/i.test(
+    normalizedOrigin
+  );
+
+callback(
+  null,
+  privateOrigins.has(normalizedOrigin) ||
+    isAllowedVercelPreview
+);
       };
 
   return (
