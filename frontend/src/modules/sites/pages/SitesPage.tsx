@@ -102,6 +102,9 @@ const [ prefilledSiteName, setPrefilledSiteName] = useState("");
   const [exportingSiteId, setExportingSiteId] =
     useState<number | null>(null);
 
+  const [hiddenPageIds, setHiddenPageIds] =
+  useState<Set<number>>(new Set());
+
     const {
   data,
   isLoading,
@@ -435,44 +438,51 @@ useEffect(() => {
   // DELETE PAGE
   // =========================
 
-  const handleDeletePage = async (
-    siteId: number,
-    pageId: number,
-    pageTitle: string
-  ) => {
-    if (
-      !window.confirm(
-        `${t.confirmDelete} "${pageTitle}" ?`
-      )
-    ) {
-      return;
-    }
+ const handleDeletePage = async (
+  siteId: number,
+  pageId: number,
+  pageTitle: string
+) => {
+  if (
+    !window.confirm(
+      `${t.confirmDelete} "${pageTitle}" ?`
+    )
+  ) {
+    return;
+  }
+
+  try {
+    await deletePage({
+      siteId,
+      pageId
+    }).unwrap();
+
+    setHiddenPageIds((current) => {
+      const next = new Set(current);
+      next.add(pageId);
+      return next;
+    });
+
+    enqueueSnackbar(
+      t.deleteSuccess,
+      { variant: "success" }
+    );
 
     try {
-      await deletePage({
-        siteId,
-        pageId
-      }).unwrap();
-
-      enqueueSnackbar(
-        t.deleteSuccess,
-        {
-          variant: "success"
-        }
-      );
-
       await refetch();
-
-    } catch (err: any) {
-      enqueueSnackbar(
-        err?.data?.message ||
-          t.error,
-        {
-          variant: "error"
-        }
+    } catch (refreshError) {
+      console.warn(
+        "PAGE_LIST_REFRESH_FAILED:",
+        refreshError
       );
     }
-  };
+  } catch (err: any) {
+    enqueueSnackbar(
+      err?.data?.message || t.error,
+      { variant: "error" }
+    );
+  }
+};
 
   // =========================
   // EXPORT SITE
@@ -802,8 +812,13 @@ const getPublicSitePath = (
                                 mb: 1
                               }}
                             >
-                              {site.pages.map(
-                                (page: any) => (
+                              {site.pages
+                               .filter(
+                               (page: any) =>
+                               !hiddenPageIds.has(page.id)
+                                 )
+                                 .map(
+                                  (page: any) => (
                                   <Box
                                     key={page.id}
                                     sx={{
@@ -830,7 +845,7 @@ const getPublicSitePath = (
                                       }}
                                     />
 
-                                    {canDeletePage(site) && (
+                                    {canDeletePage(site) && !page.systemType && (
                                       <IconButton
                                         size="small"
                                         color="error"
