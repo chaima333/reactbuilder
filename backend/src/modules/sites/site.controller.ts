@@ -210,7 +210,8 @@ export const getSites = async (
               as: "pages",
               attributes: [
                 "id",
-                "title"
+                "title",
+                "systemType"
               ]
             }
           ]
