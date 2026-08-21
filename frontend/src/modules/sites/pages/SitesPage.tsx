@@ -830,21 +830,21 @@ const getPublicSitePath = (
                                       }}
                                     />
 
-                                    {canDeletePage(site) && (
-                                      <IconButton
-                                        size="small"
-                                        color="error"
-                                        onClick={() =>
-                                          handleDeletePage(
-                                            site.id,
-                                            page.id,
-                                            page.title
-                                          )
-                                        }
-                                      >
-                                        <DeleteIcon fontSize="small" />
-                                      </IconButton>
-                                    )}
+                                   {canDeletePage(site) && !page.systemType && (
+  <IconButton
+    size="small"
+    color="error"
+    onClick={() =>
+      handleDeletePage(
+        site.id,
+        page.id,
+        page.title
+      )
+    }
+  >
+    <DeleteIcon fontSize="small" />
+  </IconButton>
+)}
                                   </Box>
                                 )
                               )}
