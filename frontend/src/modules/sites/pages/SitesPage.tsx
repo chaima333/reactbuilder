@@ -20,6 +20,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  TextField,
   Chip,
   IconButton,
 } from "@mui/material";
@@ -101,6 +102,15 @@ const [ prefilledSiteName, setPrefilledSiteName] = useState("");
 
   const [exportingSiteId, setExportingSiteId] =
     useState<number | null>(null);
+
+  const [exportDialogOpen, setExportDialogOpen] =
+    useState(false);
+
+  const [exportBaseUrl, setExportBaseUrl] =
+    useState("");
+
+  const [exportTargetSite, setExportTargetSite] =
+    useState<any>(null);
 
   const [hiddenPageIds, setHiddenPageIds] =
   useState<Set<number>>(new Set());
@@ -488,6 +498,42 @@ useEffect(() => {
   // EXPORT SITE
   // =========================
 
+ const handleConfirmExport = async () => {
+  if (!exportTargetSite?.id) {
+    return;
+  }
+
+  try {
+    setExportingSiteId(Number(exportTargetSite.id));
+
+    await downloadSiteExport({
+      siteId: Number(exportTargetSite.id),
+      baseUrl: exportBaseUrl.trim(),
+      accessToken,
+    });
+
+    enqueueSnackbar(
+      "Site exporté avec succès.",
+      { variant: "success" }
+    );
+
+    setExportDialogOpen(false);
+    setExportTargetSite(null);
+    setExportBaseUrl("");
+  } catch (error) {
+    console.error("SITE_EXPORT_FAILED", error);
+
+    enqueueSnackbar(
+      error instanceof Error
+        ? error.message
+        : "Échec de l'export du site.",
+      { variant: "error" }
+    );
+  } finally {
+    setExportingSiteId(null);
+  }
+};
+
  const handleExportSite = async (
   site: any
 ) => {
@@ -509,56 +555,9 @@ useEffect(() => {
     return;
   }
 
-  const enteredBaseUrl =
-    window.prompt(
-      "Domaine public du site pour le SEO et le sitemap. Laissez vide si vous ne le connaissez pas encore.",
-      ""
-    );
-
-  if (enteredBaseUrl === null) {
-    return;
-  }
-
-  try {
-    setExportingSiteId(
-      Number(site.id)
-    );
-
-    await downloadSiteExport({
-      siteId:
-        Number(site.id),
-
-      baseUrl:
-        enteredBaseUrl.trim(),
-
-      accessToken,
-    });
-
-    enqueueSnackbar(
-      "Site exporté avec succès.",
-      {
-        variant: "success",
-      }
-    );
-  } catch (error) {
-    console.error(
-      "SITE_EXPORT_FAILED",
-      error
-    );
-
-    enqueueSnackbar(
-      error instanceof Error
-        ? error.message
-        : "Échec de l'export du site.",
-      {
-        variant: "error",
-      }
-    );
-  } finally {
-    setExportingSiteId(
-      null
-    );
-  }
+  setExportTargetSite(site);
+  setExportBaseUrl("");
+  setExportDialogOpen(true);
 };
   // =========================
   // LOADING
@@ -1029,6 +1028,64 @@ const getPublicSitePath = (
             disabled={isDeleting}
           >
             {t.delete}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={exportDialogOpen}
+        onClose={() => {
+          if (exportingSiteId === null) {
+            setExportDialogOpen(false);
+            setExportTargetSite(null);
+            setExportBaseUrl("");
+          }
+        }}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>
+          Exporter le site
+        </DialogTitle>
+
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Domaine public du site pour le SEO et le sitemap.
+            Laissez vide si vous ne le connaissez pas encore.
+          </DialogContentText>
+
+          <TextField
+            fullWidth
+            label="Domaine public"
+            placeholder="https://example.com"
+            value={exportBaseUrl}
+            onChange={(e) =>
+              setExportBaseUrl(e.target.value)
+            }
+            disabled={exportingSiteId !== null}
+          />
+        </DialogContent>
+
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setExportDialogOpen(false);
+              setExportTargetSite(null);
+              setExportBaseUrl("");
+            }}
+            disabled={exportingSiteId !== null}
+          >
+            Annuler
+          </Button>
+
+          <Button
+            variant="contained"
+            onClick={handleConfirmExport}
+            disabled={exportingSiteId !== null}
+          >
+            {exportingSiteId !== null
+              ? "Export..."
+              : "Exporter"}
           </Button>
         </DialogActions>
       </Dialog>
