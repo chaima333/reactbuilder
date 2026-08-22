@@ -463,10 +463,10 @@ useEffect(() => {
       return next;
     });
 
-    enqueueSnackbar(
-      t.deleteSuccess,
-      { variant: "success" }
-    );
+  enqueueSnackbar(
+  "Page supprimée avec succès",
+  { variant: "success" }
+);
 
     try {
       await refetch();
