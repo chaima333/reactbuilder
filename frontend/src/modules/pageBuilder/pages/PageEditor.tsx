@@ -1036,10 +1036,8 @@ const isFooterLikeBlock = (
       ]
     );
 
-  /*const pageBlocksForCanvas =
-    cmsPreviewBlocks || blocks;*/
-    const pageBlocksForCanvas =
-  blocks;
+  const pageBlocksForCanvas =
+    cmsPreviewBlocks || blocks;
 
   const pageOwnsNavbar =
     pageBlocksForCanvas.some(

@@ -227,8 +227,15 @@ if (!config) {
   // =========================
   // RENDER
   // =========================
-return (
 
+  if (block.type === "visitorRegister") {
+  console.log("VISITOR_REGISTER_RENDER", {
+    id: block.id,
+    type: block.type,
+    data: block.data,
+  });
+}
+ return (
   <div
     onClick={(e) => {
 

@@ -204,16 +204,23 @@ export const getSites = async (
               [Op.ne]: "deleted"
             }
           },
-          include: [
-            {
-              model: Page,
-              as: "pages",
-              attributes: [
-                "id",
-                "title"
-              ]
-            }
-          ]
+         include: [
+  {
+    model: Page,
+    as: "pages",
+    attributes: [
+      "id",
+      "title",
+      "systemType"
+    ],
+    where: {
+      status: {
+        [Op.ne]: "deleted"
+      }
+    },
+    required: false
+  }
+]
         }
       ],
       order: [
@@ -230,7 +237,6 @@ export const getSites = async (
         status: m.site.status,
         createdAt: m.site.createdAt,
 
-        // مهم للـ frontend RBAC
         memberRole: m.role,
         role: m.role,
 
