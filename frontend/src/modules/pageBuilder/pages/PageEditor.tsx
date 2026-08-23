@@ -2102,40 +2102,124 @@ if (
       ]
     );
 
-  const handleSelectedBlockChange =
-    useCallback(
-      (update: any) => {
-        if (isCmsEntryPreviewActive) {
-          return;
-        }
+ const handleSelectedBlockChange =
+  useCallback(
+    (update: any) => {
+      if (isCmsEntryPreviewActive) {
+        return;
+      }
 
-        if (!selectedBlockId) {
-          return;
-        }
+      if (!selectedBlockId) {
+        return;
+      }
 
-        if (selectedGlobalSlot) {
-          updateGlobalDraftBlock(
-            selectedGlobalSlot,
-            selectedBlockId,
-            update
-          );
-
-          return;
-        }
-
-        actions.updateBlock(
+      if (selectedGlobalSlot) {
+        updateGlobalDraftBlock(
+          selectedGlobalSlot,
           selectedBlockId,
           update
         );
-      },
-      [
-        actions,
+
+        return;
+      }
+
+      let nextUpdate = update;
+
+       const updatedLabel =
+      update?.data?.props?.label ??
+      update?.props?.label;
+
+       if (
+       selectedPageBlock?.type === "link" &&
+       siteId &&
+       updatedLabel
+        ) {
+        const currentProps =
+          selectedPageBlock.data?.props || {};
+
+        const currentHref =
+          currentProps.href ||
+          currentProps.url ||
+          currentProps.link ||
+          "";
+
+        const currentLabel =
+          String(
+            currentProps.label || ""
+          ).trim();
+
+        const currentSlug =
+          currentLabel
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(
+              /[\u0300-\u036f]/g,
+              ""
+            )
+            .replace(
+              /[^a-z0-9]+/g,
+              "-"
+            )
+            .replace(
+              /^-+|-+$/g,
+              "");
+
+        const generatedHref =
+          `/site/${siteId}/${currentSlug}`;
+
+        // Only update URL when it is still automatic
+        if (
+          currentHref === "#" ||
+          currentHref === generatedHref
+        ) {
+         const newLabel =
+         String(updatedLabel).trim();
+
+          const newSlug =
+            newLabel
+              .toLowerCase()
+              .normalize("NFD")
+              .replace(
+                /[\u0300-\u036f]/g,
+                ""
+              )
+              .replace(
+                /[^a-z0-9]+/g,
+                "-"
+              )
+              .replace(
+                /^-+|-+$/g,
+                "");
+
+          nextUpdate = {
+            ...update,
+            data: {
+              ...(update.data || {}),
+              props: {
+                ...(update.data?.props || {}),
+                href:
+                  `/site/${siteId}/${newSlug}`
+              }
+            }
+          };
+        }
+      }
+
+      actions.updateBlock(
         selectedBlockId,
-        selectedGlobalSlot,
-        updateGlobalDraftBlock,
-        isCmsEntryPreviewActive
-      ]
-    );
+        nextUpdate
+      );
+    },
+    [
+      actions,
+      selectedBlockId,
+      selectedGlobalSlot,
+      updateGlobalDraftBlock,
+      isCmsEntryPreviewActive,
+      selectedPageBlock,
+      siteId
+    ]
+  );
 
   const handleCanvasUpdate =
   useCallback(
