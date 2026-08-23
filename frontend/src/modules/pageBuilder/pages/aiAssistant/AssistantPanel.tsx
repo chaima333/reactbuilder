@@ -68,6 +68,8 @@ interface AssistantPanelProps {
   blocks: any[];
   pageTitle: string;
   slug: string;
+  hasGlobalNavbar: boolean;
+  hasGlobalFooter: boolean;
   selectedBlockId?: string | null;
   actions: {
     setBlocks: (blocks: any[]) => void;
@@ -655,6 +657,8 @@ export const AssistantPanel: React.FC<AssistantPanelProps> = ({
   blocks = [],
   pageTitle,
   slug,
+  hasGlobalNavbar,
+  hasGlobalFooter,
   actions,
   setPageTitle,
   selectedBlockId,
@@ -1550,6 +1554,29 @@ const applyGeneratedHeroLayout = (
     safeTree
   );
 };
+const filterGeneratedGlobalLayout = (
+  tree: any[]
+): any[] => {
+  return (Array.isArray(tree) ? tree : []).filter(
+    (block) => {
+      if (
+        hasGlobalNavbar &&
+        block?.type === "navbar"
+      ) {
+        return false;
+      }
+
+      if (
+        hasGlobalFooter &&
+        block?.type === "footer"
+      ) {
+        return false;
+      }
+
+      return true;
+    }
+  );
+};
   const handleGeneratePage = async () => {
     if (!aiPrompt.trim()) {
       showSnackbar("Please describe what you want to generate.", "warning");
@@ -1582,7 +1609,8 @@ const applyGeneratedHeroLayout = (
       const buttonThemedBlocks = applyThemeToGeneratedButtons(generatedPage.blocks || []);
       const themedBlocks = applyThemeToGeneratedTypography(buttonThemedBlocks);
       const heroLayoutBlocks = applyGeneratedHeroLayout(themedBlocks);
-      const hydrated = commitBlocks(heroLayoutBlocks);
+      const filteredBlocks = filterGeneratedGlobalLayout(heroLayoutBlocks);
+      const hydrated = commitBlocks(filteredBlocks);
       setPageTitle(generatedPage.title || "Generated Page");
       setSelectedBlockId(hydrated[0]?.id || null);
       setAssistantReply(null);
