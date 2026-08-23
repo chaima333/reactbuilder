@@ -2452,87 +2452,29 @@ const buildFAQ = (
 // ============================================
 
 const buildContactForm = (): PageBlock => {
-  const fields = [
-    {
-      name: "name",
-      type: "text",
-      label: "Full Name",
-      required: true
-    },
-    {
-      name: "email",
-      type: "email",
-      label: "Email Address",
-      required: true
-    },
-    {
-      name: "subject",
-      type: "text",
-      label: "Subject",
-      required: false
-    },
-    {
-      name: "message",
-      type: "textarea",
-      label: "Message",
-      required: true
-    }
-  ];
-
-  const fieldBlocks: PageBlock[] =
-    fields.map((field) => ({
-      id: makeId(`form-field-${field.name}`),
-      type:
-        field.type === "textarea"
-          ? "textarea"
-          : "input",
-      data: {
-        props: {
-          name: field.name,
-          placeholder: field.label,
-          required: field.required,
-          type: field.type,
-          label: field.label
-        },
-        style: responsiveStyle(
-          {
-            width: "100%",
-            minHeight:
-              field.type === "textarea"
-                ? "150px"
-                : "52px",
-            padding: "14px 16px",
-            fontSize: "15px",
-            border: "1px solid #cbd5e1",
-            borderRadius: "14px",
-            marginBottom: "0",
-            backgroundColor: "#ffffff",
-            color: "#0f172a",
-            boxSizing: "border-box",
-            outline: "none"
-          },
-          {},
-          {
-            minHeight:
-              field.type === "textarea"
-                ? "130px"
-                : "50px"
-          }
-        )
-      },
-      children: []
-    }));
-
   return {
-    id: makeId("contact-form-card"),
-    type: "flex",
+    id: makeId("contact-form"),
+    type: "form",
+
     data: {
-      props: {},
+      props: {
+        formId: "",
+
+        title:
+          "Send us a Message",
+
+        submitText:
+          "Send Message",
+
+        successMessage:
+          "Your message has been sent successfully.",
+
+        errorMessage:
+          "Failed to send your message."
+      },
+
       style: responsiveStyle(
         {
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
           width: "100%",
           maxWidth: "560px",
           margin: "0 auto",
@@ -2544,10 +2486,12 @@ const buildContactForm = (): PageBlock => {
             "0 18px 45px rgba(15,23,42,0.10)",
           boxSizing: "border-box"
         },
+
         {
           maxWidth: "640px",
           padding: "40px"
         },
+
         {
           maxWidth: "100%",
           padding: "28px 20px",
@@ -2555,63 +2499,8 @@ const buildContactForm = (): PageBlock => {
         }
       )
     },
-    children: [
-      textBlock(
-        "Send us a Message",
-        {
-          fontSize: "32px",
-          fontWeight: "900",
-          color: "#0f172a",
-          textAlign: "left",
-          marginBottom: "4px"
-        }
-      ),
 
-      textBlock(
-        "Fill out the form and our team will get back to you shortly.",
-        {
-          fontSize: "16px",
-          color: "#64748b",
-          textAlign: "left",
-          lineHeight: "1.7",
-          marginBottom: "18px"
-        }
-      ),
-
-      ...fieldBlocks,
-
-      {
-        id: makeId("form-submit"),
-        type: "button",
-        data: {
-          props: {
-            label: "Send Message",
-            type: "submit"
-          },
-          style: responsiveStyle(
-            {
-              alignSelf: "flex-start",
-              padding: "14px 34px",
-              backgroundColor: "#2563eb",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "14px",
-              fontSize: "16px",
-              fontWeight: "800",
-              cursor: "pointer",
-              boxShadow:
-                "0 12px 28px rgba(37,99,235,0.26)"
-            },
-            {},
-            {
-              width: "100%",
-              alignSelf: "stretch"
-            }
-          )
-        },
-        children: []
-      }
-    ]
+    children: []
   };
 };
 
