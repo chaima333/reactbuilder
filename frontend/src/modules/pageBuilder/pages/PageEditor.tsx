@@ -1775,6 +1775,32 @@ const isFooterLikeBlock = (
             resolveDndSlot(
               targetId
             );
+            let effectivePresetData = presetData;
+
+if (
+  type === "link" &&
+  siteId &&
+  presetData?.props?.label
+) {
+  const label = String(
+    presetData.props.label
+  ).trim();
+
+  const slug = label
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  effectivePresetData = {
+    ...presetData,
+    props: {
+      ...(presetData?.props || {}),
+      href: `/site/${siteId}/${slug}`,
+    },
+  };
+}
 
           if (
             slot === "page" ||
@@ -1784,7 +1810,7 @@ const isFooterLikeBlock = (
               type,
               targetId,
               position,
-              presetData,
+              effectivePresetData,
               insertIndex
             );
 
@@ -1794,7 +1820,7 @@ const isFooterLikeBlock = (
           const newBlock =
             createDndBlock(
               type,
-              presetData
+              effectivePresetData
             );
 
           insertIntoGlobalSlot(

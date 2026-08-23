@@ -74,7 +74,7 @@ export const linkFields:
       "fontSize",
 
     label:
-      "Font Size",
+      "Taille du texte",
 
     type:
       "text",
@@ -93,10 +93,139 @@ export const linkFields:
 
   {
     key:
+      "fontWeight",
+
+    label:
+      "Épaisseur",
+
+    type:
+      "select",
+
+    target:
+      "style",
+
+    responsive:
+      true,
+
+    options: [
+      {
+        label:
+          "Normal",
+
+        value:
+          "400"
+      },
+
+      {
+        label:
+          "Medium",
+
+        value:
+          "500"
+      },
+
+      {
+        label:
+          "Semi-bold",
+
+        value:
+          "600"
+      },
+
+      {
+        label:
+          "Bold",
+
+        value:
+          "700"
+      }
+    ]
+  },
+
+  {
+    key:
+      "fontStyle",
+
+    label:
+      "Style du texte",
+
+    type:
+      "select",
+
+    target:
+      "style",
+
+    responsive:
+      true,
+
+    options: [
+      {
+        label:
+          "Normal",
+
+        value:
+          "normal"
+      },
+
+      {
+        label:
+          "Italique",
+
+        value:
+          "italic"
+      }
+    ]
+  },
+
+  {
+    key:
+      "textDecoration",
+
+    label:
+      "Soulignement",
+
+    type:
+      "select",
+
+    target:
+      "style",
+
+    responsive:
+      true,
+
+    options: [
+      {
+        label:
+          "Aucun",
+
+        value:
+          "none"
+      },
+
+      {
+        label:
+          "Souligné",
+
+        value:
+          "underline"
+      },
+
+      {
+        label:
+          "Barré",
+
+        value:
+          "line-through"
+      }
+    ]
+  },
+
+  {
+    key:
       "color",
 
     label:
-      "Color",
+      "Couleur",
 
     type:
       "color",
@@ -106,5 +235,70 @@ export const linkFields:
 
     responsive:
       true
+  },
+
+  {
+    key:
+      "lineHeight",
+
+    label:
+      "Hauteur de ligne",
+
+    type:
+      "text",
+
+    target:
+      "style",
+
+    responsive:
+      true,
+
+    validation: {
+      cssUnit:
+        true
+    }
+  },
+
+  {
+    key:
+      "textAlign",
+
+    label:
+      "Alignement",
+
+    type:
+      "select",
+
+    target:
+      "style",
+
+    responsive:
+      true,
+
+    options: [
+      {
+        label:
+          "Gauche",
+
+        value:
+          "left"
+      },
+
+      {
+        label:
+          "Centre",
+
+        value:
+          "center"
+      },
+
+      {
+        label:
+          "Droite",
+
+        value:
+          "right"
+      }
+    ]
   }
 ];
