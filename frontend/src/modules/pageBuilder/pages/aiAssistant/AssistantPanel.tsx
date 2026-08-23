@@ -1577,6 +1577,27 @@ const filterGeneratedGlobalLayout = (
     }
   );
 };
+const collectBlockTypes = (
+  tree: any[],
+  result: any[] = []
+): any[] => {
+  for (const block of tree || []) {
+    result.push({
+      id: block.id,
+      type: block.type,
+      props: block.data?.props,
+    });
+
+    if (Array.isArray(block.children)) {
+      collectBlockTypes(
+        block.children,
+        result
+      );
+    }
+  }
+
+  return result;
+};
   const handleGeneratePage = async () => {
     if (!aiPrompt.trim()) {
       showSnackbar("Please describe what you want to generate.", "warning");
@@ -1606,11 +1627,71 @@ const filterGeneratedGlobalLayout = (
       const result = await generateAiPage({ siteId: Number(siteId), prompt: aiPrompt }).unwrap();
       const generatedPage = result?.data || result;
       if (!generatedPage?.id) throw new Error("AI generation returned a page without an id");
-      const buttonThemedBlocks = applyThemeToGeneratedButtons(generatedPage.blocks || []);
-      const themedBlocks = applyThemeToGeneratedTypography(buttonThemedBlocks);
-      const heroLayoutBlocks = applyGeneratedHeroLayout(themedBlocks);
-      const filteredBlocks = filterGeneratedGlobalLayout(heroLayoutBlocks);
-      const hydrated = commitBlocks(filteredBlocks);
+console.log(
+  "AI_GENERATED_ALL_BLOCK_TYPES",
+  collectBlockTypes(
+    generatedPage.blocks || []
+  )
+);
+
+console.log(
+  "AI_GENERATED_HAS_FORM",
+  collectBlockTypes(
+    generatedPage.blocks || []
+  ).some(
+    (block) => block.type === "form"
+  )
+);
+
+const buttonThemedBlocks =
+  applyThemeToGeneratedButtons(
+    generatedPage.blocks || []
+  );
+
+const themedBlocks =
+  applyThemeToGeneratedTypography(
+    buttonThemedBlocks
+  );
+
+console.log(
+  "AI_AFTER_TYPOGRAPHY_HAS_FORM",
+  collectBlockTypes(
+    themedBlocks
+  ).some(
+    (block) => block.type === "form"
+  )
+);
+
+const heroLayoutBlocks =
+  applyGeneratedHeroLayout(
+    themedBlocks
+  );
+
+console.log(
+  "AI_BEFORE_COMMIT_HAS_FORM",
+  collectBlockTypes(
+    heroLayoutBlocks
+  ).some(
+    (block) => block.type === "form"
+  )
+);
+
+const filteredBlocks =
+  filterGeneratedGlobalLayout(
+    heroLayoutBlocks
+  );
+
+const hydrated =
+  commitBlocks(filteredBlocks);
+
+console.log(
+  "AI_AFTER_COMMIT_HAS_FORM",
+  collectBlockTypes(
+    hydrated
+  ).some(
+    (block) => block.type === "form"
+  )
+);
       setPageTitle(generatedPage.title || "Generated Page");
       setSelectedBlockId(hydrated[0]?.id || null);
       setAssistantReply(null);
