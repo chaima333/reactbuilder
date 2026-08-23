@@ -103,10 +103,6 @@ export const EditorBlockRenderer = ({
   const config =
     blockRegistry[block.type];
 
-  if (!config) {
-
-    return null;
-  }
 
   // =========================
   // DND
@@ -159,7 +155,9 @@ export const EditorBlockRenderer = ({
       setNodeRef
     ]
     );
-
+if (!config) {
+  return null;
+}
   // =========================
   // STATES
   // =========================
