@@ -153,11 +153,18 @@ export const CmsEntryPreviewSelect = ({
   const entries =
     collection?.entries || [];
 
-  const selectedEntry =
-    entries.find(
-      (entry) =>
-        entry.id === selectedEntryId
-    ) || null;
+ const selectedEntry =
+  entries.find(
+    (entry) =>
+      entry.id === selectedEntryId
+  ) || null;
+
+console.log("CMS PREVIEW DEBUG", {
+  selectedEntryId,
+  entries,
+  selectedEntry,
+  collection,
+});
 
   useEffect(() => {
     onEntryChange("");
