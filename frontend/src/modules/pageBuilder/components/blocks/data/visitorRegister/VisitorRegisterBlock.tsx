@@ -74,11 +74,14 @@ export const VisitorRegisterBlock = ({
   const props =
     sourceData.props || {};
 
-  const resolvedStyle =
+  /*const resolvedStyle =
     useResolvedStyle(
       sourceData.style || {},
       device as Device
-    ) as CSSProperties;
+    ) as CSSProperties;*/
+     const resolvedStyle =
+  (sourceData.style || {}) as CSSProperties;
+
 
   const siteId =
     parseSiteId(runtime.siteId) ||
