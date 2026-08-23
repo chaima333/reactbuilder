@@ -228,11 +228,12 @@ if (!config) {
   // RENDER
   // =========================
 
-  if (block.type === "visitorRegister") {
+ if (block.type === "visitorRegister") {
   console.log("VISITOR_REGISTER_RENDER", {
     id: block.id,
     type: block.type,
     data: block.data,
+    configComponent: config?.component?.name,
   });
 }
  return (
