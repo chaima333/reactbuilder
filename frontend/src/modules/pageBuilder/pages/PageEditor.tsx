@@ -1036,8 +1036,10 @@ const isFooterLikeBlock = (
       ]
     );
 
-  const pageBlocksForCanvas =
-    cmsPreviewBlocks || blocks;
+  /*const pageBlocksForCanvas =
+    cmsPreviewBlocks || blocks;*/
+    const pageBlocksForCanvas =
+  blocks;
 
   const pageOwnsNavbar =
     pageBlocksForCanvas.some(
@@ -1200,31 +1202,50 @@ const isFooterLikeBlock = (
           );
 
         try {
-          await updateGlobalLayout({
-            siteId: Number(siteId),
+       await updateGlobalLayout({
+  siteId: Number(siteId),
 
-            globalLayout: {
-              navbar:
-                slot === "navbar"
-                  ? clonedBlock
-                  : currentLayout
-                      .navbar || null,
+  globalLayout: {
+    navbar:
+      slot === "navbar"
+        ? clonedBlock
+        : currentLayout.navbar || null,
 
-              footer:
-                slot === "footer"
-                  ? clonedBlock
-                  : currentLayout
-                      .footer || null
-            }
-          }).unwrap();
+    footer:
+      slot === "footer"
+        ? clonedBlock
+        : currentLayout.footer || null
+  }
+}).unwrap();
 
-          await refetchEditorSite();
+// Remove the local Navbar/Footer from the page
+// only when the selected block came from the page itself.
+if (!selectedGlobalSlot) {
+  const nextBlocks = (
+    Array.isArray(blocks)
+      ? blocks
+      : []
+  )
+    .map((block: any) =>
+      removeBlockFromTree(
+        block,
+        sourceBlock.id
+      )
+    )
+    .filter(Boolean);
 
-          window.alert(
-            slot === "navbar"
-              ? "Global Navbar saved."
-              : "Global Footer saved."
-          );
+  actions.setBlocks(
+    nextBlocks as any[]
+  );
+}
+
+await refetchEditorSite();
+
+window.alert(
+  slot === "navbar"
+    ? "Global Navbar saved."
+    : "Global Footer saved."
+);
         } catch (error) {
           console.error(
             "GLOBAL_LAYOUT_SAVE_FAILED",
