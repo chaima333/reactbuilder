@@ -204,6 +204,7 @@ export const getSites = async (
               [Op.ne]: "deleted"
             }
           },
+<<<<<<< HEAD
           include: [
             {
               model: Page,
@@ -215,6 +216,25 @@ export const getSites = async (
               ]
             }
           ]
+=======
+         include: [
+  {
+    model: Page,
+    as: "pages",
+    attributes: [
+      "id",
+      "title",
+      "systemType"
+    ],
+    where: {
+      status: {
+        [Op.ne]: "deleted"
+      }
+    },
+    required: false
+  }
+]
+>>>>>>> ad4a81a4 (fix: stabilize CMS preview rendering)
         }
       ],
       order: [
@@ -231,7 +251,6 @@ export const getSites = async (
         status: m.site.status,
         createdAt: m.site.createdAt,
 
-        // مهم للـ frontend RBAC
         memberRole: m.role,
         role: m.role,
 
