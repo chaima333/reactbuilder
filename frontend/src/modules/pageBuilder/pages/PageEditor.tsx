@@ -1035,7 +1035,10 @@ const isFooterLikeBlock = (
         cmsTemplatePreview
       ]
     );
-
+console.log(
+  "CMS_TEST",
+  cmsPreviewBlocks
+);
   const pageBlocksForCanvas =
     cmsPreviewBlocks || blocks;
 
