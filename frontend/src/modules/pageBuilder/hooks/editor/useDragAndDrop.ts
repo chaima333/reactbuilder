@@ -141,16 +141,19 @@ const calculateInsertionIndex = (
   const targetElement = document.getElementById(`pb-runtime-${overId}`);
 
   if (overId === targetBlock.id && targetElement) {
-    // Fix: flexItem → flex should always be "inside"
-    if (
-      targetBlock.type === "flex" &&
-      findBlockInTree(blocks, activeId)?.type === "flexItem"
-    ) {
-      return {
-        position: "inside",
-        index: targetBlock.children?.length || 0
-      };
-    }
+  const draggedBlock = findBlockInTree(blocks, activeId);
+
+if (
+  (targetBlock.type === "flex" &&
+    draggedBlock?.type === "flexItem") ||
+  (targetBlock.type === "grid" &&
+    draggedBlock?.type === "gridItem")
+) {
+  return {
+    position: "inside",
+    index: targetBlock.children?.length || 0
+  };
+}
 
     const rect = targetElement.getBoundingClientRect();
     const relativeY = (pointerY - rect.top) / rect.height;
