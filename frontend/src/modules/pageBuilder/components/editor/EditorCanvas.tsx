@@ -76,7 +76,7 @@ interface EditorCanvasProps {
     | "tablet";
 
   errors: ValidationError[];
-  
+
   siteId?: number | null;
   pageId?: number | null;
   cms?: {
@@ -154,7 +154,7 @@ const EditorCanvasContent = ({
   errors = [],
   tokens: themeTokensInput,
 }: EditorCanvasProps) => {
-  
+
   const viewportRef =
     React.useRef<HTMLDivElement | null>(
       null
@@ -449,7 +449,7 @@ const themeTokens =
 
        <Box
   ref={canvasRef}
-  
+
     data-droppable-container="true"
   data-block-id={VIRTUAL_ROOT_ID}
   data-block-type="root"
@@ -766,9 +766,12 @@ const themeTokens =
                   </Box>
                 );
               }
+              console.log("CANVAS_BLOCK", {
+  id: block.id,
+  type: block.type,
+});
 
               return (
-
                 <EditorBlockRenderer
                   key={block.id}
 
