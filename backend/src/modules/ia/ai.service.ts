@@ -2,6 +2,7 @@
 
 import { ActivityLog } from "../../models/activityLog";
 import { AiGeneration } from "../../models/AiGeneration";
+import { Form } from "../../models/Form.model";
 import { Page } from "../../models/page";
 import { Seo } from "../../models/Seo";
 import { MediaService } from "../media/media.service";
@@ -588,7 +589,6 @@ export class AiService {
           : `/site/${siteId}/${page.finalSlug}`
     }));
 
-    // ✅ تحديد requestedPageType هنا قبل أي استعمال
     const normalizedPrompt = prompt.toLowerCase();
     const requestedPageType =
       normalizedPrompt.includes("contact")
@@ -602,6 +602,23 @@ export class AiService {
         : normalizedPrompt.includes("pricing")
         ? "pricing"
         : "home";
+const activeForm =
+  await Form.findOne({
+    where: {
+      siteId,
+      isActive: true
+    },
+    order: [
+      ["createdAt", "DESC"]
+    ]
+  });
+
+const activeFormId =
+  activeForm?.id
+    ? String(activeForm.id)
+    : "";
+
+
 
     const generated = {
       title: aiContent.title,
@@ -632,7 +649,40 @@ export class AiService {
         planPage.title,
         generated.blocks
       );
+if (
+  planPage.type === "contact" &&
+  activeFormId
+) {
+  const applyFormId = (
+    blocks: any[]
+  ): any[] =>
+    blocks.map((block) => ({
+      ...block,
 
+      data: block.data
+        ? {
+            ...block.data,
+            props:
+              block.type === "form"
+                ? {
+                    ...(block.data.props || {}),
+                    formId: activeFormId
+                  }
+                : block.data.props
+          }
+        : block.data,
+
+      children: Array.isArray(
+        block.children
+      )
+        ? applyFormId(block.children)
+        : block.children
+    }));
+
+  pageBlocks = applyFormId(
+    pageBlocks
+  );
+}
       const validationBeforeRepair =
         validateAiPageBlocks(
           planPage.type,
