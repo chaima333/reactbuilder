@@ -1082,6 +1082,16 @@ console.log(
       globalFooter
     ]
   );
+console.log("CMS_CANVAS_DEBUG", {
+  selectedCmsPreviewEntryId,
+  cmsTemplatePreview,
+  cmsPreviewBlocks,
+  canvasBlocks,
+  visitorRegisterBlocks: canvasBlocks.filter(
+    (block: any) =>
+      block.type === "visitorRegister"
+  ),
+});
 
   const globalNavbarBlockIds =
     useMemo(
