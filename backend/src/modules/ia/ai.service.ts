@@ -674,22 +674,34 @@ export class AiService {
           }
         });
 
-      if (existingPage) {
-        console.warn("AI_PAGE_ALREADY_EXISTS_SKIPPING", {
-          siteId,
-          slug: pageSlug,
-          pageId: existingPage.id
-        });
+     if (existingPage) {
+  console.warn("AI_PAGE_ALREADY_EXISTS", {
+    siteId,
+    slug: pageSlug,
+    pageId: existingPage.id
+  });
 
-        if (planPage.type === "home") {
-          homepagePageId = existingPage.id;
-        }
-        if (planPage.type === requestedPageType) {
-          createdPages.push(existingPage);
-        }
+  if (planPage.type === "home") {
+    homepagePageId = existingPage.id;
+  }
 
-        continue;
+  if (planPage.type === requestedPageType) {
+    const updatedResult = await PageService.updatePage(
+      siteId,
+      existingPage.id,
+      userId,
+      {
+        blocks: pageBlocks
       }
+    );
+
+    createdPages.push(
+      updatedResult.data
+    );
+  }
+
+  continue;
+}
 
       const result = await PageService.createPage(
         siteId,
