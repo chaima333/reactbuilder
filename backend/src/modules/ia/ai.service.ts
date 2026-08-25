@@ -896,35 +896,9 @@ if (
         (page: any) =>
           page.slug === requestedPageType
             ) || firstCreatedPage;
-              console.log(
-      "AI_RETURN_DEBUG",
-      {
-        requestedPageType,
-        createdPages: createdPages.map(
-          (page: any) => ({
-            id: page.id,
-            slug: page.slug,
-            title: page.title,
-            hasForm: JSON.stringify(
-              page.blocks || []
-            ).includes('"type":"form"')
-          })
-        ),
-        returnedPage: requestedPage
-          ? {
-              id: requestedPage.id,
-              slug: requestedPage.slug,
-              title: requestedPage.title,
-              hasForm: JSON.stringify(
-                requestedPage.blocks || []
-              ).includes('"type":"form"')
+            return requestedPage;
+             }
             }
-          : null
-      }
-    );
-    return requestedPage;
-  }
-}
 
 export class AiHistoryService {
   static async getHistory(
