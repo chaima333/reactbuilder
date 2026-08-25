@@ -799,28 +799,42 @@ export class AiService {
 
     const firstCreatedPage = createdPages[0] || publishedHomepage;
 
-    if (firstCreatedPage) {
-      (firstCreatedPage as any).aiCategory =
-        category;
+if (firstCreatedPage) {
+  (firstCreatedPage as any).aiCategory = category;
 
-      (firstCreatedPage as any).aiTelemetry =
-        aiTelemetry;
+  (firstCreatedPage as any).aiTelemetry = aiTelemetry;
 
-      (firstCreatedPage as any).aiGenerationMeta = {
-        mlCategory:
-          categoryDecision.mlCategory,
-        mlConfidence:
-          categoryDecision.mlConfidence,
-        usedCategoryFallback:
-          categoryDecision.usedFallback,
-        categoryDecisionReason:
-          categoryDecision.reason,
-        pagesGenerated:
-          createdPages.length
-      };
-    }
+  (firstCreatedPage as any).aiGenerationMeta = {
+    mlCategory: categoryDecision.mlCategory,
+    mlConfidence: categoryDecision.mlConfidence,
+    usedCategoryFallback: categoryDecision.usedFallback,
+    categoryDecisionReason: categoryDecision.reason,
+    pagesGenerated: createdPages.length
+  };
+}
 
-    return firstCreatedPage;
+const normalizedPrompt = prompt.toLowerCase();
+
+const requestedPageType =
+  normalizedPrompt.includes("contact")
+    ? "contact"
+    : normalizedPrompt.includes("about")
+    ? "about"
+    : normalizedPrompt.includes("services")
+    ? "services"
+    : normalizedPrompt.includes("solutions")
+    ? "solutions"
+    : normalizedPrompt.includes("pricing")
+    ? "pricing"
+    : "home";
+
+const requestedPage =
+  createdPages.find(
+    (page: any) =>
+      page.slug === requestedPageType
+  ) || firstCreatedPage;
+
+return requestedPage;
   }
 }
 
