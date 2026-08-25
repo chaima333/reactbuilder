@@ -54,7 +54,7 @@ const parseSiteId = (
     ? parsed
     : null;
 };
-
+/*
 export const VisitorRegisterBlock = ({
   block,
   data,
@@ -78,7 +78,7 @@ export const VisitorRegisterBlock = ({
     useResolvedStyle(
       sourceData.style || {},
       device as Device
-    ) as CSSProperties;*/
+    ) as CSSProperties;*
      const resolvedStyle =
   (sourceData.style || {}) as CSSProperties;
 
@@ -255,5 +255,16 @@ export const VisitorRegisterBlock = ({
         disabled={!canSubmit}
       />
     </VisitorAuthCard>
+  );
+};*/
+export const VisitorRegisterBlock = ({ 
+  block, 
+  data, 
+  device = "desktop" 
+}: any) => {
+  return (
+    <div>
+      Visitor Register Test
+    </div>
   );
 };
