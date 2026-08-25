@@ -43,14 +43,22 @@ export const RuntimeRenderer = ({
     return null;
   }
 
-  const Component =
-    config.component as React.ComponentType<
-      BlockRendererProps & {
-        children?: React.ReactNode;
-      }
-    >;
+ const Component =
+  config.component as React.ComponentType<
+    BlockRendererProps & {
+      children?: React.ReactNode;
+    }
+  >;
 
-  // توليد children من block.children
+if (block.type === "visitorRegister") {
+  console.log("RUNTIME_RENDER_VISITOR_REGISTER", {
+    blockId: block.id,
+    blockType: block.type,
+    componentName: Component?.name,
+    data: block.data,
+  });
+}
+
   const renderChildren = () => {
     if (!block.children || block.children.length === 0) {
       return null;
