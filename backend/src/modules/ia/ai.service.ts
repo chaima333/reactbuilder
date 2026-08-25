@@ -588,6 +588,21 @@ export class AiService {
           : `/site/${siteId}/${page.finalSlug}`
     }));
 
+    // ✅ تحديد requestedPageType هنا قبل أي استعمال
+    const normalizedPrompt = prompt.toLowerCase();
+    const requestedPageType =
+      normalizedPrompt.includes("contact")
+        ? "contact"
+        : normalizedPrompt.includes("about")
+        ? "about"
+        : normalizedPrompt.includes("services")
+        ? "services"
+        : normalizedPrompt.includes("solutions")
+        ? "solutions"
+        : normalizedPrompt.includes("pricing")
+        ? "pricing"
+        : "home";
+
     const generated = {
       title: aiContent.title,
       blocks: generateHomeBlocks(
@@ -668,6 +683,9 @@ export class AiService {
 
         if (planPage.type === "home") {
           homepagePageId = existingPage.id;
+        }
+        if (planPage.type === requestedPageType) {
+          createdPages.push(existingPage);
         }
 
         continue;
@@ -799,67 +817,50 @@ export class AiService {
 
     const firstCreatedPage = createdPages[0] || publishedHomepage;
 
-if (firstCreatedPage) {
-  (firstCreatedPage as any).aiCategory = category;
+    if (firstCreatedPage) {
+      (firstCreatedPage as any).aiCategory = category;
+      (firstCreatedPage as any).aiTelemetry = aiTelemetry;
+      (firstCreatedPage as any).aiGenerationMeta = {
+        mlCategory: categoryDecision.mlCategory,
+        mlConfidence: categoryDecision.mlConfidence,
+        usedCategoryFallback: categoryDecision.usedFallback,
+        categoryDecisionReason: categoryDecision.reason,
+        pagesGenerated: createdPages.length
+      };
+    }
 
-  (firstCreatedPage as any).aiTelemetry = aiTelemetry;
-
-  (firstCreatedPage as any).aiGenerationMeta = {
-    mlCategory: categoryDecision.mlCategory,
-    mlConfidence: categoryDecision.mlConfidence,
-    usedCategoryFallback: categoryDecision.usedFallback,
-    categoryDecisionReason: categoryDecision.reason,
-    pagesGenerated: createdPages.length
-  };
-}
-
-const normalizedPrompt = prompt.toLowerCase();
-
-const requestedPageType =
-  normalizedPrompt.includes("contact")
-    ? "contact"
-    : normalizedPrompt.includes("about")
-    ? "about"
-    : normalizedPrompt.includes("services")
-    ? "services"
-    : normalizedPrompt.includes("solutions")
-    ? "solutions"
-    : normalizedPrompt.includes("pricing")
-    ? "pricing"
-    : "home";
-
-const requestedPage =
-  createdPages.find(
-    (page: any) =>
-      page.slug === requestedPageType
-  ) || firstCreatedPage;
-console.log(
-  "AI_RETURN_DEBUG",
-  {
-    requestedPageType,
-    createdPages: createdPages.map(
-      (page: any) => ({
-        id: page.id,
-        slug: page.slug,
-        title: page.title,
-        hasForm: JSON.stringify(
-          page.blocks || []
-        ).includes('"type":"form"')
-      })
-    ),
-    returnedPage: requestedPage
-      ? {
-          id: requestedPage.id,
-          slug: requestedPage.slug,
-          title: requestedPage.title,
-          hasForm: JSON.stringify(
-            requestedPage.blocks || []
-          ).includes('"type":"form"')
-        }
-      : null
-  }
-);
-return requestedPage;
+    const requestedPage =
+      createdPages.find(
+        (page: any) =>
+          page.slug === requestedPageType
+            ) || firstCreatedPage;
+              console.log(
+      "AI_RETURN_DEBUG",
+      {
+        requestedPageType,
+        createdPages: createdPages.map(
+          (page: any) => ({
+            id: page.id,
+            slug: page.slug,
+            title: page.title,
+            hasForm: JSON.stringify(
+              page.blocks || []
+            ).includes('"type":"form"')
+          })
+        ),
+        returnedPage: requestedPage
+          ? {
+              id: requestedPage.id,
+              slug: requestedPage.slug,
+              title: requestedPage.title,
+              hasForm: JSON.stringify(
+                requestedPage.blocks || []
+              ).includes('"type":"form"')
+            }
+          : null
+      }
+    );
+    return requestedPage;
   }
 }
 
