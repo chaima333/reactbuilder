@@ -204,19 +204,6 @@ export const getSites = async (
               [Op.ne]: "deleted"
             }
           },
-<<<<<<< HEAD
-          include: [
-            {
-              model: Page,
-              as: "pages",
-              attributes: [
-                "id",
-                "title",
-                "systemType"
-              ]
-            }
-          ]
-=======
          include: [
   {
     model: Page,
@@ -234,7 +221,6 @@ export const getSites = async (
     required: false
   }
 ]
->>>>>>> ad4a81a4 (fix: stabilize CMS preview rendering)
         }
       ],
       order: [
