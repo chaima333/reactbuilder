@@ -1040,7 +1040,9 @@ console.log(
   cmsPreviewBlocks
 );
   const pageBlocksForCanvas =
-    cmsPreviewBlocks || blocks;
+  isCmsEntryPreviewActive
+    ? (cmsPreviewBlocks || blocks)
+    : blocks;
 
   const pageOwnsNavbar =
     pageBlocksForCanvas.some(
