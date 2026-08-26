@@ -1033,11 +1033,14 @@ const isFooterLikeBlock = (
         cmsTemplatePreview
       ]
     );
-   const pageBlocksForCanvas =
-  blocks.filter(
-    (block: any) =>
-      block.type !== "visitorRegister"
-  );
+const pageBlocksForCanvas = (
+  isCmsEntryPreviewActive
+    ? (cmsPreviewBlocks || blocks)
+    : blocks
+).filter(
+  (block: any) =>
+    block.type !== "visitorRegister"
+);
   const pageOwnsNavbar =
     pageBlocksForCanvas.some(
       (block: any) =>
@@ -2764,18 +2767,6 @@ const handleCanvasDuplicate =
                         handleCmsTemplatePreviewChange
                       }
                     />
-
-                    {isCmsEntryPreviewActive && (
-                      <Alert
-                        severity="info"
-                        sx={{
-                          py: 0,
-                          whiteSpace: "nowrap"
-                        }}
-                      >
-                        CMS entry preview is read-only. Clear preview to edit the template.
-                      </Alert>
-                    )}
                   </Stack>
                 }
                 onSave={actions.save}
