@@ -1036,9 +1036,7 @@ const isFooterLikeBlock = (
       ]
     );
 
-<<<<<<< HEAD
-  const pageBlocksForCanvas =
-=======
+
     console.log("CMS_RESOLUTION_DEBUG", {
   selectedEntryId: selectedCmsPreviewEntryId,
   entryData: cmsTemplatePreview?.entry?.data,
@@ -1050,10 +1048,10 @@ const isFooterLikeBlock = (
 
 
 const pageBlocksForCanvas = (
->>>>>>> 50a44c7a (debug: inspect CMS preview resolution)
   isCmsEntryPreviewActive
     ? (cmsPreviewBlocks || blocks)
-    : blocks;
+    : blocks
+);
 
   const pageOwnsNavbar =
     pageBlocksForCanvas.some(
