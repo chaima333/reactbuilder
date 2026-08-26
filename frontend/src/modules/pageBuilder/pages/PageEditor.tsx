@@ -1035,26 +1035,12 @@ const isFooterLikeBlock = (
         cmsTemplatePreview
       ]
     );
-<<<<<<< HEAD
-console.log(
-  "CMS_TEST",
-  cmsPreviewBlocks
-);
+
   const pageBlocksForCanvas =
   isCmsEntryPreviewActive
     ? (cmsPreviewBlocks || blocks)
     : blocks;
 
-=======
-const pageBlocksForCanvas = (
-  isCmsEntryPreviewActive
-    ? (cmsPreviewBlocks || blocks)
-    : blocks
-).filter(
-  (block: any) =>
-    block.type !== "visitorRegister"
-);
->>>>>>> 5902d6b5 (fix: render resolved CMS preview data)
   const pageOwnsNavbar =
     pageBlocksForCanvas.some(
       (block: any) =>
