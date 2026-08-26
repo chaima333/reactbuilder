@@ -102,7 +102,7 @@ export const EditorBlockRenderer = ({
 
   const config =
     blockRegistry[block.type];
- 
+
 
   // =========================
   // DND

@@ -168,7 +168,7 @@ const mountVisitorAuthBlock = (
         <BrowserRouter>
           <RuntimeProvider
             value={{
-              mode: "export",
+              mode: "public",
               device: getDevice(),
               siteId,
               pageId:

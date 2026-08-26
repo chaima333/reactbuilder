@@ -593,11 +593,13 @@ const useFigmaImport = (
 
     const loadFigmaImport = async () => {
       try {
+        console.log("AUTO FIGMA IMPORT", figmaImportId);
         const response = await fetch(apiUrl(`/sites/${siteId}/pages/figma/import/raw/${figmaImportId}`), {
           headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
         });
 
         const result = await response.json();
+        console.log("FIGMA RESULT", result);
 
         const payload = result.data.payload;
         const semanticTree = figmaToSemanticTree(payload);
@@ -1033,8 +1035,15 @@ const isFooterLikeBlock = (
         cmsTemplatePreview
       ]
     );
-const pageBlocksForCanvas =
-  blocks;
+console.log(
+  "CMS_TEST",
+  cmsPreviewBlocks
+);
+  const pageBlocksForCanvas =
+  isCmsEntryPreviewActive
+    ? (cmsPreviewBlocks || blocks)
+    : blocks;
+
   const pageOwnsNavbar =
     pageBlocksForCanvas.some(
       (block: any) =>
@@ -1075,6 +1084,16 @@ const pageBlocksForCanvas =
       globalFooter
     ]
   );
+console.log("CMS_CANVAS_DEBUG", {
+  selectedCmsPreviewEntryId,
+  cmsTemplatePreview,
+  cmsPreviewBlocks,
+  canvasBlocks,
+  visitorRegisterBlocks: canvasBlocks.filter(
+    (block: any) =>
+      block.type === "visitorRegister"
+  ),
+});
 
   const globalNavbarBlockIds =
     useMemo(
@@ -1330,6 +1349,7 @@ window.alert(
         },
         onProgress: (message) => {
           setZipImportStep(message);
+          console.log("ZIP_IMPORT_PROGRESS", message);
         },
       });
 

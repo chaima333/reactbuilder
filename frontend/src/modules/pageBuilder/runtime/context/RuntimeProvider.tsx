@@ -10,8 +10,7 @@ import React, {
 export type RuntimeMode =
   | "editor"
   | "preview"
-  | "public"
-  | "export";
+  | "public";
 
 export type Device =
   | "desktop"
