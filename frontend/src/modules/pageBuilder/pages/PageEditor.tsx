@@ -1036,7 +1036,21 @@ const isFooterLikeBlock = (
       ]
     );
 
+<<<<<<< HEAD
   const pageBlocksForCanvas =
+=======
+    console.log("CMS_RESOLUTION_DEBUG", {
+  selectedEntryId: selectedCmsPreviewEntryId,
+  entryData: cmsTemplatePreview?.entry?.data,
+  fields: cmsTemplatePreview?.collection?.fields,
+  hasCmsPreview: Boolean(cmsPreviewBlocks),
+  originalBlocks: blocks,
+  resolvedBlocks: cmsPreviewBlocks
+});
+
+
+const pageBlocksForCanvas = (
+>>>>>>> 50a44c7a (debug: inspect CMS preview resolution)
   isCmsEntryPreviewActive
     ? (cmsPreviewBlocks || blocks)
     : blocks;
