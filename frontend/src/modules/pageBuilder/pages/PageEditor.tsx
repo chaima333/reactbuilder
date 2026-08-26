@@ -1033,8 +1033,11 @@ const isFooterLikeBlock = (
         cmsTemplatePreview
       ]
     );
-const pageBlocksForCanvas =
-  blocks;
+   const pageBlocksForCanvas =
+  blocks.filter(
+    (block: any) =>
+      block.type !== "visitorRegister"
+  );
   const pageOwnsNavbar =
     pageBlocksForCanvas.some(
       (block: any) =>
