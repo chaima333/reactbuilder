@@ -32,33 +32,16 @@ export const useRuntimeNode = ({
   // DND
   // =====================
 
-  const dnd =
-
-    context.mode === "editor" &&
-    droppable
-
-      ? useDroppable({
-
-          id:
-            nodeId,
-
-          data: {
-
-            type,
-
-            blockId:
-              nodeId
-          }
-        })
-
-      : {
-
-          setNodeRef:
-            undefined,
-
-          isOver:
-            false
-        };
+ const dnd = useDroppable({
+  id: nodeId,
+  data: {
+    type,
+    blockId: nodeId
+  },
+  disabled:
+    context.mode !== "editor" ||
+    !droppable
+});
 
   // =====================
   // ROOT PROPS
