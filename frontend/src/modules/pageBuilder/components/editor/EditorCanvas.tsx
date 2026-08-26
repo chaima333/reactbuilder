@@ -155,6 +155,15 @@ const EditorCanvasContent = ({
   tokens: themeTokensInput,
 }: EditorCanvasProps) => {
 
+  console.log("EDITOR_CANVAS_CONTENT", {
+  blocksCount: blocks?.length,
+  readOnly,
+  preview,
+  blockTypes: (blocks || []).map(
+    (b: any) => b.type
+  ),
+});
+
   const viewportRef =
     React.useRef<HTMLDivElement | null>(
       null
@@ -766,11 +775,6 @@ const themeTokens =
                   </Box>
                 );
               }
-              console.log("CANVAS_BLOCK", {
-  id: block.id,
-  type: block.type,
-});
-
               return (
                 <EditorBlockRenderer
                   key={block.id}
