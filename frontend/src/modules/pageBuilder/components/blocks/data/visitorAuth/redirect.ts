@@ -1,3 +1,5 @@
+import type { RuntimeMode } from "../../../../runtime/context/RuntimeProvider";
+
 const DUMMY_ORIGIN =
   "https://reactbuilder.local";
 
@@ -70,8 +72,18 @@ const hasUnsafeDotSegments = (
 
 const isAllowedPathname = (
   pathname: string,
-  siteId: string
+  siteId: string,
+  mode: RuntimeMode
 ) => {
+  if (
+    mode === "export"
+  ) {
+    return (
+      pathname.startsWith("/") &&
+      !pathname.startsWith("//")
+    );
+  }
+
   const allowedRoots = [
     `/site/${siteId}`,
     `/p/${siteId}`
@@ -92,7 +104,8 @@ export const getSafeVisitorRedirectPath = (
     | number
     | string
     | null
-    | undefined
+    | undefined,
+  mode: RuntimeMode = "public"
 ) => {
   const siteId =
     String(
@@ -150,7 +163,8 @@ export const getSafeVisitorRedirectPath = (
     if (
       !isAllowedPathname(
         parsed.pathname,
-        siteId
+        siteId,
+        mode
       )
     ) {
       return null;
@@ -171,7 +185,8 @@ export const getRedirectFromLocation = (
     | number
     | string
     | null
-    | undefined
+    | undefined,
+  mode: RuntimeMode = "public"
 ) => {
   if (
     typeof window ===
@@ -187,18 +202,16 @@ export const getRedirectFromLocation = (
 
   return getSafeVisitorRedirectPath(
     params.get("redirect"),
-    currentSiteId
+    currentSiteId,
+    mode
   );
 };
 
 export const buildVisitorAuthPath = (
-  currentSiteId:
-    | number
-    | string,
-  target:
-    | "login"
-    | "register",
-  redirect: string | null
+  currentSiteId: number | string,
+  target: "login" | "register",
+  redirect: string | null,
+  mode: RuntimeMode = "public"
 ) => {
   const siteId =
     String(
@@ -206,12 +219,15 @@ export const buildVisitorAuthPath = (
     ).trim();
 
   const base =
-    `/site/${siteId}/${target}`;
+    mode === "export"
+      ? `/${target}/`
+      : `/site/${siteId}/${target}`;
 
   const safeRedirect =
     getSafeVisitorRedirectPath(
       redirect,
-      siteId
+      siteId,
+      mode
     );
 
   return safeRedirect
