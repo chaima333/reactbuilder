@@ -1,8 +1,6 @@
-export const VisitorRegisterBlock = ({
-  block,
-  data,
-  device = "desktop"
-}: any) => {
+import React from "react";
+
+export const VisitorRegisterBlock = () => {
   return (
     <div>
       Visitor Register TEST
