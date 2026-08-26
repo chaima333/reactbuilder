@@ -94,11 +94,13 @@ export const VisitorRegisterBlock = ({
   const [error, setError] =
     useState<string | null>(null);
 
-  const [
-    registerVisitor,
-    registerState
-  ] =
-    useRegisterVisitorMutation();
+  const registerVisitor = async () => {
+  throw new Error("TEST_REGISTER_MUTATION_DISABLED");
+};
+
+const registerState = {
+  isLoading: false
+};
 
   const canSubmit =
     (runtime.mode === "public" ||
