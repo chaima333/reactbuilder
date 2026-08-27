@@ -2912,7 +2912,7 @@ const handleCanvasDuplicate =
               />
             }
             leftSidebar={!isPreview && renderLeftSidebar()}
-            rightSidebar={!isPreview && !isCmsEntryPreviewActive && renderRightSidebar()}
+            rightSidebar={!isPreview  && renderRightSidebar()}
             content={renderContent()}
           />
 
