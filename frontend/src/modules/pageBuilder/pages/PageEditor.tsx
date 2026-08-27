@@ -1036,39 +1036,45 @@ const isFooterLikeBlock = (
       ]
     );
 
-const collectCmsValues = (
-  value: any,
-  result: string[] = []
-): string[] => {
-  if (typeof value === "string") {
-    if (value.includes("{{cms.")) {
-      result.push(value);
+const findTextBlocks = (value: any): any[] => {
+  const result: any[] = [];
+
+  const visit = (node: any) => {
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
     }
-    return result;
-  }
 
-  if (Array.isArray(value)) {
-    value.forEach((item) =>
-      collectCmsValues(item, result)
-    );
-    return result;
-  }
+    if (!node || typeof node !== "object") {
+      return;
+    }
 
-  if (value && typeof value === "object") {
-    Object.values(value).forEach((item) =>
-      collectCmsValues(item, result)
-    );
-  }
+    if (
+      node.type === "text" ||
+      node.type === "title"
+    ) {
+      result.push({
+        id: node.id,
+        type: node.type,
+        props:
+          node.data?.props ||
+          node.props ||
+          null
+      });
+    }
 
+    if (Array.isArray(node.children)) {
+      visit(node.children);
+    }
+  };
+
+  visit(value);
   return result;
 };
 
-console.log("CMS_RESOLUTION_DEBUG", {
-  selectedEntryId: selectedCmsPreviewEntryId,
-  entryData: cmsTemplatePreview?.entry?.data,
-  fields: cmsTemplatePreview?.collection?.fields,
-  originalCmsValues: collectCmsValues(blocks),
-  resolvedCmsValues: collectCmsValues(cmsPreviewBlocks)
+console.log("CMS_TEXT_RESOLUTION_DEBUG", {
+  original: findTextBlocks(blocks),
+  resolved: findTextBlocks(cmsPreviewBlocks)
 });
 
 const pageBlocksForCanvas = (
@@ -1079,7 +1085,6 @@ const pageBlocksForCanvas = (
   (block: any) =>
     block.type !== "visitorRegister"
 );
-
 
   const pageOwnsNavbar =
     pageBlocksForCanvas.some(
