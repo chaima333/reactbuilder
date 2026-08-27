@@ -1034,13 +1034,39 @@ const isFooterLikeBlock = (
       ]
     );
 
+    const collectCmsValues = (
+  value: any,
+  result: string[] = []
+): string[] => {
+  if (typeof value === "string") {
+    if (value.includes("{{cms.")) {
+      result.push(value);
+    }
+    return result;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item) =>
+      collectCmsValues(item, result)
+    );
+    return result;
+  }
+
+  if (value && typeof value === "object") {
+    Object.values(value).forEach((item) =>
+      collectCmsValues(item, result)
+    );
+  }
+
+  return result;
+};
+
 console.log("CMS_RESOLUTION_DEBUG", {
   selectedEntryId: selectedCmsPreviewEntryId,
   entryData: cmsTemplatePreview?.entry?.data,
   fields: cmsTemplatePreview?.collection?.fields,
-  hasCmsPreview: Boolean(cmsPreviewBlocks),
-  originalText: JSON.stringify(blocks),
-  resolvedText: JSON.stringify(cmsPreviewBlocks)
+  originalCmsValues: collectCmsValues(blocks),
+  resolvedCmsValues: collectCmsValues(cmsPreviewBlocks)
 });
 
 
