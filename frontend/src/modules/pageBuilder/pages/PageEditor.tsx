@@ -2277,6 +2277,7 @@ if (
           };
         }
       }
+      console.log("CMS_UPDATE_TEST", nextUpdate);
 
       actions.updateBlock(
         selectedBlockId,
