@@ -1034,13 +1034,13 @@ const isFooterLikeBlock = (
       ]
     );
 
-    console.log("CMS_RESOLUTION_DEBUG", {
+console.log("CMS_RESOLUTION_DEBUG", {
   selectedEntryId: selectedCmsPreviewEntryId,
   entryData: cmsTemplatePreview?.entry?.data,
   fields: cmsTemplatePreview?.collection?.fields,
   hasCmsPreview: Boolean(cmsPreviewBlocks),
-  originalBlocks: blocks,
-  resolvedBlocks: cmsPreviewBlocks
+  originalText: JSON.stringify(blocks),
+  resolvedText: JSON.stringify(cmsPreviewBlocks)
 });
 
 
