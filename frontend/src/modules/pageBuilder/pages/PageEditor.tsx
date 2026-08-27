@@ -1061,14 +1061,40 @@ const isFooterLikeBlock = (
   return result;
 };
 
-console.log("CMS_RESOLUTION_DEBUG", {
-  selectedEntryId: selectedCmsPreviewEntryId,
-  entryData: cmsTemplatePreview?.entry?.data,
-  fields: cmsTemplatePreview?.collection?.fields,
-  originalCmsValues: collectCmsValues(blocks),
-  resolvedCmsValues: collectCmsValues(cmsPreviewBlocks)
-});
+const findTextBlocks = (value: any): any[] => {
+  const result: any[] = [];
 
+  const visit = (node: any) => {
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
+    }
+
+    if (!node || typeof node !== "object") {
+      return;
+    }
+
+    if (node.type === "text" || node.type === "title") {
+      result.push({
+        id: node.id,
+        type: node.type,
+        props: node.data?.props || node.props || null
+      });
+    }
+
+    if (Array.isArray(node.children)) {
+      visit(node.children);
+    }
+  };
+
+  visit(value);
+  return result;
+};
+
+console.log("CMS_TEXT_RESOLUTION_DEBUG", {
+  original: findTextBlocks(blocks),
+  resolved: findTextBlocks(cmsPreviewBlocks)
+});
 
 const pageBlocksForCanvas = (
   isCmsEntryPreviewActive
