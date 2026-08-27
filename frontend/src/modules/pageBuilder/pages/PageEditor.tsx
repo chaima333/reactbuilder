@@ -1531,15 +1531,6 @@ window.alert(
       </Box>
 
       <Box sx={{ p: 2, flexGrow: 1, overflowY: "auto" }}>
-        {isCmsEntryPreviewActive && (
-          <Alert
-            severity="info"
-            sx={{ mb: 2 }}
-          >
-            CMS entry preview is read-only. Clear preview to edit the template.
-          </Alert>
-        )}
-
         {leftSidebarOpen && (
           <Typography variant="overline" sx={{ fontWeight: "bold", mb: 2, display: "block" }}>
             COMPOSANTS
@@ -1553,6 +1544,23 @@ window.alert(
             ))}
           </Stack>
         )}
+
+        {isCmsEntryPreviewActive && (
+  <Alert
+    severity="info"
+    sx={{ mb: 2 }}
+  >
+    CMS entry preview is read-only. Clear preview to edit the template.
+  </Alert>
+)}
+
+<StructurePanel
+  blocks={canvasBlocks}
+  selectedId={selectedBlockId}
+  onSelect={setSelectedBlockId}
+  hoveredId={hoveredBlockId}
+  onHover={setHoveredBlockId}
+/>
 
         <StructurePanel
           blocks={canvasBlocks}
