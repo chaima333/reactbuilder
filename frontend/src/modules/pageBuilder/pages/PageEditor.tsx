@@ -1036,19 +1036,50 @@ const isFooterLikeBlock = (
       ]
     );
 
-    console.log("CMS_RESOLUTION_DEBUG", {
+const collectCmsValues = (
+  value: any,
+  result: string[] = []
+): string[] => {
+  if (typeof value === "string") {
+    if (value.includes("{{cms.")) {
+      result.push(value);
+    }
+    return result;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item) =>
+      collectCmsValues(item, result)
+    );
+    return result;
+  }
+
+  if (value && typeof value === "object") {
+    Object.values(value).forEach((item) =>
+      collectCmsValues(item, result)
+    );
+  }
+
+  return result;
+};
+
+console.log("CMS_RESOLUTION_DEBUG", {
   selectedEntryId: selectedCmsPreviewEntryId,
   entryData: cmsTemplatePreview?.entry?.data,
   fields: cmsTemplatePreview?.collection?.fields,
-  originalText: JSON.stringify(blocks),
-  resolvedText: JSON.stringify(cmsPreviewBlocks)
+  originalCmsValues: collectCmsValues(blocks),
+  resolvedCmsValues: collectCmsValues(cmsPreviewBlocks)
 });
 
 const pageBlocksForCanvas = (
   isCmsEntryPreviewActive
     ? (cmsPreviewBlocks || blocks)
     : blocks
+).filter(
+  (block: any) =>
+    block.type !== "visitorRegister"
 );
+
 
   const pageOwnsNavbar =
     pageBlocksForCanvas.some(
