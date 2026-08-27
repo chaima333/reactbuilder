@@ -1621,22 +1621,21 @@ window.alert(
               figmaPluginLoading={isPlatformSettingsLoading}
             />
           )}
+{activeTab === TAB_INDEX.style && (
+  <>
+    {isCmsEntryPreviewActive && (
+      <Alert severity="info" sx={{ mb: 2 }}>
+        CMS entry preview is read-only. Clear preview to edit the template.
+      </Alert>
+    )}
 
-          {activeTab === TAB_INDEX.style && (
-            isCmsEntryPreviewActive ? (
-              <Alert severity="info">
-                CMS entry preview is read-only. Clear preview to edit the template.
-              </Alert>
-            ) : (
-              <InspectorPanel
-                block={selectedBlock}
-                device={device}
-                onChange={
-                  handleSelectedBlockChange
-                }
-              />
-            )
-          )}
+    <InspectorPanel
+      block={selectedBlock}
+      device={device}
+      onChange={handleSelectedBlockChange}
+    />
+  </>
+)}
 
           {activeTab === TAB_INDEX.theme && (
             isCmsEntryPreviewActive ? (
