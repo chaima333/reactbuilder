@@ -172,6 +172,7 @@
       }
     };
 
+    // ===== CONNECT (fixed) =====
     document.getElementById("connectBtn").onclick =
       async () => {
         const token =
@@ -185,46 +186,92 @@
         try {
           setStatus("Connecting...");
 
+          console.log("API_URL:", API_URL);
+          console.log("TOKEN EXISTS:", !!token);
+
           const response = await fetch(
             API_URL + "/api/figma-plugin/sites",
             {
+              method: "GET",
               headers: {
                 Authorization: "Bearer " + token
               }
             }
           );
 
-          console.log("STATUS", response.status);
+          console.log(
+            "RESPONSE STATUS:",
+            response.status
+          );
 
-          const result =
-            await response.json();
+          console.log(
+            "RESPONSE TYPE:",
+            response.type
+          );
 
-          console.log("RESULT", result);
+          const text =
+            await response.text();
+
+          console.log(
+            "RESPONSE BODY:",
+            text
+          );
+
+          let result;
+
+          try {
+            result = JSON.parse(text);
+          } catch {
+            result = {
+              success: false,
+              message: text
+            };
+          }
 
           resultEl.textContent =
-            JSON.stringify(result, null, 2);
+            JSON.stringify(
+              result,
+              null,
+              2
+            );
 
-          if (!response.ok || !result.success) {
+          if (
+            !response.ok ||
+            !result.success
+          ) {
             setStatus(
-              result.message || "Connection failed."
+              result.message ||
+                "Connection failed."
             );
             return;
           }
 
-          renderSites(result.data || []);
+          renderSites(
+            result.data || []
+          );
+
           savePluginSettings();
 
-          setStatus("Connected. Select a site.");
+          setStatus(
+            "Connected. Select a site."
+          );
+
         } catch (error) {
-  console.error("FIGMA_CONNECT_ERROR", error);
 
-  setStatus("Connection failed.");
+          console.error(
+            "FIGMA_CONNECT_ERROR",
+            error
+          );
 
-  resultEl.textContent =
-    error instanceof Error
-      ? `${error.name}: ${error.message}`
-      : String(error);
-}
+          setStatus(
+            "Connection failed."
+          );
+
+          resultEl.textContent =
+            error instanceof Error
+              ? `${error.name}: ${error.message}`
+              : String(error);
+        }
       };
 
     siteSelect.onchange = () => {
