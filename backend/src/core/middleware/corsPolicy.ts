@@ -132,11 +132,13 @@ export const createCorsOptionsDelegate = (
         requestOrigin,
         callback
       ) => {
-        if (!requestOrigin) {
-          callback(null, true);
-          return;
-        }
-
+       if (
+      !requestOrigin ||
+      requestOrigin === "null"
+      ) {
+      callback(null, true);
+      return;
+      }
         const normalizedOrigin =
           normalizeCorsOrigin(
             requestOrigin
