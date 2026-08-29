@@ -80,6 +80,7 @@ import CmsEntryPreviewSelect, {
 import {
   resolveCmsBindingsInTree
 } from "../../cms/utils/cmsBinding.resolver";
+import { normalizeCanonicalContainers } from "../runtime/normalize/normalizeCanonicalContainers";
 
 // ============================================
 // CONSTANTS & TYPES
@@ -600,10 +601,9 @@ const useFigmaImport = (
 
         const result = await response.json();
         const payload = result.data.payload;
-       const semanticTree = figmaToSemanticTree(payload);
-      const figmaBlocks = semanticTreeToBlocks(semanticTree);
-
-const hydrated = hydrateBlocks(
+        const semanticTree = figmaToSemanticTree(payload);
+        const figmaBlocks = semanticTreeToBlocks(semanticTree);
+        const hydrated = hydrateBlocks(
   figmaBlocks.map((block: any) => ({
     ...block,
     props: block.data?.props || {},
@@ -612,10 +612,13 @@ const hydrated = hydrateBlocks(
   }))
 );
 
-const normalized = normalizeTree(hydrated);
+const canonicalBlocks = normalizeCanonicalContainers(
+  hydrated as unknown[]
+);
 
-setBlocks(normalized);
-setSelectedBlockId(normalized[0]?.id || null);
+setBlocks(canonicalBlocks as any);
+setSelectedBlockId(canonicalBlocks[0]?.id || null);
+
       } catch (error) {
         console.error("AUTO FIGMA IMPORT FAILED", error);
       }
