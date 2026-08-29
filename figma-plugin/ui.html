@@ -216,10 +216,15 @@
 
           setStatus("Connected. Select a site.");
         } catch (error) {
-          setStatus("Connection failed.");
-          resultEl.textContent =
-            String(error);
-        }
+  console.error("FIGMA_CONNECT_ERROR", error);
+
+  setStatus("Connection failed.");
+
+  resultEl.textContent =
+    error instanceof Error
+      ? `${error.name}: ${error.message}`
+      : String(error);
+}
       };
 
     siteSelect.onchange = () => {
