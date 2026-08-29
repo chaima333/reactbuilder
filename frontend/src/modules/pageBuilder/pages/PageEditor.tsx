@@ -599,22 +599,23 @@ const useFigmaImport = (
         });
 
         const result = await response.json();
-        console.log("FIGMA RESULT", result);
-
         const payload = result.data.payload;
-        const semanticTree = figmaToSemanticTree(payload);
-        const figmaBlocks = semanticTreeToBlocks(semanticTree);
-        const hydrated = hydrateBlocks(
-          figmaBlocks.map((block: any) => ({
-            ...block,
-            props: block.data?.props || {},
-            style: block.data?.style || {},
-            children: block.children || [],
-          }))
-        );
+       const semanticTree = figmaToSemanticTree(payload);
+      const figmaBlocks = semanticTreeToBlocks(semanticTree);
 
-        setBlocks(hydrated as any);
-        setSelectedBlockId(hydrated[0]?.id || null);
+const hydrated = hydrateBlocks(
+  figmaBlocks.map((block: any) => ({
+    ...block,
+    props: block.data?.props || {},
+    style: block.data?.style || {},
+    children: block.children || [],
+  }))
+);
+
+const normalized = normalizeTree(hydrated);
+
+setBlocks(normalized);
+setSelectedBlockId(normalized[0]?.id || null);
       } catch (error) {
         console.error("AUTO FIGMA IMPORT FAILED", error);
       }
