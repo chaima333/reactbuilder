@@ -5,7 +5,7 @@ import { SiteMember } from "../../models/SiteMember";
 import { Site } from "../../models/site";
 import { saveFigmaImportPayload } from "../pages/services/figma/figmaImportStore";
 import { MediaService } from "../media/media.service";
-import { ROLE_PERMISSIONS } from "../pages/domain/rules";
+import { ROLE_PERMISSIONS } from "../../core/constants/rolePermissions";
 import { normalizeRole } from "../../core/middleware/role.middleware";
 import { Permission, PERMISSIONS } from "../../core/constants/permissions";
 
