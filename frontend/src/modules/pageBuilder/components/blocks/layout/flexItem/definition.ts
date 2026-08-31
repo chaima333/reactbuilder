@@ -26,6 +26,7 @@ export const flexItemDefinition: BlockConfig = {
   "section",
   "flex",
   "form",
+  "collectionList"
 ],
   },
   fields: flexItemFields as any, 
