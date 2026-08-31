@@ -114,11 +114,21 @@ export const CollectionListBlock = ({
       device as Device
     ) as React.CSSProperties;
 
-  const visibleEntries =
-    entries.slice(
-      0,
-      limit
-    );
+ const visibleEntries =
+  entries.slice(
+    0,
+    limit
+  );
+
+console.log("COLLECTION LIST ENTRIES:", {
+  collectionSlug,
+  count: entries.length,
+  entries: entries.map((entry: any) => ({
+    id: entry.id,
+    slug: entry.slug,
+    data: entry.data
+  }))
+});
 
   const gridStyle:
     React.CSSProperties = {
