@@ -40,7 +40,7 @@ export const submitVisitorLogin = async ({
   }>;
   redirect?: string | null;
 }) => {
-  if (mode !== "public") {
+  if (mode !== "public" && mode !== "export") {
     return {
       submitted: false as const,
       reason: "DISABLED_IN_NON_PUBLIC_MODE"
@@ -54,11 +54,14 @@ export const submitVisitorLogin = async ({
       password
     })
   );
-
-  return {
-    submitted: true as const,
-    redirect: redirect || `/site/${siteId}`
-  };
+ return {
+  submitted: true as const,
+  redirect:
+    redirect ||
+    (mode === "export"
+      ? "/"
+      : `/site/${siteId}`)
+};
 };
 
 export const submitVisitorRegister = async ({
@@ -85,7 +88,7 @@ export const submitVisitorRegister = async ({
   }>;
   redirect?: string | null;
 }) => {
-  if (mode !== "public") {
+  if (mode !== "public" && mode !== "export") {
     return {
       submitted: false as const,
       reason: "DISABLED_IN_NON_PUBLIC_MODE"
@@ -108,13 +111,18 @@ export const submitVisitorRegister = async ({
     })
   );
 
-  return {
-    submitted: true as const,
-    redirect:
-      `/site/${siteId}/login${
-        redirect
-          ? `?redirect=${encodeURIComponent(redirect)}`
-          : ""
-      }`
-  };
+  const loginPath =
+  mode === "export"
+    ? "/login/"
+    : `/site/${siteId}/login`;
+
+return {
+  submitted: true as const,
+  redirect:
+    `${loginPath}${
+      redirect
+        ? `?redirect=${encodeURIComponent(redirect)}`
+        : ""
+    }`
+};
 };

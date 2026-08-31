@@ -594,7 +594,6 @@ const useFigmaImport = (
 
     const loadFigmaImport = async () => {
       try {
-        console.log("AUTO FIGMA IMPORT", figmaImportId);
         const response = await fetch(apiUrl(`/sites/${siteId}/pages/figma/import/raw/${figmaImportId}`), {
           headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
         });
@@ -604,6 +603,7 @@ const useFigmaImport = (
         const semanticTree = figmaToSemanticTree(payload);
         const figmaBlocks = semanticTreeToBlocks(semanticTree);
         const hydrated = hydrateBlocks(
+
   figmaBlocks.map((block: any) => ({
     ...block,
     props: block.data?.props || {},
@@ -1040,6 +1040,34 @@ const isFooterLikeBlock = (
       ]
     );
 
+
+    const collectCmsValues = (
+  value: any,
+  result: string[] = []
+): string[] => {
+  if (typeof value === "string") {
+    if (value.includes("{{cms.")) {
+      result.push(value);
+    }
+    return result;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item) =>
+      collectCmsValues(item, result)
+    );
+    return result;
+  }
+
+  if (value && typeof value === "object") {
+    Object.values(value).forEach((item) =>
+      collectCmsValues(item, result)
+    );
+  }
+
+  return result;
+};
+
 const findTextBlocks = (value: any): any[] => {
   const result: any[] = [];
 
@@ -1053,17 +1081,12 @@ const findTextBlocks = (value: any): any[] => {
       return;
     }
 
-    if (
-      node.type === "text" ||
-      node.type === "title"
-    ) {
+
+    if (node.type === "text" || node.type === "title") {
       result.push({
         id: node.id,
         type: node.type,
-        props:
-          node.data?.props ||
-          node.props ||
-          null
+        props: node.data?.props || node.props || null
       });
     }
 
@@ -1089,7 +1112,6 @@ const pageBlocksForCanvas = (
   (block: any) =>
     block.type !== "visitorRegister"
 );
-
   const pageOwnsNavbar =
     pageBlocksForCanvas.some(
       (block: any) =>
@@ -1130,16 +1152,6 @@ const pageBlocksForCanvas = (
       globalFooter
     ]
   );
-console.log("CMS_CANVAS_DEBUG", {
-  selectedCmsPreviewEntryId,
-  cmsTemplatePreview,
-  cmsPreviewBlocks,
-  canvasBlocks,
-  visitorRegisterBlocks: canvasBlocks.filter(
-    (block: any) =>
-      block.type === "visitorRegister"
-  ),
-});
 
   const globalNavbarBlockIds =
     useMemo(
@@ -1395,7 +1407,6 @@ window.alert(
         },
         onProgress: (message) => {
           setZipImportStep(message);
-          console.log("ZIP_IMPORT_PROGRESS", message);
         },
       });
 

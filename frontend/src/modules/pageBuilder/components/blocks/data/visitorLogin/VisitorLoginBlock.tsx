@@ -103,9 +103,10 @@ export const VisitorLoginBlock = ({
   ] =
     useLoginVisitorMutation();
 
-  const canSubmit =
-    runtime.mode === "public" &&
-    Boolean(siteId);
+const canSubmit =
+  (runtime.mode === "public" ||
+    runtime.mode === "export") &&
+  Boolean(siteId);
 
   const redirect =
     getRedirectFromLocation(siteId);
@@ -115,7 +116,8 @@ export const VisitorLoginBlock = ({
       ? buildVisitorAuthPath(
           siteId,
           "register",
-          redirect
+          redirect,
+         runtime.mode
         )
       : "#";
 
