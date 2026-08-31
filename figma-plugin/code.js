@@ -207,7 +207,7 @@ if (msg.type === "SEND_TO_REACTBUILDER") {
       figma.notify("Sent successfully");
 
 figma.openExternal(
-  "http://localhost:5173/sites/" +
+  "https://frontend-three-beta-30.vercel.app/sites/" +
   result.data.siteId +
   "/pages/new?figmaImportId=" +
   result.data.importId

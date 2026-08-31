@@ -539,6 +539,7 @@ export class AiService {
         siteContext,
         prompt
       );
+      console.log("AI_DEBUG_CONTENT", aiContent);
 
     const aiTelemetry =
       (aiContent as any)?.aiTelemetry || null;
