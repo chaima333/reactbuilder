@@ -47,7 +47,7 @@ export const TextBlock = ({ data, device }: any) => {
   const currentDevice = (device || "desktop") as Device;
   const resolvedStyle = useResolvedStyle(data?.style, currentDevice) as CSSProperties;
 
-  const content = data?.props?.content  || data?.props?.text  || "";
+  const content = data?.props?.text  || data?.props?.content  || "";
   const isKpiNumber = data?.props?.semanticRole === "kpiNumber";
   const kpiFontSize = currentDevice === "mobile" ? "34px" : currentDevice === "tablet" ? "40px" : "48px";
 
