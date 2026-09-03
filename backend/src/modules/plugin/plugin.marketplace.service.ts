@@ -5,6 +5,10 @@ import { cmsRegistry } from "../../core/plugins/plugin.registry";
 export class PluginMarketplaceService {
   static async getMarketplace(siteId: number) {
     const plugins = await Plugin.findAll({
+      where: {
+        isActive: true,
+        status: "published",
+      },
       order: [["name", "ASC"]],
     });
 
