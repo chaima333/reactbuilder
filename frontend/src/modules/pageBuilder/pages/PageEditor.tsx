@@ -80,6 +80,7 @@ import CmsEntryPreviewSelect, {
 
 import { normalizeCanonicalContainers } from "../runtime/normalize/normalizeCanonicalContainers";
 import { resolveCmsBindingsInTree } from "../../cms/utils/cmsBinding.resolver";
+import { useGetMarketplaceQuery } from "../../../redux/services/pluginMarketplace.api";
 
 // ============================================
 // CONSTANTS & TYPES
@@ -716,7 +717,6 @@ export const PageEditor = ({ mode }: PageEditorProps) => {
   } = editor;
 
   const { seoForm, handleSeoChange, handleSeoSave, isSeoSaving } = useSeoManager(pageId, siteId, pageTitle);
-
   const {
     data: platformSettings,
     isLoading: isPlatformSettingsLoading,
@@ -725,8 +725,31 @@ export const PageEditor = ({ mode }: PageEditorProps) => {
     refetchOnFocus: true,
   });
 
-  const isFigmaPluginEnabled = platformSettings?.figmaPlugin !== false;
+  const isFigmaPlatformEnabled =
+    platformSettings?.figmaPlugin !== false;
 
+  const {
+    data: marketplacePlugins = [],
+  } = useGetMarketplaceQuery(
+    Number(siteId || 0),
+    {
+      skip: !siteId,
+      refetchOnMountOrArgChange: true,
+    }
+  );
+
+  const figmaMarketplacePlugin =
+    marketplacePlugins.find(
+      (plugin) => plugin.slug === "figma-plugin"
+    );
+
+  const isFigmaSitePluginEnabled =
+    figmaMarketplacePlugin?.installed === true &&
+    figmaMarketplacePlugin?.enabled === true;
+
+  const isFigmaPluginEnabled =
+    isFigmaPlatformEnabled &&
+    isFigmaSitePluginEnabled;
   useFigmaImport(
     figmaImportId,
     siteId,
