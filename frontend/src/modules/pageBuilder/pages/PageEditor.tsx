@@ -77,10 +77,9 @@ import CmsEntryPreviewSelect, {
   getCmsPreviewSaveBlocks,
   runUnlessCmsPreviewActive
 } from "../../cms/CmsEntryPreviewSelect";
-import {
-  resolveCmsBindingsInTree
-} from "../../cms/utils/cmsBinding.resolver";
+
 import { normalizeCanonicalContainers } from "../runtime/normalize/normalizeCanonicalContainers";
+import { resolveCmsBindingsInTree } from "../../cms/utils/cmsBinding.resolver";
 
 // ============================================
 // CONSTANTS & TYPES
