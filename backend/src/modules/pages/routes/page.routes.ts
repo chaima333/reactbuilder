@@ -35,7 +35,7 @@ router.post(
 
 router.get(
   "/figma/import/raw/:importId",
-  requirePermission(PERMISSIONS.PAGE_CREATE),
+  requirePermission(PERMISSIONS.PAGE_READ),
   getFigmaRawImport
 );
 
