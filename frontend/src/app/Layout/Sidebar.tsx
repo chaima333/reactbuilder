@@ -1,5 +1,17 @@
 import React from "react";
-import {Drawer,List,ListItem, ListItemButton, ListItemIcon,ListItemText,Toolbar, Box, Typography,Divider,useTheme,} from "@mui/material";
+import {
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Toolbar,
+  Box,
+  Typography,
+  Divider,
+  useTheme,
+} from "@mui/material";
 import {
   Dashboard as DashboardIcon,
   Web as SitesIcon,
@@ -14,20 +26,14 @@ import {
   Storage as CmsIcon,
   DynamicForm as FormsIcon,
 } from "@mui/icons-material";
-import {
-  useNavigate,
-  useLocation
-} from "react-router-dom";
-import {
-  useSelector
-} from "react-redux";
-import {
-  RootState
-} from "../../redux/store";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { RootState } from "../../redux/store";
 import {
   useGetPlatformSettingsQuery,
   type PlatformSettings,
 } from "../../redux/services/platform.api";
+import { useGetMarketplaceQuery } from "../../redux/services/pluginMarketplace.api";
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -63,6 +69,20 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const isGlobalAdmin = userRole === "ADMIN";
   const currentSiteId = currentSite?.id;
+  const { data: marketplacePlugins = [] } = useGetMarketplaceQuery(
+    Number(currentSiteId || 0),
+    {
+      skip: !currentSiteId,
+      refetchOnMountOrArgChange: true,
+    },
+  );
+
+  const isMediaPluginEnabled = marketplacePlugins.some(
+    (plugin) =>
+      plugin.slug === "media" &&
+      plugin.installed === true &&
+      plugin.enabled === true,
+  );
   const drawerWidth = isCollapsed ? 72 : 256;
 
   const getCurrentSiteRole = () => {
@@ -80,11 +100,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const canSeeSiteSettings =
     !!currentSiteId &&
-    (
-      isGlobalAdmin ||
+    (isGlobalAdmin ||
       currentSiteRole === "OWNER" ||
-      currentSiteRole === "ADMIN"
-    );
+      currentSiteRole === "ADMIN");
 
   const coreItems: SidebarItem[] = [
     {
@@ -97,53 +115,48 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: <SitesIcon />,
       path: "/sites",
     },
-
   ];
 
-const workspaceItems: SidebarItem[] = [
-  {
-    text: "CMS",
-    icon: <CmsIcon />,
-    path: currentSiteId
-      ? `/sites/${currentSiteId}/cms`
-      : "/sites",
-    siteAdminOnly: true,
-  },
-  {
-    text: "Forms",
-    icon: <FormsIcon />,
-    path: currentSiteId
-      ? `/sites/${currentSiteId}/forms`
-      : "/sites",
-    siteAdminOnly: true,
-  },
-  {
-    text: "Médiathèque",
-    icon: <MediaIcon />,
-    path: currentSiteId ? `/sites/${currentSiteId}/media` : "/sites",
-    pluginKey: "mediaPlugin",
-  },
-  {
-    text: "Marketplace",
-    icon: <ExtensionIcon />,
-    path: currentSiteId ? `/sites/${currentSiteId}/plugins` : "/sites",
-  },
-  {
-    text: "Demandes partenaires",
-    icon: <PartnerIcon />,
-    path: currentSiteId
-      ? `/sites/${currentSiteId}/partner-applications`
-      : "/sites",
-    siteAdminOnly: true,
-  },
-];
+  const workspaceItems: SidebarItem[] = [
+    {
+      text: "CMS",
+      icon: <CmsIcon />,
+      path: currentSiteId ? `/sites/${currentSiteId}/cms` : "/sites",
+      siteAdminOnly: true,
+    },
+    {
+      text: "Forms",
+      icon: <FormsIcon />,
+      path: currentSiteId ? `/sites/${currentSiteId}/forms` : "/sites",
+      siteAdminOnly: true,
+    },
+    {
+      text: "Médiathèque",
+      icon: <MediaIcon />,
+      path: currentSiteId ? `/sites/${currentSiteId}/media` : "/sites",
+      pluginKey: "mediaPlugin",
+    },
+    {
+      text: "Marketplace",
+      icon: <ExtensionIcon />,
+      path: currentSiteId ? `/sites/${currentSiteId}/plugins` : "/sites",
+    },
+    {
+      text: "Demandes partenaires",
+      icon: <PartnerIcon />,
+      path: currentSiteId
+        ? `/sites/${currentSiteId}/partner-applications`
+        : "/sites",
+      siteAdminOnly: true,
+    },
+  ];
 
   const bottomItems: SidebarItem[] = [
-     {
-    text: "Centre d’aide",
-    icon: <HelpIcon />,
-    path: "/help",
-  },
+    {
+      text: "Centre d’aide",
+      icon: <HelpIcon />,
+      path: "/help",
+    },
     {
       text: "Paramètres",
       icon: <SettingsIcon />,
@@ -180,9 +193,23 @@ const workspaceItems: SidebarItem[] = [
 
   const canShowItem = (item: SidebarItem): boolean => {
     if (item.adminOnly && !isGlobalAdmin) return false;
+
     if (item.siteAdminOnly && !canSeeSiteSettings) return false;
+
     if (isLoading && item.pluginKey) return false;
-    if (item.pluginKey && platformSettings && platformSettings[item.pluginKey] === false) return false;
+
+    if (
+      item.pluginKey &&
+      platformSettings &&
+      platformSettings[item.pluginKey] === false
+    ) {
+      return false;
+    }
+
+    if (item.pluginKey === "mediaPlugin" && !isMediaPluginEnabled) {
+      return false;
+    }
+
     return true;
   };
 
@@ -215,87 +242,85 @@ const workspaceItems: SidebarItem[] = [
   };
 
   const renderItems = (items: SidebarItem[]) =>
-    items
-      .filter(canShowItem)
-      .map((item) => (
-        <ListItem
-          key={item.text}
-          disablePadding
+    items.filter(canShowItem).map((item) => (
+      <ListItem
+        key={item.text}
+        disablePadding
+        sx={{
+          display: "block",
+          mb: 0.5,
+          px: 1.5,
+        }}
+      >
+        <ListItemButton
+          selected={isActive(item.path)}
+          onClick={() => navigate(item.path)}
           sx={{
-            display: "block",
-            mb: 0.5,
-            px: 1.5,
+            minHeight: 44,
+            justifyContent: isCollapsed ? "center" : "flex-start",
+            px: isCollapsed ? 0 : 2.5,
+            py: 1,
+            borderRadius: 2.5,
+            color: isActive(item.path)
+              ? theme.palette.text.primary
+              : theme.palette.text.secondary,
+            bgcolor: isActive(item.path)
+              ? theme.palette.action.selected
+              : "transparent",
+            transition: "all 0.15s ease",
+
+            "&:hover": {
+              bgcolor: theme.palette.action.hover,
+              color: theme.palette.text.primary,
+            },
+
+            "& .MuiListItemIcon-root": {
+              color: isActive(item.path)
+                ? theme.palette.primary.main
+                : theme.palette.text.disabled,
+              minWidth: 0,
+              mr: isCollapsed ? 0 : 2.5,
+              justifyContent: "center",
+              transition: "color 0.15s ease",
+            },
+
+            "&:hover .MuiListItemIcon-root": {
+              color: theme.palette.primary.main,
+            },
           }}
         >
-          <ListItemButton
-            selected={isActive(item.path)}
-            onClick={() => navigate(item.path)}
+          <ListItemIcon
             sx={{
-              minHeight: 44,
-              justifyContent: isCollapsed ? "center" : "flex-start",
-              px: isCollapsed ? 0 : 2.5,
-              py: 1,
-              borderRadius: 2.5,
-              color: isActive(item.path) 
-                ? theme.palette.text.primary 
-                : theme.palette.text.secondary,
-              bgcolor: isActive(item.path) 
-                ? theme.palette.action.selected 
-                : "transparent",
-              transition: "all 0.15s ease",
-
-              "&:hover": {
-                bgcolor: theme.palette.action.hover,
-                color: theme.palette.text.primary,
-              },
-
-              "& .MuiListItemIcon-root": {
-                color: isActive(item.path) 
-                  ? theme.palette.primary.main 
-                  : theme.palette.text.disabled,
-                minWidth: 0,
-                mr: isCollapsed ? 0 : 2.5,
-                justifyContent: "center",
-                transition: "color 0.15s ease",
-              },
-
-              "&:hover .MuiListItemIcon-root": {
-                color: theme.palette.primary.main,
-              },
+              minWidth: 0,
+              mr: isCollapsed ? 0 : 2.5,
+              justifyContent: "center",
+              color: isActive(item.path)
+                ? theme.palette.primary.main
+                : theme.palette.text.disabled,
             }}
           >
-            <ListItemIcon
-              sx={{
-                minWidth: 0,
-                mr: isCollapsed ? 0 : 2.5,
-                justifyContent: "center",
-                color: isActive(item.path) 
-                  ? theme.palette.primary.main 
-                  : theme.palette.text.disabled,
-              }}
-            >
-              {item.icon}
-            </ListItemIcon>
+            {item.icon}
+          </ListItemIcon>
 
-            <ListItemText
-              primary={item.text}
-              primaryTypographyProps={{
-                fontSize: "0.875rem",
-                fontWeight: isActive(item.path) ? 600 : 500,
-                letterSpacing: "0.01em",
-                color: isActive(item.path) 
-                  ? theme.palette.text.primary 
-                  : theme.palette.text.secondary,
-              }}
-              sx={{
-                opacity: isCollapsed ? 0 : 1,
-                transition: "opacity 0.2s ease",
-                whiteSpace: "nowrap",
-              }}
-            />
-          </ListItemButton>
-        </ListItem>
-      ));
+          <ListItemText
+            primary={item.text}
+            primaryTypographyProps={{
+              fontSize: "0.875rem",
+              fontWeight: isActive(item.path) ? 600 : 500,
+              letterSpacing: "0.01em",
+              color: isActive(item.path)
+                ? theme.palette.text.primary
+                : theme.palette.text.secondary,
+            }}
+            sx={{
+              opacity: isCollapsed ? 0 : 1,
+              transition: "opacity 0.2s ease",
+              whiteSpace: "nowrap",
+            }}
+          />
+        </ListItemButton>
+      </ListItem>
+    ));
 
   const drawerContent = (
     <Box
@@ -382,9 +407,7 @@ const workspaceItems: SidebarItem[] = [
 
       <Divider />
 
-      <List sx={{ px: 0, py: 1 }}>
-        {renderItems(bottomItems)}
-      </List>
+      <List sx={{ px: 0, py: 1 }}>{renderItems(bottomItems)}</List>
     </Box>
   );
 
