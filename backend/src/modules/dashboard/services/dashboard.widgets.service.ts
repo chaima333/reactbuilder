@@ -1,129 +1,91 @@
-import { cmsRegistry }
-from "../../../core/plugins/plugin.registry";
+import { cmsRegistry } from "../../../core/plugins/plugin.registry";
 import { ICmsPlugin } from "../../../core/plugins/plugin.types";
 import { DashboardWidget } from "../dashboard.dto";
-import { Op } from "sequelize";
 import { Plugin, SitePlugin } from "../../../models";
 
 export class DashboardWidgetService {
-
-static async getWidgets(
-  siteId: number,
-  context?: { userId?: number }
-): Promise<DashboardWidget[]> {
-  
-    const plugins =
-      cmsRegistry.getAllPlugins();
+  static async getWidgets(
+    siteId: number,
+    context?: { userId?: number },
+  ): Promise<DashboardWidget[]> {
+    const plugins = cmsRegistry.getAllPlugins();
 
     const widgets = await Promise.all(
+      plugins.map(
+        async (plugin: ICmsPlugin): Promise<DashboardWidget | null> => {
+          /**
+           * =============================================
+           * NO DASHBOARD SUPPORT
+           * =============================================
+           */
 
-       plugins.map(async (
-       plugin: ICmsPlugin
-       ): Promise<DashboardWidget | null> => {
-
-        /**
-         * =============================================
-         * NO DASHBOARD SUPPORT
-         * =============================================
-         */
-
-        if (!plugin.meta?.dashboard) {
-          return null;
-        }
-
-        if (plugin.name === "notification-plugin") {
+          if (!plugin.meta?.dashboard) {
+            return null;
+          }
           const configuredPlugin = await Plugin.findOne({
             where: {
-              [Op.or]: [
-                { name: "notification-plugin" },
-                { name: "notificationPlugin" },
-                { name: "Notifications" },
-                { slug: "notification-plugin" },
-                { slug: "notificationPlugin" },
-                { slug: "notifications" },
-              ],
+              slug: plugin.name,
             },
           });
 
-          if (configuredPlugin) {
-            const siteSetting = await SitePlugin.findOne({
-              where: {
-                siteId,
-                pluginId: configuredPlugin.id,
-              },
-            });
+          if (!configuredPlugin) {
+            return null;
+          }
 
-            if (siteSetting && !siteSetting.isEnabled) {
-              return null;
+          const sitePlugin = await SitePlugin.findOne({
+            where: {
+              siteId,
+              pluginId: configuredPlugin.id,
+            },
+          });
+
+          if (!sitePlugin || !sitePlugin.isEnabled) {
+            return null;
+          }
+
+          let payload = null;
+
+          /**
+           * =============================================
+           * SAFE PLUGIN PAYLOAD
+           * =============================================
+           */
+
+          if (typeof plugin.getDashboardData === "function") {
+            try {
+              payload = await plugin.getDashboardData(siteId, context);
+            } catch (error) {
+              console.error(`❌ Widget failed: ${plugin.name}`);
+
+              payload = {
+                error: true,
+              };
             }
           }
-        }
 
-        let payload = null;
+          /**
+           * =============================================
+           * CLEAN WIDGET CONTRACT
+           * =============================================
+           */
 
-        /**
-         * =============================================
-         * SAFE PLUGIN PAYLOAD
-         * =============================================
-         */
+          return {
+            id: plugin.name,
 
-        if (
-          typeof plugin.getDashboardData
-          === "function"
-        ) {
+            type: plugin.meta.dashboard.type,
 
-          try {
+            enabled: plugin.enabled,
 
-            payload =
-              await plugin.getDashboardData(
-                siteId,
-                context
-              );
+            payload,
 
-          } catch (error) {
+            title: plugin.meta.dashboard.title,
 
-            console.error(
-              `❌ Widget failed: ${plugin.name}`
-            );
+            col: plugin.meta.dashboard.col,
 
-            payload = {
-              error: true
-            };
-          }
-        }
-
-        /**
-         * =============================================
-         * CLEAN WIDGET CONTRACT
-         * =============================================
-         */
-
-        return {
-
-          id:
-            plugin.name,
-
-          type:
-            plugin.meta.dashboard.type,
-
-          enabled:
-            plugin.enabled,
-
-          payload,
-
-          title:
-            plugin.meta.dashboard.title,
-
-          col:
-            plugin.meta.dashboard.col,
-
-          order:
-            plugin.meta.dashboard.order
-
-        };
-
-      })
-
+            order: plugin.meta.dashboard.order,
+          };
+        },
+      ),
     );
 
     return widgets.filter(Boolean);
