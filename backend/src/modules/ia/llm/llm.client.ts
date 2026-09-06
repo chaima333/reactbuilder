@@ -1,6 +1,9 @@
 import OpenAI from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Anthropic from "@anthropic-ai/sdk";
+import {
+  getAiRuntimeConfig
+} from "./aiRuntimeConfig.service";
 
 import {
   AiTaskName,
@@ -37,41 +40,6 @@ const withTimeout = async <T>(
     if (timeout) clearTimeout(timeout);
   }
 };
-
-export const isLlmEnabled = () =>
-  process.env.LLM_ENABLED === "true";
-
-export const getActiveAiProvider = (): AiProvider =>
-  (process.env.AI_PROVIDER || "gemini") as AiProvider;
-
-export const getActiveAiModel = () => {
-  const provider =
-    getActiveAiProvider();
-
-  switch (provider) {
-    case "gemini":
-      return (
-        process.env.GEMINI_MODEL ||
-        "gemini-2.0-flash"
-      );
-
-    case "openai":
-      return (
-        process.env.OPENAI_MODEL ||
-        "gpt-4.1-mini"
-      );
-
-    case "claude":
-      return (
-        process.env.ANTHROPIC_MODEL ||
-        "claude-sonnet-5"
-      );
-
-    default:
-      return null;
-  }
-};
-
 export const generateTextForProvider = async ({
   prompt,
   provider,
@@ -194,27 +162,23 @@ export const testProviderConnection = async ({
 export const generateText = async (
   prompt: string
 ): Promise<string> => {
-  if (!isLlmEnabled()) {
+  const config =
+    await getAiRuntimeConfig();
+
+  if (!config.enabled) {
     throw new Error("LLM_DISABLED");
   }
 
-  const provider =
-    getActiveAiProvider();
-
-  const model =
-    getActiveAiModel();
-
-  if (!model) {
+  if (!config.model) {
     throw new Error("LLM_MODEL_MISSING");
   }
 
   return generateTextForProvider({
     prompt,
-    provider,
-    model
+    provider: config.provider,
+    model: config.model,
   });
 };
-
 export const generateTextWithTelemetry = async ({
   prompt,
   task,
@@ -223,17 +187,19 @@ export const generateTextWithTelemetry = async ({
   prompt: string;
   task: AiTaskName;
   fallbackText?: string;
-}): Promise<AiTextResult> =>
-  runAiTaskWithTelemetry({
+}): Promise<AiTextResult> => {
+  const config =
+    await getAiRuntimeConfig();
+
+  return runAiTaskWithTelemetry({
     task,
-    provider:
-      getActiveAiProvider(),
-    model:
-      getActiveAiModel(),
+    provider: config.provider,
+    model: config.model,
     fallbackText,
     execute: () =>
       generateText(prompt)
   });
+};
 
 export const testLLM = async () => {
   const response =
