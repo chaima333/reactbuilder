@@ -105,8 +105,7 @@ const handleVerify2FA = async () => {
           'https://www.googleapis.com/oauth2/v3/userinfo',
           { headers: { Authorization: `Bearer ${tokenResponse.access_token}` } }
         );
-
-        const res = await axios.post(`${API_URL}/auth/login`, {
+          const res = await axios.post(`${API_URL}/auth/google`, {
           email: userInfo.data.email,
           name: userInfo.data.name,
           googleId: userInfo.data.sub,
